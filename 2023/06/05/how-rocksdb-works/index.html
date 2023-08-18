@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="RocksDB 是很多分布式数据库的底层存储，如 TiKV、CRDB、NebulaGraph 等等。在 DataDog 工作的 Artem Krylysov 写了一篇文章来对 RocksDB 做了一个科普，通俗易懂，在这里翻译下分享给大家。  导语近几年，RocksDB 的采用率急速上升，俨然成为内嵌型键值存储（以下简称 kv 存储）的不二之选。 目前，RocksDB 在 Meta、Micros">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocksDB 运行原理">
+<meta property="og:url" content="https://www.qtmuniao.com/2023/06/05/how-rocksdb-works/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="RocksDB 是很多分布式数据库的底层存储，如 TiKV、CRDB、NebulaGraph 等等。在 DataDog 工作的 Artem Krylysov 写了一篇文章来对 RocksDB 做了一个科普，通俗易懂，在这里翻译下分享给大家。  导语近几年，RocksDB 的采用率急速上升，俨然成为内嵌型键值存储（以下简称 kv 存储）的不二之选。 目前，RocksDB 在 Meta、Micros">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.imgloc.com/2023/06/05/Vlfj1P.png">
+<meta property="og:image" content="https://i.imgloc.com/2023/06/05/VlftCy.png">
+<meta property="og:image" content="https://i.imgloc.com/2023/06/05/Vlfb6C.md.png">
+<meta property="og:image" content="https://i.imgloc.com/2023/06/05/VlfWX5.png">
+<meta property="og:image" content="https://i.imgloc.com/2023/06/05/VlfkK8.png">
+<meta property="og:image" content="https://i.imgloc.com/2023/06/05/Vlfl3F.png">
+<meta property="og:image" content="https://i.imgloc.com/2023/06/05/VlfwSH.png">
+<meta property="og:image" content="https://i.imgloc.com/2023/06/05/VlfHiQ.png">
+<meta property="og:image" content="https://i.imgloc.com/2023/06/05/VlfCUZ.png">
+<meta property="og:image" content="https://i.imgloc.com/2023/06/05/VlfObE.png">
+<meta property="article:published_time" content="2023-06-05T15:41:40.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.290Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="rocksdb">
+<meta property="article:tag" content="lsmtree">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.imgloc.com/2023/06/05/Vlfj1P.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2023/06/05/how-rocksdb-works/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RocksDB 运行原理 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/06/05/how-rocksdb-works/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RocksDB 运行原理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-06-05 23:41:40" itemprop="dateCreated datePublished" datetime="2023-06-05T23:41:40+08:00">2023-06-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>RocksDB 是很多分布式数据库的底层存储，如 TiKV、CRDB、NebulaGraph 等等。在 DataDog 工作的 <a target="_blank" rel="noopener" href="https://artem.krylysov.com/">Artem Krylysov</a> 写了一篇<a target="_blank" rel="noopener" href="https://artem.krylysov.com/blog/2023/04/19/how-rocksdb-works/">文章</a>来对 RocksDB 做了一个科普，通俗易懂，在这里翻译下分享给大家。</p>
+</blockquote>
+<h2 id="导语"><a href="#导语" class="headerlink" title="导语"></a>导语</h2><p>近几年，RocksDB 的采用率急速上升，俨然成为内嵌型键值存储（以下简称 kv 存储）的不二之选。</p>
+<p>目前，RocksDB 在 Meta、<a target="_blank" rel="noopener" href="https://blogs.bing.com/Engineering-Blog/october-2021/RocksDB-in-Microsoft-Bing">Microsoft</a>、<a target="_blank" rel="noopener" href="https://netflixtechblog.com/application-data-caching-using-ssds-5bf25df851ef">Netflix</a> 和 <a target="_blank" rel="noopener" href="https://www.uber.com/en-JP/blog/cherami-message-queue-system/">Uber</a> 等公司的生产环境上运行。在 <a target="_blank" rel="noopener" href="https://engineering.fb.com/2021/07/22/data-infrastructure/mysql/">Meta</a>，RocksDB 作为 MySQL 部署的存储引擎，为分布式图数据库（<a href="https://www.qtmuniao.com/2021/10/07/facebook-tao/">TAO</a>）提供支持存储服务。</p>
+<p>大型科技公司并非 RocksDB 的仅有用户，像是 CockroachDB、Yugabyte、PingCAP 和 Rockset 等多个初创企业都构建在 RocksDB 基础之上。</p>
+<p><a target="_blank" rel="noopener" href="https://artem.krylysov.com/">我</a>在 Datadog 工作了 4 年时间，在生产环境中构建和运行了一系列基于 RocksDB 的服务。本文将就 RocksDB 的工作原理进行概要式讲解。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2023/06/05/how-rocksdb-works">https://www.qtmuniao.com/2023/06/05/how-rocksdb-works</a> 转载请注明出处</em></p>
+<h2 id="RocksDB-是什么"><a href="#RocksDB-是什么" class="headerlink" title="RocksDB 是什么"></a>RocksDB 是什么</h2><p>RocksDB 是一种可持久化的、内嵌型 kv 存储。它是为了存储大量的 key 及其对应 value 设计出来的数据库。可以基于这种简单 kv 数据模型来构建倒排索引、文档数据库、SQL 数据库、缓存系统和消息代理等复杂系统。</p>
+<p>RocksDB 是 2012 年从 Google 的 <a target="_blank" rel="noopener" href="https://github.com/google/leveldb">LevelDB</a> fork 出来的分支，并针对跑在 SSD 上的服务器进行了优化。目前，RocksDB 由 Meta <a target="_blank" rel="noopener" href="https://github.com/facebook/rocksdb">开发</a>和维护。</p>
+<p>RocksDB 使用 C++ 编写而成，因此除了支持 C 和 C++ 之外，还能通过 С binding 的形式嵌入到使用其他语言编写的应用中，例如 <a target="_blank" rel="noopener" href="https://github.com/rust-rocksdb/rust-rocksdb">Rust</a>、<a target="_blank" rel="noopener" href="https://github.com/linxGnu/grocksdb">Go</a> 或 <a target="_blank" rel="noopener" href="https://github.com/facebook/rocksdb/tree/main/java">Java</a>。</p>
+<p>如果你之前用过 SQLite，你肯定知道什么是内嵌式数据库。在数据库领域，特别是在 RocksDB 的上下文中，“内嵌”意味着：</p>
+<ul>
+<li>该数据库没有独立进程，而是被集成进应用中，和应用共享内存等资源，从而避免了跨进程通信的开销。</li>
+<li>它没有内置服务器，无法通过网络进行远程访问。</li>
+<li>它不是分布式的，这意味着它不提供容错性、冗余或分片（sharding）机制。</li>
+</ul>
+<p>如有必要，需依赖于应用层来实现上述功能。</p>
+<p>RocksDB 以 kv 对集合的形式存储数据， key 和 value 是任意长度的字节数组（byte array），因此都是没有类型的。RocksDB 提供了很少的几个用于修改 kv 集合的函数底层接口：</p>
+<ul>
+<li><code>put(key, value)</code>：插入新的键值对或更新已有键值对</li>
+<li><code>merge(key, value)</code>：将新值与给定键的原值进行合并</li>
+<li><code>delete(key)</code>：从集合中删除键值对</li>
+</ul>
+<p>通过点查来获取 key 所关联的 value：</p>
+<ul>
+<li><code>get(key)</code></li>
+</ul>
+<p>通过迭代器可以进行范围扫描——找到特定的 key，并按顺序访问该 key 后续的键值对：</p>
+<ul>
+<li><code>iterator.seek(key_prefix); iterator.value(); iterator.next()</code></li>
+</ul>
+<h2 id="Log-structured-merge-tree"><a href="#Log-structured-merge-tree" class="headerlink" title="Log-structured merge-tree"></a><strong>Log-structured merge-tree</strong></h2><p>RocksDB 的核心数据结构被称为<strong>日志结构合并树</strong> （LSM-Tree）。它是一种树形的数据结构，由多个层级组成，每层的数据按 key 有序。LSM-Tree 主要设计用来应对写入密集型工作负载，并于 1996 年在同名论文 <a target="_blank" rel="noopener" href="http://paperhub.s3.amazonaws.com/18e91eb4db2114a06ea614f0384f2784.pdf">The Log-Structured Merge-Tree (LSM-Tree)</a> 被大家所知。</p>
+<p>LSM-Tree 的最高层保存在内存中，包含最近写入的数据。其他较低层级的数据存储在磁盘上，层数编号从 0 到 N 。第 0 层 L0 存储从内存移动到磁盘上的数据，第 1 层及以下层级则存储更老的数据。通常某层的下个层级在数据量上会比该层大一个数量级，当某层数据量变得过大时，会合并到下一层。</p>
+<p><img src="https://i.imgloc.com/2023/06/05/Vlfj1P.png" alt="Vlfj1P.png"></p>
+<p><em>注：虽然本文主要讨论 RocksDB，但涉及 LSM-Tree 的概念适用于大多数底层采用此技术实现的数据库（例如 Bigtable、HBase、Cassandra、ScyllaDB、LevelDB 和 MongoDB WiredTiger）</em>。</p>
+<p>为了更好地理解 LSM-Tree 的工作原理，下面我们将着重剖析它的写 &#x2F; 读路径。</p>
+<h2 id="写路径"><a href="#写路径" class="headerlink" title="写路径"></a>写路径</h2><h3 id="MemTable"><a href="#MemTable" class="headerlink" title="MemTable"></a><strong>MemTable</strong></h3><p>LSM-Tree 的顶层被称为 MemTable。MemTable 是一个内存缓冲区，在键值对写入磁盘之前，Memtable 会缓存住这些键值对。所有插入和更新操作都会过 MemTable。当然也包括删除操作：不过，在 RocksDB 中，并不会直接原地修改键值对，而是通过插入墓碑记录（tombstone ）来进行标记删除。</p>
+<p>MemTable 具有可配置的字节数限制。当一个 MemTable 变满时，就会切到一个新的 MemTable，同时原 MemTable 变为不可修改状态。</p>
+<p>注：MemTable 的默认大小为 64 MB。</p>
+<p>现在，我们往数据库写入点 key 看看：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">db.<span class="built_in">put</span>(<span class="string">&quot;chipmunk&quot;</span>, <span class="string">&quot;1&quot;</span>)</span><br><span class="line">db.<span class="built_in">put</span>(<span class="string">&quot;cat&quot;</span>, <span class="string">&quot;2&quot;</span>)</span><br><span class="line">db.<span class="built_in">put</span>(<span class="string">&quot;raccoon&quot;</span>, <span class="string">&quot;3&quot;</span>)</span><br><span class="line">db.<span class="built_in">put</span>(<span class="string">&quot;dog&quot;</span>, <span class="string">&quot;4&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://i.imgloc.com/2023/06/05/VlftCy.png" alt="VlftCy.png"></p>
+<p>如上图所示，MemTable 中的键值对是按 key 有序排列的。尽管 <code>chipmunk</code> 是最先插入的，但由于 MemTable 是按 key 有序的，因此 <code>chipmunk</code> 排在 <code>cat</code> 之后。这种排序对于范围扫描是必须的，此外，稍后我会详细介绍，它也会让某些操作更加高效。</p>
+<h3 id="预写日志"><a href="#预写日志" class="headerlink" title="预写日志"></a><strong>预写日志</strong></h3><p>无论是在进程意外崩溃退出还是计划内重启时，其内存中的数据都会丢失。为了防止数据丢失，保证数据的持久化，除了 MemTable 之外，RocksDB 会将所有更新写入到磁盘上的预写日志（WAL，Write-ahead log）中。这样，在重启后，数据库可以回放日志，进而恢复 MemTable 的原始状态。</p>
+<p>WAL 是一个只允许追加的文件，包含一组更改记录序列。每个记录包含键值对、记录类型（Put &#x2F; Merge &#x2F; Delete）和校验和（checksum）。与 MemTable 不同，在 WAL 中，记录不按 key 有序，而是按照请求到来的顺序被追加到 WAL 中。</p>
+<p><a target="_blank" rel="noopener" href="https://imgloc.com/i/Vlfb6C"><img src="https://i.imgloc.com/2023/06/05/Vlfb6C.md.png" alt="Vlfb6C.md.png"></a></p>
+<h2 id="Flush"><a href="#Flush" class="headerlink" title="Flush"></a>Flush</h2><p>RocksDB 使用一个专门的后台线程定期地把不可变的 MemTable 从内存持久化到磁盘。一旦刷盘（flush）完成，不可变的 MemTable 和相应的 WAL 就会被丢弃。RocksDB 开始写入新的 WAL、MemTable。每次刷盘都会在 L0 层上产生一个新的 SST 文件。该文件一旦写入磁盘后，就不再会修改。</p>
+<p>RocksDB 的 MemTable 的默认基于<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Skip_list">跳表</a>实现。该数据结构是一个具有额外采样层的链表，从而允许快速、有序地查询和插入数据。有序性使得 MemTable 刷盘时更高效，因为可以直接按顺序迭代键值对顺序写入磁盘。<strong>将随机写变为顺序写是 LSM-Tree 的核心设计之一</strong>。</p>
+<p><img src="https://i.imgloc.com/2023/06/05/VlfWX5.png" alt="VlfWX5.png"></p>
+<p><em>注：RocksDB 高度可配，因此你可以给 MemTable 配置其他的实现方案，RocksDB 中大部分组件都是如此。在其他的一些基于 LSM 实现的数据库中，使用自平衡二叉搜索树来实现 MemTable 并不鲜见</em>。</p>
+<h3 id="SST"><a href="#SST" class="headerlink" title="SST"></a><strong>SST</strong></h3><p>SST 文件包括从 MemTable 刷盘而来的简直对，并且使用一种对查询友好的数据格式来存储。 SST 是 Static Sorted Table 的缩写（其他数据库中也称为 Sorted String Table）。它是一种基于块（ block） 的文件格式，会将数据切成固定大小的块（默认为 4KB）进行存储。RocksDB 支持各种压缩 SST 文件的压缩算法，例如 Zlib、BZ2、Snappy、LZ4 或 ZSTD 算法。与 WAL 的记录类似，每个数据块中都包含用于检测数据是否损坏的校验和。每次从磁盘读取数据时，RocksDB 都会使用这些校验和进行校验。</p>
+<p>SST 文件由几个部分组成：首先是数据部分，包含一系列有序的键值对。key 的有序性可以让我们对 其进行增量编码，也即，对于相邻的 key ，我们可以只存其差值而非整个 key。</p>
+<p>尽管 SST 中的 kv 对是有序的，我们也并非总能进行二分查找，尤其是数据块在压缩过后，会使得查找很低效。RocksDB 使用索引来优化查询，存储在紧邻数据块之后的索引块。Index 会把每个 block 数据中最后一个 key 映射到它在磁盘上的对应偏移量。同样地，index 中的 key 也是有序的，因此我们可以通过二分搜索快速找到某个 key。</p>
+<p><img src="https://i.imgloc.com/2023/06/05/VlfkK8.png" alt="VlfkK8.png"></p>
+<p>例如，我们在查找 <code>lynx</code>，索引会告诉我们这个键值对可能在 block 2，因为按照字典序，<code>lynx</code> 在 <code>chipmunk</code> 之后，但在 <code>raccoon</code> 之前。</p>
+<p>但其实 SST 文件中并没有 <code>lynx</code>，但我们仍然需要从磁盘加载 block 以进行搜索。RocksDB 支持启用<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Bloom_filter">布隆过滤器</a>，一种具有高效空间利用率的概率性数据结构，可以用来检测某个元素是否在集合中。布隆过滤器保存在 SST 文件中过滤器部分，以便能够快速确定某个 key 不在 SST 中（从而省去摸硬盘上的数据块的开销）。</p>
+<p>此外，SST 还有其他几个不太有趣的部分，比如元数据部分。</p>
+<h2 id="Compaction"><a href="#Compaction" class="headerlink" title="Compaction"></a>Compaction</h2><p>到现在为止，一个功能完备的键值存储引擎讲完了。但如果这样直接上生产环境，会有一些问题：空间放大（space amplifications）和读放大（read amplifications）。空间放大是存储数据所用实际空间与逻辑上数据大小的比值。假设一个数据库需要 2 MB 磁盘空间来存储逻辑上的 1 MB 大小的键值对是，那么它的空间放大率是 2。类似地，读放大用来衡量用户执行一次逻辑上的读操作，系统内所需进行的实际 IO 次数。作为一个小练习，你可以尝试推演下什么是写放大。</p>
+<p>现在，让我们向数据库添加更多 key 并删除当中的一些 key：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">db.<span class="built_in">delete</span>(<span class="string">&quot;chipmunk&quot;</span>)</span><br><span class="line">db.<span class="built_in">put</span>(<span class="string">&quot;cat&quot;</span>, <span class="string">&quot;5&quot;</span>)</span><br><span class="line">db.<span class="built_in">put</span>(<span class="string">&quot;raccoon&quot;</span>, <span class="string">&quot;6&quot;</span>)</span><br><span class="line">db.<span class="built_in">put</span>(<span class="string">&quot;zebra&quot;</span>, <span class="string">&quot;7&quot;</span>)</span><br><span class="line"><span class="comment">// Flush triggers</span></span><br><span class="line">db.<span class="built_in">delete</span>(<span class="string">&quot;raccoon&quot;</span>)</span><br><span class="line">db.<span class="built_in">put</span>(<span class="string">&quot;cat&quot;</span>, <span class="string">&quot;8&quot;</span>)</span><br><span class="line">db.<span class="built_in">put</span>(<span class="string">&quot;zebra&quot;</span>, <span class="string">&quot;9&quot;</span>)</span><br><span class="line">db.<span class="built_in">put</span>(<span class="string">&quot;duck&quot;</span>, <span class="string">&quot;10&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><img src="https://i.imgloc.com/2023/06/05/Vlfl3F.png" alt="Vlfl3F.png"></p>
+<p>随着我们的不断写入，MemTable 不断被刷到磁盘，L0 上的 SST 文件数量也在增长：</p>
+<ul>
+<li>删除或更新 key 所占用的空间永远不会被回收。例如，<code>cat</code> 这个 key 的三次更新记录分别在 SST1，SST2 和 SST3 中，而 <code>chipmunk</code> 在 SST1 中有一次更新记录，在 SST2 中有一次删除记录，这些无用的记录仍然占用额外磁盘空间。</li>
+<li>随着 L0 上 SST 文件数量的增加，读取变得越来越慢。每次查找都要逐个检查所有 SST 文件。</li>
+</ul>
+<p>RocksDB 引入了压实（ Compaction ）机制，可以降低空间放大和读放大，但代价是更高的写放大。Compaction 会将某层的 SST 文件同下一层的 SST 文件合并，并在这个过程中丢弃已删除和被覆盖的无效 key。Compaction 会在后台专用的线程池中运行，从而保证了 RocksDB 可以在做 Compaction 时能够正常处理用户的读写请求。</p>
+<p><img src="https://i.imgloc.com/2023/06/05/VlfwSH.png" alt="VlfwSH.png"></p>
+<p>Leveled Compaction 是 RocksDB 中的默认 Compaction 策略。使用 Leveled Compaction，L0 层中的不同 SST 文件键范围会重叠。L1 层及以下层会被组织为包含多个 SST 文件的序列，并保证同层级内的所有 SST 在键范围上没有交叠，且 SST 文件之间有序。Compaction 时，会选择性地将某层的 SST 文件与下一层的 key 范围有重叠 SST 文件进行合并。</p>
+<p>举例来说，如下图所示，在 L0 到 L1 层进行 Compaction 时，如果 L0 上的输入文件覆盖整个键范围，此时就需要对所有 L0 和 L1 层的文件进行 Compaction。</p>
+<p><img src="https://i.imgloc.com/2023/06/05/VlfHiQ.png" alt="VlfHiQ.png"></p>
+<p>而像是下面的这种 L1 和 L2 层的 Compaction，L1 层的输入文件只与 L2 层的两个 SST 文件重叠，因此，只需要对部分文件进行 Compaction 即可。</p>
+<p><img src="https://i.imgloc.com/2023/06/05/VlfCUZ.png" alt="VlfCUZ.png"></p>
+<p>当 L0 层上的 SST 文件数量达到一定阈值（默认为 4）时，将触发 Compaction。对于 L1 层及以下层级，当整个层级的 SST 文件总大小超过配置的目标大小时，会触发 Compaction 。当这种情况发生时，可能会触发 L1 到 L2 层的 Compaction。从而，从 L0 到 L1 层的 Compaction 可能会引发一直到最底层级联 Compaction。在 Compaction 完成之后，RocksDB 会更新元数据并从磁盘中删除 已经被 Compcated 过的文件。</p>
+<p><em>注：RocksDB 提供了不同 Compaction 策略来在空间、读放大和写放大之间进行权衡</em>。</p>
+<p>看到这里，你还记得上文提过 SST 文件中的 key 是有序的吗？有序性允许使用 K 路归并算法逐步合并多个 SST 文件。K 路归并是两路归并的泛化版本，其工作方式类似于归并排序的归并阶段。</p>
+<h2 id="读路径"><a href="#读路径" class="headerlink" title="读路径"></a>读路径</h2><p>使用持久化在磁盘上不可变的 SST 文件，读路径要比写路径简单很多。要找寻某个 key，只需自顶而下遍历 LSM—Tree。从 MemTable 开始，下探到 L0，然后继续向更低层级查找，直到找到该 key 或者检查完所有 SST 文件为止。</p>
+<p>以下是查找步骤：</p>
+<ol>
+<li>检索 MemTable。</li>
+<li>检索不可变 MemTables。</li>
+<li>搜索最近 flush 过的 L0 层中的所有 SST 文件。</li>
+<li>对于 L1 层及以下层级，首先找到可能包含该 key 的单个 SST 文件，然后在文件内进行搜索。</li>
+</ol>
+<p>搜索 SST 文件涉及：</p>
+<ol>
+<li>（可选）探测布隆过滤器。</li>
+<li>查找 index 来找到可能包含这个 key 的 block 所在位置。</li>
+<li>读取 block 文件并尝试在其中找到 key。</li>
+</ol>
+<p>这就是全部所需步骤了！看看这个 LSM-Tree：</p>
+<p><img src="https://i.imgloc.com/2023/06/05/VlfObE.png" alt="VlfObE.png"></p>
+<p>根据待查找的 key 的具体情况，查找过程可能在上面任意步骤提前终止。例如，在搜索 MemTable 后，key “cat” 或 “chipmunk” 的查找工作会立即结束。查找 “raccoon” 则需要搜索 L1 为止，而查找根本不存在的 “manul” 则需要搜索整个树。</p>
+<h2 id="Merge"><a href="#Merge" class="headerlink" title="Merge"></a>Merge</h2><p>RocksDB 还提供了一个同时涉及读路径和写路径的功能：合并（merge）操作。假设，你在数据库中存了一个整数列表，偶尔需要扩展该列表。为了修改列表，你需要从数据库中读取其现有值，在内存中更新该列表，最后把更新后的值写回数据库。</p>
+<p>上面整个操作序列被称为 “Read-Modify-Write” 循环：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">db = <span class="built_in">open_db</span>(path)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 读取 Read</span></span><br><span class="line">old_val = db.<span class="built_in">get</span>(key) <span class="comment">// RocksDB stores keys and values as byte arrays. We need to deserialize the value to turn it into a list.</span></span><br><span class="line">old_list = <span class="built_in">deserialize_list</span>(old_val) <span class="comment">// old_list: [1, 2, 3]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 修改 Modify</span></span><br><span class="line">new_list = old_list.<span class="built_in">extend</span>([<span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>]) <span class="comment">// new_list: [1, 2, 3, 4, 5, 6]</span></span><br><span class="line">new_val = <span class="built_in">serialize_list</span>(new_list)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 写回 Write</span></span><br><span class="line">db.<span class="built_in">put</span>(key, new_val)</span><br><span class="line"></span><br><span class="line">db.<span class="built_in">get</span>(key) <span class="comment">// deserialized value: [1, 2, 3, 4, 5, 6]</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>上面这种方式能达到目的，但存在一些缺陷：</p>
+<ul>
+<li>非线程安全——两个尝试更新相同的 key 的不同线程，交错执行，会出现更新丢失。</li>
+<li>存在写放大——随着值变得越来越大，更新成本也会增加。例如，在含有 100 个数的列表中追加一个整数需要读取 100 个整数并将 101 个整数写回。</li>
+</ul>
+<p>除了 <code>Put</code> 和 <code>Delete</code> 写操作之外，RocksDB 还支持第三种写操作 <code>Merge</code>。<code>Merge</code> 操作需要提供 <code>**Merge Operator**</code>——一个用户定义函数，负责将增量更新组合成单个值：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">funcmerge_operator</span>(existing_val, updates) &#123;</span><br><span class="line">        combined_list = <span class="built_in">deserialize_list</span>(existing_val)</span><br><span class="line">        <span class="keyword">for</span> op in updates &#123;</span><br><span class="line">                combined_list.<span class="built_in">extend</span>(op)</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">serialize_list</span>(combined_list)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">db = <span class="built_in">open_db</span>(path, &#123;merge_operator: merge_operator&#125;)</span><br><span class="line"><span class="comment">// key&#x27;s value is [1, 2, 3]</span></span><br><span class="line"></span><br><span class="line">list_update = <span class="built_in">serialize_list</span>([<span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>])</span><br><span class="line">db.<span class="built_in">merge</span>(key, list_update)</span><br><span class="line"></span><br><span class="line">db.<span class="built_in">get</span>(key) <span class="comment">// deserialized value: [1, 2, 3, 4, 5, 6]</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>上面的 <code>merge_operator</code> 将传递给 Merge 调用的增量更新组合成一个单一值。当调用 Merge 时，RocksDB 仅将增量更新插入到 MemTable 和 WAL 中。之后，在 flush 和 compaction 时，RocksDB 调用 <code>merge_operator()</code> ，在条件允许时，将若干更新合并成单个更新或者单个值。在用户调用 <code>Get</code> 或扫描读取数据时，如果发现任何待 merge 的更新，也会调用 <code>merge_operator</code> 向用户返回一个经过 merge 而得到的值。</p>
+<p>Merge 非常适合于需要持续对已有值进行少量更新的写入密集型场景。那么，代价是什么？读将变得更加昂贵——读时的合并值没有写回。对该 key 的查询需要一遍又一遍地执行相同的合并过程，直到触发 flush 和 compaction 为止。与 RocksDB 其他部分一样，我们可以通过限制 MemTable 中 merge 对象的数量、降低 L0 中 SST 文件数量来优化读行为。</p>
+<h2 id="挑战"><a href="#挑战" class="headerlink" title="挑战"></a>挑战</h2><p>如果你的应用对性能非常敏感，那么使用 RocksDB 面临的最大挑战是需要针对特定工作负载来进行配置调优。RocksDB 提供了非常多的可配置项，但对其进行合理调整通常需要理解数据库内部原理并深入研究 RocksDB 源代码：</p>
+<blockquote>
+<p>“不幸的是，对 RocksDB 进行配置调优并不容易。即使作为 RocksDB 开发人员的我们，也不能完全理解每个配置更改的所造成的影响。如果你想针对你的工作负载充分调优，我们建议你进行实验和基准测试，并时刻注意三个放大因素。”</p>
+<p>– RocksDB  官方调优指南</p>
+</blockquote>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>从零开始写一个生产级别的 kv 存储是非困难的：</p>
+<ul>
+<li>硬件和操作系统随时都有可能丢失或损坏数据。</li>
+<li>性能优化需要大量时间投入。</li>
+</ul>
+<p>RocksDB 解决了上述两个问题，从而让你可以专注于上层业务逻辑实现。这也使得 RocksDB 成为构建数据库的优秀模块。</p>
+<blockquote>
+<p>本篇文章来自我的小报童专栏，初步规划有以下几个系列：</p>
+<ul>
+<li>图数据库101系列</li>
+<li>每天学点数据库系列</li>
+<li>系统好文推荐系列</li>
+<li>读书笔记系列</li>
+<li>数据密集型论文导读系列</li>
+</ul>
+<p>会保证每周不低于两篇更新，订阅方式见<a target="_blank" rel="noopener" href="https://xiaobot.net/p/system-thinking">专栏介绍</a>，欢迎喜欢我文章的朋友们的订阅支持，激励我产出更多优质文章。</p>
+</blockquote>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/rocksdb/" rel="tag"># rocksdb</a>
+              <a href="/tags/lsmtree/" rel="tag"># lsmtree</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/03/25/how-to-read-and-write-code/" rel="prev" title="影响我写代码的三个 “Code”">
+      <i class="fa fa-chevron-left"></i> 影响我写代码的三个 “Code”
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E8%AF%AD"><span class="nav-number">1.</span> <span class="nav-text">导语</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RocksDB-%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">2.</span> <span class="nav-text">RocksDB 是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Log-structured-merge-tree"><span class="nav-number">3.</span> <span class="nav-text">Log-structured merge-tree</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E8%B7%AF%E5%BE%84"><span class="nav-number">4.</span> <span class="nav-text">写路径</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#MemTable"><span class="nav-number">4.1.</span> <span class="nav-text">MemTable</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%84%E5%86%99%E6%97%A5%E5%BF%97"><span class="nav-number">4.2.</span> <span class="nav-text">预写日志</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flush"><span class="nav-number">5.</span> <span class="nav-text">Flush</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SST"><span class="nav-number">5.1.</span> <span class="nav-text">SST</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Compaction"><span class="nav-number">6.</span> <span class="nav-text">Compaction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%BB%E8%B7%AF%E5%BE%84"><span class="nav-number">7.</span> <span class="nav-text">读路径</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Merge"><span class="nav-number">8.</span> <span class="nav-text">Merge</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8C%91%E6%88%98"><span class="nav-number">9.</span> <span class="nav-text">挑战</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">10.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2023/06/05/how-rocksdb-works/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '284227d4c85d6bb83bbd3562951101af',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

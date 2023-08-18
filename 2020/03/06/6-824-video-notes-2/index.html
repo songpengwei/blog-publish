@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第二节课笔记，RPC 和线程。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MIT 6.824 2020 视频笔记二：RPC和线程">
+<meta property="og:url" content="https://www.qtmuniao.com/2020/03/06/6-824-video-notes-2/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第二节课笔记，RPC 和线程。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
+<meta property="article:published_time" content="2020-03-06T13:44:12.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.282Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="6.824">
+<meta property="article:tag" content="笔记">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2020/03/06/6-824-video-notes-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MIT 6.824 2020 视频笔记二：RPC和线程 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/03/06/6-824-video-notes-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MIT 6.824 2020 视频笔记二：RPC和线程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-03-06 21:44:12" itemprop="dateCreated datePublished" datetime="2020-03-06T21:44:12+08:00">2020-03-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E5%85%AC%E5%BC%80%E8%AF%BE/" itemprop="url" rel="index"><span itemprop="name">公开课</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
+<p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <a target="_blank" rel="noopener" href="https://www.youtube.com/channel/UC_7WrbZTCODu1o_kfUMq88g/videos">Youtube</a>，<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/av90915526">B站</a>。课程资料：<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/schedule.html">6.824主页</a>。本篇是第二节课笔记，RPC 和线程。</p>
+</blockquote>
+<h2 id="为什么用-Go"><a href="#为什么用-Go" class="headerlink" title="为什么用 Go"></a>为什么用 Go</h2><ol>
+<li><strong>语法先进</strong>。在语言层面支持线程（goroutine）和管道（channel）。对线程间的加锁、同步支持良好。</li>
+<li><strong>类型安全（type safe）</strong>。内存访问安全（memory safe），很难写出像 C++ 一样内存越界访问等 bug。</li>
+<li><strong>支持垃圾回收（GC）</strong>。不需要用户手动管理内存，这一点在多线程编程中尤为重要，因为在多线程中你很容易引用某块内存，然后忘记了在哪引用过。</li>
+<li><strong>简洁直观</strong>。没 C++ 那么多复杂的语言特性，并且在报错上很友好。</li>
+</ol>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2020/02/29/6-824-video-notes-2/">https://www.qtmuniao.com/2020/02/29/6-824-video-notes-2/</a>, 转载请注明出处</em></p>
+<h2 id="线程（Threads）"><a href="#线程（Threads）" class="headerlink" title="线程（Threads）"></a>线程（Threads）</h2><p>线程为什么这么重要？因为他是我们控制并发的主要手段，而并发是构成分布式系统的基础。在 Go 中，你可以将 goroutine 认为是线程，以下这两者混用。 每个线程可以有自己的内存栈、寄存器，但是他们可以共享一个地址空间。</p>
+<h3 id="使用原因"><a href="#使用原因" class="headerlink" title="使用原因"></a>使用原因</h3><p><strong>IO concurrency（IO并发）</strong>：一个历史说法，以前单核时，IO 是主要瓶颈，为了充分利用 CPU，一个线程在进行IO 时，可以让出 CPU，让另一个线程进行计算、读取或发送网络消息等。在这里可以理解为：你可以通过多个线程并行的发送多个网络请求（比如 RPC、HTTP 等），然后分别等待其回复。</p>
+<p><strong>Parallelism（并行）</strong>：充分利用多核 CPU。</p>
+<p>关于并发（concurrency）和并行（parallelism）的区别和联系，可以看<a target="_blank" rel="noopener" href="https://laike9m.com/blog/huan-zai-yi-huo-bing-fa-he-bing-xing,61/">这篇文章</a>。记住两个关键词即可：逻辑并发设计 vs 物理并行执行。</p>
+<p><strong>Convenience（方便）</strong>：比如可以在后台启动一个线程，定时执行某件事、周期性的检测什么东西（比如心跳）。</p>
+<p><strong>Q&amp;A：</strong></p>
+<ol>
+<li><em>不使用线程还能如何处理并发</em>？基于事件驱动的异步编程。但是多线程模型更容易理解一些，毕竟每个线程内执行顺序和你的代码顺序是大体一致的。</li>
+<li><em>进程和线程的区别</em>？进程是操作系统提供的一种包含有独立地址空间的一种抽象，一个 Go 程序启动时作为一个进程，可以启动很多线程（不过我记得 Goroutine 是用户态的执行流）。</li>
+</ol>
+<h3 id="使用难点（challenges）"><a href="#使用难点（challenges）" class="headerlink" title="使用难点（challenges）"></a>使用难点（challenges）</h3><p>共享内存易出错。一个经典的问题是，多个线程并行执行语句：<code>n = n + 1</code> 时，由于该操作不是原子操作，在不加锁时，很容易出现 n 为非期望值。</p>
+<p>我们称这种情况为<strong>竞态</strong> （race）：即两个以上的线程同时试图改变某个共享变量。</p>
+<p>解决的方法是加锁，但如何科学的加锁以<strong>兼顾性能</strong>并<strong>避免死锁</strong>又是一门学问。</p>
+<p><strong>Q&amp;A：</strong></p>
+<ol>
+<li><em>Go 是否知道锁和资源（一些共享的变量）间的映射</em>？Go 并不知道，它仅仅就是等待锁、获取锁、释放锁。需要程序员在脑中、逻辑上来自己维护。</li>
+<li><em>Go 会锁上一个 Object 的所有变量还是部分</em>？和上个问题一样，Go 不知道任何锁与变量之间的关系。Lock 本身的源语很简单，goroutine0 调用 mu.Lock 时，没有其他 goroutine 持有锁，则 goroutine0 获取锁；如果其他goroutine 持有锁，则一直等待直到其释放锁；当然，在某些语言，如 Java 里，会将对象或者实例等与锁绑定，以指明锁的作用域。</li>
+<li><em>Lock 应该是某个对象的私有变量</em>？如果可以的话，最好这样做。但如果由跨对象的加锁需求，就需要拿出来了，但要注意避免死锁。</li>
+</ol>
+<h3 id="线程协调（Coordination）"><a href="#线程协调（Coordination）" class="headerlink" title="线程协调（Coordination）"></a>线程协调（Coordination）</h3><ol>
+<li>channels：go 中比较推荐的方式，分阻塞和带缓冲。</li>
+<li>sync.Cond：信号机制。</li>
+<li>waitGroup：阻塞知道一组 goroutine 执行完毕，后面还会提到。</li>
+</ol>
+<h3 id="死锁（DeadLock）"><a href="#死锁（DeadLock）" class="headerlink" title="死锁（DeadLock）"></a>死锁（DeadLock）</h3><p>产生条件：多个锁，循环依赖，占有并等待。</p>
+<p>如果你的程序不干活了，但是又没死，那你就需要看看是否死锁了。</p>
+<h2 id="爬虫（Web-crawler）"><a href="#爬虫（Web-crawler）" class="headerlink" title="爬虫（Web crawler）"></a>爬虫（Web crawler）</h2><ol>
+<li><p>从一个种子网页 URL 开始</p>
+</li>
+<li><p>通过 HTTP 请求，获取其内容文本</p>
+</li>
+<li><p>解析其内容包含的所有 URL，针对所有 URL 重复过程 2，3</p>
+<p>为了避免重复抓取，需要记下所有抓取过的 URL。</p>
+</li>
+</ol>
+<p>由于：</p>
+<ol>
+<li>网页数量巨大</li>
+<li>网络请求较慢<br>一个接一个的抓取用时太长，因此需要并行抓取。这里面有个难点，就是如何判断已经抓取完所有网页，并需要结束抓取。</li>
+</ol>
+<h3 id="抓取代码"><a href="#抓取代码" class="headerlink" title="抓取代码"></a>抓取代码</h3><p>代码在<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/notes/crawler.go">阅读材料</a>中有。</p>
+<p><strong>串行爬取</strong>。深度优先遍历（DFS ）全部网页构成的图结构，利用一个名为 fetched 的 set 来保存所有已经抓取过的 URL。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Serial</span><span class="params">(url <span class="type">string</span>, fetcher Fetcher, fetched <span class="keyword">map</span>[<span class="type">string</span>]<span class="type">bool</span>)</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> fetched[url] &#123;</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line">  fetched[url] = <span class="literal">true</span></span><br><span class="line">  urls, err := fetcher.Fetch(url)</span><br><span class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">for</span> _, u := <span class="keyword">range</span> urls &#123;</span><br><span class="line">    Serial(u, fetcher, fetched)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>并行爬取</strong></p>
+<ol>
+<li>将抓取部分使用 go 关键字变为并行。但如果仅这么改造，不利用某些手段（sync.WaitGroup）等待子 goroutine，而直接返回，那么可能只会抓取到种子 URL，同时造成子 goroutine 的泄露。</li>
+<li>如果访问已经抓取的 URL 集合 fetched 不加锁，很可能造成多次拉取同一个网页。</li>
+</ol>
+<h3 id="WaitGroup"><a href="#WaitGroup" class="headerlink" title="WaitGroup"></a>WaitGroup</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> done sync.WaitGroup</span><br><span class="line"><span class="keyword">for</span> _, u := <span class="keyword">range</span> urls &#123;</span><br><span class="line">  done.Add(<span class="number">1</span>)</span><br><span class="line">  <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(u <span class="type">string</span>)</span></span> &#123;</span><br><span class="line">    <span class="keyword">defer</span> done.Done()</span><br><span class="line">    ConcurrentMutex(u, fetcher, f)</span><br><span class="line">  &#125;(u) <span class="comment">// u 被拷贝</span></span><br><span class="line">&#125;</span><br><span class="line">done.Wait()</span><br></pre></td></tr></table></figure>
+
+<p>WaitGroup 内部维护了一个计数器：调用 <code>wg.Add(n)</code> 时候会增加 n；调用 <code>wait.Done()</code> 时候会减少1。这时候调用 <code>wg.Wait()</code> 会一直阻塞直到当计数器变为 0 。所以 WaitGroup 很适合等待一组 goroutine 都结束的场景。</p>
+<p><strong>Q&amp;A</strong></p>
+<ol>
+<li><p><em>如果 goroutine 异常退出没有调用 wg.Done() 怎么办</em>？可以使用 defer 将其写在 goroutine 开始：<code>defer wg.Done()</code></p>
+</li>
+<li><p><em>两个 goroutine 同时调用 wg.Done() 会有竞争（race），以至于内部计数器不能正确减少两次吗</em>？WaitGroup 应该有相应机制（锁什么的）来保证 Done() 的原子性。</p>
+</li>
+<li><p><em>定义匿名函数时，匿名函数中变量和外层函数同名变量间的关系</em>？这是个闭包（closure）问题。如果匿名函数中变量没有被参数覆盖（如上述代码中 <code>fetcher</code>），就会和外层同名变量<strong>引用</strong>同一个地址。如果通过传参传递（如上述代码中 <code>u</code>），哪怕参数和外层变量看起来一样，但匿名函数使用的也是传进来的参数，而非外层变量；尤其针对 for 循环变量，我们通常通过参数来将其在调用时拷贝一次，否则 for 循环启动的所有 goroutine 都会指向这个不断被 for 循环赋值改变的变量。</p>
+<p><strong>对于闭包，go 中有个”变量逃逸“（Variable Escape）的说法，如果某个变量在函数声明周期结束时仍被引用，则将其分被到堆而非函数栈上。对闭包来说，某个变量同时被内层和外层函数引用，则其会被分配到堆上</strong>。</p>
+</li>
+<li><p><em>既然字符串 <code>u</code> 是不可变（immutable）的，为什么所有 goroutine 还会引用到不断变化的值</em>？string 的确是不可变的，但是 <code>u</code> 的值一直在变，而 goroutine 和外层 goroutine 共享 u 的引用。</p>
+</li>
+</ol>
+<h3 id="去掉锁"><a href="#去掉锁" class="headerlink" title="去掉锁"></a>去掉锁</h3><p>如果在更新 map 的时候去掉锁，运行几次发现并没有什么异常，因为 race 其实很难检测。好在 go 提供了竞态分析工具帮你来找到潜在含有竞态的地方：<code>go run -race crawler.go</code></p>
+<p>注意该工具没有做静态分析，而是在动态执行过程中观察、记录各个 goroutine 的执行轨迹，进行分析。</p>
+<h3 id="线程数量"><a href="#线程数量" class="headerlink" title="线程数量"></a>线程数量</h3><p>Q&amp;A</p>
+<p>1.该代码在整个运行中会同时多少线程在运行（goroutine）？<br>该代码并没有做明显的限制，但是其明显和 URL 数量、抓取时间正相关。例子中输入只有五个 URL，因此没有什么问题。但在现实中，这么做可能会同时启动上百万个 goroutine。因此一个改进是，实现启动一个固定数量的 worker 池子，每个 worker 干完后就去要&#x2F;被分配下一个任务。</p>
+<h3 id="使用-channel-通信"><a href="#使用-channel-通信" class="headerlink" title="使用 channel 通信"></a>使用 channel 通信</h3><p>我们可以实现一个新的爬虫版本，不用锁+共享变量，而用 go 中内置的语法：channel 来通信。具体做法类似实现一个生产者消费者模型，使用 channel 做消息队列。</p>
+<ol>
+<li>初始将种子 url 塞进 channel。</li>
+<li>消费者：master 不断从 channel 中取出 urls，判断是否抓取过，然后启动新的 worker goroutine 去抓取。</li>
+<li>生产者：worker goroutine 抓取到给定的<em>任务</em> url，并将解析出的<em>结果</em> urls 塞回 channel。</li>
+<li>master 使用一个变量 n 来追踪发出的<em>任务</em>数；往发出一份<em>任务</em>增加一；从 channel 中获取并处理完一份<em>结果</em>（即将其再安排给worker）减掉一；当所有任务都处理完时，退出程序。</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">worker</span><span class="params">(url <span class="type">string</span>, ch <span class="keyword">chan</span> []<span class="type">string</span>, fetcher Fetcher)</span></span> &#123;</span><br><span class="line">  urls, err := fetcher.Fetch(url)</span><br><span class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    ch &lt;- []<span class="type">string</span>&#123;&#125;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    ch &lt;- urls</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">master</span><span class="params">(ch <span class="keyword">chan</span> []<span class="type">string</span>, fetcher Fetcher)</span></span> &#123;</span><br><span class="line">  n := <span class="number">1</span></span><br><span class="line">  fetched := <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="type">string</span>]<span class="type">bool</span>)</span><br><span class="line">  <span class="keyword">for</span> urls := <span class="keyword">range</span> ch &#123;</span><br><span class="line">    <span class="keyword">for</span> _, u := <span class="keyword">range</span> urls &#123;</span><br><span class="line">      <span class="keyword">if</span> fetched[u] == <span class="literal">false</span> &#123;</span><br><span class="line">        fetched[u] = <span class="literal">true</span></span><br><span class="line">        n += <span class="number">1</span></span><br><span class="line">        <span class="keyword">go</span> worker(u, ch, fetcher)</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    n -= <span class="number">1</span></span><br><span class="line">    <span class="keyword">if</span> n == <span class="number">0</span> &#123;</span><br><span class="line">      <span class="keyword">break</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ConcurrentChannel</span><span class="params">(url <span class="type">string</span>, fetcher Fetcher)</span></span> &#123;</span><br><span class="line">  ch := <span class="built_in">make</span>(<span class="keyword">chan</span> []<span class="type">string</span>)</span><br><span class="line">  <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    ch &lt;- []<span class="type">string</span>&#123;url&#125;</span><br><span class="line">  &#125;()</span><br><span class="line">  master(ch, fetcher)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Q&amp;A:</strong></p>
+<ol>
+<li><em>master 读 channel，多 worker 写 channel，不会有竞争问题吗</em>？channel 是线程安全的。</li>
+<li><em>channel 不需要最后 close 吗</em>？我们用 n 追踪了所有执行中的任务数，因此当 n 为0退出时，channel 中不存在任何任务&#x2F;结果，因此 master&#x2F;worker 都不会对 channel 存在引用，稍后 gc collector 会将其回收。</li>
+<li><em>为什么在 ConcurrentChannel 需要用 goroutine 往 channel 中写一个 url</em>？否则 master 在读取的时候会一直阻塞。并且 channel 是一个非缓冲 channel，如果不用 goroutine，将会永远阻塞在写的时候。</li>
+</ol>
+<hr>
+<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
+<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/02/29/6-824-video-notes-1/" rel="bookmark">MIT 6.824 2020 视频笔记一：绪论</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/03/14/6-824-vidoe-notes-3-gfs/" rel="bookmark">MIT 6.824 2020 视频笔记三：GFS</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/04/01/6-824-video-notes-4-vm-ft/" rel="bookmark">MIT 6.824 2020 视频笔记四：VM-FT</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="bookmark">MIT 6.824 2020 视频笔记五：Go Concurrency</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/" rel="bookmark">MIT 6.824 2020 视频笔记六：Fault Tolerate Raft 1</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
+              <a href="/tags/6-824/" rel="tag"># 6.824</a>
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/02/29/6-824-video-notes-1/" rel="prev" title="MIT 6.824 2020 视频笔记一：绪论">
+      <i class="fa fa-chevron-left"></i> MIT 6.824 2020 视频笔记一：绪论
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/03/14/6-824-vidoe-notes-3-gfs/" rel="next" title="MIT 6.824 2020 视频笔记三：GFS">
+      MIT 6.824 2020 视频笔记三：GFS <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8-Go"><span class="nav-number">1.</span> <span class="nav-text">为什么用 Go</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%EF%BC%88Threads%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">线程（Threads）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%8E%9F%E5%9B%A0"><span class="nav-number">2.1.</span> <span class="nav-text">使用原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E9%9A%BE%E7%82%B9%EF%BC%88challenges%EF%BC%89"><span class="nav-number">2.2.</span> <span class="nav-text">使用难点（challenges）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%8D%8F%E8%B0%83%EF%BC%88Coordination%EF%BC%89"><span class="nav-number">2.3.</span> <span class="nav-text">线程协调（Coordination）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%BB%E9%94%81%EF%BC%88DeadLock%EF%BC%89"><span class="nav-number">2.4.</span> <span class="nav-text">死锁（DeadLock）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%88%AC%E8%99%AB%EF%BC%88Web-crawler%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">爬虫（Web crawler）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8A%93%E5%8F%96%E4%BB%A3%E7%A0%81"><span class="nav-number">3.1.</span> <span class="nav-text">抓取代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#WaitGroup"><span class="nav-number">3.2.</span> <span class="nav-text">WaitGroup</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%BB%E6%8E%89%E9%94%81"><span class="nav-number">3.3.</span> <span class="nav-text">去掉锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E6%95%B0%E9%87%8F"><span class="nav-number">3.4.</span> <span class="nav-text">线程数量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-channel-%E9%80%9A%E4%BF%A1"><span class="nav-number">3.5.</span> <span class="nav-text">使用 channel 通信</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2020/03/06/6-824-video-notes-2/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '9178eebfb15059edd5d781cc48b5cbfb',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

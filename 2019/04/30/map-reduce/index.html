@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="引子MapReduce 是谷歌 2004 年（Google 内部是从03年写出第一个版本）发表的论文里提出的一个概念。虽然已经过去15 年了，但现在回顾这个大数据时代始祖级别概念的背景、原理和实现，仍能获得对分布式系统的很多直觉性的启发，所谓温故而知新。 在Google 的语境里，MapReduce 既是一种编程模型，也是支持该模型的一种分布式系统实现。它的提出，让没有分布式系统背景的开发者，也">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MapReduce —— 历久而弥新">
+<meta property="og:url" content="https://www.qtmuniao.com/2019/04/30/map-reduce/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="引子MapReduce 是谷歌 2004 年（Google 内部是从03年写出第一个版本）发表的论文里提出的一个概念。虽然已经过去15 年了，但现在回顾这个大数据时代始祖级别概念的背景、原理和实现，仍能获得对分布式系统的很多直觉性的启发，所谓温故而知新。 在Google 的语境里，MapReduce 既是一种编程模型，也是支持该模型的一种分布式系统实现。它的提出，让没有分布式系统背景的开发者，也">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/nKVyYJ7QtaLfIMx.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/nKVyYJ7QtaLfIMx.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
+<meta property="article:published_time" content="2019-04-30T01:33:12.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.280Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="distributed system">
+<meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="MapReduce">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/nKVyYJ7QtaLfIMx.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2019/04/30/map-reduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MapReduce —— 历久而弥新 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/04/30/map-reduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MapReduce —— 历久而弥新
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-04-30 09:33:12" itemprop="dateCreated datePublished" datetime="2019-04-30T09:33:12+08:00">2019-04-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="https://i.loli.net/2020/02/09/nKVyYJ7QtaLfIMx.png" alt="MR执行流"></p>
+<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>MapReduce 是谷歌 2004 年（Google 内部是从03年写出第一个版本）发表的论文里提出的一个概念。虽然已经过去15 年了，但现在回顾这个大数据时代始祖级别概念的背景、原理和实现，仍能获得对分布式系统的很多直觉性的启发，所谓温故而知新。</p>
+<p>在Google 的语境里，MapReduce 既是一种编程模型，也是支持该模型的一种分布式系统实现。它的提出，让没有分布式系统背景的开发者，也能较轻松的利用大规模集群以高吞吐量的方式来处理海量数据。其解决问题思路很值得借鉴：找到需求的痛点（如海量索引如何维护，更新和排名），对处理关键流程进行高阶抽象（分片Map，按需Reduce），以进行高效的系统实现（所谓量体裁衣）。这其中，如何找到一个合适的计算抽象，是最难的部分，既要对需求有直觉般的了解，又要具有极高的计算机科学素养。当然，并且可能更为接近现实的是，该抽象是在根据需求不断试错后进化出的海水之上的冰山一角。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
+<h2 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h2><p>谷歌当时作为互联网的最大入口，维护着世界全网索引，最早触到了数据量的天花板。即，哪怕针对很简单的业务逻辑：如从爬虫数据中生成倒排索引、将图状网页集合用不同方式组织、计算每个主机爬取的网页数量、给定日期的高频查询词汇等等，在全球互联网数据的尺度的加成下，也变的异常复杂。</p>
+<p>这些复杂性包括：输入数据分散在非常多的主机上、计算耗资源太多单机难以完成、输出数据需要跨主机进行重新组织。为此，不得不针对每个需求重复构造专用系统，并耗费大量代码在分发数据和代码、调度和并行任务、应对机器故障和处理通信失败等问题上。</p>
+<h2 id="抽象"><a href="#抽象" class="headerlink" title="抽象"></a>抽象</h2><p>map 和 reduce 的抽象灵感来自于函数式编程语言 Lisp，为什么选定这两个概念呢？这来源于谷歌人对其业务的高度提炼：首先输入可以切分成一个个逻辑的<em>记录 （record）</em>；然后对其每个 <em>record</em> 执行某种<em><strong>映射</strong> （map）</em> 操作，生成一些键值对组成的中间结果（为什么要分键和值呢？为最后一步做铺垫，允许用户将中间结果以任意指定的方式——<em>键</em>，来进行组织规约）；最后在具有相同键的中间结果子集上执行<em>规约</em>（<em>reduce</em> ，包括排序，统计，提取最值等等）操作。</p>
+<p>函数式模型的另一个特点在于对 map 操作实现的约束，即规定用户应提供一个无副作用的 map 操作（相关概念有<em>纯函数</em>，<em>确定性</em>，<em>幂等性</em>等等，当然他们的概念并不一样，后面小结会详细讨论）。如此限制，好处有二，可以进行大规模并行执行，可以通过换地儿重试来屏蔽主机故障。</p>
+<p>具体到落地上，<em>map</em> 和 <em>reduce</em> 都是用户自定义函数。<em>map</em> 函数接受一个 Record，不过为了灵活，一般也组织为键值对；然后产生 List[key, value]，<em>reduce</em> 函数接受一个 key 和该 key 对应的所有中间结果 List[value]。即：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">map</span> (k1,v1)             -→ <span class="built_in">list</span>(k2,v2)</span><br><span class="line">reduce (k2,<span class="built_in">list</span>(v2))    -→ <span class="built_in">list</span>(v2)</span><br></pre></td></tr></table></figure>
+
+<p>拿由谷歌这篇论文提出，后来成为大数据处理界的 <em>hello world</em> 级别示例程序 <em>Word Count</em> （对一堆文档中的单词计数）来说，<em>map</em> 和 <em>reduce</em> 的实现长这样：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">map</span>(String key, String value):</span><br><span class="line">    <span class="comment">// key: document name</span></span><br><span class="line">    <span class="comment">// value: document contents</span></span><br><span class="line">    <span class="keyword">for</span> each word w in value:</span><br><span class="line">      <span class="built_in">EmitIntermediate</span>(w, <span class="string">&quot;1&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">reduce</span>(String key, Iterator values):</span><br><span class="line">    <span class="comment">// key: a word</span></span><br><span class="line">    <span class="comment">// values: a list of counts</span></span><br><span class="line">    <span class="type">int</span> result = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> each v in values:</span><br><span class="line">      result += <span class="built_in">ParseInt</span>(v);</span><br><span class="line">    <span class="built_in">Emit</span>(<span class="built_in">AsString</span>(result));</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>这里有两个有意思的点：</p>
+<ol>
+<li><strong>中间变量需要网络传输，必然会涉及到序列化</strong>。MapReduce 的最初版本选择是一切解释权归<em><strong>运行时的</strong></em>用户代码所有，我只是傻傻的传 string。即，规定用户在 map 中将任何输出的中间结果对象都转换为 string，然后在 reduce 函数中接收该 Iterator[string] 后，自行解析为自己想要的格式。当然，在后来的模仿框架如 Hadoop 中，序列化和解序列化部分被拿了出来，可以由用户来自定义实现来满足功能或性能上的需求。没去查证，谷歌后来相比对此也做了优化。这是一种很自然的<strong>系统演化</strong>思路，初期设计尽量简单粗暴以求快速实现可用原型；在积累使用经验后再对某些不便模块进行扩展设计。</li>
+<li><strong>reduce 接受 value 集合被组织为了迭代器（Iterator）</strong>。相信用过 Python 的同学应该对迭代器不陌生，它是一个很简单的接口，包括 <em>next</em> 和 <em>stop</em> 两个语义。配合 <em>for loop</em> ，构成一个很强大的抽象。不管你底层是一个内存中的 List、还是文件内容、还是网络 IO 流，只要能在运行时知道如何得到下一条记录，什么时候时候停止，都能被 for 循环来利用，进行逐一处理。迭代器抽象的一个好处在于，不必将待迭代的内容一次加载到内存，可以对数据增量式的<em><strong>惰性加载</strong></em>。MapReduce 框架的此处实现也正是利用了该特性。</li>
+</ol>
+<h2 id="实现概览"><a href="#实现概览" class="headerlink" title="实现概览"></a>实现概览</h2><p>抽象定了，那么实现自然可以有不同，这也是<strong>接口和实现分离</strong>的意义所在。前者的抽象是一种思想，谷歌已经给你做了；后者的实现，完全可以根据自己的生产环境进行量体裁衣的来定制实现。谷歌在 paper 中给了一种内部经典版，Hadoop 也提供了一套通用版，当然我们也可以根据自己的业务需求和场景约束来实现一个合身版。</p>
+<p>谷歌<strong>发布论文时</strong> 实现 MapReduce 所面对的系统环境长这样：</p>
+<ol>
+<li>单机双核 x86 架构，2~4G内存，Linux 系统</li>
+<li>通用网络硬件，百兆或者千兆以太网</li>
+<li>集群含数百或者数千台机器，因此机器故障是常态</li>
+<li>用的廉价 IDE 接口硬盘，但是人家有 GFS 来提供容错</li>
+<li>多租户支持，因此需要做 Job 级别抽象和资源约束</li>
+</ol>
+<h3 id="流程概览"><a href="#流程概览" class="headerlink" title="流程概览"></a>流程概览</h3><p>输入由用户指定切分大小后，切分成 <em>M</em> 份，然后分散到不同机器上(由于 GFS 的存在，也可能该输入 Block 本来就在那台机器上）。每个机器上会并行的跑用户定义的 <em>map</em> 。<em>map</em> 输出的中间结果，亦由用户指定，按 <strong>key 值范围</strong>切分为 <em>R</em> 份，对于每个中间结果，通过 <em>node label &#x3D; hash(key) mod R</em> 决定其去处。下面是流程概览图：</p>
+<p><img src="https://i.loli.net/2020/02/09/nKVyYJ7QtaLfIMx.png" alt="MR执行流"></p>
+<ol>
+<li>首先把输入切分成 M 份，通常每份 16 ~ 64M，这个粒度用户按需进行把握；然后把这些分片分散到不同机器上（如果有GFS这种分布式文件系统配合的话，可能本来就分散着），然后在每个机器上 fork 一份用户的代码。对于<strong>用户代码分发</strong>，是一个有意思的话题，对于不同语言可能有不同实现，比如谷歌的C++，可能传输的是动态链接库；比如 Hadoop 的 Java 传的可能是 jar 包 （当然， 所有依赖也得传）；如果是 PySpark 的 Python 呢，可能用的就是神奇的 cloudpickle；总之，不同语言需要考虑的传输机制是不一样的，比如说动态语言和静态语言；此外，全局变量和外部依赖也是需要考虑的点，谷歌虽然在此一笔带过，但是不同语言需要面对的情况可能差别很大。</li>
+<li>Master 的这份程序拷贝是不一样的，是负责安排活的。会选空闲的 worker 来安排这 M 个 map 任务和 R 个 reduce 任务。这需要考虑的是，worker 执行每个用户代码是单独启动一个进程，还是插入到系统 loop 中去执行。</li>
+<li>执行 map 任务的 Worker，会读取被分配到的输入切片，解析出键值对流，送给用户定义的 map 函数。map 后产生的临时结果首先会缓存在内存中。虽然论文中没有展开，但可以预见的是，如何切片，如何解析出键值对流，不同用户对于同样的输入可能有不同的关注点，因此必然存在定制化解析的需求。这一部分（FileSplit 和 RecordReader）在稍后随着承载业务的增多，估计也会开放出来给用户自定义，事实上 Hadoop 就是这么干的。</li>
+<li>缓存的中间结果会被定期在执行 Map Task 的<strong>机器本地</strong>进行刷盘（这也算一个本地性的优化，但是也有后果，就是一旦该机器故障，容错会稍微麻烦点，后面会说），并且按用户指定的 Partition 函数拆分成 R 个块，然后将这些位置信息发给 Master 节点。Master 负责通知相应的 Reduce Worker 以拉取对应数据。</li>
+<li>Reduce Worker 收到这些中间结果的位置信息后，会通过 RPC 来拉取其对应的 Partition 的数据。对于某个 Reduce Worker 来说，待<strong>所有数据</strong>拉取完成后，会将其按照 key 来进行排序。这样一来，所有具有同样 key 的数据便挨到了一块。第 4 步和第 5 步的过程合起来就是 <em><strong>shuffle</strong></em>，涉及到外部排序、多机数据传输等<strong>极其耗时</strong>操作；当数据量比较小时，如何实现都不成问题。但是当数据量大到一定程度，这里很容易成为性能瓶颈，因此也有一些优化方法，稍后会针对 shuffle 做详细展开，此处按下不表。</li>
+<li>待中间数据排好序之后，Reduce Woker 会对其进行扫描，然后将一个个 key 和其对应的值集合，即 &lt;k2, list(v2)&gt; 传给用户定制的 reduce 函数，然后将生成的结果追加到最终输出文件。对于谷歌来说，一般来说就是支持并行 append 的文件系统 GFS，好处在于可以多进程同时写结果。</li>
+<li>当所有 reduce 任务完成后，master 会唤醒用户进程，即在用户代码的视角，MapReduce 任务是阻塞的。</li>
+</ol>
+<p>一般而言，用户无需将最终结果的 R 个 Partition 进行合并，而是将其直接作为下一个 MapReduce 任务的输入。Spark RDD 的partition 就是将这一特点<strong>概念化</strong>了，并且将每一步 MapReduce 输出也放内存中，不进行落盘，以降低连续 MapReduce 任务的延迟。</p>
+<h3 id="局部性"><a href="#局部性" class="headerlink" title="局部性"></a>局部性</h3><p>计算机科学中常用的一个原理，叫做<em><strong>局部性原理</strong></em> （locality reference，这里特指空间局部性），说的是<em>程序在顺序执行时，访问了一块数据，接下来大概率会访问该数据（物理位置上）旁边的一块数据</em>。很朴素的断言，却是一切 cache 发挥作用的基础，计算机存储因此也形成了由慢到快，由贱到贵，由大到小的存储层次体系（硬盘-&gt; 内存 -&gt; 缓存 -&gt; 寄存器）。在分布式环境中，这个层次体系至少还要再罩上一层——网络IO。</p>
+<p>在 MapReduce 系统中，我们也会充分利用输入数据的 locality。只不过这次，<em>不是将数据加载过来，而是将程序调度过去</em>（<em><strong>Moving Computation is Cheaper than Moving Data</strong></em>）。如果输入存在 GFS 上，表现形式将为一系列的逻辑 Block，每个 Block 可能会有几个（一般是三个）物理副本。对于输入每个逻辑 Block，我们可以在其某个物理副本所在机器上运行 Map Task（如果失败，就再换一个副本），由此来尽量减小网络数据传输。从而降低了延迟，节约了带宽。</p>
+<h3 id="Master-的数据结构"><a href="#Master-的数据结构" class="headerlink" title="Master 的数据结构"></a>Master 的数据结构</h3><p>谷歌的 MapReduce 实现是有<em>作业（Job）</em>级别的封装的，每个 Job 包含一系列<em>任务（Task）</em>，即 Map Task 和 Reduce Task。那么，我们要维护一个正在运行的 Job 的元信息，就势必要保存所有正在执行的 Task 的状态，其所在的机器 ID 等等。而且，Master 事实上充当了  Map Task 输出到 Reduce Task 输入的一个”<em>管道</em>“。每一个 Map Task 结束时，会将其输出的中间结果的位置信息通知 Master，Master 再将其转给对应的 Reduce Task，Reduce Task 再去对应位置拉取对应 size 的数据。注意，由于 Map Task 的结束时间不统一，这个<em><strong>通知-&gt;转发-&gt; 拉取</strong></em> 的过程是增量的。那么不难推测出，reduce 侧对中间数据排序的应该是一个不断 merge 的过程，不大可能是等所有数据就位了再全局排序。</p>
+<p>在分布式系统中，一个比较忌讳的问题就是单点。因为是牵一发而动全身，而 Master 就是这样一个单点。当然单个机器的统计平均故障率并不高，但是一旦故障，那么整个集群都将不可用。但同时，有一个 Leader 节点会大大简化分布式系统的的设计；因此采用单点 Master 的系统反而是主流，那势必需要开发一些其他手段来强化 master 的容错能力，比如说记 log + snapshot、比如说主从备份、比如说每次从 worker 心跳进行状态重建、比如说用其他实现了分布式一致性协议的系统来保存元信息等等。</p>
+<h3 id="容错"><a href="#容错" class="headerlink" title="容错"></a>容错</h3><p>集群中有 Master 和 Worker 两种机器角色。</p>
+<p>Worker 由于数量大，有机器故障概率较大。在分布式系统中，Master 获取 Workers 的信息，最常见便是<strong>心跳</strong>，既可以是 master ping worker，也可以反过来，也可以兼而有之。master 通过心跳发现某些 worker 不可到达后（可能是 worker 死掉了，也可能是网络出问题了等），就会将该 Worker 打个<strong>故障</strong>（failed）的标记。</p>
+<p>之前已经调度到该故障 Worker 上的任务（Task） 很显然有两种类型： Map Task 和 Reduce Task。<strong>对于 Map Task</strong>（<em>以下所提的 Task，肯定是从属于未结束的 Job</em>） ，不管成功与否，我们都要进行重试，因为一旦该 Worker 变为不可达，存于其上的中间结果也随之无法被 Reduce Task 获取。当然，我们可以在 Master 中多记点状态来减少对已完成的 Map Task 进行重试的概率。比如记下某个 Map Task 的输出是否已经都被 Reduce Task 拉取，以决定要不要对正常完成的 Map Task 进行重试，但无疑会提高系统复杂度。<em>工程往往会对环境做某些假设， 以简化某些实现；</em>我们假设 worker 失败率不是那么高，或者重试所有 Map Task 的代价可以忍，那么就可以简化一点实现，以保持系统的简约，减少可能的 bug。对于 <strong>Reduce Task</strong>，未完成的无疑要进行重试，已经完成的，由于其输出结果我们假设会写到全局分布式系统文件中（即某些机器挂了也不影响），就不会重试。</p>
+<p>具体重试的方法，可以标记需要重试的 Task 的状态为 idle，以告诉调度器，该 Task 可以重新被调度。当然，也可以实现为从一个（工作&#x2F;完成）队列倒腾到另一个（就绪）队列，本质上是一样的，都是合理实现一个 Task 的<strong>状态机</strong>。</p>
+<p>至于 master 的故障恢复，上一节稍有提到。如果在实践中 Master 确实很少死掉，并且偶尔死掉造成所有正在运行的任务失败的后果也可以接受，那么就可以粗暴的实现为如果 Master 死掉，就简单通知所有正在运行的任务的用户代码任务失败了（比如返回非 0 值），然后有用户代码自行决定丢弃任务还是待集群重启后进行重试：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MapReduceResult result;</span><br><span class="line"><span class="keyword">if</span> (!<span class="built_in">MapReduce</span>(spec, &amp;result)) <span class="built_in">abort</span>();</span><br></pre></td></tr></table></figure>
+
+<p>如果业务对于宕机时间有要求，或者大面积任务失败不可以忍受，那么就需要增强 Master 的容错性。常用的方法上节有提到，这里展开一下：</p>
+<ol>
+<li><strong>snapshot + log</strong>：将 Master 的内存数据结构定期做快照（snapshot）同步到一个持久存储，可以写到外部存储，可以同步到其他节点，可以一份也可以多份。但是只做快照的话，时间间隔不好选择：间隔太长容易造成恢复时状态丢失过多；间隔过短会加重系统负载。因此常用的辅助手段是记 log，即对每个会改变系统的状态的操作进行记录。这样就可以选择长一点的快照间隔，恢复时，先加载快照，再叠加上快照点之后的日志。</li>
+<li><strong>主从备份</strong>。比如 Hadoop 原先的 secondary namenode，用属于不同容错阈两台机器都作为 Master，只不过一个用来响应请求，另一个用来实时同步状态。等某台机器故障发生时，立即将流量切换到另一个机器上。至于其同步机制，则是另一个可以考量的点。</li>
+<li><strong>状态外存</strong>。如果元数据量不大，可以用 Zookeeper 或者 etcd 这种实现了分布式一致性协议的集群来保存。由于这些集群本身具有容错能力，因此可以认为避免了单点故障。</li>
+<li><strong>心跳恢复</strong>：重新启动一个 Master 后，利用所有 Worker 报上来的信息进行 Master 数据结构的重建。</li>
+</ol>
+<p>还值得一提的是，<strong>容错也需要用户侧代码做配合</strong>。因为框架会对不成功的 map&#x2F;reduce 用户代码进行重试。这就要求，用户提供的 map&#x2F;reduce 逻辑符合<strong>确定性</strong>（<strong>Deterministic</strong>）：即函数的输出依赖且仅依赖于输入，而不取决任何其他隐形的输入或者状态。当然，这个蕴含了<strong>幂等性</strong>（<strong>Idempotency</strong>）：多次执行和一次执行效果一样；但是幂等性并不能推出确定性；假设有这么一个函数，它第一次执行造成了一些状态改变（比如某些释放资源的 dispose 函数），而后续发现状态已经改变过了就不再改变该状态，那么它符合幂等性；但是由于其含有隐式状态输入，不是确定性的。</p>
+<p>如果 map&#x2F;reudce 函数是确定性的，那么框架就可以放心大胆重试了。某些条件下，幂等性也可以接受，比如保存隐式状态的地方很牢靠。举个栗子，我们依赖于一个文件锁做判断某个函数执行了一次或多次，如果该文件锁所依赖的文件系统很稳定，并且提供分布式一致性，那么就完全可以。如果是用 nfs 的一个文件做锁，来实现的所谓幂等性就值得商榷了。</p>
+<p>如果 map&#x2F;reduce 函数是确定性的，框架会通过其输出提交的原子性来进行幂等性保证。即，即使重试了多次，也和只执行了一次一样。具体来说，对于 Map Task，会产生 R 个临时文件，并在结束时将其位置发送给 Master；Master 在收到多次同一分片（split） 的位置信息时，如果该分片前面某次结果来源仍可用或者已经被消费，那么就忽略掉该请求后面的所有请求。对于 Reduce Task，其生成的结果也会先写成临时文件，然后依赖于底层文件系统的原子性的改名操作（<strong>原子性改名</strong>也是一个多进程竞争的经典的操作，因为生成文件过程比较长，不容易做成原子的，但是<strong>判断具有某名字的文件是否存在并改名</strong>却很容易做成原子的），在处理完成时改变为目的文件名。如果发现已经有一个具有该目的文件名的文件了，就放弃改名操作，从而保证了该 Reduce Task只有一个成功输出的最终文件。</p>
+<h3 id="任务粒度"><a href="#任务粒度" class="headerlink" title="任务粒度"></a>任务粒度</h3><p>一个 MapReduce Job 中会产生 M+R 个 Task，具体 M 和 R 的值在运行之前可以由人进行配置。不同的系统实现可能会有发挥出最佳系统性能的不同配比；但是同时要兼顾业务需求，比如输入大小，输出文件个数等等。</p>
+<h3 id="备份任务"><a href="#备份任务" class="headerlink" title="备份任务"></a>备份任务</h3><p>在实际业务中，由于某些主机原因常会出现<strong>长尾效应</strong>，即少数几个 Map&#x2F;Reduce Task 总是会巨慢的拖到最后，甚至拖得时间甚至是其他任务的几倍。造成这些主机拖后腿的原因可以举出很多，如：某个机器硬盘老化，读写速度几十倍的变慢；又比如调度器调度的有问题，导致某些机器负载太高，具有大量的 CPU、内存、硬盘和网络带宽的争抢；又比如软件 bug 导致某些主机变慢等等。</p>
+<p>只要确定这些问题只发生在<strong>少数</strong>某些主机上，那么解决方法也很简单。在<strong>任务接近尾声</strong>的时候（比如统计剩余task的占比小于一个阈值时），对于每个仍然在跑的任务，分别额外调度一份到其他主机上，那么大概率会让这些任务提前完成，同一任务跑多次的处理逻辑，和容错重试造成跑多次是一致的，可以复用。</p>
+<p>此外，我们可以通过实际业务检验来微调该阈值（包括怎么判定任务结尾，启用几个备份任务），在耗费额外资源代价和减少任务总用时之前取得一个平衡。</p>
+<h2 id="其他细节"><a href="#其他细节" class="headerlink" title="其他细节"></a>其他细节</h2><p><strong>除了 Mapper 和 Reducer 这两个最基本的源语，该系统还提供了一些其他的后来事实上也成为标配的扩展：Partitioner，Combiner 和 Reader&#x2F;Writer</strong>。</p>
+<h3 id="Partitioner"><a href="#Partitioner" class="headerlink" title="Partitioner"></a>Partitioner</h3><p>默认来说，对 Map 输出的中间结果进行划分会使用类似于 <em>hash(key) mod R</em> 这种应用无关的划分算法。但是有时候用户有需求将特定的一些 keys 路由到同一个 Reduce Task，比如说中间结果的 key 是 URL， 用户想按网站 host 进行汇总处理。这时候就需要将系统的这部分路由功能开放给用户，以满足用户的定制需求。</p>
+<h3 id="Combiner"><a href="#Combiner" class="headerlink" title="Combiner"></a>Combiner</h3><p>如果该 Job 针对所有中间结果的 reduce 的操作满足<strong>结合律</strong>，那么指定 Combiner 会很能提高效率。拿的 Word Count 来说，数值的加法无疑满足结合律，也就是说，同一个单词的频次，在 Map Task 输出后进行加和（在 Map Work 上），还是在 Reduce Task 中进行加和（在 Reduce Worker上），结果保持一致；而这样一来，由于一些中间结果对进行了 combine，Map Task 到 Reduce Task 间的传输数据量会小很多，从而提高整个 Job 的效率。</p>
+<p>也可以看出，combine 函数一般和 reduce 函数是一样的，因为他们本质上是对 value set 执行了同一种操作，只不过执行时，执行的地点不一样，结合的顺序不一样。目的是为了减少中间结果传输量，加速任务执行过程。</p>
+<h3 id="Reader-x2F-Writer"><a href="#Reader-x2F-Writer" class="headerlink" title="Reader&#x2F;Writer"></a>Reader&#x2F;Writer</h3><p>如果不将定制输入输出的能力开放给用户，那么系统显然只能处理有限几种默认约定的格式。因此，<em>reader</em> 和 <em>writer</em>  接口本质上是系统和现实繁杂的业务之间的<strong>适配器（Adaptor）</strong>。它们让用户可以自行指定数据的<em>来源和去处</em>、<em>按需要理解输入内容</em>和<em>自由定制输出格式</em>。</p>
+<p>有了这两个 Adaptor，系统才能适配更多的业务。一般来说，系统会内置提供一些常见的 Reader 和 Writer 的实现；包括按行读文本文件，读文件中键值，读数据库等等。然后用户可以实现这两个接口，进行更具体的定制。<em>系统常通过类似这种常用脚手架+进一步定制能力来提供API</em>，下面的 Counter 也是如此。</p>
+<h3 id="副作用"><a href="#副作用" class="headerlink" title="副作用"></a>副作用</h3><p>有些用户实现的 map&#x2F;reduce 函数会有一些副作用，比如说在执行任务中间输出一些文件、写一些数据库条目等等。一般来说这些副作用的原子性和幂等性需要用户自己来处理。因为如果输出介质不纳入 MapReduce 系统，系统是没有办法保证这些输出的幂等性和原子性的。不过有的系统就这么干的，提供一些某种类型&#x2F;介质的状态或者数据存储，纳入系统中，并且提供一些容错和幂等的性质。好像 MillWheel 有类似的做法。但这样会大大加重系统的复杂性。</p>
+<h3 id="跳过坏记录"><a href="#跳过坏记录" class="headerlink" title="跳过坏记录"></a>跳过坏记录</h3><p>如果用户代码有 bug 或者某些输入有问题，会导致 Map 或者 Reduce 任务在运行时崩溃。当然这些 bug 或者输入能修则修，但是有些情况由于第三方库或者输入的原因，不能够进行修复。而在某些类型的任务，比如说训练数据集清洗、大型统计任务，丢几个是可以容忍的。针对这种情况，系统会提供一种模式，在这种模式中会跳过这些 Record 记录的执行。</p>
+<p>具体实现上来说，也比较简单。可以给每个输入 Record 给个<strong>唯一编号</strong>（单次任务内唯一就行）；如果某个 Record 处理时挂掉了，就将其编号汇报给 Master。如果 Master 收到了某个 Record 超过一次的处理失败信息，就将其跳过。做的再细一点，还可以记下错误类型和信息进行比对，来确定这是否是一个确定性（deterministic）的错误，进而决定是否将其跳过。</p>
+<h3 id="单机执行"><a href="#单机执行" class="headerlink" title="单机执行"></a>单机执行</h3><p>众所周知，分布式系统很难跟踪、调试；因为一个 Job 可能同时分散在数千台机器上进行执行。因此系统提供了本地运行 Job 的能力。可以针对小数据集输入对代码的正确性进行测试。由于在单机运行，<strong>就可以比较方便通过调试工具进行断点追踪</strong>。</p>
+<p>实现一个本地 mock 系统，一般来说比较简单。因为不需要考虑网络间状态通信，代码多节点分发，多机调度等一系列分布式系统的问题。但却能极大方便代码调试，性能测试和小数据集测试。</p>
+<h3 id="状态信息"><a href="#状态信息" class="headerlink" title="状态信息"></a>状态信息</h3><p>对于分布式执行的 Job，一个任务进度等<strong>信息可视化界面</strong>（给系统集成一个 HTTP 服务，实时拉取系统信息进行展示）有时候是至关重要的，它是系统易用性的关键。如果系统用户不能够很方便的实时监控任务的运行进度、执行速度、资源用量、输出位置，出错信息以及其他一些任务的元信息，就不能对任务的执行状况有个感性的把握。尤其是如果写 MapReduce 程序的人和跑这些程序的不是一个人时，会更为依赖这些状态的实时呈现。</p>
+<p>因此，<strong>对于分布式系统来说，其易用性有一大半落在一个良好的系统信息呈现上</strong>。使用者需要据此来预测任务的完成时间、资源的吃紧程度等等，从而做出相应决策。</p>
+<p>此外，对与集群机器状态信息，也需要进行跟踪，因为机器的负载信息、故障信息、网络状况等等对用户任务的执行也有不同程度的影响。给出这些机器状态信息，有助于对用户代码甚至系统代码进行出错诊断。</p>
+<h3 id="全局计数器"><a href="#全局计数器" class="headerlink" title="全局计数器"></a>全局计数器</h3><p>系统提供了一种计数服务，以统计某种事件的发生频次。比如用户想统计 Word Count 示例中所处理的全大写单词的总数：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Counter* uppercase;</span><br><span class="line">uppercase = <span class="built_in">GetCounter</span>(<span class="string">&quot;uppercase&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">map</span>(String name, String contents):</span><br><span class="line">  <span class="keyword">for</span> each word w in contents:</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">IsCapitalized</span>(w)):</span><br><span class="line">      uppercase-&gt;<span class="built_in">Increment</span>();</span><br><span class="line">    <span class="built_in">EmitIntermediate</span>(w, <span class="string">&quot;1&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>从代码可以大致猜测其实现：定义的时候，需要给 Counter 指定一个 Id。然后在 Map&#x2F;Reudce 代码中可以通过该 Id 获取该 Counter 然后进行计数。每个 worker 机器上的计数信息会汇总到 Master 上，然后按 Counter 的 ID 进行加和，并且最终返回给用户。同时，前述展示状态信息页面也会将这些计数器进行可视化（比如说打折线图）。其中有个点需要注意，就是多次对重试的任务（由于<em>机器死掉</em>或者<em>避免长尾</em>进行的重试）的计次进行去重；可以按照 Map&#x2F;Reduce ID 来进行去重，即我们假定同一输入的重试任务共享一个 Task ID（事实上为了满足重试需求和任务管理需求，<strong>分布式系统肯定会对所有任务进行唯一编号的</strong>），针对具有相同 Task ID 内部的 Counter 的计次，Master 只保留第一次<strong>成功</strong>的那一份；但是如果计数需要在页面上实时显示，可能就需要做适当信息保留，并且在该 Task 重试时进行计数回退之类的操作。</p>
+<p><strong>系统会自动维持一些计数器</strong>，比如说所有已经处理的键值对的数量和所有已经产生的键值对数量。全局计数操作对于某些应用用处很大，比如说有的应用要求所有输入键值对和输出键值对的数量一样，如果没有全局计数，就无从验证；或者统计一些数据的全局比例等等。</p>
+<h2 id="重排（shuffle）-操作"><a href="#重排（shuffle）-操作" class="headerlink" title="重排（shuffle） 操作"></a>重排（shuffle） 操作</h2><p>自 Spark 成名之后，shuffle 这个 MapReduce 中的语义得到了很多研究和实践。这是一个多机传输的耗时操作，其实现的高效性对系统的性能有着至关重要的作用，因此单独拿出一节来聊聊。</p>
+<p>在 MapReduce 中就是指 Map Task 分片输出到 Reduce Task 按需拉取的这么一个过程。还拿 Word Count 为例，你想统计某个单词在所有文档中的总频次，但是这些单词分布在不同机器上的不同的 Map Task 输出里；而只有将所有同样单词的频次对聚集到同一台机器上，才能对其加和。<strong>这种将机器和子数据集对应关系按key打乱重组的操作，我们姑且称之为 shuffle。</strong></p>
+<p>在 Spark 中，基本上继承了该语义，并且更通用化了。一个常见的例子是 join，即将两个 Table 间具有相同 key 的记录路由到同一台机器上，从而在所有机器上按 key 分片进行并行 join，从而大幅提高效率。类似于 join 这样的高阶操作，会使得底层的 Partition 不能继续在本机运行而不与其他 Partition 发生联系，因此 shuffle 也是 Spark 中划分 Stage 的一个分水岭。</p>
+<p>对于 MapReduce 系统来说，使用的 shuffle 策略类似于 Spark 中基于排序的 shuffle。Map 首先将中间结果写到内存中，然后定期刷盘，刷盘时进行归并排序。然后 Reducer 端按需拉取，从多个 Mapper 端拉取数据后，再次进行归并排序，然后传给 Reduce 函数。这样的好处在于可以进行大规模数据处理，<strong>因为可以做外部排序，也可以做迭代惰性加载</strong>。对于 Hadoop 的实现来说，将包含 shuffle 的整个流程分为了明显的几个阶段：map(), spill, merge, shuffle, sort, reduce() 等。</p>
+<h2 id="其他的一些点"><a href="#其他的一些点" class="headerlink" title="其他的一些点"></a>其他的一些点</h2><p><strong>一些缺点</strong>：通过 MapReduce 的系统设计可以看出，它是一个高吞吐，但是也高延迟的批量处理系统。并且不支持迭代。这也是后续 Spark，Flink 这样系统火热的动机。</p>
+<p><strong>文件系统</strong>： MapReduce 只有和 GFS 这样支持分块、多进程并发写的大文件系统配合才能发挥出更大的优势，优化输入和输出的性能。此外，这种分布式文件系统还会屏蔽底层节点故障。</p>
+<p><strong>组织形式</strong>： MapReduce 是一个系统，需要部署到集群上，但它同时又是一个库，让用户代码和分布式集群进行交互而不太用关心分布式环境中的问题的一个库。每个任务需要写任务描述（<em>MapReduceSpecification</em>），然后提交给系统——这是库常用的一种提交任务的手段。</p>
+<p><strong>代码分发</strong>：谷歌的 MapReduce 具体实现不得而知。猜测可以有两种方式：一是将 MapReduce 库代码 + 用户代码整体在不同机器上 fork ，然后根据角色不同来执行不同分支。二是将各个机器上的服务先启动起来，然后执行任务时只会将用户自定义函数序列化后传输到不同机器。</p>
+<h2 id="名词释义"><a href="#名词释义" class="headerlink" title="名词释义"></a>名词释义</h2><p><strong>Intermediate result</strong>：map 函数产生的中间结果，以键值对形式组织。</p>
+<p>**Map Task **：这个应该都是指的 Worker 机器上，执行 map 函数的工作进程。</p>
+<p><strong>Map Worker</strong>：Map Task  所运行的 Worker 机器。所有 Worker 应该是没有角色标记的，既可以执行 Map Task，也可以执行 Reduce Task，以充分的利用机器性能。</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p>[1] Jeffrey Dean and Sanjay Ghemawat， <a target="_blank" rel="noopener" href="https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf">MapReduce: Simplified Data Processing on Large Clusters</a></p>
+<p>[2] Alexey Grishchenko， <a target="_blank" rel="noopener" href="https://0x0fff.com/spark-architecture-shuffle/">Spark Architecture: Shuffle</a></p>
+<p>[3] <a target="_blank" rel="noopener" href="https://github.com/JerryLead">JerryLead</a>， <a target="_blank" rel="noopener" href="https://github.com/JerryLead/SparkInternals/blob/master/markdown/4-shuffleDetails.md">Spark internals</a></p>
+<hr>
+<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
+<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/distributed-system/" rel="tag"># distributed system</a>
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
+              <a href="/tags/MapReduce/" rel="tag"># MapReduce</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/04/06/ray/" rel="prev" title="继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray">
+      <i class="fa fa-chevron-left"></i> 继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/05/26/gfs/" rel="next" title="GFS —— 取舍的艺术">
+      GFS —— 取舍的艺术 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E5%AD%90"><span class="nav-number">1.</span> <span class="nav-text">引子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9C%80%E6%B1%82"><span class="nav-number">2.</span> <span class="nav-text">需求</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8A%BD%E8%B1%A1"><span class="nav-number">3.</span> <span class="nav-text">抽象</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%A6%82%E8%A7%88"><span class="nav-number">4.</span> <span class="nav-text">实现概览</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E6%A6%82%E8%A7%88"><span class="nav-number">4.1.</span> <span class="nav-text">流程概览</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B1%80%E9%83%A8%E6%80%A7"><span class="nav-number">4.2.</span> <span class="nav-text">局部性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Master-%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">4.3.</span> <span class="nav-text">Master 的数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%B9%E9%94%99"><span class="nav-number">4.4.</span> <span class="nav-text">容错</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E7%B2%92%E5%BA%A6"><span class="nav-number">4.5.</span> <span class="nav-text">任务粒度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%87%E4%BB%BD%E4%BB%BB%E5%8A%A1"><span class="nav-number">4.6.</span> <span class="nav-text">备份任务</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E7%BB%86%E8%8A%82"><span class="nav-number">5.</span> <span class="nav-text">其他细节</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Partitioner"><span class="nav-number">5.1.</span> <span class="nav-text">Partitioner</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Combiner"><span class="nav-number">5.2.</span> <span class="nav-text">Combiner</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Reader-x2F-Writer"><span class="nav-number">5.3.</span> <span class="nav-text">Reader&#x2F;Writer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%AF%E4%BD%9C%E7%94%A8"><span class="nav-number">5.4.</span> <span class="nav-text">副作用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B7%B3%E8%BF%87%E5%9D%8F%E8%AE%B0%E5%BD%95"><span class="nav-number">5.5.</span> <span class="nav-text">跳过坏记录</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%95%E6%9C%BA%E6%89%A7%E8%A1%8C"><span class="nav-number">5.6.</span> <span class="nav-text">单机执行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E4%BF%A1%E6%81%AF"><span class="nav-number">5.7.</span> <span class="nav-text">状态信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E8%AE%A1%E6%95%B0%E5%99%A8"><span class="nav-number">5.8.</span> <span class="nav-text">全局计数器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8D%E6%8E%92%EF%BC%88shuffle%EF%BC%89-%E6%93%8D%E4%BD%9C"><span class="nav-number">6.</span> <span class="nav-text">重排（shuffle） 操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E7%9A%84%E4%B8%80%E4%BA%9B%E7%82%B9"><span class="nav-number">7.</span> <span class="nav-text">其他的一些点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8D%E8%AF%8D%E9%87%8A%E4%B9%89"><span class="nav-number">8.</span> <span class="nav-text">名词释义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">9.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2019/04/30/map-reduce/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '5331da1e2f698c81fd9c2d2b67c8e9e1',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

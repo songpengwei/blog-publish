@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="绪论使用 Logging 前可以先捋一下我们常见的日志输出需求，俗话说，不管需求的设计就是耍流氓。  能够定位事件（Event）的产生位置（代码文件&amp;行数）和生成时间，用于调试和跟踪。 一份日志可以同时送到多个目标输出。 可以通过不同级别或者更精细条件筛选日志输出。 可以方便的控制第三方模块的日志输出。 实现上面的一切的前提下，配置&#x2F;设置 尽量简单。  Python 的 Log">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Python Logging 库分析">
+<meta property="og:url" content="https://www.qtmuniao.com/2019/03/16/python-logger/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="绪论使用 Logging 前可以先捋一下我们常见的日志输出需求，俗话说，不管需求的设计就是耍流氓。  能够定位事件（Event）的产生位置（代码文件&amp;行数）和生成时间，用于调试和跟踪。 一份日志可以同时送到多个目标输出。 可以通过不同级别或者更精细条件筛选日志输出。 可以方便的控制第三方模块的日志输出。 实现上面的一切的前提下，配置&#x2F;设置 尽量简单。  Python 的 Log">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/zMtSnoRFshGc6dl.png">
+<meta property="og:image" content="https://docs.python.org/3/_images/logging_flow.png">
+<meta property="article:published_time" content="2019-03-16T01:46:27.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.279Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="logger">
+<meta property="article:tag" content="logging">
+<meta property="article:tag" content="日志模块">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/zMtSnoRFshGc6dl.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2019/03/16/python-logger/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Python Logging 库分析 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/03/16/python-logger/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Python Logging 库分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-03-16 09:46:27" itemprop="dateCreated datePublished" datetime="2019-03-16T09:46:27+08:00">2019-03-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="https://i.loli.net/2020/02/09/zMtSnoRFshGc6dl.png" alt="python-learn.png"></p>
+<h2 id="绪论"><a href="#绪论" class="headerlink" title="绪论"></a>绪论</h2><p>使用 Logging 前可以先捋一下我们常见的日志输出需求，俗话说，不管需求的设计就是耍流氓。</p>
+<ol>
+<li>能够定位<a href="#logevent">事件</a>（Event）的产生位置（代码文件&amp;行数）和生成时间，用于调试和跟踪。</li>
+<li>一份日志可以同时送到多个<a href="#dstout">目标输出</a>。</li>
+<li>可以通过不同级别或者更精细条件筛选日志输出。</li>
+<li>可以方便的控制第三方模块的日志输出。</li>
+<li>实现上面的一切的前提下，配置&#x2F;设置 尽量简单。</li>
+</ol>
+<p>Python 的 Logging 模块通过神奇的模块化设计，<a href="#tree">树</a>形的方式组织完美的实现了以上五点。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
+<h2 id="模块设计"><a href="#模块设计" class="headerlink" title="模块设计"></a>模块设计</h2><p>Python 的 logger 抽象出了几个具有从属关系的元概念，Logger，Handler ，Filter和  Formattor 作为 logger 实现的基石。</p>
+<ol>
+<li>Loggers 提供了应用代码可以直接使用的接口</li>
+<li>Handlers 将（loggers生成的）日志记录分发到合适的输出</li>
+<li>Filters 提供了对哪些日志进行输出的精细控制</li>
+<li>Formatters 则决定了日志在最终的输出上样式</li>
+</ol>
+<h3 id="Loggers"><a href="#Loggers" class="headerlink" title="Loggers"></a>Loggers</h3><p><a target="_blank" rel="noopener" href="https://docs.python.org/3/library/logging.html#logging.Logger">Logger</a> 类作为日志库的基本模块，能做三件小事：</p>
+<ul>
+<li>它是在用户代码中进行日志输出调用的类，暴露了<code>debug(), info()</code> 等接口；</li>
+<li>根据日志级别和 filter 类决定用户调用该类（<code>logger.info(msg)</code>）时，是否创造一个日志记录（LogRecord）并传递该日志输出的事件；</li>
+<li>作为日志模块树的一个节点，将该事件往根部传递，所有处于传递路径（该logger-&gt;parent logger -&gt; … -&gt; root logger）上的所有 logger 节点添加的所有 Handler 都会相应该事件。当然，通过设置 logger 的 propagate &#x3D; False 或者没有parent logger 可以阻止事件传播。</li>
+</ul>
+<h3 id="Handlers"><a href="#Handlers" class="headerlink" title="Handlers"></a>Handlers</h3><p><a target="_blank" rel="noopener" href="https://docs.python.org/3/library/logging.html#logging.Handler">Handler</a> 负责将符合级别要求的日志消息分发到各种 handler 指定的目标输出。Logger 实例可以通过 <code>addHandler</code> 方法添加零到多个 Handler。<a target="_blank" rel="noopener" href="https://docs.python.org/3/howto/logging.html#useful-handlers">常见的可以添加的 Handler</a> 子类有 <code>StreamHandler</code>，<code>FileHandler</code>，<code>BaseRotatingHandler</code> 等等。</p>
+<p>设想一个场景，某个应用想将所有级别日志信息输出到文件中，将 error 级别以上的日志在标准输出显示，而将所有severity 以上的日志通过邮件报警。那么就可以设置三个 handler，每个handler分别负责捕获不同级别的消息，并且发送到不同的目标输出。</p>
+<p>Handler 的最常用的几个方法：</p>
+<ul>
+<li><code>setLevel()</code> 和 logger 的同名方法一样，设置最低有效级别。只不过 logger 的行为是将该级别以上的日志消息发送给其所有handler，而 handler的行为是将该级别以上的日志消息输出到相应目标输出。</li>
+<li><code>setFormatter()</code> 选择该 handler 输出的布局和格式。</li>
+<li><code>addFilter()</code> 和 <code>removeFilter</code> 增删过滤规则，用以决定某条日志消息是要过滤掉。</li>
+</ul>
+<p>应用程序不要直接使用 <a target="_blank" rel="noopener" href="https://docs.python.org/3/library/logging.html#logging.Handler">Handler</a> 类，这只是一个基类，规定了一些接口和默认行为。</p>
+<h3 id="Formatters"><a href="#Formatters" class="headerlink" title="Formatters"></a>Formatters</h3><p>与 Handler 不同的是，用户程序可以直接实例化并使用 <code>logging.Formatter</code> 类：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logging.Formatter.__init__(fmt=<span class="literal">None</span>, datefmt=<span class="literal">None</span>, style=<span class="string">&#x27;%&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>其中 <code>fmt</code> 规定消息布局和格式，<code>datefmt</code>  指定日期显示格式，<code>style</code> 指定 <code>fmt</code> 串中变量解析方式。</p>
+<p>想说下的几个点是</p>
+<ul>
+<li><code>fmt</code> 不仅可以指定格式，在 terminal 进行输出时，可以使用 <code>ColoredFormatter</code> 设定配色方案，使命令行输出变的炫酷起来。</li>
+<li><code>style</code> 是 <code>%, ‘&#123;‘ or ‘$’</code> 三选一，默认是 <code>%</code>。但 python3 推荐用 <code>str.format</code> 方式进行字符串格式化，可以改成 <code>style = &#39;&#123;&#39;</code></li>
+</ul>
+<h3 id="Filters"><a href="#Filters" class="headerlink" title="Filters"></a>Filters</h3><p>精细的控制日志过滤，就先不讲啦，高阶玩家可以自己去看官方文档。</p>
+<h2 id="树形组织"><a href="#树形组织" class="headerlink" title="树形组织"></a>树形组织</h2><p>Logging 库利用 Python 中天然存在的 Module 间的树形层次结构构建了以 Logger 为树节点的日志系统。这表现在</p>
+<ol>
+<li>logger 和 module_name 具有一一对应关系</li>
+<li>logger 的“有效级别”（<em>effective level</em>）是通过树中向上遍历确定的</li>
+<li>logger 会将事件（写某条日志）沿着树结构像上传递，所有含有 handlers 的 logger 节点都会进行响应</li>
+</ol>
+<p>此外，日志模块有个内置的根节点，负责给所有模块日志输出行为一个默认实现。可以通过 <code>root_logger = Logging.getLogger()</code> 即 <code>module_name = None</code> 来获取。该 root_logger 默认的有效日志级别为 <code>WARNING</code>，并 添加了一个默认的 handler，该 handler 绑定了一个简单的 formatter。</p>
+<p>也就是说，用户无需任何配置，只要通过 <code>root_logger = Logging.getLogger()</code>  获取 <code>root_logger</code> 即可进行日志输出。而有额外需求的用户，则可以通过前述机制对不同模块的输出位置和布局格式进行精细化的配置。这种<strong>开箱即用 + 增量细调</strong> 的设计时程序框架常见的手法，可以同时兼顾入门菜鸟和高阶玩家的不同需求。</p>
+<h3 id="一一对应"><a href="#一一对应" class="headerlink" title="一一对应"></a>一一对应</h3><p>每个logger 是和 python 的 module_name 一一对应的单例。也就是说，在同一进程中，不同位置通过：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">smap_logger = logging.getLogger()</span><br></pre></td></tr></table></figure>
+
+<p>获取的smap_logger 是同一实例。</p>
+<h3 id="有效级别"><a href="#有效级别" class="headerlink" title="有效级别"></a>有效级别</h3><p>logger 有一个<strong>有效级别</strong>的概念，当一个 logger 没有被显式的设置日志级别（setLevel）的时候，它就会使用其父节点 logger 的日志级别。如果其父节点的日志级别也没有被显式设置，就会继续看其祖父节点。如此往复，直到找到一个被显式设置了有效级别的 logger 节点。当然，无论如何这个搜寻过程都会在根节点结束，而根节点默认的级别为 <code>WARNING</code>。</p>
+<p>当 logger 接收到一个日志输出的事件时，会根据其有效级别来确定该事件是否会分发给该 logger 所添加的所有 handlers。</p>
+<h3 id="事件响应"><a href="#事件响应" class="headerlink" title="事件响应"></a>事件响应</h3><p>子 loggers 会将日志事件沿着树中的路径向其祖先传递。因此并不需要为所有 logger 绑定 handler，只需要在几个合适的关键顶层节点添加 handler 就可以使得其所有子分支上的日志节点，按该 handler 的行为进行日志输出。</p>
+<p>当然，你还可以通过设置某 logger 的 <em>propagrate</em> 属性为 <code>False</code> 来阻止该节点向上传递日志事件。</p>
+<p>输出日志流程，可以用下面一张图来说明：</p>
+<p><img src="https://docs.python.org/3/_images/logging_flow.png" alt="Logging Flow"></p>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="一个-example"><a href="#一个-example" class="headerlink" title="一个 example"></a>一个 example</h3><p>官方文档提供的一个最基本示例，</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> logging</span><br><span class="line"></span><br><span class="line"><span class="comment"># create logger</span></span><br><span class="line">logger = logging.getLogger(<span class="string">&#x27;simple_example&#x27;</span>)</span><br><span class="line">logger.setLevel(logging.DEBUG)</span><br><span class="line"></span><br><span class="line"><span class="comment"># create console handler and set level to debug</span></span><br><span class="line">ch = logging.StreamHandler()</span><br><span class="line">ch.setLevel(logging.DEBUG)</span><br><span class="line"></span><br><span class="line"><span class="comment"># create formatter</span></span><br><span class="line">formatter = logging.Formatter(<span class="string">&#x27;%(asctime)s - %(name)s - %(levelname)s - %(message)s&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># add formatter to ch</span></span><br><span class="line">ch.setFormatter(formatter)</span><br><span class="line"></span><br><span class="line"><span class="comment"># add ch to logger</span></span><br><span class="line">logger.addHandler(ch)</span><br><span class="line"></span><br><span class="line"><span class="comment"># &#x27;application&#x27; code</span></span><br><span class="line">logger.debug(<span class="string">&#x27;debug message&#x27;</span>)</span><br><span class="line">logger.info(<span class="string">&#x27;info message&#x27;</span>)</span><br><span class="line">logger.warning(<span class="string">&#x27;warn message&#x27;</span>)</span><br><span class="line">logger.error(<span class="string">&#x27;error message&#x27;</span>)</span><br><span class="line">logger.critical(<span class="string">&#x27;critical message&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>此外，像 log4j 等 Java 的日志框架一样，这些配置能通过配置文件来完成。包括基本格式和YAML格式。<strong>官方文档</strong>都有讲。</p>
+<h3 id="自己的例子"><a href="#自己的例子" class="headerlink" title="自己的例子"></a>自己的例子</h3><p>我在写 smap（slice-map，对数据集分片，分发到多机执行map的一个计算框架）的 Python 库时，想实现功能：可以让用户侧在使用该库时，动态设置该库的日志级别。当时还费劲心机的将日志级别作为一个参数，传递到框架中，然后每次用之前先将该模块的 logger 设置为该有效级别。</p>
+<p>如果能早就知道 logging 库模块级别的单例以及树形组织设计，那么基本上实现这个功能就啥也不用做，只需要告诉用户我使用的是 logging 日志库就可以了。用户就可以通过 </p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> logging</span><br><span class="line"></span><br><span class="line">smap_logger = logging.getLogger()</span><br><span class="line">smap_logger.setLevel(logging.INFO)</span><br></pre></td></tr></table></figure>
+
+<p>就行了。</p>
+<h2 id="注解"><a href="#注解" class="headerlink" title="注解"></a>注解</h2><p><span id="tree">「<strong>树</strong>」</span>：是计算机中一种常用的数据结构，用来模拟具有树种结构性质的<strong>数据集合</strong>，看起来像一棵根朝上，叶朝下的倒挂树。详细参见<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E6%A0%91_(%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84)">维基百科</a>。</p>
+<p>「<strong>父节点，祖先节点</strong>」：都是树这种数据结构范畴内的概念。</p>
+<p><span id="logevent">「<strong>日志事件</strong>」</span>： 由 <code>logger.info()</code> 等 API 调用产生，发送给日志系统，让系统决定如何响应该事件在合适位置进行以合适布局和格式进行输出。其他所谓<strong>消息</strong>（<code>Message</code>），<strong>日志记录</strong>（<code>LogRecord</code>）其实都是类似的意思。</p>
+<p><span id="dstout">「<strong>目标输出</strong>」</span>：各种输出目的地，比如说标准输出（stdout），文件（File），数据库（db），邮件（email），中心化日志服务（log service）等等。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li><a target="_blank" rel="noopener" href="https://docs.python.org/3/howto/logging.html">Logging facility for Python</a>， 该篇大部分来源于此，只是做了个翻译和重新组织。</li>
+</ol>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/02/23/python-closure/" rel="bookmark">Python 闭包</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/06/python-mixins/" rel="bookmark">Python 混入类 Mix-Ins</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/04/05/python-default-parameter-values/" rel="bookmark">Python函数的默认参数的那些"坑"</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Python/" rel="tag"># Python</a>
+              <a href="/tags/logger/" rel="tag"># logger</a>
+              <a href="/tags/logging/" rel="tag"># logging</a>
+              <a href="/tags/%E6%97%A5%E5%BF%97%E6%A8%A1%E5%9D%97/" rel="tag"># 日志模块</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/03/06/python-mixins/" rel="prev" title="Python 混入类 Mix-Ins">
+      <i class="fa fa-chevron-left"></i> Python 混入类 Mix-Ins
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/03/24/haystack/" rel="next" title="Finding a Needle in Haystack：Facebook's Photo Storage">
+      Finding a Needle in Haystack：Facebook's Photo Storage <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%AA%E8%AE%BA"><span class="nav-number">1.</span> <span class="nav-text">绪论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.</span> <span class="nav-text">模块设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Loggers"><span class="nav-number">2.1.</span> <span class="nav-text">Loggers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Handlers"><span class="nav-number">2.2.</span> <span class="nav-text">Handlers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Formatters"><span class="nav-number">2.3.</span> <span class="nav-text">Formatters</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Filters"><span class="nav-number">2.4.</span> <span class="nav-text">Filters</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%91%E5%BD%A2%E7%BB%84%E7%BB%87"><span class="nav-number">3.</span> <span class="nav-text">树形组织</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%80%E5%AF%B9%E5%BA%94"><span class="nav-number">3.1.</span> <span class="nav-text">一一对应</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%89%E6%95%88%E7%BA%A7%E5%88%AB"><span class="nav-number">3.2.</span> <span class="nav-text">有效级别</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E5%93%8D%E5%BA%94"><span class="nav-number">3.3.</span> <span class="nav-text">事件响应</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E8%B7%B5"><span class="nav-number">4.</span> <span class="nav-text">实践</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA-example"><span class="nav-number">4.1.</span> <span class="nav-text">一个 example</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%B7%B1%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">4.2.</span> <span class="nav-text">自己的例子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E8%A7%A3"><span class="nav-number">5.</span> <span class="nav-text">注解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2019/03/16/python-logger/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '8595d3237517f49717930e1b4a706f58',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,628 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>木鸟杂记</title>
+  
+  <subtitle>分布式系统，数据库，存储</subtitle>
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="https://www.qtmuniao.com/"/>
+  <updated>2023-07-31T06:26:06.290Z</updated>
+  <id>https://www.qtmuniao.com/</id>
+  
+  <author>
+    <name>木鸟杂记</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>RocksDB 运行原理</title>
+    <link href="https://www.qtmuniao.com/2023/06/05/how-rocksdb-works/"/>
+    <id>https://www.qtmuniao.com/2023/06/05/how-rocksdb-works/</id>
+    <published>2023-06-05T15:41:40.000Z</published>
+    <updated>2023-07-31T06:26:06.290Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;RocksDB 是很多分布式数据库的底层存储，如 TiKV、CRDB、NebulaGraph 等等。在 DataDog 工作的 &lt;a href=&quot;https://artem.krylysov.com/&quot;&gt;Artem Krylysov&lt;/a&gt; 写了一篇&lt;a href=&quot;https://artem.krylysov.com/blog/2023/04/19/how-rocksdb-works/&quot;&gt;文章&lt;/a&gt;来对 RocksDB 做了一个科普，通俗易懂，在这里翻译下分享给大家。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;导语&quot;&gt;&lt;a href=&quot;#导语&quot; class=&quot;headerlink&quot; title=&quot;导语&quot;&gt;&lt;/a&gt;导语&lt;/h2&gt;&lt;p&gt;近几年，RocksDB 的采用率急速上升，俨然成为内嵌型键值存储（以下简称 kv 存储）的不二之选。&lt;/p&gt;
+&lt;p&gt;目前，RocksDB 在 Meta、&lt;a href=&quot;https://blogs.bing.com/Engineering-Blog/october-2021/RocksDB-in-Microsoft-Bing&quot;&gt;Microsoft&lt;/a&gt;、&lt;a href=&quot;https://netflixtechblog.com/application-data-caching-using-ssds-5bf25df851ef&quot;&gt;Netflix&lt;/a&gt; 和 &lt;a href=&quot;https://www.uber.com/en-JP/blog/cherami-message-queue-system/&quot;&gt;Uber&lt;/a&gt; 等公司的生产环境上运行。在 &lt;a href=&quot;https://engineering.fb.com/2021/07/22/data-infrastructure/mysql/&quot;&gt;Meta&lt;/a&gt;，RocksDB 作为 MySQL 部署的存储引擎，为分布式图数据库（&lt;a href=&quot;https://www.qtmuniao.com/2021/10/07/facebook-tao/&quot;&gt;TAO&lt;/a&gt;）提供支持存储服务。&lt;/p&gt;
+&lt;p&gt;大型科技公司并非 RocksDB 的仅有用户，像是 CockroachDB、Yugabyte、PingCAP 和 Rockset 等多个初创企业都构建在 RocksDB 基础之上。&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://artem.krylysov.com/&quot;&gt;我&lt;/a&gt;在 Datadog 工作了 4 年时间，在生产环境中构建和运行了一系列基于 RocksDB 的服务。本文将就 RocksDB 的工作原理进行概要式讲解。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="https://www.qtmuniao.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="rocksdb" scheme="https://www.qtmuniao.com/tags/rocksdb/"/>
+    
+      <category term="lsmtree" scheme="https://www.qtmuniao.com/tags/lsmtree/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>影响我写代码的三个 “Code”</title>
+    <link href="https://www.qtmuniao.com/2023/03/25/how-to-read-and-write-code/"/>
+    <id>https://www.qtmuniao.com/2023/03/25/how-to-read-and-write-code/</id>
+    <published>2023-03-25T05:20:34.000Z</published>
+    <updated>2023-07-31T06:26:06.290Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;本篇文章来自我的小报童专栏，初步规划有以下几个系列：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;图数据库101系列&lt;/li&gt;
+&lt;li&gt;每天学点数据库系列&lt;/li&gt;
+&lt;li&gt;系统好文推荐系列&lt;/li&gt;
+&lt;li&gt;读书笔记系列&lt;/li&gt;
+&lt;li&gt;数据密集型论文导读系列&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;会保证每周不低于两篇更新，订阅方式见&lt;a href=&quot;https://xiaobot.net/p/system-thinking&quot;&gt;专栏介绍&lt;/a&gt;，欢迎喜欢我文章的朋友们的订阅支持，激励我产出更多优质文章。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;国内很多大学的计算机专业，比较偏重基础和理论的“灌输”（就我当年上学的体验，现在可能会好一些），对于代码能力，虽然也有一些课程实验，但往往不太够用。于是，在进入正式工作前，很多同学就会对自己代码水平不太自信。下面我就根据我自身的写代码经历提供一些建议。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="https://www.qtmuniao.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="编程" scheme="https://www.qtmuniao.com/tags/%E7%BC%96%E7%A8%8B/"/>
+    
+      <category term="素养" scheme="https://www.qtmuniao.com/tags/%E7%B4%A0%E5%85%BB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Facebook Velox 运行机制全面解析</title>
+    <link href="https://www.qtmuniao.com/2023/03/22/velox-task-analysis/"/>
+    <id>https://www.qtmuniao.com/2023/03/22/velox-task-analysis/</id>
+    <published>2023-03-22T12:00:33.000Z</published>
+    <updated>2023-07-31T06:26:06.289Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;概述&quot;&gt;&lt;a href=&quot;#概述&quot; class=&quot;headerlink&quot; title=&quot;概述&quot;&gt;&lt;/a&gt;概述&lt;/h2&gt;&lt;p&gt;&lt;a href=&quot;https://research.facebook.com/publications/velox-metas-unified-execution-engine/&quot;&gt;Facebook Velox&lt;/a&gt; 是一个针对 SQL 运行时的 C++ 库，旨在统一 Facebook 各种计算流，包括 Spark 和 Presto，使用推的模式、支持向量计算。&lt;/p&gt;
+&lt;p&gt;Velox 接受一棵&lt;strong&gt;优化过的&lt;/strong&gt; &lt;code&gt;PlanNode&lt;/code&gt; Tree，然后将其切成一个个的线性的 &lt;code&gt;Pipeline&lt;/code&gt;，&lt;code&gt;Task&lt;/code&gt; 负责这个转变过程，每个 Task 针对一个 PlanTree Segment。大多数算子是一对一翻译的，但是有一些特殊的算子，通常出现在多个 Pipeline 的&lt;strong&gt;切口&lt;/strong&gt;处，通常来说，这些切口对应计划树的&lt;strong&gt;分叉处&lt;/strong&gt;，如 &lt;code&gt;HashJoinNode&lt;/code&gt;，&lt;code&gt;CrossJoinNode&lt;/code&gt;， &lt;code&gt;MergeJoinNode&lt;/code&gt; ，通常会翻译成 XXProbe 和 XXBuild。但也有一些例外，比如 &lt;code&gt;LocalPartitionNode&lt;/code&gt; 和 &lt;code&gt;LocalMergeNode&lt;/code&gt; 。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="数据库" scheme="https://www.qtmuniao.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+      <category term="查询引擎" scheme="https://www.qtmuniao.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9F%A5%E8%AF%A2%E5%BC%95%E6%93%8E/"/>
+    
+    
+      <category term="Runtime" scheme="https://www.qtmuniao.com/tags/Runtime/"/>
+    
+      <category term="执行引擎" scheme="https://www.qtmuniao.com/tags/%E6%89%A7%E8%A1%8C%E5%BC%95%E6%93%8E/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>2022 年终总结 —— 充实和迷茫</title>
+    <link href="https://www.qtmuniao.com/2023/01/05/2022-summary/"/>
+    <id>https://www.qtmuniao.com/2023/01/05/2022-summary/</id>
+    <published>2023-01-04T16:06:33.000Z</published>
+    <updated>2023-07-31T06:26:06.289Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;不知道为何，今年朋友圈分享年终总结的朋友格外多。我挺喜欢这个形式，一来，我很爱看别人的年终总结，看故事之余还能看到一些不同路径；二来，每年定期回顾下，也确实能帮着梳理下思路，简单做下展望。&lt;/p&gt;
+&lt;p&gt;古代知识垄断的时代，只有帝王将相才能有纪传；而今信息爆炸的世代，人人皆可记之，为自己代言。于短期来说，年岁渐长，思虑日增，很多事不记下来，旬月便忘，通过年终回顾，日后回头追踪下自己思想变迁轨迹，也算三省吾身，冀有新得；于长期来说，我们终将作古，若借助互联网能留下个一鳞半爪，博后世一笑，也算雁过留声。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="生活" scheme="https://www.qtmuniao.com/categories/%E7%94%9F%E6%B4%BB/"/>
+    
+    
+      <category term="生活" scheme="https://www.qtmuniao.com/tags/%E7%94%9F%E6%B4%BB/"/>
+    
+      <category term="总结" scheme="https://www.qtmuniao.com/tags/%E6%80%BB%E7%BB%93/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>实现一个数据库需要如何入手？</title>
+    <link href="https://www.qtmuniao.com/2022/12/11/how-to-build-a-database/"/>
+    <id>https://www.qtmuniao.com/2022/12/11/how-to-build-a-database/</id>
+    <published>2022-12-11T03:11:59.000Z</published>
+    <updated>2023-07-31T06:26:06.289Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;知乎上有个问题：如何实现一个数据库？手痒忍不住又水了一篇。以计算机中最常用的分析、理解问题的思想，我们可以从两个维度：&lt;strong&gt;逻辑&lt;/strong&gt;和&lt;strong&gt;物理&lt;/strong&gt;，来思考如何实现一个数据库。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;逻辑维度&quot;&gt;&lt;a href=&quot;#逻辑维度&quot; class=&quot;headerlink&quot; title=&quot;逻辑维度&quot;&gt;&lt;/a&gt;逻辑维度&lt;/h2&gt;&lt;h3 id=&quot;数据模型（对外，面向用户）&quot;&gt;&lt;a href=&quot;#数据模型（对外，面向用户）&quot; class=&quot;headerlink&quot; title=&quot;数据模型（对外，面向用户）&quot;&gt;&lt;/a&gt;数据模型（对外，面向用户）&lt;/h3&gt;&lt;p&gt;想要实现一个数据库，首先你得定义给给用户什么样的&lt;strong&gt;数据模型&lt;/strong&gt;？在前些年，这些可能不是个问题，彼时，数据库约等于关系型数据，约等于 Oracle&amp;#x2F;SQLServer&amp;#x2F;MySQL&amp;#x2F;PostgreSQL 。但随着数据量的不断增大、用户需求的不断细化，关系模型已经不能一招鲜、吃遍天。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="数据库" scheme="https://www.qtmuniao.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+    
+      <category term="数据库" scheme="https://www.qtmuniao.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+      <category term="database" scheme="https://www.qtmuniao.com/tags/database/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>DDIA 读书笔记（五）：冗余</title>
+    <link href="https://www.qtmuniao.com/2022/10/17/ddia-reading-chapter5/"/>
+    <id>https://www.qtmuniao.com/2022/10/17/ddia-reading-chapter5/</id>
+    <published>2022-10-17T15:20:33.000Z</published>
+    <updated>2023-07-31T06:26:06.289Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在&lt;a href=&quot;https://ddia.qtmuniao.com/&quot;&gt;这里&lt;/a&gt;。我们有个对应的分布式&amp;amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。另外，我的公众号：“木鸟杂记”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注&lt;br&gt;本书第一部分讲单机数据系统，第二部分讲多机数据系统。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;冗余（Replication）&lt;/strong&gt; 是指将同一份数据复制多份，放到通过网络互联的多个机器上去。其好处有：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;降低延迟&lt;/strong&gt;：可以在地理上同时接近不同地区的用户。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;提高可用性&lt;/strong&gt;：当系统部分故障时仍然能够正常提供服务。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;提高读吞吐&lt;/strong&gt;：平滑扩展可用于查询的机器。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;blockquote&gt;
+&lt;p&gt;本章假设我们的数据系统中所有数据能够存放到一台机器中，则本章只需考虑多机冗余的问题。如果数据超过单机尺度该怎么办？那是下一章要解决的事情。&lt;/p&gt;
+&lt;/blockquote&gt;
+    
+    </summary>
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/DDIA/"/>
+    
+    
+      <category term="读书笔记" scheme="https://www.qtmuniao.com/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/tags/DDIA/"/>
+    
+      <category term="设计数据密集型应用" scheme="https://www.qtmuniao.com/tags/%E8%AE%BE%E8%AE%A1%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>好好写代码之素养篇——抽象和讲究</title>
+    <link href="https://www.qtmuniao.com/2022/10/12/how-to-write-code-abstract/"/>
+    <id>https://www.qtmuniao.com/2022/10/12/how-to-write-code-abstract/</id>
+    <published>2022-10-12T15:00:07.000Z</published>
+    <updated>2023-07-31T06:26:06.289Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;知乎上有个问题，如何辨别一个程序员水平的高低？就这几年 Review 代码的体感，忍不住就工程素养这个话题吐两句槽，正好作为好好写代码系列的第二篇。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;思维体系&quot;&gt;&lt;a href=&quot;#思维体系&quot; class=&quot;headerlink&quot; title=&quot;思维体系&quot;&gt;&lt;/a&gt;思维体系&lt;/h2&gt;&lt;p&gt;水平差的程序员往往在“&lt;strong&gt;抽象&lt;/strong&gt;”上做的不好。&lt;/p&gt;
+&lt;p&gt;什么是抽象能力呢？简言之，就是分门别类、触类旁通的能力。通过大量实践和书籍输入，将所解决过的问题进行正交分解，分解过的&lt;strong&gt;元知识&lt;/strong&gt;多具有很好地复用性；再利用这些元知识，进行组合推演，创造性的解决新遇到的问题。即归纳和演绎。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="https://www.qtmuniao.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="编程" scheme="https://www.qtmuniao.com/tags/%E7%BC%96%E7%A8%8B/"/>
+    
+      <category term="素养" scheme="https://www.qtmuniao.com/tags/%E7%B4%A0%E5%85%BB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>DynamoDB 的云原生之路 —— 流控策略的演进</title>
+    <link href="https://www.qtmuniao.com/2022/09/24/dynamo-db-flow-control/"/>
+    <id>https://www.qtmuniao.com/2022/09/24/dynamo-db-flow-control/</id>
+    <published>2022-09-24T10:31:31.000Z</published>
+    <updated>2023-07-31T06:26:06.289Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;概述：流控为啥重要&quot;&gt;&lt;a href=&quot;#概述：流控为啥重要&quot; class=&quot;headerlink&quot; title=&quot;概述：流控为啥重要&quot;&gt;&lt;/a&gt;概述：流控为啥重要&lt;/h2&gt;&lt;p&gt;上云的好处在于池化资源，让多租户共享，然后按需分配，从而降低成本。但进行：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;多租户隔离&lt;/strong&gt;：用户要求可以使用其买到的流量，并且不会被其他租户影响。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;资源共享&lt;/strong&gt;：资源只能逻辑隔开，不能物理隔开，否则无法充分动态分配（超发）。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;是一对相对矛盾的事情，我认为，也是云原生数据库最要解决的问题。不把这个问题解决好，则数据库：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;要么平台不赚钱&lt;/strong&gt;：比如资源静态预留，虽然可以让用户满意，总能随时用到卖给他的资源配额，但会存在巨大资源浪费，要么价格贵，要么用户不买单。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;要么用户不满意&lt;/strong&gt;：多用户共享物理资源，但非常容易进行互相影响，造成用户不能用到平台声称的配额。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;DynamoDB 从静态分配开始，逐步演化出一套全局和局部组合的准入控制机制，从而实现了物理上资源共享，但又在逻辑上给用户以配额隔离，从而实现了数据库真正的云原生。下面，我依据 &lt;a href=&quot;https://www.usenix.org/system/files/atc22-elhemali.pdf&quot;&gt;Amazon DynamoDB: A Scalable, Predictably Performant, and Fully Managed NoSQL Database Service&lt;/a&gt; 这篇论文披露的细节，对其流控机制的演进过程做一个梳理，以飨诸君。&lt;/p&gt;
+&lt;p&gt;水平所限，谬误之处，欢迎随时指出。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="论文解读" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/"/>
+    
+    
+      <category term="DynamoDB" scheme="https://www.qtmuniao.com/tags/DynamoDB/"/>
+    
+      <category term="流控" scheme="https://www.qtmuniao.com/tags/%E6%B5%81%E6%8E%A7/"/>
+    
+      <category term="云原生数据库" scheme="https://www.qtmuniao.com/tags/%E4%BA%91%E5%8E%9F%E7%94%9F%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>RocksDB 优化小解（一）：Indexing SST</title>
+    <link href="https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer/"/>
+    <id>https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer/</id>
+    <published>2022-08-21T02:44:43.000Z</published>
+    <updated>2023-07-31T06:26:06.289Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;Google LevelDB 是一个 LSM-Tree 的实现典范。但在开源出来后，为了保持轻量、简洁的风格，除了修修 Bug 之外，一直没有做太大的更新迭代。为了让其能够满足工业环境中&lt;strong&gt;多样性的负载&lt;/strong&gt;， Facebook（Meta） 在 Fork 了 LevelDB 之后，做了多方面的优化。硬件方面，可以更有效地利用现代硬件，如闪存和快速磁盘、多核 CPU等；软件方面，针对读写路径、Compaction 也做了大量优化，如 SST 索引、索引分片、前缀 Bloom Filter、列族等。&lt;/p&gt;
+&lt;p&gt;本系列文章，依据 &lt;a href=&quot;https://rocksdb.org/blog/&quot;&gt;RocksDB 系列博客&lt;/a&gt;，结合源码和一些使用经验，分享一些有趣的优化点，希望能对大家有所启发。水平所限，不当之处，欢迎留言讨论。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;本篇是 RocksDB 优化系列第一篇，为了优化深层查询性能，将不同层级的 SST 通过一定方式索引起来。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="源码阅读" scheme="https://www.qtmuniao.com/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/"/>
+    
+      <category term="RocksDB" scheme="https://www.qtmuniao.com/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/RocksDB/"/>
+    
+    
+      <category term="存储" scheme="https://www.qtmuniao.com/tags/%E5%AD%98%E5%82%A8/"/>
+    
+      <category term="RocksDB" scheme="https://www.qtmuniao.com/tags/RocksDB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>步步为营 剖析事务中最难的——隔离性</title>
+    <link href="https://www.qtmuniao.com/2022/07/07/db-isolation/"/>
+    <id>https://www.qtmuniao.com/2022/07/07/db-isolation/</id>
+    <published>2022-07-07T15:42:56.000Z</published>
+    <updated>2023-07-31T06:26:06.289Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;很久没有发文了，搞了一个月事务相关的资料和分享，今天用这篇文章做个小节。希望能给大家一些启发。&lt;/p&gt;
+&lt;p&gt;说起数据库的事务，大家第一反应多是 ACID，但这几个属性的重要性和复杂度并不等同。其中，最难理解的当属&lt;strong&gt;隔离性&lt;/strong&gt;（I，Isolation）。造成这种理解困局的一个重要原因是，历史上对几种隔离级别的定义和实现耦合在了一块、不同厂商的的叫法和实现又常常挂羊头卖狗肉。本文试着从锁的角度来梳理下几种常见的隔离级别，用相对&lt;strong&gt;不精确&lt;/strong&gt;的叙述给大家建立一个直观感性的认识。&lt;/p&gt;
+&lt;/blockquote&gt;
+    
+    </summary>
+    
+      <category term="数据库" scheme="https://www.qtmuniao.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+    
+      <category term="数据库" scheme="https://www.qtmuniao.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+      <category term="事务" scheme="https://www.qtmuniao.com/tags/%E4%BA%8B%E5%8A%A1/"/>
+    
+      <category term="隔离性" scheme="https://www.qtmuniao.com/tags/%E9%9A%94%E7%A6%BB%E6%80%A7/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>解析谷歌兼容 PostgreSQL 的云原生数据库——AlloyDB 的存储层</title>
+    <link href="https://www.qtmuniao.com/2022/05/15/google-alloydb-storage/"/>
+    <id>https://www.qtmuniao.com/2022/05/15/google-alloydb-storage/</id>
+    <published>2022-05-14T17:17:15.000Z</published>
+    <updated>2023-07-31T06:26:06.288Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;在&lt;a href=&quot;https://io.google/2022/&quot;&gt;Google I&amp;#x2F;O 2022&lt;/a&gt; 大会上，Google Cloud 发布了兼容 PostgreSQL 标准的云原生数据库 AlloyDB（注：Alloy 意为合金），号称比 Amazon 的同类产品（Aurora？）快两倍，这个口号，对老用户来说，应该不足以让其迁移，但对于新用户来说，确有一些吸引力。&lt;/p&gt;
+&lt;p&gt;由于笔者主要做存储，下面基于谷歌这篇介绍 AlloyDB 存储层&lt;a href=&quot;https://cloud.google.com/blog/products/databases/alloydb-for-postgresql-intelligent-scalable-storage&quot;&gt;博文&lt;/a&gt;，剖析下 AlloyDB 存储层架构，看看其设计有何亮色。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;整体架构&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;在整体上，AlloyDB 分为 &lt;strong&gt;Database 层&lt;/strong&gt;和&lt;strong&gt;存储层&lt;/strong&gt;。其中，DB 层用以兼容 PostgreSQL 协议，解析 SQL 语句，转化为读写请求，发送给存储层。对于存储层，又可以细分为三层：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;log storage 层&lt;/strong&gt;：DB 层会将写入转换为操作日志，或者说 WAL 写入存储层。log storage 负责这些日志记录的高效写入和存储。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;LPS 层&lt;/strong&gt;：Log Processing Service，LPS，日志处理服务层，消费 log storage 层的 WAL ，生成 Block，本质是一个&lt;strong&gt;物化&lt;/strong&gt;（Materialized）的过程。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;block storage 层&lt;/strong&gt;：对应单机 PostgreSQL 的 block 层，用于服务查询，通过&lt;strong&gt;分片&lt;/strong&gt;（shard）提供并行度、通过&lt;strong&gt;冗余&lt;/strong&gt;（replication）保证跨区容错性。&lt;/li&gt;
+&lt;/ol&gt;
+    
+    </summary>
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="架构" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%9E%B6%E6%9E%84/"/>
+    
+    
+      <category term="存储" scheme="https://www.qtmuniao.com/tags/%E5%AD%98%E5%82%A8/"/>
+    
+      <category term="云原生" scheme="https://www.qtmuniao.com/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Meta 链式复制的对象存储——Delta</title>
+    <link href="https://www.qtmuniao.com/2022/05/06/meta-object-store-delta/"/>
+    <id>https://www.qtmuniao.com/2022/05/06/meta-object-store-delta/</id>
+    <published>2022-05-06T15:09:29.000Z</published>
+    <updated>2023-07-31T06:26:06.288Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&lt;strong&gt;来源&lt;/strong&gt;：&lt;a href=&quot;https://engineering.fb.com/2022/05/04/data-infrastructure/delta/&quot;&gt;https://engineering.fb.com/2022/05/04/data-infrastructure/delta/&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;导读&lt;/strong&gt;：偶然看到群里同学分享的 &lt;a href=&quot;https://engineering.fb.com/&quot;&gt;Meta 博客&lt;/a&gt;新公开的高可用、强一致、链式复制的对象存储。由于我也做过一段时间的对象存储，也分享过 Facebook 家的小文件存储：&lt;a href=&quot;https://www.qtmuniao.com/2019/03/24/haystack/&quot;&gt;Haystack&lt;/a&gt;（做 batch） 和 &lt;a href=&quot;https://www.qtmuniao.com/2019/03/30/f4/&quot;&gt;F4&lt;/a&gt;（冷热分开、EC）， 顿时来了兴致，好奇这次 Meta 又带来了什么干货。&lt;/p&gt;
+&lt;p&gt;看完之后觉得的确有点意思，下面简单梳理下文章要点，感兴趣的同学可以去看看博客原文，还有华人小姐姐解说的相关视频哦。&lt;/p&gt;
+&lt;h3 id=&quot;Delta-是什么？&quot;&gt;&lt;a href=&quot;#Delta-是什么？&quot; class=&quot;headerlink&quot; title=&quot;Delta 是什么？&quot;&gt;&lt;/a&gt;Delta 是什么？&lt;/h3&gt;&lt;p&gt;Delta 是简单、可靠、可扩展、低依赖的对象存储，只提供四个基本操作：put、get、delete 和 list。在架构设计上，Delta 牺牲了&lt;strong&gt;读写延迟&lt;/strong&gt;和&lt;strong&gt;存储效率&lt;/strong&gt;，来换取架构的&lt;strong&gt;简单性&lt;/strong&gt;和&lt;strong&gt;可靠性&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;Delta 不是：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;通用存储系统&lt;/strong&gt;。Delta 只追求弹性、可靠和最小依赖。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;文件系统&lt;/strong&gt;。Delta 只是简单的对象存储，不提供 POSIX 语义。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;为存储效率而优化的系统&lt;/strong&gt;。Delta 并没有针对存储效率、延迟和吞吐做优化，而是专注简单和弹性。&lt;/li&gt;
+&lt;/ol&gt;
+    
+    </summary>
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="架构" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%9E%B6%E6%9E%84/"/>
+    
+    
+      <category term="storage" scheme="https://www.qtmuniao.com/tags/storage/"/>
+    
+      <category term="Facebook" scheme="https://www.qtmuniao.com/tags/Facebook/"/>
+    
+      <category term="对象存储" scheme="https://www.qtmuniao.com/tags/%E5%AF%B9%E8%B1%A1%E5%AD%98%E5%82%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>层层剥开数据库存储层</title>
+    <link href="https://www.qtmuniao.com/2022/05/04/distributed-database-storage-components/"/>
+    <id>https://www.qtmuniao.com/2022/05/04/distributed-database-storage-components/</id>
+    <published>2022-05-04T06:44:41.000Z</published>
+    <updated>2023-07-31T06:26:06.288Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;做数据库有一段时间了。最近有一些在校的同学问到，在实际中，分布式数据库中存储层工作内容是什么样的？简单回答了下，想到其他人可能也有类似问题，于是来这里总结下、抛个砖头。经验所限，难免有误，欢迎交流。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;注&lt;/strong&gt;：限定下讨论范围，分布式数据库，存储计算分离，share-noting 架构，仅讨论存储层。&lt;/p&gt;
+&lt;p&gt;存储层涉及的东西很庞杂，想说清楚，需要有一个合适的切入角度。数据库最本质的功能，是存储数据，以对外提供数据的&lt;strong&gt;查询&lt;/strong&gt;和&lt;strong&gt;写入&lt;/strong&gt;接口。不妨，就首先以这两条线串一下各个模块，然后再补充下不能归到这两条线中的一些组件。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="数据库" scheme="https://www.qtmuniao.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+    
+      <category term="storage" scheme="https://www.qtmuniao.com/tags/storage/"/>
+    
+      <category term="存储层" scheme="https://www.qtmuniao.com/tags/%E5%AD%98%E5%82%A8%E5%B1%82/"/>
+    
+      <category term="数据库" scheme="https://www.qtmuniao.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+      <category term="database" scheme="https://www.qtmuniao.com/tags/database/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>DDIA 读书笔记（四）：编码和演进</title>
+    <link href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter4/"/>
+    <id>https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter4/</id>
+    <published>2022-04-16T01:57:28.000Z</published>
+    <updated>2023-07-31T06:26:06.288Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在&lt;a href=&quot;https://ddia.qtmuniao.com/&quot;&gt;这里&lt;/a&gt;。我们有个对应的分布式&amp;amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;第三章讲了存储引擎，本章继续下探，探讨编码相关问题。&lt;/p&gt;
+&lt;p&gt;所有涉及跨进程通信的地方，都需要对数据进行&lt;strong&gt;编码&lt;/strong&gt;（&lt;strong&gt;Encoding&lt;/strong&gt;），或者说&lt;strong&gt;序列化&lt;/strong&gt;（&lt;strong&gt;Serialization&lt;/strong&gt;）。因为持久化存储和网络传输都是面向字节流的。序列化本质上是一种“&lt;strong&gt;降维&lt;/strong&gt;”操作，将内存中高维的数据结构降维成单维的字节流，于是底层硬件和相关协议，只需要处理一维信息即可。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/DDIA/"/>
+    
+    
+      <category term="读书笔记" scheme="https://www.qtmuniao.com/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/tags/DDIA/"/>
+    
+      <category term="设计数据密集型应用" scheme="https://www.qtmuniao.com/tags/%E8%AE%BE%E8%AE%A1%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>DDIA 读书笔记（三）： TP AP 和列存</title>
+    <link href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2/"/>
+    <id>https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2/</id>
+    <published>2022-04-16T01:52:32.000Z</published>
+    <updated>2023-07-31T06:26:06.288Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在&lt;a href=&quot;https://ddia.qtmuniao.com/&quot;&gt;这里&lt;/a&gt;。我们有个对应的分布式&amp;amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h1 id=&quot;事务型还是分析型&quot;&gt;&lt;a href=&quot;#事务型还是分析型&quot; class=&quot;headerlink&quot; title=&quot;事务型还是分析型&quot;&gt;&lt;/a&gt;事务型还是分析型&lt;/h1&gt;&lt;p&gt;术语 &lt;strong&gt;OL&lt;/strong&gt;（Online）主要是指交互式的查询。&lt;/p&gt;
+&lt;p&gt;术语&lt;strong&gt;事务&lt;/strong&gt;（ transaction ）由来有一些历史原因。早期的数据库使用方多为商业交易（commercial ），比如买卖、发工资等等。但是随着数据库应用不断扩大，交易&#92;事务作为名词保留了下来。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;事务不一定具有 ACID 特性，事务型处理多是随机的以较低的延迟进行读写，与之相反，分析型处理多为定期的批处理，延迟较高。&lt;/p&gt;
+&lt;/blockquote&gt;
+    
+    </summary>
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/DDIA/"/>
+    
+    
+      <category term="读书笔记" scheme="https://www.qtmuniao.com/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/tags/DDIA/"/>
+    
+      <category term="设计数据密集型应用" scheme="https://www.qtmuniao.com/tags/%E8%AE%BE%E8%AE%A1%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</title>
+    <link href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part1/"/>
+    <id>https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part1/</id>
+    <published>2022-04-16T01:37:46.000Z</published>
+    <updated>2023-07-31T06:26:06.287Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在&lt;a href=&quot;https://ddia.qtmuniao.com/&quot;&gt;这里&lt;/a&gt;。我们有个对应的分布式&amp;amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;第二章讲了上层抽象：数据模型和查询语言。&lt;br&gt;本章下沉一些，聚焦数据库底层如何处理查询和存储。这其中，有个&lt;strong&gt;逻辑链条&lt;/strong&gt;：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;使用场景→ 查询类型 → 存储格式。&lt;/p&gt;
+&lt;/blockquote&gt;
+    
+    </summary>
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/DDIA/"/>
+    
+    
+      <category term="读书笔记" scheme="https://www.qtmuniao.com/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/tags/DDIA/"/>
+    
+      <category term="设计数据密集型应用" scheme="https://www.qtmuniao.com/tags/%E8%AE%BE%E8%AE%A1%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>DDIA 读书笔记（二）：数据模型和查询语言</title>
+    <link href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter2/"/>
+    <id>https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter2/</id>
+    <published>2022-04-16T01:18:34.000Z</published>
+    <updated>2023-07-31T06:26:06.287Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在&lt;a href=&quot;https://ddia.qtmuniao.com/&quot;&gt;这里&lt;/a&gt;。我们有个对应的分布式&amp;amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;概要&quot;&gt;&lt;a href=&quot;#概要&quot; class=&quot;headerlink&quot; title=&quot;概要&quot;&gt;&lt;/a&gt;概要&lt;/h2&gt;&lt;p&gt;本节围绕两个主要概念来展开。&lt;/p&gt;
+&lt;p&gt;如何分析一个&lt;strong&gt;数据模型&lt;/strong&gt;：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;基本考察点：数据基本元素，和元素之间的对应关系（一对多，多对多）&lt;/li&gt;
+&lt;li&gt;利用几种常用模型来比较：（最为流行的）关系模型，（树状的）文档模型，（极大自由度的）图模型。&lt;/li&gt;
+&lt;li&gt;schema 模式：强 Schema（写时约束）；弱 Schema（读时解析）&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;如何考量&lt;strong&gt;查询语言&lt;/strong&gt;：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;如何与数据模型关联、匹配&lt;/li&gt;
+&lt;li&gt;声明式（declarative）和命令式（imperative）&lt;/li&gt;
+&lt;/ol&gt;
+    
+    </summary>
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/DDIA/"/>
+    
+    
+      <category term="读书笔记" scheme="https://www.qtmuniao.com/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/tags/DDIA/"/>
+    
+      <category term="设计数据密集型应用" scheme="https://www.qtmuniao.com/tags/%E8%AE%BE%E8%AE%A1%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>CockroachDB 和 TiDB 中 SQL 的分布式执行</title>
+    <link href="https://www.qtmuniao.com/2022/04/05/crdb-tidb-dist-sql/"/>
+    <id>https://www.qtmuniao.com/2022/04/05/crdb-tidb-dist-sql/</id>
+    <published>2022-04-05T02:46:02.000Z</published>
+    <updated>2023-07-31T06:26:06.287Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;计算下推其实是常见的思想：&lt;strong&gt;将计算推到数据旁&lt;/strong&gt;。由于在数据库中，逻辑上，计算常在存储层之上，因此将一部分算子推到存储层去做，称为计算下推。其在分布式数据库中尤为重要。&lt;/p&gt;
+&lt;p&gt;下面是 CockroachDB 和 TiDB 的解决方案，内容来自于文档和博客，因此可能和最新代码的逻辑并不一致。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;CockroachDB&quot;&gt;&lt;a href=&quot;#CockroachDB&quot; class=&quot;headerlink&quot; title=&quot;CockroachDB&quot;&gt;&lt;/a&gt;CockroachDB&lt;/h2&gt;&lt;h3 id=&quot;基本概念&quot;&gt;&lt;a href=&quot;#基本概念&quot; class=&quot;headerlink&quot; title=&quot;基本概念&quot;&gt;&lt;/a&gt;基本概念&lt;/h3&gt;&lt;p&gt;CockroachDB 中相应的模块叫 &lt;a href=&quot;https://github.com/cockroachdb/cockroach/blob/master/docs/RFCS/20160421_distributed_sql.md&quot;&gt;DistSQL&lt;/a&gt;，其思想来源于&lt;a href=&quot;http://research.google.com/archive/sawzall.html&quot;&gt;Sawzall&lt;/a&gt;，有点类似 &lt;a href=&quot;https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf&quot;&gt;MapReduce&lt;/a&gt;。支持的算子叫做 &lt;strong&gt;aggregator&lt;/strong&gt;，本质上是对 SQL 聚合算子的一种泛化。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="SQL" scheme="https://www.qtmuniao.com/tags/SQL/"/>
+    
+      <category term="执行计划" scheme="https://www.qtmuniao.com/tags/%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>DDIA 读书笔记（一）：可靠、可扩展、可维护</title>
+    <link href="https://www.qtmuniao.com/2022/02/19/ddia-reading-chapter1/"/>
+    <id>https://www.qtmuniao.com/2022/02/19/ddia-reading-chapter1/</id>
+    <published>2022-02-19T15:22:11.000Z</published>
+    <updated>2023-07-31T06:26:06.287Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在&lt;a href=&quot;https://ddia.qtmuniao.com/&quot;&gt;这里&lt;/a&gt;。我们有个对应的分布式&amp;amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;第一章是很容易被跳过的一章，因为概念较多，容易泛泛而谈。但其给出的三个概念，确实是构建系统避不开的三个重点方向。&lt;/p&gt;
+&lt;p&gt;ps. &lt;a href=&quot;http://ddia.vonng.com/&quot;&gt;开源中文版本&lt;/a&gt;有些地方翻译的不是很地道，读起来可能会有些难受，不过这是所有翻译难免的。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/DDIA/"/>
+    
+    
+      <category term="读书笔记" scheme="https://www.qtmuniao.com/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/"/>
+    
+      <category term="DDIA" scheme="https://www.qtmuniao.com/tags/DDIA/"/>
+    
+      <category term="设计数据密集型应用" scheme="https://www.qtmuniao.com/tags/%E8%AE%BE%E8%AE%A1%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>好好写代码之命名篇——推敲</title>
+    <link href="https://www.qtmuniao.com/2021/12/12/how-to-write-code-scrutinize-names/"/>
+    <id>https://www.qtmuniao.com/2021/12/12/how-to-write-code-scrutinize-names/</id>
+    <published>2021-12-12T07:02:04.000Z</published>
+    <updated>2023-07-31T06:26:06.287Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;（贾）岛初赴举京师，一日驴上得句云：“鸟宿池边树，僧敲月下门”。始欲着“推”字，又欲着“敲”字，练之未定，遂于驴上吟哦，时时引手作推敲之势。&lt;/p&gt;
+&lt;p&gt; —— 宋·胡仔《苕溪渔隐丛话》卷十九引《刘公嘉话》&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;命名，是编码中最为紧要的事情，其之于程序，便如脸面之于少女。好的命名，能清晰的传达代码的意图，甚而，有一种韵律的美感。而懒散随意的起名，则令人如堕云雾，不忍卒读，会一遍遍地消耗维护者的精气神儿。此外，混乱的命名体系，能轻巧的掩藏 BUG，贻祸千里。&lt;/p&gt;
+&lt;p&gt;因此，我们在写代码时，有必要花一点时间，对关键命名进行推敲，与人方便，与己方便。对于生命周期越长的项目，其益处便越明显。那么该如何推敲呢？结合自己写代码、看代码、Review 代码的一些经验，聊聊我的一些体会。&lt;/p&gt;
+&lt;p&gt;最近写 golang 多一点，因此例子用的都是 golang ，但都是伪代码，有些例子并不不严格遵从语法。此外，例子大多出于现造，因此可能并不是特别贴合。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="https://www.qtmuniao.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+      <category term="编程规范" scheme="https://www.qtmuniao.com/tags/%E7%BC%96%E7%A8%8B%E8%A7%84%E8%8C%83/"/>
+    
+      <category term="命名" scheme="https://www.qtmuniao.com/tags/%E5%91%BD%E5%90%8D/"/>
+    
+  </entry>
+  
+</feed>

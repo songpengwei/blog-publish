@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第四节课笔记，VM-FT。 备份——">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MIT 6.824 2020 视频笔记四：VM-FT">
+<meta property="og:url" content="https://www.qtmuniao.com/2020/04/01/6-824-video-notes-4-vm-ft/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第四节课笔记，VM-FT。 备份——">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png">
+<meta property="og:image" content="https://i.loli.net/2020/04/03/ANYB2XQPEKbzoOj.png">
+<meta property="og:image" content="https://i.loli.net/2020/04/03/wHOcrpf9s1LZQqM.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
+<meta property="article:published_time" content="2020-04-01T15:20:25.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.282Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="6.824">
+<meta property="article:tag" content="笔记">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2020/04/01/6-824-video-notes-4-vm-ft/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MIT 6.824 2020 视频笔记四：VM-FT | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/04/01/6-824-video-notes-4-vm-ft/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MIT 6.824 2020 视频笔记四：VM-FT
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-04-01 23:20:25" itemprop="dateCreated datePublished" datetime="2020-04-01T23:20:25+08:00">2020-04-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E5%85%AC%E5%BC%80%E8%AF%BE/" itemprop="url" rel="index"><span itemprop="name">公开课</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
+<p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <a target="_blank" rel="noopener" href="https://www.youtube.com/channel/UC_7WrbZTCODu1o_kfUMq88g/videos">Youtube</a>，<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/av90915526">B站</a>。课程资料：<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/schedule.html">6.824主页</a>。本篇是第四节课笔记，VM-FT。</p>
+<h2 id="备份——容错"><a href="#备份——容错" class="headerlink" title="备份——容错"></a>备份——容错</h2><h3 id="失败（Failue）"><a href="#失败（Failue）" class="headerlink" title="失败（Failue）"></a>失败（Failue）</h3><p>如何定义？在其他电脑看来，停止对外提供服务。<br>通过备份&#x2F;副本（Replication）<br>可以解决：宕机（fail-stop），比如 CPU 过热而关闭、主机或者网络断电、硬盘空间耗尽等问题。<br>不能解决：一些相关联（correlated，主副本机器会同时存在）的问题，比如软件 Bug、人为配置问题</p>
+<h3 id="前提"><a href="#前提" class="headerlink" title="前提"></a>前提</h3><p>主从备份可以工作的一个假设是，主从机器的出错概率需要时独立的。<br>比如说：同一批次机器、同一个机架上的机器，出错概率就存在强正相关特性。</p>
+<h3 id="是否值当"><a href="#是否值当" class="headerlink" title="是否值当"></a>是否值当</h3><p>需要对业务场景和所需费用考量，是否真的需要进行 Replica。比如银行数据就需要多备份，而课程网站可能并不需要。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2020/04/01/6-824-video-notes-4-vm-ft/">https://www.qtmuniao.com/2020/04/01/6-824-video-notes-4-vm-ft/</a>, 转载请注明出处</em></p>
+<h2 id="Primary-Backup-Paper"><a href="#Primary-Backup-Paper" class="headerlink" title="Primary-Backup Paper"></a>Primary-Backup Paper</h2><p>两种进行状态备份的方式：</p>
+<ul>
+<li>状态转移（State transfer）<br>持续增量同步 Primary 的状态到 Backup，包括CPU、内存、IO设备等等；但是这些状态通常所占带宽很大，尤其是内存变化。</li>
+<li>冗余状态机（Replicated State Machine）<br>将服务器看作是一个具有确定性状态的状态机，只要给定相同初始状态和同样顺序的确定输入，就能保持同样的状态。同步的是外部的<strong>事件&#x2F;操作&#x2F;输入</strong>；同步的内容通常较小，但是依赖主机的一些特性：比如指令执行的确定性（deterministic）。而在物理机上保证确定性很难，但是在 VM 上就简单的多，由于 hypervisor 有对 VM 有完全的控制权，因此可以通过某些手段来额外同步某些不确定性输入（比如类似随机数、系统时钟等）。</li>
+</ul>
+<p>一般来说操作会比状态小的多，因此 Replicated State Machine 被采纳。</p>
+<p>Q&amp;A：</p>
+<ol>
+<li>如果主从备份由于某种原因不一致了会怎么样？<br>可以考虑 GFS 中，由于网络分区造成两个 chunkserver 都认为自己是 Primary 的例子。</li>
+<li>如果指令中有一些类似于依赖于随机数的指令，Replicated State Machine 如何进行同步？<br>这正是之前强调的需要依赖指令的确定性的意义所在。当然，也可以在遇到这种命令时，让 Backup 去直接接受 Primary 的执行结果。</li>
+</ol>
+<p>此外，Replicated State Machine 需要机器为单核，因为在多核机器上，指令的执行顺序本身是不确定的。那对于多核机器如何做同步？State Transfer 。</p>
+<p><img src="https://i.loli.net/2020/04/03/ANYB2XQPEKbzoOj.png" alt="pb-ft-configuration.png"></p>
+<h3 id="挑战"><a href="#挑战" class="headerlink" title="挑战"></a>挑战</h3><ol>
+<li>需要同步什么状态？</li>
+<li>Primary 需要等 Backup吗？</li>
+<li>Primary 宕机时，如何进行切换？</li>
+<li>在 Primary&#x2F;Backup 宕机时，如何进行快速恢复。</li>
+</ol>
+<p>同步状态的层级：</p>
+<ol>
+<li>应用层（Application state）。如 GFS，更为高效，只需要发送高维操作即可，缺点是需要在应用层进行容错。</li>
+<li>机器层（Machine level）。可以让运行在服务器上的应用无需改动而获取容错能力。但需要细粒度的同步机器事件（中断、DMA）；并且需要修改机器底层实现以发送这些事件。</li>
+</ol>
+<p>而 VM-FT 选择了后者，能力更强大，但也做出了更多牺牲。</p>
+<p>VM-FT 系统使用一个额外的虚拟层 VMMonitor（ hypervisor &#x3D;&#x3D; monitor &#x3D;&#x3D; VMM ），当 client 请求到达 Primary 时，VMMonitor 一方面向本机转发请求、一方面向 Backup 的 VMMonitor 同步请求。处理完请求得到结果时，Primary 的 VMMonitor 会回复 Client，而 Backup 的 VMMonitor 会丢弃 Backup 产生的回复。</p>
+<p>使用两种方法来检测 Primary 和 Backup 的健康状况：</p>
+<ol>
+<li>和 Primary&#x2F;Backup 进行心跳。</li>
+<li>监控 logging channel。</li>
+</ol>
+<h3 id="主从切换"><a href="#主从切换" class="headerlink" title="主从切换"></a>主从切换</h3><p>如何实现主从间的切换？在 Primary 宕机后，Backup 声称具有 Primary 的 MAC 地址，然后让 ARP 缓存表过期，就将打向某个IP的流量从 Primary 切换到了 Backup。</p>
+<p>切换后，原先的 Backup 成为新的 Primary，对外进行回复。然后利用 VMotion 的技术在和新 Primary 共享外存的地方启动一个副本，并且建立日志通道。</p>
+<h3 id="不确定性事件"><a href="#不确定性事件" class="headerlink" title="不确定性事件"></a>不确定性事件</h3><p>都有哪些不确定性（Non-deterministic）操作（operations）和事件（events）？</p>
+<ul>
+<li>输入的不确定性。系统中断事件。</li>
+<li>奇怪指令。比如随机数、依赖时间戳的指令。</li>
+<li>多核。不同机器可能以不同的方式在多核上交替运行指令。</li>
+</ul>
+<p>对于不确定性操作，需要保留充足的信息到日志通道中，以使 Backup 可以进行同样的状态改变，并且产生同样输出。对于不确定性事件，如时钟信号中断和 IO 完成中断，不仅需要记录事件本身，也要记录下事件发生的指令序列的位置，由此才能在 Backup 上确定性复现。</p>
+<h3 id="Logging-Channel"><a href="#Logging-Channel" class="headerlink" title="Logging Channel"></a>Logging Channel</h3><p>为了进行容错（FT），我们使用<em>日志条目</em>（log entry ）来记录 Primary 上发生的事件；但我们并没有将这些日志写到硬盘中，而是将其通过<em>日志通道</em>（logging channel）传送到 Backup 上进行实时<em>确定性的重建</em>（deterministic replay）。每个 LogEntry 可能包含以下数据：</p>
+<ol>
+<li>指令编号</li>
+<li>指令类型</li>
+<li>数据</li>
+</ol>
+<h3 id="DMA"><a href="#DMA" class="headerlink" title="DMA"></a>DMA</h3><p>DMA能够直接将数据从网口拷贝到内存，而不经过CPU。这时需要 VMM 强行中断，拷贝来到的数据，模拟一个指令，并发送给 Backup。</p>
+<h3 id="OutPut-rule"><a href="#OutPut-rule" class="headerlink" title="OutPut rule"></a>OutPut rule</h3><p>当 Primary 宕机时，其发送给 Backup 的最后一条指令也由于网络问题丢失了。当 Backup 接手时，如何处理该条指令丢失造成的不一致？<br>使用 Output Rule 保证。即 Primary 仅当在收到 Backup 该条指令的 ACK 时，才会将该指令结果发送给用户。当然，为缩短响应延迟，在 Backup 上，VMM 只需要将收到的指令缓存到 Buffer 中就可以回 ACK。而且，Primary 只是会延迟将回复发送给用户，以等待 Backup 的 ACK，但在这段等待时间内并不用真停止执行，毕竟网络请求回复是异步的，Primary 可以并行的做其他事情。</p>
+<p><img src="https://i.loli.net/2020/04/03/wHOcrpf9s1LZQqM.png" alt="pb-ft-protocol.png"></p>
+<p>在 Primary 宕机后，Backup 接管时，可能会产生重复的结果。但是由于P&#x2F;B 共用 TCP channel，SEQ 也会被重用，会在 Client 端作为重复TCP 帧被忽略，从而不会暴露到用户层面。</p>
+<h3 id="吞吐"><a href="#吞吐" class="headerlink" title="吞吐"></a>吞吐</h3><p>如果 Primary 和 Backup 不在一个城市，每次通信都需要几ms，那么久很难构建高吞吐系统。</p>
+<h3 id="网络分区"><a href="#网络分区" class="headerlink" title="网络分区"></a>网络分区</h3><p>如果 P&#x2F;B 之前的网络断了，但是同时都可以和 client 通信，就发生了 split-brain。解决办法是引入一个第三方仲裁，来保存谁可以进行应答：比如使用一个 TAS（Test-and-Set Server） 或者一个共享外存。</p>
+<hr>
+<p>欢迎关注公众号<strong>木鸟杂记</strong>，获取更多分布式系统文章。</p>
+<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/02/29/6-824-video-notes-1/" rel="bookmark">MIT 6.824 2020 视频笔记一：绪论</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/03/06/6-824-video-notes-2/" rel="bookmark">MIT 6.824 2020 视频笔记二：RPC和线程</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/03/14/6-824-vidoe-notes-3-gfs/" rel="bookmark">MIT 6.824 2020 视频笔记三：GFS</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="bookmark">MIT 6.824 2020 视频笔记五：Go Concurrency</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/" rel="bookmark">MIT 6.824 2020 视频笔记六：Fault Tolerate Raft 1</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
+              <a href="/tags/6-824/" rel="tag"># 6.824</a>
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/03/19/wisckey/" rel="prev" title="WiscKey —— SSD 介质下的 LSM-Tree 优化">
+      <i class="fa fa-chevron-left"></i> WiscKey —— SSD 介质下的 LSM-Tree 优化
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="next" title="MIT 6.824 2020 视频笔记五：Go Concurrency">
+      MIT 6.824 2020 视频笔记五：Go Concurrency <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%87%E4%BB%BD%E2%80%94%E2%80%94%E5%AE%B9%E9%94%99"><span class="nav-number">1.</span> <span class="nav-text">备份——容错</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%B1%E8%B4%A5%EF%BC%88Failue%EF%BC%89"><span class="nav-number">1.1.</span> <span class="nav-text">失败（Failue）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E6%8F%90"><span class="nav-number">1.2.</span> <span class="nav-text">前提</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%98%AF%E5%90%A6%E5%80%BC%E5%BD%93"><span class="nav-number">1.3.</span> <span class="nav-text">是否值当</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Primary-Backup-Paper"><span class="nav-number">2.</span> <span class="nav-text">Primary-Backup Paper</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%91%E6%88%98"><span class="nav-number">2.1.</span> <span class="nav-text">挑战</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2"><span class="nav-number">2.2.</span> <span class="nav-text">主从切换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E7%A1%AE%E5%AE%9A%E6%80%A7%E4%BA%8B%E4%BB%B6"><span class="nav-number">2.3.</span> <span class="nav-text">不确定性事件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Logging-Channel"><span class="nav-number">2.4.</span> <span class="nav-text">Logging Channel</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DMA"><span class="nav-number">2.5.</span> <span class="nav-text">DMA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OutPut-rule"><span class="nav-number">2.6.</span> <span class="nav-text">OutPut rule</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%9E%E5%90%90"><span class="nav-number">2.7.</span> <span class="nav-text">吞吐</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BD%91%E7%BB%9C%E5%88%86%E5%8C%BA"><span class="nav-number">2.8.</span> <span class="nav-text">网络分区</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2020/04/01/6-824-video-notes-4-vm-ft/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '3465e19076606c9b00b18f9e4d94ba5e',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="做数据库有一段时间了。最近有一些在校的同学问到，在实际中，分布式数据库中存储层工作内容是什么样的？简单回答了下，想到其他人可能也有类似问题，于是来这里总结下、抛个砖头。经验所限，难免有误，欢迎交流。  注：限定下讨论范围，分布式数据库，存储计算分离，share-noting 架构，仅讨论存储层。 存储层涉及的东西很庞杂，想说清楚，需要有一个合适的切入角度。数据库最本质的功能，是存储数据，以对外提">
+<meta property="og:type" content="article">
+<meta property="og:title" content="层层剥开数据库存储层">
+<meta property="og:url" content="https://www.qtmuniao.com/2022/05/04/distributed-database-storage-components/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="做数据库有一段时间了。最近有一些在校的同学问到，在实际中，分布式数据库中存储层工作内容是什么样的？简单回答了下，想到其他人可能也有类似问题，于是来这里总结下、抛个砖头。经验所限，难免有误，欢迎交流。  注：限定下讨论范围，分布式数据库，存储计算分离，share-noting 架构，仅讨论存储层。 存储层涉及的东西很庞杂，想说清楚，需要有一个合适的切入角度。数据库最本质的功能，是存储数据，以对外提">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-05-04T06:44:41.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.288Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="storage">
+<meta property="article:tag" content="存储层">
+<meta property="article:tag" content="数据库">
+<meta property="article:tag" content="database">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2022/05/04/distributed-database-storage-components/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>层层剥开数据库存储层 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/05/04/distributed-database-storage-components/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          层层剥开数据库存储层
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-05-04 14:44:41" itemprop="dateCreated datePublished" datetime="2022-05-04T14:44:41+08:00">2022-05-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>做数据库有一段时间了。最近有一些在校的同学问到，在实际中，分布式数据库中存储层工作内容是什么样的？简单回答了下，想到其他人可能也有类似问题，于是来这里总结下、抛个砖头。经验所限，难免有误，欢迎交流。</p>
+</blockquote>
+<p><strong>注</strong>：限定下讨论范围，分布式数据库，存储计算分离，share-noting 架构，仅讨论存储层。</p>
+<p>存储层涉及的东西很庞杂，想说清楚，需要有一个合适的切入角度。数据库最本质的功能，是存储数据，以对外提供数据的<strong>查询</strong>和<strong>写入</strong>接口。不妨，就首先以这两条线串一下各个模块，然后再补充下不能归到这两条线中的一些组件。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/05/04/distributed-database-storage-components">https://www.qtmuniao.com/2022/05/04/distributed-database-storage-components</a> 转载请注明出处</em></p>
+<h2 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h2><p>查询请求进到存储层，一般表现为下推的<strong>执行计划</strong>，进而转化为对底层存储引擎的单点查询和范围查询，为了加速查询，一般会给存储引擎配备<strong>缓存</strong>层。对于每个存储节点来说，为了应对大量的并发请求，需要做 <strong>IO 优化</strong>。</p>
+<h3 id="执行计划"><a href="#执行计划" class="headerlink" title="执行计划"></a><strong>执行计划</strong></h3><p>这是存储层的入口，是存储层向查询层暴露的接口。</p>
+<p>一个查询语句经过<strong>查询层</strong>的语法分析（Parser）、语义检查（Validator）、生成计划（Planner）、计划优化（Optimizer）、执行计划（Executor）几个步骤之后，会将需要下推给存储层的算子下发到存储层对应的分片（ Partition）所在节点。</p>
+<p>对于火山模型来说，我们可以将执行计划理解为一个由基本算子（Executor）组成的 DAG，甚至再简化一些可以想象成一棵树。树中下层的一些小子树，是可以直接推到存储层对应的节点去执行的，这些可以下推的算子通常包括：TableScan，Filter，Project，Limit，TopN 等等。</p>
+<p>存储层拿到这些执行计划后，反序列化，组织成内存中的执行计划，以<a target="_blank" rel="noopener" href="https://paperhub.s3.amazonaws.com/dace52a42c07f7f8348b08dc2b186061.pdf" title="迭代模型">迭代模型</a>或者向量模型，来对数据进行扫描、过滤、排序、投影、聚合等操作后，将结果集返回给查询层。</p>
+<p>结果集可以有几种返回方式：</p>
+<ol>
+<li>一次全量返回</li>
+<li>流式返回</li>
+<li>分页返回</li>
+</ol>
+<p>计算下推有诸多好处：</p>
+<ol>
+<li>充分利用存储层的分布式节点进行预计算。</li>
+<li>减少存储层到查询层的数据传输带宽消耗。</li>
+<li>提高查询层的处理速度和数据集上限。</li>
+</ol>
+<h3 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h3><p>为了对查询进行优化，对于读多写少的场景，一般会在存储引擎之上罩一个缓存层。如果是共享存储层的架构，比如存储层在云上，那么缓存层就必不可少。</p>
+<p>缓存在设计时，主要需要考虑<strong>缓存粒度</strong>和<strong>生命周期</strong>两方面。</p>
+<ol>
+<li><strong>缓存粒度</strong>。为了保持缓存和后端的数据一致性，势必需要加锁，而缓存粒度和加锁粒度息息相关。一个节点上的不同 Partition 的缓存要不要共享一个缓存池，也是缓存粒度需要考虑的问题。</li>
+<li><strong>生命周期</strong>。何时写入后端，何时让缓存失效，这涉及到缓存控制策略，是同步读写穿透，还是异步更新，都是需要根据实际情况考量的问题。</li>
+</ol>
+<h3 id="RPC-IO-优化"><a href="#RPC-IO-优化" class="headerlink" title="RPC IO 优化"></a>RPC IO 优化</h3><p>任何服务都是类似的，大量请求过来时，得用线程池、异步、协程等各种手段优化，提高并发，从而提高吞吐，减小延迟。</p>
+<p>有的 RPC 框架能解决这些问题，比如有些 RPC 框架内置协程模型，支持 M 比 N 模型、协程窃取等等。如果 RPC 框架不管，就需要用额外的线程池库、异步库（promise、future）、协程库来手动控制请求的执行流并发执行。</p>
+<h2 id="写入"><a href="#写入" class="headerlink" title="写入"></a>写入</h2><p>分布式系统中，一般会使用多副本来存储数据。在写入时，为了维持所有副本看到一致的写入顺序，会引入<strong>共识算法</strong>。共识算法通常都是维持一个逻辑上 endless 的逻辑操作日志，然后每个副本将逻辑日志应用到自己本地的状态机——<strong>存储引擎</strong>。在写入数据是，需要对用户数据进行<strong>数据编码</strong>，转化为二进制串，从而写入存储引擎。对于一些一致性（区别于多副本间的一致，此处是多语句间并发执行的一致）要求严苛的场景，数据库需要对用户提供多个语句原子化执行的保证，即<strong>分布式事务</strong>。</p>
+<h3 id="共识算法"><a href="#共识算法" class="headerlink" title="共识算法"></a>共识算法</h3><p>对于 share-nothing 架构，为了保证高可用，都会使用多副本（Replication），并放到容错阈不同的多台机器上。使用多副本，就自然会引入多副本数据一致性的问题，一般我们会使用共识算法（Raft、MultiPaxos）来解决。</p>
+<p>使用共识算法，对于每个数据分片（Partition），可以维护一个多机一致的操作日志（operation log，WAL）：即所有写入操作，都会序列化成操作日志记录，并在所有的副本按唯一的顺序进行追加写。有了一致的操作日志，我们再将其各种应用到本地的状态机（也就是存储引擎），辅以 log id，就可以对外提供一致的读写视图。</p>
+<h3 id="存储引擎"><a href="#存储引擎" class="headerlink" title="存储引擎"></a>存储引擎</h3><p>这里指的是单机存储引擎，也就是上文所说的状态机。它解决的问题是，如何将数据组织在单机的存储体系中，以最少的空间，应对特定场景的高效的写入和读取。一般分为数据编码、索引组织、并发控制等等几个子模块。</p>
+<p>存储引擎主要分为两个流派：原地更新的 B-Tree 流派和基于追加的 LSM-Tree 流派。这里推荐两个个学习的项目，B-Tree 的可以看看 <a target="_blank" rel="noopener" href="https://github.com/boltdb/bolt" title="boltdb github">BoltDB</a>；LSM-Tree 可以看看 <a target="_blank" rel="noopener" href="https://github.com/google/leveldb" title="google leveldb github">LevelDB</a>。但实际使用中会用更复杂强大一点的变种，比如 RocksDB。</p>
+<p>对于 AP 场景来说，一般使用列式存储，可以更方便的进行数据压缩和进行向量化计算。</p>
+<h3 id="数据编码"><a href="#数据编码" class="headerlink" title="数据编码"></a>数据编码</h3><p>数据编解码解决的问题是，如何将逻辑上的一个记录（如关系型数据库中的 Row），高效（耗时少、占空间少）的编码为二进制串，写入存储引擎。</p>
+<p>在编码时，需要考虑和 Schema （该行有哪些字段，字段的类型是什么）的对应关系，也要考虑在 Schema 变化时（加字段，删字段，改字段类型），如何保证数据读取的兼容性。</p>
+<h3 id="分布式事务"><a href="#分布式事务" class="headerlink" title="分布式事务"></a>分布式事务</h3><p>数据库的一大重要功能就是对事务的保证，利用事务模型的诸多保证（ACID），可以大大减小用户侧使用数据库的复杂度。当然，这通常是以损失性能为代价的，在分布式数据库中这点尤为明显。</p>
+<p>如何保证分布式事务间的原子性和隔离性，业界有诸多方案。最基本的框架是<strong>两阶段提交</strong>配合<strong>全局时钟</strong>（有物理时钟、逻辑时钟、混合时钟和 TSO 等多种解决方案，又是一个比较大的话题），比较经典的是有谷歌的 Percolator 模型。</p>
+<h2 id="其他模块"><a href="#其他模块" class="headerlink" title="其他模块"></a>其他模块</h2><p>除了能直接归到读写流程相关的组件，还有一些其他存储层交互比较频繁的模块和一些后台运行的常驻进程。</p>
+<h3 id="Schema-管理"><a href="#Schema-管理" class="headerlink" title="Schema 管理"></a>Schema 管理</h3><p>如何划分命名空间，组织不同的 Schema，就涉及到 Schema 的逻辑管理，如使用树形组织。</p>
+<p>另外，还需要维护 Schema 和数据的对应关系，但在分布式系统中，如何非阻塞的修改 Schema， 而不影响并发的数据写入，是一个非常费劲的事情。常见的解决方案有谷歌 F1 的 online DDL。</p>
+<h3 id="集群元信息"><a href="#集群元信息" class="headerlink" title="集群元信息"></a>集群元信息</h3><p>集群元信息主要分两大块：</p>
+<ol>
+<li><strong>逻辑上</strong>。逻辑上的数据集组织与划分，比如 Database、Table。即以合适的粒度，对数据集按命名空间进行划分，进而针对不同的数据集进行不同的配置以及相应的多租户隔离和权限控制。</li>
+<li><strong>物理上</strong>。物理上的节点的组织与划分，比如 Zone，Node。即以合适的容错阈，对不同节点进行物理组织，进而在不同节点和容错阈间处理宕机、均衡数据。</li>
+</ol>
+<p>管理逻辑数据到物理节点的映射，即是分布式系统中最重要的一个方面：<strong>调度</strong>。</p>
+<p>调度通常发生在两个大时刻，一是数据集创建时，一时副本再均衡时（rebalancing，包括机器宕机、新增节点引起的数据再均衡）。</p>
+<p>我们会依据节点的不同属性（容错阈、剩余容量）等对数据集的不同分片进行调度。在进行数据移动时，会涉及分片的多个副本的增删，为了保证一致性，也需要通过共识协议来完成。</p>
+<h3 id="数据导入导出"><a href="#数据导入导出" class="headerlink" title="数据导入导出"></a>数据导入导出</h3><p>数据库最重要的周边工具就是支持数据以丰富的格式、较高的速度进行导入和导出。</p>
+<p>这又可以细分为几类：</p>
+<ol>
+<li><strong>数据备份与恢复</strong>。即数据生产者和消费者都是本数据库，此时不用考虑支持不同的的数据格式（即可以自定义编码，只需要自己认识即可，因此可以怎么高效怎么来），而是要考虑支持不同的数据后端：本地、云上、共享文件系统中等等。同时，也要考虑同时支持全量备份和增量备份。</li>
+<li><strong>其他系统导入</strong>。需要考虑支持多种数据源以及不同数据格式，最好能使用一些计算框架（如 Spark、Flink、Kafka）分布式的导入；也最好能够支持主流的数据库接入，比如 MySQL、Postgres 等等。</li>
+<li><strong>数据导出</strong>。将数据导出为多种通用的数据格式，如 csv、json、sql 语句 等等。</li>
+</ol>
+<p>仓促成文，遗漏之处，欢迎在评论区补充。如果觉得写的还不错，欢迎分享给更多的同学。</p>
+<hr>
+<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，欢迎关注我的公众号：“木鸟杂记”，获取更多分布式系统文章和资料。</p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/12/11/how-to-build-a-database/" rel="bookmark">实现一个数据库需要如何入手？</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/06/meta-object-store-delta/" rel="bookmark">Meta 链式复制的对象存储——Delta</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/07/07/db-isolation/" rel="bookmark">步步为营 剖析事务中最难的——隔离性</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/storage/" rel="tag"># storage</a>
+              <a href="/tags/%E5%AD%98%E5%82%A8%E5%B1%82/" rel="tag"># 存储层</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"># 数据库</a>
+              <a href="/tags/database/" rel="tag"># database</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/16/ddia-reading-chapter4/" rel="prev" title="DDIA 读书笔记（四）：编码和演进">
+      <i class="fa fa-chevron-left"></i> DDIA 读书笔记（四）：编码和演进
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/05/06/meta-object-store-delta/" rel="next" title="Meta 链式复制的对象存储——Delta">
+      Meta 链式复制的对象存储——Delta <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2"><span class="nav-number">1.</span> <span class="nav-text">查询</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92"><span class="nav-number">1.1.</span> <span class="nav-text">执行计划</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%93%E5%AD%98"><span class="nav-number">1.2.</span> <span class="nav-text">缓存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RPC-IO-%E4%BC%98%E5%8C%96"><span class="nav-number">1.3.</span> <span class="nav-text">RPC IO 优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E5%85%A5"><span class="nav-number">2.</span> <span class="nav-text">写入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E8%AF%86%E7%AE%97%E6%B3%95"><span class="nav-number">2.1.</span> <span class="nav-text">共识算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E"><span class="nav-number">2.2.</span> <span class="nav-text">存储引擎</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BC%96%E7%A0%81"><span class="nav-number">2.3.</span> <span class="nav-text">数据编码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1"><span class="nav-number">2.4.</span> <span class="nav-text">分布式事务</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E6%A8%A1%E5%9D%97"><span class="nav-number">3.</span> <span class="nav-text">其他模块</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Schema-%E7%AE%A1%E7%90%86"><span class="nav-number">3.1.</span> <span class="nav-text">Schema 管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4%E5%85%83%E4%BF%A1%E6%81%AF"><span class="nav-number">3.2.</span> <span class="nav-text">集群元信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%AF%BC%E5%85%A5%E5%AF%BC%E5%87%BA"><span class="nav-number">3.3.</span> <span class="nav-text">数据导入导出</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2022/05/04/distributed-database-storage-components/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'd26faaf1863e72f2d3273b314aa04e17',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

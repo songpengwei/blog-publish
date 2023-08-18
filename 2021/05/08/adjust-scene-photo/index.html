@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="强行凑出来的五一小长假即将结束，一年一度的朋友圈晒图大赛又将起航。虽然手机自带的图片自动润色功能越来越强大，但毕竟不能满足我们程序员想掌控一切的精细化调整需求。下面就我一些浅薄的调色经验，以我在长沙游天心阁玩拍的一张图片的调色过程为例，教你一套李鬼变李逵的风景调色屠龙技。最后会给一个简单的修图原理的总结，一探图片调色背后的本质。 先来个对比为了说明图片调色确实有奇效，先上一个对比图给大家直观感受下">
+<meta property="og:type" content="article">
+<meta property="og:title" content="程序员五一晒图小贴士">
+<meta property="og:url" content="https://www.qtmuniao.com/2021/05/08/adjust-scene-photo/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="强行凑出来的五一小长假即将结束，一年一度的朋友圈晒图大赛又将起航。虽然手机自带的图片自动润色功能越来越强大，但毕竟不能满足我们程序员想掌控一切的精细化调整需求。下面就我一些浅薄的调色经验，以我在长沙游天心阁玩拍的一张图片的调色过程为例，教你一套李鬼变李逵的风景调色屠龙技。最后会给一个简单的修图原理的总结，一探图片调色背后的本质。 先来个对比为了说明图片调色确实有奇效，先上一个对比图给大家直观感受下">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/6m34cMHoDyUuKEf.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/SQ19HFBJnIr3bER.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/9vQzgByVROsx8EL.png">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/MDPybESVmsfphkl.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/YSHVQrLtKGlg4oM.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/zycUEtkFfuMBxHh.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/CNUW8uVkXIHsdD2.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/ZhCrR8XzD1xG9cj.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/IPvyhDYqAJrH4os.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/xbylmzvPUAfDcBN.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/iQdJCRygwPtOvZo.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/05/08/RPpVq2fGUidLEou.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
+<meta property="article:published_time" content="2021-05-08T13:57:20.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.285Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="生活">
+<meta property="article:tag" content="修图">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/05/08/6m34cMHoDyUuKEf.jpg">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2021/05/08/adjust-scene-photo/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>程序员五一晒图小贴士 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/05/08/adjust-scene-photo/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          程序员五一晒图小贴士
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-08 21:57:20" itemprop="dateCreated datePublished" datetime="2021-05-08T21:57:20+08:00">2021-05-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>强行凑出来的五一小长假即将结束，一年一度的朋友圈晒图大赛又将起航。虽然手机自带的图片自动<em>润色功能</em>越来越强大，但毕竟不能满足我们程序员想掌控一切的精细化调整需求。下面就我一些浅薄的调色经验，以我在长沙游天心阁玩拍的一张图片的调色过程为例，教你一套李鬼变李逵的风景调色屠龙技。最后会给一个简单的修图原理的总结，一探图片调色背后的本质。</p>
+<h2 id="先来个对比"><a href="#先来个对比" class="headerlink" title="先来个对比"></a>先来个对比</h2><p>为了说明图片调色确实有奇效，先上一个对比图给大家直观感受下：</p>
+<p><img src="https://i.loli.net/2021/05/08/6m34cMHoDyUuKEf.jpg" alt="对比图-调色前.jpg"></p>
+<p><img src="https://i.loli.net/2021/05/08/SQ19HFBJnIr3bER.jpg" alt="对比图-调色后.jpg"></p>
+<p>此图摄于老长沙制高点——天心阁。是日乌云密布，暴雨将至，从天心阁二层远眺，黄瓦蓝天，车水马龙，一动一静，似有雷霆之势。</p>
+<p>下面分步骤讲解下调色过程和原理，尽量简洁一点，并且附上参考资料，留给有兴趣深挖的同学。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记  <a href="https://www.qtmuniao.com/2021/05/08/adjust-scene-photo/">https://www.qtmuniao.com/2021/05/08/adjust-scene-photo/</a>, 转载请注明出处</em></p>
+<h2 id="拍照"><a href="#拍照" class="headerlink" title="拍照"></a>拍照</h2><p><strong>器材</strong>以 iPhone 为例，如果是 iPhone 12 pro，遇到奇佳的风景一定要祭出 raw 格式，可以在苹果 <a target="_blank" rel="noopener" href="https://support.apple.com/zh-cn/HT211965">官方文档</a>中找到相关设置方法。有数码相机使用经验的同学一定对 raw 格式不陌生，它能让你在拍摄时保留更多细节，给后期更多的发挥空间。可以说支持 raw 格式是我买 iPhone 12 pro 的一个最主要动机。</p>
+<p><strong>构图</strong>十分重要，但是与本篇主题无关，这里不详细展开，只提示一点，一定要把九宫格网格线打开，它能让你看到你所要拍摄的主体的在画面中的相对位置。如果对构图方法感兴趣，可以看看 Thomas 看看世界的<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/38ZY0_YFi6UuxpEprr-wXA">这篇教程</a>。顺便多说一嘴，他的摄影<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/AJZYNIt7H3AC6aKLIDG_vg">入门文章</a>都挺好的，恰巧，他曾经也是一枚程序员。</p>
+<h2 id="修图软件"><a href="#修图软件" class="headerlink" title="修图软件"></a>修图软件</h2><p>ios 平台的图片调色软件非常多，但我只推荐基本没有争议的 Top 1：Adobe 的 Lightroom。该软件基本功能都免费，只有一些高阶功能需要付费，但是我们一般用不到。</p>
+<p><img src="https://i.loli.net/2021/05/08/9vQzgByVROsx8EL.png" alt="lr图标.png"></p>
+<p>印象中 Android 平台也有。</p>
+<h2 id="调色步骤"><a href="#调色步骤" class="headerlink" title="调色步骤"></a>调色步骤</h2><p>下面就以开始提到的”天心阁远眺“图片为例，串下我拿到一张图片后的调色思路和过程。</p>
+<h3 id="Step-1：导入校正"><a href="#Step-1：导入校正" class="headerlink" title="Step 1：导入校正"></a>Step 1：导入校正</h3><p>在 ios <code>照片</code> app 中打开待调色原图，点左下角分享图标，找到 Lightroom （没有的话可以在<code>更多</code>里找找）导入，并且选择<code>立即启动 Lightroom</code>：</p>
+<p><img src="https://i.loli.net/2021/05/08/MDPybESVmsfphkl.jpg" alt="导入.jpeg"></p>
+<p>打开 Lightroom 后选择刚才导入的图片，在下边导航栏中找到<code>光学</code>栏目，勾选<code>移除色差</code>和<code>启用镜头矫正</code>。对于任何照片，这两个选项无脑勾选就行，因为他俩基本只会起到正向作用：比如去除紫边，比如矫正镜头畸变。</p>
+<p><img src="https://i.loli.net/2021/05/08/YSHVQrLtKGlg4oM.jpg" alt="移除色差-镜头校正.jpeg"></p>
+<h3 id="Step2：图片基调"><a href="#Step2：图片基调" class="headerlink" title="Step2：图片基调"></a>Step2：图片基调</h3><p>就像写作文一样，开始就要奠定一下图片基调。</p>
+<p>我一般通过调整<code>颜色</code>导航栏中的<code>白平衡</code>来达到目的。想表达清冷的氛围可以将<strong>色温</strong>往左移动，整体变蓝；想表达温暖、怀旧的氛围，可以将<strong>色温</strong>往右移动，整体变黄。</p>
+<p>回到这张图，发现有黄瓦、蓝色玻璃、蓝天。于是就想做一个时下比较流行的**<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=MzI4NDA5MzE5NQ==&mid=2247490312&idx=1&sn=b359e24b0368d561ce62a219b9df8162&chksm=eb81e56cdcf66c7a5499ea71c3af1045b5b43f49a925d147279816eb03c3b87679c9ca068e7f&scene=21#wechat_redirect">青橙色调</a>**。由于这两个色调方向相反，因此并不能简单地调整图片整体的白平衡。这里进行了几处组合调整，基本思路是加强（增加饱和度）青橙色调，减弱（降低饱和度）其他色调：</p>
+<ol>
+<li><strong>蓝色变青色，并增加两者饱和度</strong>。在<code>颜色</code>-<code>混合</code>中，调整蓝色向青色，然后适当向右调整两者饱和度滑块。</li>
+<li><strong>黄色变橙色，并增加两者饱和度</strong>。在<code>颜色</code>-<code>混合</code>中，调整黄色向橙色，然后适当向右调整两者饱和度滑块。</li>
+<li><strong>减弱剩余颜色饱和度</strong>。</li>
+</ol>
+<p><img src="https://i.loli.net/2021/05/08/zycUEtkFfuMBxHh.jpg" alt="青橙色调.jpeg"></p>
+<p>为了增加云彩的<strong>层次感</strong>，可以调整下<code>亮度</code>-<code>曲线</code>中的<code>蓝色通道</code>。<code>曲线</code>这个操作比较有意思，<code>曲线</code>本质上是个亮度调整函数的物化，输入 x 表示所有对应像素点的亮度值，输出 y 表示你想让他变成的亮度值。使用方法是你可以在曲线的任意地方增加锚点，然后通过拖动，来改变曲线的形状，即改变映射函数。更多曲线知识可以看<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/x9GYYY4PGf9fabLdPU_9Ug">这篇</a>。</p>
+<p>我一般的使用方法是：</p>
+<ol>
+<li>在斜线中间增加一个锚点，定住中间调的映射。</li>
+<li>增加其他锚点，调整高光或者阴影。</li>
+</ol>
+<p>由于天空是高光部分，因此在斜线右上部分再加一个锚点，稍稍往下拉，即给云彩中白色部分增加了一些黄色（蓝色的反色是黄色）。</p>
+<p><img src="https://i.loli.net/2021/05/08/CNUW8uVkXIHsdD2.jpg" alt="蓝色曲线.jpeg"></p>
+<h3 id="Step3：对比度"><a href="#Step3：对比度" class="headerlink" title="Step3：对比度"></a>Step3：对比度</h3><p>如果拿到一张图片，感觉灰蒙蒙的，说明其像素点大多集中在中间色调（即不太暗，也不太亮）。我们这张图就有点这个倾向，可以<code>右上角三个点</code>-<code>视图选项</code>-<code>显示/隐藏直方图</code>调出直方图看一下：</p>
+<p><img src="https://i.loli.net/2021/05/08/ZhCrR8XzD1xG9cj.jpg" alt="直方图.jpeg"></p>
+<p>发现”山峰“集中在中部，猜想得到验证。关于直方图的知识，可以看看<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/Au8NzM-h8FoFoIxhrf2A6Q">这篇</a>，本质上刻画的是图像平面上的像素点的亮度数量分布。</p>
+<p>增加对比度有几种方法：</p>
+<ol>
+<li>最简单的就是<code>亮度</code>-<code>对比度</code>，将滑块往右拉。但是这种方法不太精细，我一般用<code>曲线</code>。</li>
+<li>选择<code>亮度</code>-<code>曲线</code>，可以发现曲线有四个，分别是<code>总体</code>、<code>红</code>、<code>绿</code>、<code>蓝</code>。这里调整总体曲线即可。增加对比度的经典曲线形状是一个 S，即让高光部分更亮，阴影部分更暗，对比度一下就出来了。</li>
+</ol>
+<p><img src="https://i.loli.net/2021/05/08/IPvyhDYqAJrH4os.jpg" alt="曲线-全局.jpeg"></p>
+<h3 id="Step-4：增加通透感"><a href="#Step-4：增加通透感" class="headerlink" title="Step 4：增加通透感"></a>Step 4：增加通透感</h3><p>通过调整图片中物体的轮廓，让他们更加清晰，就能让图片看起来更加通透。当然，调整对比度也有这个效果。可以在<code>效果</code>栏目中调节<code>纹理</code>，<code>清晰度</code>，<code>去朦胧</code>三个滑块进行调整。三个滑块的作用边缘依次变大，<code>纹理</code>针对一些细微的边缘，<code>清晰度</code>针对更大的物体轮廓，<code>去朦胧</code>就有点类似于改变对比度了。因此一般来说<code>纹理</code>调整的最多，<code>清晰度</code>次之，<code>去朦胧</code>再次之：</p>
+<p><img src="https://i.loli.net/2021/05/08/xbylmzvPUAfDcBN.jpg" alt="效果-通透.jpeg"></p>
+<p>可以看到物体的边缘更加清晰，质感就进一步突出出来了。</p>
+<p>另外，适当增加高光和阴影的局部对比度，也可以使得照片更加通透。具体做法是修改<code>亮度</code>栏目中的：</p>
+<ol>
+<li><code>白色色阶</code>右移，<code>高光</code>左移，让最亮的部分更亮，次亮的部分压暗，增加高光对比。</li>
+<li><code>黑色色阶</code>左移，<code>阴影</code>右移，让最暗的部分更暗，次暗的部分提亮，增加阴影对比。</li>
+</ol>
+<p><img src="https://i.loli.net/2021/05/08/iQdJCRygwPtOvZo.jpg" alt="高光阴影-局部对比.jpeg"></p>
+<h3 id="Step-5：扫尾"><a href="#Step-5：扫尾" class="headerlink" title="Step 5：扫尾"></a>Step 5：扫尾</h3><p>这部可以根据癖好，增加一些<code>效果</code>，比如<code>晕影</code>（可以令主题更加突出）啊、比如<code>颗粒</code>（造出胶片的质感，给人一种怀旧的分为）啊等等。对于风景图片，我一般会增加些晕影：</p>
+<p><img src="https://i.loli.net/2021/05/08/RPpVq2fGUidLEou.jpg" alt="效果-晕影.jpeg"></p>
+<h3 id="Step-6：导出"><a href="#Step-6：导出" class="headerlink" title="Step 6：导出"></a>Step 6：导出</h3><p>至此，一张图片基本就调色完成了，最后点击右上角分享-导出为，按自己喜好选择图片品质即可。</p>
+<h2 id="原理剖析"><a href="#原理剖析" class="headerlink" title="原理剖析"></a>原理剖析</h2><p>下面是知其所以然阶段，对理论不感兴趣的小伙伴可以跳过。</p>
+<p>图片调色的本质是：”选择——调整“。选择就是选出所想要施加影响的像素点集合，调整即是改变该集合的某种属性值。选择的手段和角度都有很多，取决于你如何看待这张图片的像素点集：</p>
+<ol>
+<li><strong>看成是不同亮度的点集</strong>。<code>亮度</code>栏目下的，<code>黑色色阶-阴影-高光-白色色阶</code>，可以分别选择由暗到亮不同亮度的点集，然后将这些集合变得更亮或者更暗。另外，图像直方图是对全图亮度分布更细粒度的刻画，因此在修图时要一直关注 Lightroom 右上角的直方图变化，直方图又被称为图片的 <strong>X 光片</strong>。</li>
+<li><strong>看成是不同颜色的点集</strong>。任何一个像素点的颜色值向量都可以按 RGB （红绿蓝）三维进行分解，每个通道的取值范围一般是 0~255 的整数值。当然也可以按 CMYK（打印四原色：青洋红黄黑）进行分解。可以在<code>颜色</code>-<code>混合</code>中对这些点集进行选择，以调整其<code>色相</code>、<code>饱和度</code>和<code>明亮度</code>。</li>
+<li><strong>看成是不同物理区域的点集</strong>。即将物理相邻的一些点归到一起，比如可以调整某个物体轮廓——一棵树、一个人等等，但在手机上一般不会进行这样精细的调整，因为手指难以进行如此细致的操作。但是在电脑上这种选择方式用的相当多，比如抠图。</li>
+<li><strong>看成是不同的特点的点集</strong>。将一类具有相同的某种特点的像素点作为集合，比如选出图片中所有的物体边缘，进行锐化，可以使得图片整体变清晰。</li>
+</ol>
+<p>最后想提一嘴的是，工具毕竟是工具，最重要的还是想表达某种情绪的思路。但那就是具有闲情逸致的同学的，艺术向的高级话题了，我们不得闲的苦逼程序员不懂。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li>苹果官方文档，关于 Apple ProRAW：<a target="_blank" rel="noopener" href="https://support.apple.com/zh-cn/HT211965">https://support.apple.com/zh-cn/HT211965</a></li>
+<li>Thomas 看看世界入门文章，里面有文中提到的曲线、直方图的知识详细讲解：<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/AJZYNIt7H3AC6aKLIDG_vg">https://mp.weixin.qq.com/s/AJZYNIt7H3AC6aKLIDG_vg</a></li>
+</ol>
+<p>我是青藤木鸟，一个喜欢摄影的程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
+<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2023/01/05/2022-summary/" rel="bookmark">2022 年终总结 —— 充实和迷茫</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%94%9F%E6%B4%BB/" rel="tag"># 生活</a>
+              <a href="/tags/%E4%BF%AE%E5%9B%BE/" rel="tag"># 修图</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/04/17/storage-interview/" rel="prev" title="分布式存储面试经验">
+      <i class="fa fa-chevron-left"></i> 分布式存储面试经验
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/09/levedb-data-structures-lru-cache/" rel="next" title="漫谈 LevelDB 数据结构（三）：LRU 缓存（ LRUCache）">
+      漫谈 LevelDB 数据结构（三）：LRU 缓存（ LRUCache） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%88%E6%9D%A5%E4%B8%AA%E5%AF%B9%E6%AF%94"><span class="nav-number">1.</span> <span class="nav-text">先来个对比</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8B%8D%E7%85%A7"><span class="nav-number">2.</span> <span class="nav-text">拍照</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E5%9B%BE%E8%BD%AF%E4%BB%B6"><span class="nav-number">3.</span> <span class="nav-text">修图软件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E8%89%B2%E6%AD%A5%E9%AA%A4"><span class="nav-number">4.</span> <span class="nav-text">调色步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-1%EF%BC%9A%E5%AF%BC%E5%85%A5%E6%A0%A1%E6%AD%A3"><span class="nav-number">4.1.</span> <span class="nav-text">Step 1：导入校正</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step2%EF%BC%9A%E5%9B%BE%E7%89%87%E5%9F%BA%E8%B0%83"><span class="nav-number">4.2.</span> <span class="nav-text">Step2：图片基调</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step3%EF%BC%9A%E5%AF%B9%E6%AF%94%E5%BA%A6"><span class="nav-number">4.3.</span> <span class="nav-text">Step3：对比度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-4%EF%BC%9A%E5%A2%9E%E5%8A%A0%E9%80%9A%E9%80%8F%E6%84%9F"><span class="nav-number">4.4.</span> <span class="nav-text">Step 4：增加通透感</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-5%EF%BC%9A%E6%89%AB%E5%B0%BE"><span class="nav-number">4.5.</span> <span class="nav-text">Step 5：扫尾</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Step-6%EF%BC%9A%E5%AF%BC%E5%87%BA"><span class="nav-number">4.6.</span> <span class="nav-text">Step 6：导出</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86%E5%89%96%E6%9E%90"><span class="nav-number">5.</span> <span class="nav-text">原理剖析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2021/05/08/adjust-scene-photo/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '0d84c86d90f2d092c3d9c89be216e455',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

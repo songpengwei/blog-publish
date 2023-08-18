@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Zookeeper本篇要介绍 Patrick Hunt 等人在 2010 年发表的、至今仍然广泛使用的、定位于分布式系统协调组件的论文 —— ZooKeeper: Wait-free coordination for Internet-scale systems。我们在多线程、多进程编程时，免不了进行同步和互斥，常见手段有共享内存、消息队列、锁、信号量等等。而在分布式系统中，不同组件间必然也需要类">
+<meta property="og:type" content="article">
+<meta property="og:title" content="分布式系统协调内核——Zookeeper">
+<meta property="og:url" content="https://www.qtmuniao.com/2021/05/31/zookeeper/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Zookeeper本篇要介绍 Patrick Hunt 等人在 2010 年发表的、至今仍然广泛使用的、定位于分布式系统协调组件的论文 —— ZooKeeper: Wait-free coordination for Internet-scale systems。我们在多线程、多进程编程时，免不了进行同步和互斥，常见手段有共享内存、消息队列、锁、信号量等等。而在分布式系统中，不同组件间必然也需要类">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2021/05/31/HzoQubUVN14Pc5T.png">
+<meta property="og:image" content="https://i.loli.net/2021/05/31/HMBh9nmPE3w1oDx.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
+<meta property="article:published_time" content="2021-05-31T14:59:37.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.285Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="Zookeeper">
+<meta property="article:tag" content="论文">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/05/31/HzoQubUVN14Pc5T.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2021/05/31/zookeeper/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>分布式系统协调内核——Zookeeper | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/05/31/zookeeper/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          分布式系统协调内核——Zookeeper
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-31 22:59:37" itemprop="dateCreated datePublished" datetime="2021-05-31T22:59:37+08:00">2021-05-31</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Zookeeper"><a href="#Zookeeper" class="headerlink" title="Zookeeper"></a>Zookeeper</h1><p>本篇要介绍 Patrick Hunt 等人在 2010 年发表的、至今仍然广泛使用的、定位于<strong>分布式系统协调组件</strong>的论文 —— Z<a target="_blank" rel="noopener" href="https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf">ooKeeper: Wait-free coordination for Internet-scale systems</a>。我们在多线程、多进程编程时，免不了进行同步和互斥，常见手段有共享内存、消息队列、锁、信号量等等。而在分布式系统中，不同组件间必然也需要类似的协调手段，于是 Zookeeper 应运而生。配合客户端库，Zookeeper 可以提供动态参数配置（configuration metadata）、分布式锁、共享寄存器（shared register）、服务发现、集群关系（group membership）、多节点选主（leader election）等一系列分布式系统的协调服务。</p>
+<p>总体来看，Zookeeper 有以下特点：</p>
+<ol>
+<li>Zookeeper 是一个分布式协调内核，本身功能比较内聚，以保持 API 的简洁与高效。</li>
+<li>Zookeeper 提供一组高性能的、保证 FIFO的、基于事件驱动的非阻塞 API。</li>
+<li>Zookeeper 使用类似文件系统的目录树方式对数据进行组织，表达能力强大，方便客户端构建更复杂的协调源语。</li>
+<li>Zookeeper 是一个自洽的容错系统，使用 Zab 原子广播（atomic broadcast）协议保证高可用和一致性。</li>
+</ol>
+<p>本文依从论文顺序，简要介绍下 Zookeeper 的服务接口设计与模块粗略实现。更多细节请参考<a target="_blank" rel="noopener" href="https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf">论文</a>和<a target="_blank" rel="noopener" href="https://zookeeper.apache.org/">开源项目主页</a>。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2021/05/31/zookeeper">https://www.qtmuniao.com/2021/05/31/zookeeper</a>, 转载请注明出处</em></p>
+<h2 id="服务设计"><a href="#服务设计" class="headerlink" title="服务设计"></a>服务设计</h2><p>我们在设计服务接口的时候，首先要抽象出服务组织和交互所涉及到的基本概念，进而才能厘清围绕这些基本概念的动作集合。对于 Zookeeper 来说，这些基本概念称为<strong>术语</strong>（Terminology），动作集合称为<strong>服务接口</strong>（API）。</p>
+<h3 id="术语集"><a href="#术语集" class="headerlink" title="术语集"></a>术语集</h3><ol>
+<li><strong>客户端</strong>：client，使用 Zookeeper 服务的用户。</li>
+<li><strong>服务器</strong>：server，提供 Zookeeper 服务的进程。</li>
+<li><strong>数据树</strong>：data tree，Zookeeper 中所有的数据以树形结构进行组织。</li>
+<li><strong>z-节点</strong>：znode、Zookeeper Node，数据树中的节点，是基本数据单元。</li>
+<li><strong>会话</strong>：session，客户端与服务器会新建一个会话来标识一个连接，之后客户端每次请求都会通过该会话句柄来进行。Watch 事件的生命周期也是和会话绑定的。</li>
+</ol>
+<p>后面行文中，对应术语的中英文可能会交杂使用。</p>
+<h3 id="数据组织"><a href="#数据组织" class="headerlink" title="数据组织"></a>数据组织</h3><p>Zookeeper 对所存数据进行类似文件系统的树形层次化组织，可以提供给使用者更强大的灵活性。比如可以很自然的表示<strong>命名阈</strong>（namespace），比如使用同一父节点的所有孩子表示<strong>成员关系</strong>（membership）。一个路径（Path）可以定位到一个唯一的数据节点，进而能够唯一标识一个基本数据单元。</p>
+<p><img src="https://i.loli.net/2021/05/31/HzoQubUVN14Pc5T.png" alt="zookeeper 层次化的命名空间组织"></p>
+<p>树中支持两种类型的 znode：</p>
+<ol>
+<li><strong>普通节点</strong>：Regular，生命周期无限，客户端需要调用接口显式的对这类节点进行增删。</li>
+<li><strong>暂态节点</strong>：Ephemeral，生命周期绑定到会话上，会话销毁，节点删除。</li>
+</ol>
+<p>此外，Zookeeper 允许客户端在创建 znode 时，附加一个 <em><strong>sequential</strong></em> 标志。Zookeeper 便会自动给节点名字添加一个全局自增的计数作为后缀。</p>
+<p>Zookeeper 使用<em><strong>推</strong></em>的方式实现订阅机制，即用户在订阅（<strong>watch</strong>）了某个节点后，当该节点发生变化时，客户端会收到一次通知（边缘触发），一个订阅是绑定到会话上的，因此会话销毁后，订阅的事件也会消失。</p>
+<p><strong>会话机制（session）</strong>。可以看到，Zookeeper 使用会话机制管理客户端一次连接的生命周期。在实现时，会话会关联一个超时间隔（timeout）。如果客户端死掉或者与 Zookeeper 断开连接，超时时限内客户端未进行心跳，Zookeeper 会在服务器端销毁该会话。</p>
+<p><strong>数据模型（Data model）</strong>。Zookeeper 本质上提供树形组织的 KV 模型。除存储键值对数据外，Zookeeper 更多的是以其空间结构和生命周期管理作为表达能力，来提供协调语义。当然，Zookeeper 也允许客户端为节点附加一些<strong>元信息（meta-data）</strong>和<strong>配置信息</strong>（<strong>configuration</strong>），并且提供版本和时间戳支持，从而提供更强大的表达能力。</p>
+<h3 id="API-细节"><a href="#API-细节" class="headerlink" title="API 细节"></a>API 细节</h3><p>下面是以伪码的形式列出 Zookeeper 对客户端提供的 API 细节和注释。所有操作对象都是路径（ path） 所对应的数据节点（znode）。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在路径 path 处创建一个 znode，存入数据 data</span></span><br><span class="line"><span class="comment">// 并设置 regular, ephemeral, sequential 等 flags 标志。</span></span><br><span class="line"><span class="comment">// 返回值：znode 名字</span></span><br><span class="line"><span class="built_in">create</span>(path, data, flags) </span><br><span class="line"></span><br><span class="line"><span class="comment">// 如果 path 处的 znode 与预期 version 相同，</span></span><br><span class="line"><span class="comment">// 则删除该 znode。</span></span><br><span class="line"><span class="comment">// 指定 version 一般是为了并发安全。</span></span><br><span class="line"><span class="built_in">delete</span>(path, version)</span><br><span class="line"></span><br><span class="line"><span class="comment">// watch 让客户端在此 path 上添加一个监听</span></span><br><span class="line"><span class="comment">// 返回值：路径对应的 znode，存在时返回 true</span></span><br><span class="line"><span class="comment">// 不存在返回 false</span></span><br><span class="line"><span class="built_in">exists</span>(path, watch)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取路径 path 对应的 znode 的数据和元信息</span></span><br><span class="line"><span class="comment">// 当 znode 存在时，允许设置 watch 来监听</span></span><br><span class="line"><span class="comment">// znode 数据变化</span></span><br><span class="line"><span class="built_in">getData</span>(path, watch)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 当 version 匹配时，将数据 data 写入</span></span><br><span class="line"><span class="comment">// path 对应的 znode</span></span><br><span class="line"><span class="built_in">setData</span>(path, data, version)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取路径 path 对应的 znode 的所有孩子</span></span><br><span class="line"><span class="built_in">getChildren</span>(path, watch)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 同步最新数据，通常放在 getData 前面</span></span><br><span class="line"><span class="built_in">sync</span>(path)</span><br></pre></td></tr></table></figure>
+
+<p>上面的 API 有以下特点：</p>
+<ol>
+<li><strong>异步支持</strong>。所有接口都有<strong>同步（synchronous）</strong>和<strong>异步（asynchronous）</strong>版本。异步版本以回调函数方式进行执行，客户端可以根据业务需求，选择阻塞等待以获取重要更新，或者异步调用以获得更好性能。</li>
+<li><strong>路径而非句柄</strong>。为了简化接口设计，并减少服务端维护的状态， Zookeeper 使用路径而非 znode 句柄的形式来提供对 znode 的操作接口。毕竟，句柄类似于 session，是有状态的，会增加分布式系统的实现复杂度。使用路径，可以配合版本信息做成类似幂等的接口，在处理多客户端并发时，更容易实现。</li>
+<li><strong>版本信息</strong>。所有的<strong>更新操作（set&#x2F;delete）</strong>都需要指明对应数据的版本号，版本号不匹配则终止更新并返回异常。但可以通过指定特殊版本号 -1 ，跳过版本号检查。</li>
+</ol>
+<h3 id="语义保证"><a href="#语义保证" class="headerlink" title="语义保证"></a>语义保证</h3><p>在处理多个客户端向 Zookeeper 发出的并发请求时， API 有两个基本顺序的保证：</p>
+<ol>
+<li><strong>线性化写（Linearizable writes）</strong>。所有 Zookeeper 状态的更新请求会被串行化执行。</li>
+<li><strong>客户端内的先入先出（FIFO client order）</strong>。给定客户端的请求会按其发送的顺序进行执行。</li>
+</ol>
+<p>但这里的线性化是一种异步线性化： A-linearizability。即单个客户端可以同时有多个正在执行的请求（multiple outstanding operations），但是这些请求会按发出顺序进行执行。对于读请求，可以在每个服务器本地（不需要通过主）执行。因此，可以通过增加服务器（Observer）提升读请求的吞吐。</p>
+<p>此外，Zookeeper 还提供可用性和持久性的保证：</p>
+<ol>
+<li><strong>可用性（liveness）</strong>：Zookeeper 集群中过半数节点可用，则可对外正常提供服务。</li>
+<li><strong>持久性（durability）</strong>：任何被成功返回给客户端的修改请求，都会作用到 Zookeeper 状态机中。即使不断有节点故障重启，只要 Zookeeper 能正常提供服务，就不会影响这一特性。</li>
+</ol>
+<h2 id="Zookeeper-架构"><a href="#Zookeeper-架构" class="headerlink" title="Zookeeper 架构"></a>Zookeeper 架构</h2><p>为了提供高可靠性，Zookeeper 使用多台服务器对数据进行冗余存取。然后使用 Zab 共识协议处理所有的更新请求，然后写入 WAL，进而应用到本地内存状态机（data tree）。</p>
+<p>在 Zab 协议中，所有节点分为两种角色，Leader 和 Followers，前者只有一个，剩余的都是 Followers。但后来实践中，可能有 Observers。</p>
+<p><img src="https://i.loli.net/2021/05/31/HMBh9nmPE3w1oDx.png" alt="zookeeper 组件与请求流程"></p>
+<p>如上图所示，当 Server 收到一个请求时，首先进行预处理（Request Processor），如果是写请求，则通过 Zab 协议（Atomic Broadcast）达成一致，然后各自提交到本地数据库（Replicated Database）。对于读请求，直接读取本地数据库中状态后返回。</p>
+<h3 id="请求处理（Request-Processor）"><a href="#请求处理（Request-Processor）" class="headerlink" title="请求处理（Request Processor）"></a>请求处理（Request Processor）</h3><p>所有更新请求都会被转为<strong>幂等（idempotent）</strong>的事务（txn），具体方法为获取当前状态、计算出目标状态，封装为事务，即可使用类似 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Compare-and-swap">CAS</a> 的方式处理并发请求。因此，只要保证所有事务按固定顺序执行，就能避免不同服务器上的数据副本分裂。</p>
+<h3 id="原子广播（Atomic-Broadcast）"><a href="#原子广播（Atomic-Broadcast）" class="headerlink" title="原子广播（Atomic Broadcast）"></a>原子广播（Atomic Broadcast）</h3><p>所有更新请求都会被转给 Zookeeper 的 Leader，Leader 首先将事务追加到本地 WAL，然后将变动使用 Zab 协议广播到各个节点，收到过半成功回复之后，Leader 将变动提交（Commit）到本地内存数据库，并广播该 Commit 给 Followers。</p>
+<p>由于 Zab 使用多数票原则，因此 2k+1 个节点的集群最多可以容忍 k 个节点的故障（failures）。</p>
+<p>为了提高系统吞吐，Zookeeper 使用流水线（pipelined）方式优化多个请求处理过程。</p>
+<h3 id="复制状态机（Replicated-Database）"><a href="#复制状态机（Replicated-Database）" class="headerlink" title="复制状态机（Replicated Database）"></a>复制状态机（Replicated Database）</h3><p>每个服务器都会在本机内存中维护一个 Zookeeper 中所有状态的副本（replica），为了应对宕机重启，ZooKeeper 会定期将状态做快照。不同于普通快照，Zookeeper 称其快照为 <em>fuzzy</em> <em>snapshots</em>，即在做快照时并不上锁，通过 DFS 的方式遍历文件树 Dump 到本地。之后由于异常宕机重启时，只需加最新快照，然后重新执行最新快照之后几条 WAL 即可。由于 WAL 中记录的事务的幂等性特点，即使快照和 WAL 的时间点不完全对应，也不会影响副本间的一致性。</p>
+<h3 id="客户端服务器交互事宜（Client-Server-Interactions）"><a href="#客户端服务器交互事宜（Client-Server-Interactions）" class="headerlink" title="客户端服务器交互事宜（Client-Server Interactions）"></a>客户端服务器交互事宜（Client-Server Interactions）</h3><p><strong>串行写</strong>。无论是在全局范围还是具体到一个 Server 本地，所有更新操作都是串行的。在执行某个 Path 数据更新时，该 Server 会触发所有与之连接的 Client 所订阅的 Watch 事件。需要注意，这些事件只保存在 Server 本地，因为他们是和会话关联的，如果 Client 与该 Server 断开连接，会话便会销毁，这些事件也随之消亡。</p>
+<p><strong>本地读</strong>。为了获取极致性能，Zookeeper 的 Server 直接在本地处理读请求。但这有可能造成客户端拿到陈旧数据（比如其他客户端在另外的 Server 更新了同一 Path）。于是 Zookeeper 设计出了 Sync 操作，会将调用 Sync 时刻的最新提交数据同步到与该 Client 连接的 Server 上，然后将最新数据返回给 Client。即，Zookeeper 将<strong>性能</strong>与<strong>时效性</strong>的选择权交给了用户，方法是是否调用 Sync。</p>
+<p><strong>一致性视图</strong>。Zookeeper 全局会维持一个事务自增标识：zxid，它本质上是个逻辑时钟，可以标识 Zookeeper 一个时刻的数据视图。Client 在故障重启后重新连接到一个新的 Server 时，如果该 Server 未执行到客户端所存 zxid，则要么 Server 执行到该 zxid 后再回复 Client，要么 Client 换一个更新的 Server 进行连接。如此，可以保证 Client 不会看到回退的视图。</p>
+<p><strong>会话过期</strong>。会话在 Zookeeper 中本质上标识一个 Client 到 Server 的连接。会话有超时时间，如果 Client 长时间（大于超时间隔）不发<strong>请求</strong>或者<strong>心跳</strong>，Server 便会删除该会话。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>Zookeeper 使用目录树组织数据、使用 Zab 协议同步数据、使用非阻塞方式提供接口，构建了一个表达能力强大的分布式协调性内核。可以用于分布式系统的控制面以进行协调、调度和控制。近年来基于 Raft 的 Etcd 也是类似地位。</p>
+<hr>
+<p>我是青藤木鸟，一个喜欢摄影的程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
+<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
+              <a href="/tags/Zookeeper/" rel="tag"># Zookeeper</a>
+              <a href="/tags/%E8%AE%BA%E6%96%87/" rel="tag"># 论文</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/16/distributed-system-material/" rel="prev" title="分布式系统学习资料汇总">
+      <i class="fa fa-chevron-left"></i> 分布式系统学习资料汇总
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/06/14/paxos-zhixing/" rel="next" title="Paxos Made Simple 论文导读">
+      Paxos Made Simple 论文导读 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Zookeeper"><span class="nav-number">1.</span> <span class="nav-text">Zookeeper</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.1.</span> <span class="nav-text">服务设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD%E9%9B%86"><span class="nav-number">1.1.1.</span> <span class="nav-text">术语集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%84%E7%BB%87"><span class="nav-number">1.1.2.</span> <span class="nav-text">数据组织</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#API-%E7%BB%86%E8%8A%82"><span class="nav-number">1.1.3.</span> <span class="nav-text">API 细节</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%AD%E4%B9%89%E4%BF%9D%E8%AF%81"><span class="nav-number">1.1.4.</span> <span class="nav-text">语义保证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Zookeeper-%E6%9E%B6%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">Zookeeper 架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%B7%E6%B1%82%E5%A4%84%E7%90%86%EF%BC%88Request-Processor%EF%BC%89"><span class="nav-number">1.2.1.</span> <span class="nav-text">请求处理（Request Processor）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E5%AD%90%E5%B9%BF%E6%92%AD%EF%BC%88Atomic-Broadcast%EF%BC%89"><span class="nav-number">1.2.2.</span> <span class="nav-text">原子广播（Atomic Broadcast）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%88%B6%E7%8A%B6%E6%80%81%E6%9C%BA%EF%BC%88Replicated-Database%EF%BC%89"><span class="nav-number">1.2.3.</span> <span class="nav-text">复制状态机（Replicated Database）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%9C%8D%E5%8A%A1%E5%99%A8%E4%BA%A4%E4%BA%92%E4%BA%8B%E5%AE%9C%EF%BC%88Client-Server-Interactions%EF%BC%89"><span class="nav-number">1.2.4.</span> <span class="nav-text">客户端服务器交互事宜（Client-Server Interactions）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">1.3.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2021/05/31/zookeeper/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '56ce43dbd5a4badae95ba5ecf6549e2c',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

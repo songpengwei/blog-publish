@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="博客本来用的是 github pages，但貌似由于百度爬虫太疯狂，被 github 给 ban 掉了。根据 marketmechian 的数据，在中国大陆搜索引擎界，百度还是占了半壁江山：  Baidu: 67.09% Sogou: 18.75% Shenma: 6.84% Google: 2.64% bing: 2.6% Other: 2.08%  而作为一个中文博客，还是希望能够被更多的国内">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用 Vercel 托管 Hexo 静态博客">
+<meta property="og:url" content="https://www.qtmuniao.com/2020/03/15/hexo-to-zeit-co/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="博客本来用的是 github pages，但貌似由于百度爬虫太疯狂，被 github 给 ban 掉了。根据 marketmechian 的数据，在中国大陆搜索引擎界，百度还是占了半壁江山：  Baidu: 67.09% Sogou: 18.75% Shenma: 6.84% Google: 2.64% bing: 2.6% Other: 2.08%  而作为一个中文博客，还是希望能够被更多的国内">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/03/15/31UAIsDMlKfTLNi.png">
+<meta property="og:image" content="https://i.loli.net/2020/03/15/XUSAh2Ci5GwE4ab.png">
+<meta property="og:image" content="https://i.loli.net/2020/03/15/WXr3IK6VtwE1ZDs.png">
+<meta property="og:image" content="https://i.loli.net/2020/03/15/B6IenXtNiWQpMAF.png">
+<meta property="article:published_time" content="2020-03-15T07:23:42.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.282Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="vercel">
+<meta property="article:tag" content="百度爬虫">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/03/15/31UAIsDMlKfTLNi.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2020/03/15/hexo-to-zeit-co/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>使用 Vercel 托管 Hexo 静态博客 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/03/15/hexo-to-zeit-co/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用 Vercel 托管 Hexo 静态博客
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-03-15 15:23:42" itemprop="dateCreated datePublished" datetime="2020-03-15T15:23:42+08:00">2020-03-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" itemprop="url" rel="index"><span itemprop="name">搭建博客</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/Hexo/" itemprop="url" rel="index"><span itemprop="name">Hexo</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>博客本来用的是 github pages，但貌似由于百度爬虫太疯狂，被 github 给 ban 掉了。根据 <a target="_blank" rel="noopener" href="https://www.marketmechina.com/baidu-search-engine-market-share-in-china-dec-2019/">marketmechian</a> 的数据，在中国大陆搜索引擎界，百度还是占了半壁江山：</p>
+<ul>
+<li>Baidu: 67.09%</li>
+<li>Sogou: 18.75%</li>
+<li>Shenma: 6.84%</li>
+<li>Google: 2.64%</li>
+<li>bing: 2.6%</li>
+<li>Other: 2.08%</li>
+</ul>
+<p>而作为一个中文博客，还是希望能够被更多的国内用户看到，因此一直在寻求一个使得百度爬虫自动爬取博客的方法。偶然间在浏览博客时，看到了有人在推荐 zeit.co 这个托管平台，使用了下，发现真是个非常棒的静态代码托管+CI Serverless Function 平台，在这里推荐给大家。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2020/03/15/hexo-to-zeit-co/">https://www.qtmuniao.com/2020/03/15/hexo-to-zeit-co/</a>, 转载请注明出处</em></p>
+<h2 id="几种方法"><a href="#几种方法" class="headerlink" title="几种方法"></a>几种方法</h2><p>网上有很多方法可以使百度爬虫爬取博客页面，总结起来主要有：</p>
+<ol>
+<li>CDN，利用云服务提供商将 blog 多做几个镜像。</li>
+<li>换托管平台，比如说国内的代码托管平台。</li>
+<li>自行使用 VPS 托管。</li>
+</ol>
+<p>CDN 比较贵，又不想换托管平台，VPS 大陆访问速度不快。因此这件事一直搁置。</p>
+<h2 id="zeit-co-vercel"><a href="#zeit-co-vercel" class="headerlink" title="zeit.co(vercel)"></a>zeit.co(vercel)</h2><p>这天在搜索资料时，注意到有博主 [1] 提到 <a target="_blank" rel="noopener" href="https://zeit.co/docs">zeit.co</a>，一个静态网页和无状态函数托管的云平台。试用了之后，感觉非常强大，它能够以 Github App 的形式与 GitHub 集成，接管 repo 的 CI，进行深度定制，并且能够快速部署、自动伸缩。</p>
+<p>关键是，现在基本功能是免费的，这对于我们托管博客来说，已经很够用了。更惊喜的是，它还提供智能 CDN 和智能 DNS。</p>
+<p><img src="https://i.loli.net/2020/03/15/31UAIsDMlKfTLNi.png" alt="zeit-price.png"></p>
+<h2 id="改造"><a href="#改造" class="headerlink" title="改造"></a>改造</h2><p>了解到 zeit 的优势后，就开始着手改造博客的托管方式。主要有以下几个步骤：</p>
+<ol>
+<li>静态代码生成修改</li>
+<li>代码库导入 zeit</li>
+<li>修改 dns 指向</li>
+</ol>
+<h3 id="静态代码生成"><a href="#静态代码生成" class="headerlink" title="静态代码生成"></a>静态代码生成</h3><p>并不是所有人都需要这一步，我需要只是因为之前不太懂 hexo 的工作机制，自己坑了自己。</p>
+<p>之前我只使用了一个 repo 来管理所有博客代码：用 master 分支作为 hexo 开发分支，使用 gh-pages 分支作为静态代码分支，然后将 repo 的 github pages 指向 gh-pages 分支，以发布博客。</p>
+<p>由于 zeit 只能给 repo 的默认分支（即 master）做 CI，因此使用 zeit 托管 hexo 博客至少有两种方式：</p>
+<ol>
+<li><strong>托管 Hexo 开发代码</strong>。使用 zeit 接管 hexo 仓库代码，并为其配置 CI：每次往 master push 代码时，触发 CI，编译生成静态网页代码到 public 文件夹，然后将 public 文件夹发布。</li>
+<li><strong>托管静态网页代码</strong>。让 hexo 每次将静态网页代码生成到一个新的 repo 的 master 分支，然后将该 repo 导入到 zeit 进行托管。</li>
+</ol>
+<p>我使用第一种的时候，发现 <code>hexo build</code> 老是失败，后面发现是我由于深度定制 NexT，修改了 NexT 主题的一些代码，但是并没有将其提交到仓库中。因为我本地的 NexT 主题代码仍然通过 git 关联着官方 NexT repo，以便及时 pull 最新特性，所以没有将其纳入 hexo 的仓库中。这一块深究一下应该也有解决方案，但是我懒，就选择了更简单的第二种托管方式：</p>
+<p>将 hexo 代码库中配置文件  <code>hexo/_config.yml</code> 中部署方式修改如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">78</span> <span class="comment"># Deployment</span></span><br><span class="line"><span class="number">79</span> <span class="comment">## Docs: https://hexo.io/docs/deployment.html</span></span><br><span class="line"><span class="attr">80 deploy:</span></span><br><span class="line"><span class="attr">81   type:</span> <span class="string">git</span></span><br><span class="line"><span class="attr">82   repo:</span> <span class="string">https://github.com/you-git-name/blog-publish.git</span></span><br><span class="line"><span class="attr">83   branch:</span> <span class="string">master</span></span><br></pre></td></tr></table></figure>
+
+<p>每次执行命令 <code>hexo d -g</code> 时，就会将生成的静态网页代码 push 到 repo <code>blog-publish</code> 下：</p>
+<p><img src="https://i.loli.net/2020/03/15/XUSAh2Ci5GwE4ab.png" alt="zeit-repo-publish.png"></p>
+<p>这样还有额外的好处，就是以前我很蠢的将各种配置（包括我的一些网站的秘钥）暴露在了 git 的公共仓库中（因为 private 仓库不能用 github pages），使用第二种部署方式，我将我的开发 repo 和静态代码 repo 都设置为了 private。此外，zeit 会获取导入 repo 的所有读写权限，还是有点小颤抖，因此，搞一个额外的静态代码 repo 在这里很合适。</p>
+<h3 id="代码-repo-导入-zeit"><a href="#代码-repo-导入-zeit" class="headerlink" title="代码 repo 导入 zeit"></a>代码 repo 导入 zeit</h3><p>Zeit 网页界面很简洁，还算比较好用。</p>
+<p><strong>注册</strong>。打开登陆页面：<a target="_blank" rel="noopener" href="https://zeit.co/login%EF%BC%8C%E4%BD%BF%E7%94%A8">https://zeit.co/login，使用</a> GitHub 账号登陆即可。</p>
+<p><strong>导入</strong>。在主页面点击 “Import Project”，然后 “Import Project From Git Repo”，选择 GitHub。进行一下授权，注意只需导入静态代码仓库 <code>blog-publish</code> 。</p>
+<p><strong>部署</strong>。导入过程中，选择 other 模板即可，默认 ci 命令不用改，Root Directory 也不用改，导入完成后就会自动帮你 deploy。</p>
+<p>最后在部署卡片中就可以看到 zeit 生成的 URL：</p>
+<p><img src="https://i.loli.net/2020/03/15/WXr3IK6VtwE1ZDs.png" alt="zeit-deploy.png"></p>
+<h3 id="修改-DNS-指向"><a href="#修改-DNS-指向" class="headerlink" title="修改 DNS 指向"></a>修改 DNS 指向</h3><p>如果你有自己的域名，需要在域名服务提供商（阿里云、GoDaddy等）的 DNS 解析中增加一条 CNAME 记录（将你的域名指向另一个域名）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">www  CNAME	默认	blog-publish.now.sh.	0	600</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="百度爬取"><a href="#百度爬取" class="headerlink" title="百度爬取"></a>百度爬取</h2><p>最后在百度<a target="_blank" rel="noopener" href="https://ziyuan.baidu.com/https/index">站长工具页面</a>，在 <em>数据监控</em> &gt; <em>抓取诊断</em>，进行测试。</p>
+<p>坑爹的是，我之前在域名解析时为百度爬虫配置了专门的线路，让其去我的 vps 抓取（当然最后没有成功，不然也就不会有本文了）。现在将那条记录去除后，百度爬虫这边时时不更新我的域名所对应 IP，点击报错后，提示几分钟后更新，然而几个小时过去了，依然未更新，当然这就是后话了。</p>
+<p><img src="https://i.loli.net/2020/03/15/B6IenXtNiWQpMAF.png" alt="zeit-baidu.png"></p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><strong>[1]</strong> 解决百度爬虫无法爬取 Github Pages 个人博客的问题：<a target="_blank" rel="noopener" href="https://zpjiang.me/2020/01/15/let-baidu-index-github-page/">https://zpjiang.me/2020/01/15/let-baidu-index-github-page/</a></p>
+<p><strong>[2]</strong> zeit.co 帮助文档：<a target="_blank" rel="noopener" href="https://zeit.co/docs">https://zeit.co/docs</a></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/vercel/" rel="tag"># vercel</a>
+              <a href="/tags/%E7%99%BE%E5%BA%A6%E7%88%AC%E8%99%AB/" rel="tag"># 百度爬虫</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/03/14/6-824-vidoe-notes-3-gfs/" rel="prev" title="MIT 6.824 2020 视频笔记三：GFS">
+      <i class="fa fa-chevron-left"></i> MIT 6.824 2020 视频笔记三：GFS
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/03/19/wisckey/" rel="next" title="WiscKey —— SSD 介质下的 LSM-Tree 优化">
+      WiscKey —— SSD 介质下的 LSM-Tree 优化 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%A0%E7%A7%8D%E6%96%B9%E6%B3%95"><span class="nav-number">1.</span> <span class="nav-text">几种方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#zeit-co-vercel"><span class="nav-number">2.</span> <span class="nav-text">zeit.co(vercel)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B9%E9%80%A0"><span class="nav-number">3.</span> <span class="nav-text">改造</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E4%BB%A3%E7%A0%81%E7%94%9F%E6%88%90"><span class="nav-number">3.1.</span> <span class="nav-text">静态代码生成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81-repo-%E5%AF%BC%E5%85%A5-zeit"><span class="nav-number">3.2.</span> <span class="nav-text">代码 repo 导入 zeit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9-DNS-%E6%8C%87%E5%90%91"><span class="nav-number">3.3.</span> <span class="nav-text">修改 DNS 指向</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%99%BE%E5%BA%A6%E7%88%AC%E5%8F%96"><span class="nav-number">4.</span> <span class="nav-text">百度爬取</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2020/03/15/hexo-to-zeit-co/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '2ed671423cc63e31587e592696ec949e',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

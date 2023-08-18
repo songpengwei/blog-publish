@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="本篇文章来自我的小报童专栏，初步规划有以下几个系列：  图数据库101系列 每天学点数据库系列 系统好文推荐系列 读书笔记系列 数据密集型论文导读系列  会保证每周不低于两篇更新，订阅方式见专栏介绍，欢迎喜欢我文章的朋友们的订阅支持，激励我产出更多优质文章。  国内很多大学的计算机专业，比较偏重基础和理论的“灌输”（就我当年上学的体验，现在可能会好一些），对于代码能力，虽然也有一些课程实验，但往">
+<meta property="og:type" content="article">
+<meta property="og:title" content="影响我写代码的三个 “Code”">
+<meta property="og:url" content="https://www.qtmuniao.com/2023/03/25/how-to-read-and-write-code/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="本篇文章来自我的小报童专栏，初步规划有以下几个系列：  图数据库101系列 每天学点数据库系列 系统好文推荐系列 读书笔记系列 数据密集型论文导读系列  会保证每周不低于两篇更新，订阅方式见专栏介绍，欢迎喜欢我文章的朋友们的订阅支持，激励我产出更多优质文章。  国内很多大学的计算机专业，比较偏重基础和理论的“灌输”（就我当年上学的体验，现在可能会好一些），对于代码能力，虽然也有一些课程实验，但往">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-03-25T05:20:34.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.290Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="编程">
+<meta property="article:tag" content="素养">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2023/03/25/how-to-read-and-write-code/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>影响我写代码的三个 “Code” | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/03/25/how-to-read-and-write-code/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          影响我写代码的三个 “Code”
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-25 13:20:34" itemprop="dateCreated datePublished" datetime="2023-03-25T13:20:34+08:00">2023-03-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>本篇文章来自我的小报童专栏，初步规划有以下几个系列：</p>
+<ul>
+<li>图数据库101系列</li>
+<li>每天学点数据库系列</li>
+<li>系统好文推荐系列</li>
+<li>读书笔记系列</li>
+<li>数据密集型论文导读系列</li>
+</ul>
+<p>会保证每周不低于两篇更新，订阅方式见<a target="_blank" rel="noopener" href="https://xiaobot.net/p/system-thinking">专栏介绍</a>，欢迎喜欢我文章的朋友们的订阅支持，激励我产出更多优质文章。</p>
+</blockquote>
+<p>国内很多大学的计算机专业，比较偏重基础和理论的“灌输”（就我当年上学的体验，现在可能会好一些），对于代码能力，虽然也有一些课程实验，但往往不太够用。于是，在进入正式工作前，很多同学就会对自己代码水平不太自信。下面我就根据我自身的写代码经历提供一些建议。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2023/03/25/how-to-read-and-write-code">https://www.qtmuniao.com/2023/03/25/how-to-read-and-write-code</a> 转载请注明出处</em></p>
+<h2 id="一些经历"><a href="#一些经历" class="headerlink" title="一些经历"></a>一些经历</h2><p>我是 2010 年上的北邮，当时也是很迷糊的就进了计算机专业。自然的，在大学一开始也谈不上什么学习规划。只能是沿用着高中的学习方法，懵懂地跟着老师走——上课就听课，课余就自习做作业。结果便是，学习效率很低，上课听不太懂、题目做不通透。但总归，上完计算机导论后，编程作业都是自己啃出来的，跌跌撞撞的完成之后，慢慢地竟感受到了编程的乐趣。</p>
+<p>我们当时大作业最多的几门课，C++ 程序设计、算法和数据结构、操作系统、计算机网络、微机原理等，现在想来，大部分都都跟玩具一样。后来做了国外一些知名大学公开课的实验才知道，要打造好一个实验项目，是非常难的事情：</p>
+<ol>
+<li>首先，得适配学生的水平，准备详尽的实验材料。</li>
+<li>其次，得搭好代码框架，在合适的地方“留白”，给学生“填空”。</li>
+<li>最后，还得构建足够好的自动化测试平台，进行打分。</li>
+</ol>
+<p>如果从头开发，这里面涉及到的复杂度、需要花的心思，并不比发一篇顶会论文简单。那作为教授来说，有这些时间，我为什么不去发一篇论文呢？毕竟国内高校都是科研第一、教学老末。</p>
+<p>因此，我在本科课内，代码水平也并没有打下太好的基础。在后面在读研和工作中，不断摸索，代码水平才一点点提高。回头来看，对我代码能力提升有比较大影响的可以总结为 “Code”：<strong>LeetCode</strong>、<strong>Writing&#x2F;Review Code Loop</strong>、<strong>Clean Code</strong>。</p>
+<h2 id="LeetCode"><a href="#LeetCode" class="headerlink" title="LeetCode"></a>LeetCode</h2><p>在说 LeetCode 前，想先说说工作后，见到的一类神奇的人——打过算法比赛（通称 ACM，其实是 ICPC 和 CCPC）的同学的印象。这类同学的一大突出特点，用最简单直接的语言来形容，就是：<strong>出活快</strong>。几年的竞赛经历，让他们只要在脑袋中对需求（题目）理解之后，就能在最短的时间内转化为代码。</p>
+<p>由于太过懵懂，我自然是没有打过竞赛，等反应过来竞赛的诸般好处时，已经大三下了。当时，校队也不会招这么“大龄”的队员了，就算招，门槛也非常高。也是大学诸多憾事中的一件了。</p>
+<p>后来读了研，在找工作前一年时，LeetCode 已经相当流行了，便也和同学组队，互相激励着刷了起来。当时题目还不是特别多，到研二暑假找实习时，大概把前两百多道刷了两遍。一开始，会不断思考题目是什么意思，该用什么算法解，有时半天想不出来，便去看高票答案。很多高票解真的是精妙而简练，这大概也是当时 LeetCode 最吸引人的地方之一。慢慢的对各种类型题目有些感觉之后，就开始练速度和通过率。也就是上文说的，在理解题目后，能够迅速转变为 bug free 的代码。</p>
+<p>因此，虽然没有打过比赛，但是通过 LeetCode 的训练，确实也有了类似竞赛的收获。但自然，在深度、广度和速度上都远不及那些“身经百赛”的同学。不过于我已经是受益匪浅：</p>
+<ol>
+<li><strong>对常见数据结构和算法掌握纯熟</strong>。比如现在说起六种排序，特点、使用场景、背后原理，可以做到如数家珍；比如说起树的各种递归非递归遍历，脑动模拟递归执行过程，也是信手拈来；再比如链表、队列、图等特点，也能在脑中边模拟，边换成代码。</li>
+<li><strong>学到了很多精巧的代码片段“构件”</strong>。比如如何二分、如何迭代、如何处理链表头尾节点、如何设计基本数据结构的接口等等。这些偏“原子”的构件，是我后来工作中写代码的血肉来源。</li>
+</ol>
+<p>但只有这些，是远远不够的，一到大项目里，写出的代码就很容易——“有佳句无佳章”。</p>
+<h2 id="Writing-x2F-Review-Code-Loop"><a href="#Writing-x2F-Review-Code-Loop" class="headerlink" title="Writing&#x2F;Review Code Loop"></a>Writing&#x2F;Review Code Loop</h2><p>遇到上述窘境，往往是因为缺少中大型项目的磨练。表现在<strong>空间上</strong>，不知道如何组织上万行的代码，如何划分功能模块、构建层次体系；体现在<strong>时间上</strong>，没有经过项目“起高楼、宴宾客、楼塌了”的构建-腐烂-重构循环。</p>
+<p>工程中在理解代码和组织代码时有个矛盾：</p>
+<ol>
+<li><strong>可理解性</strong>。作为维护人员，我们学习代码时，多喜欢顺着<strong>数据流</strong>和<strong>控制流</strong>来理解，所谓根据某个头，一路追查到底，是为<strong>纵向</strong>。</li>
+<li><strong>可维护性</strong>。但作为架构人员，我们组织代码时，为了容易维护，多是按照围绕模块来组织代码——把关联紧密的代码聚合到一块，是为<strong>横向</strong>。</li>
+</ol>
+<p>所以我们在拿到一个大工程时，如果立即地毯式的看代码，肯定会昏昏欲睡、事倍功半。不幸的是，由于多年读书养成的强大习惯，这个毛病，跟了我很多年。正确的打开方式是，要像对待团在一起的多条线一样，找到“线头”，然后慢慢往外揪。在项目中，这些线头是：service 的 main 函数、各种单测入口。</p>
+<p>但我们在构建一个大工程时，又得反着来：先搭建一个揉在一起的主流程，然后逐渐迭代。就像盘古开天辟地一样，随着时间而演化，让天慢慢的升高、地慢慢下降，让整体化为地上四极、山川河流、太阳月亮。如是迭代，将一个混沌的流程，慢慢地模块化。比如常用的工具模块（utils）、业务相关基础模块（common）、控制模块（controller、manager）、RPC HTTP 等回调处理模块（processor）等等。</p>
+<p>但当然，如果你已经有了构建某种类型系统的经验，则并不需要在构建初期经历这个漫长过程，可以直接按经验分出一些模块。更进一步，你已经形成了自己的一个代码库，比如时钟、网络、多线程、流控等等，可以直接拿来就用。</p>
+<p>那剩下的问题就是细节的微调，我们在进行分层时，边界处的功能，是往上升，还是往下沉；某个较完整的结构，是拍平到使用类里，还是单独拎出来；这些形形色色的决策，都没有一个定则，更多的还是根据场景的需求、工期的长短等诸多实际情况，便宜行事。而这种背后的决策，则是在长时间对中大型项目的学习、对别人修改的 Review、自己上手搭架子和修修补补中，一点点形成的直觉。</p>
+<p>就像股票市场有周期一样，工程代码也是有其周期。不经历一个股市牛熊周期，我们不敢轻言<strong>空多</strong>；不经历过一个工程构建-成熟-腐烂的周期，我们也不敢轻言<strong>取舍</strong>。即，没办法在工程构建初期，预见到其最常用的打开方式，进而面向主要场景设计，牺牲次要场景的便利性。</p>
+<p>单元测试的重要性，怎么强调都不为过。一方面，能不能写出的单元测试，意味着你代码的模块边界是否清楚；另一方面，通过设计好的输入和输出，测试能够保证某种“不变性”，之后无论你怎么微调、重构，只要能跑过之前的测试，那就可以放心一半。另一半，就要靠自己和别人不断 Review 、测试集群线上集群不断地迭代了。</p>
+<p>所以，这个过程是一个无休止的 loop，不断的磨，尔后不断地提升。</p>
+<h2 id="Clean-Code"><a href="#Clean-Code" class="headerlink" title="Clean Code"></a>Clean Code</h2><p>最后说说对代码的<strong>品味</strong>。小节标题是：Clean Code，是因为我对代码的品味，最初是从 <a target="_blank" rel="noopener" href="https://book.douban.com/subject/4199741/">Clean Code: A Handbook of Agile Software Craftsmanship</a> 这本书建立起来的。其第二章对<strong>命名</strong>——这个工程中“最难”的事情——的阐述，给我印象很深。</p>
+<p>举几个例子：</p>
+<ol>
+<li><strong>单一职责</strong>。如果你不能清晰的对你的类或者函数命名，说明你的类或者函数干的事情太多了。</li>
+<li><strong>命名代替注释</strong>。比如不要直接使用字面值常量，最好给其一个名字；比如最好不要使用匿名函数，也要给其一个能看出含义的名字。</li>
+</ol>
+<p>工作中，我们常说，某某对代码有“洁癖”。我也多少有一些，但我并不以为这是洁癖，而是一种对美的欣赏和追求。代码的美体现在哪里呢？我这里稍微抛个砖（当然，我之前也写文章就代码命名问题啰嗦过，感兴趣的可以点<a href="https://www.qtmuniao.com/2021/12/12/how-to-write-code-scrutinize-names/">这里</a>可以去看看）：</p>
+<ol>
+<li><strong>一致性</strong>。比如具有相同含义的实体，使用相同的命名；而需要区分的实体，则要通过命名阈、前缀来进行甄别。从而给读者造成最小的心智负担。</li>
+<li><strong>体系性</strong>。是指我们在做一组相关接口时，要考虑其体体系性。比如增删改查，比如生产消费，比如预处理、处理、处理后，比如读取写入等等。体系性又包括对称性和逻辑性，让人在拿到一组接口时，就能最小成本地理解其是如何相互联系、又是如何具有区别的。</li>
+<li><strong>没有赘肉</strong>。写代码，不要啰嗦，不要啰嗦，不要啰嗦。如果不小心啰嗦了，说明你可能没有想清楚所解决问题的本质。复杂的表象，在不断地剥离杂质后，往往有很简单的关窍。抓住这些关窍，再往其上附着骨肉，同时理清楚一对一、一对多、多堆多等依赖关系，往往能化简为繁。</li>
+</ol>
+<p>不同概念（对应代码中的类）间的关系，在理解代码组织的时候至关重要，最好在名字上有所体现，比如一对一，一对多还是多对多。每个概念的内涵，以及多个概念之间的包含、连接关系，是在做模块设计的时候最需要考虑的事情之一。</p>
+<p>在审美之外，还要说说<strong>建模</strong>（在某种程度上和<strong>隐喻</strong>是相通的）。毕竟，我们在说<strong>构建</strong>时，本身就是借助的建筑学中的隐喻。软件工程中，类似的隐喻随处可见。</p>
+<p><strong>我们大脑在认知新事物时，多建立在基于旧的模型推演上</strong>。因此，如果在处理模块时，如果能从经典的模型库中，找到一个相对合适的抽象，往往能够极大降低用户理解门槛。比如经典的生产者消费者模型、树形组织模型、路由器模型、线程调度模型、内存模型等等。此外，也可以使用某种常见意像、隐喻来命名项目，往往也能在易理解性上收获奇效。比如监控系统，可以叫“鹰眼”；比如各种流水线管控，可以叫“富士康”（手动斜眼）；再比如更常见一些的数据采集，我们都知道他叫——“爬虫”。</p>
+<h2 id="The-last-Thing"><a href="#The-last-Thing" class="headerlink" title="The last Thing"></a>The last Thing</h2><p>世间的事情往往是多方印证、互相补足的——<strong>如果你想写好代码，就不能只是低头写代码</strong>，你得去读读历史、学学美术、写写文字、见见河山，建立一套你自己的审美偏好，然后将其理念平移到写代码里来，才能写出符合直觉、具有美感的好代码。</p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/10/12/how-to-write-code-abstract/" rel="bookmark">好好写代码之素养篇——抽象和讲究</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag"># 编程</a>
+              <a href="/tags/%E7%B4%A0%E5%85%BB/" rel="tag"># 素养</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/03/22/velox-task-analysis/" rel="prev" title="Facebook Velox 运行机制全面解析">
+      <i class="fa fa-chevron-left"></i> Facebook Velox 运行机制全面解析
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/06/05/how-rocksdb-works/" rel="next" title="RocksDB 运行原理">
+      RocksDB 运行原理 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E7%BB%8F%E5%8E%86"><span class="nav-number">1.</span> <span class="nav-text">一些经历</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LeetCode"><span class="nav-number">2.</span> <span class="nav-text">LeetCode</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Writing-x2F-Review-Code-Loop"><span class="nav-number">3.</span> <span class="nav-text">Writing&#x2F;Review Code Loop</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Clean-Code"><span class="nav-number">4.</span> <span class="nav-text">Clean Code</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#The-last-Thing"><span class="nav-number">5.</span> <span class="nav-text">The last Thing</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2023/03/25/how-to-read-and-write-code/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '6ccfd77db4dc9d117a5f78af7cbbc957',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

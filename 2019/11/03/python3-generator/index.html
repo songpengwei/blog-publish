@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="引子某次面试问候选人：Python 中生成器是什么？答曰：有 yield 关键字的函数。而在我印象中此种函数返回的值是生成器，而函数本身不是。如下： 1234567891011In [1]: def get_nums(n):    ...:     for i in range(n):    ...:         yield i    ...:">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Python3 生成器（Generator）概念浅析">
+<meta property="og:url" content="https://www.qtmuniao.com/2019/11/03/python3-generator/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="引子某次面试问候选人：Python 中生成器是什么？答曰：有 yield 关键字的函数。而在我印象中此种函数返回的值是生成器，而函数本身不是。如下： 1234567891011In [1]: def get_nums(n):    ...:     for i in range(n):    ...:         yield i    ...:">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/eUrTyHxMR9POsJh.png">
+<meta property="article:published_time" content="2019-11-03T09:13:39.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.281Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="generator">
+<meta property="article:tag" content="生成器">
+<meta property="article:tag" content="iterator">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/eUrTyHxMR9POsJh.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2019/11/03/python3-generator/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Python3 生成器（Generator）概念浅析 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/11/03/python3-generator/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Python3 生成器（Generator）概念浅析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-11-03 17:13:39" itemprop="dateCreated datePublished" datetime="2019-11-03T17:13:39+08:00">2019-11-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="https://i.loli.net/2020/02/09/eUrTyHxMR9POsJh.png" alt="python-generator.png"></p>
+<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>某次面试问候选人：Python 中生成器是什么？答曰：有 yield 关键字的函数。而在我印象中此种函数返回的值是生成器，而函数本身不是。如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">1</span>]: <span class="keyword">def</span> <span class="title function_">get_nums</span>(<span class="params">n</span>): </span><br><span class="line">   ...:     <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n): </span><br><span class="line">   ...:         <span class="keyword">yield</span> i </span><br><span class="line">   ...:                                                                                                                                                                  </span><br><span class="line">In [<span class="number">2</span>]: <span class="built_in">type</span>(get_nums)</span><br><span class="line">Out[<span class="number">2</span>]: function</span><br><span class="line">  </span><br><span class="line">In [<span class="number">3</span>]: nums = get_nums(<span class="number">10</span>)   </span><br><span class="line">  </span><br><span class="line">In [<span class="number">4</span>]: <span class="built_in">type</span>(nums)</span><br><span class="line">Out[<span class="number">4</span>]: generator</span><br></pre></td></tr></table></figure>
+
+<p>但看候选人那么笃定，隐隐然感觉哪里不对，于是有了以下探究。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
+<h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p>要弄清楚 Python3 中这些概念的区别，最权威的当然是去看官方的<a target="_blank" rel="noopener" href="https://docs.python.org/3/glossary.html">术语对照表</a>：</p>
+<blockquote>
+<p><strong>generator</strong></p>
+<p>​	A function which returns a <a target="_blank" rel="noopener" href="https://docs.python.org/3/glossary.html#term-generator-iterator">generator iterator</a>. It looks like a normal function except that it contains 	<a target="_blank" rel="noopener" href="https://docs.python.org/3/reference/simple_stmts.html#yield"><code>yield</code></a> expressions for producing a series of values usable in a for-loop or that can be retrieved one  	at a time with the <a target="_blank" rel="noopener" href="https://docs.python.org/3/library/functions.html#next"><code>next()</code></a> function.</p>
+<p>​	Usually refers to a generator function, but may refer to a <em>generator iterator</em> in some contexts. In cases 	where the intended meaning isn’t clear, using the full terms avoids ambiguity.</p>
+<p><strong>generator iterator</strong></p>
+<p>​	An object created by a <a target="_blank" rel="noopener" href="https://docs.python.org/3/glossary.html#term-generator">generator</a> function.</p>
+<p>​	Each <a target="_blank" rel="noopener" href="https://docs.python.org/3/reference/simple_stmts.html#yield"><code>yield</code></a> temporarily suspends processing, remembering the location execution state (including 	local variables and pending try-statements). When the <em>generator iterator</em> resumes, it picks up where it 	left off (in contrast to functions which start fresh on every invocation).</p>
+<p><strong>generator expression</strong></p>
+<p>​	An expression that returns an iterator. It looks like a normal expression followed by a <code>for</code> clause  defining a loop variable, range, and an optional <code>if</code> clause. </p>
+</blockquote>
+<p>可以看出，Python generator 相关的概念主要有三个，分别是 <strong>generator</strong>，<strong>generator expression</strong>，<strong>generator iterator</strong>。上面也特别指出了， genrator 在有的上下文中指的是 generator function（如候选人所说），但在另外一些上下文中却指的是 generator iterator（如上面例子解释器告诉我们的）。为了避免歧义，大家在表达时可以尽量说全称。</p>
+<p>结合我的一些经验，可以将其归纳为以下三个概念：</p>
+<ul>
+<li>Generator Function：含有 yield 关键字的<strong>函数</strong>，会返回一系列值，可以使用 next() 对其返回值进行迭代。</li>
+<li>Generator Iterator：generator function 返回的<strong>对象</strong>。可以进行一次性地迭代。</li>
+<li>Generator Expression：可以求值为 generator iterator 的<strong>表达式</strong>。使用小括号和 for 来定义，如下面例子：</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">5</span>]: a = (i*i <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">10</span>))                                                                                                                                                                                                                                     </span><br><span class="line"></span><br><span class="line">In [<span class="number">6</span>]: <span class="built_in">type</span>(a)                                                                                                                                                                                                                                                          </span><br><span class="line">Out[<span class="number">6</span>]: generator</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="深入"><a href="#深入" class="headerlink" title="深入"></a>深入</h2><h3 id="生成器-vs-迭代器"><a href="#生成器-vs-迭代器" class="headerlink" title="生成器 vs 迭代器"></a>生成器 vs 迭代器</h3><p>从中文字面可能不好理解它们的关系，但是从上文提到的英文术语来分析：generator iterator。他们的关系就一目了然了：</p>
+<blockquote>
+<p>迭代器（Iterator）是一种更宽泛的概念，生成器（generator Iterator）是一种迭代器，但反过来不成立。</p>
+</blockquote>
+<p>迭代器是任何实现了 <code>__next__</code> 方法的<strong>对象</strong>（object），可以通过 <code>next(iterator)</code> 对其进行迭代，迭代结束时会抛出 <code>StopIteration</code> 异常。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">  <span class="keyword">try</span>:</span><br><span class="line">    x = <span class="built_in">next</span>(an_iterator)</span><br><span class="line">    do_sth_with(x)</span><br><span class="line">  <span class="keyword">except</span> StopIteration:</span><br><span class="line">    <span class="keyword">break</span></span><br><span class="line"> </span><br></pre></td></tr></table></figure>
+
+<p>通常我们会使用 <code>for in</code> 来对其进行简化迭代：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> x <span class="keyword">in</span> an_iterator:</span><br><span class="line">  do_sth_with(x)</span><br></pre></td></tr></table></figure>
+
+<h3 id="yield-原理"><a href="#yield-原理" class="headerlink" title="yield 原理"></a>yield 原理</h3><p><strong>yield</strong> 是一个神奇的关键字，它会临时挂起当前函数，记下其上下文（包括局部变量、待决的 try catch 等），将控制权返回给函数调用者。当下一次再调用其所在 generator function 时，会恢复保存的上下文，继续执行剩下的语句，直到再遇到 yield 或者退出为止。</p>
+<p>我们常见的 <strong>return</strong> 是与之相对的关键字，但 return 会结束函数调用，销毁上下文（弹出栈帧），将控制权返回给调用者。</p>
+<p> 因此，以 yield 进行执行流控制的函数称为 generator function，以 return 进行执行流控制的函数，就是普通的 function 喽~</p>
+<p>当然，由于可以临时挂起函数的执行，yield 还有更高阶的用法，即充当其调用者和被挂起函数间交互的桥梁：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">1</span>]: <span class="keyword">def</span> <span class="title function_">dynamic_step_seq</span>(<span class="params">size, start=<span class="number">0</span>, default_step=<span class="number">1</span></span>): </span><br><span class="line">    ...:   x = start </span><br><span class="line">    ...:   <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(size): </span><br><span class="line">    ...:     given_step = <span class="keyword">yield</span> x </span><br><span class="line">    ...:     <span class="keyword">if</span> given_step <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>: </span><br><span class="line">    ...:       x += given_step </span><br><span class="line">    ...:     <span class="keyword">else</span>: </span><br><span class="line">    ...:       x += default_step </span><br><span class="line">    ...:                                                                                                                                                                                                                                                                 </span><br><span class="line"></span><br><span class="line">In [<span class="number">2</span>]: <span class="keyword">for</span> x <span class="keyword">in</span> dynamic_step_seq(<span class="number">10</span>): </span><br><span class="line">    ...:     <span class="built_in">print</span>(x, end=<span class="string">&#x27; &#x27;</span>) </span><br><span class="line">    ...: <span class="built_in">print</span>()                                                                                                                                                                                                                                                         </span><br><span class="line"><span class="number">0</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span> <span class="number">5</span> <span class="number">6</span> <span class="number">7</span> <span class="number">8</span> <span class="number">9</span> </span><br><span class="line">In [<span class="number">3</span>]: dss = dynamic_step_seq(<span class="number">10</span>)                                                                                                                                                                                                                                      </span><br><span class="line"></span><br><span class="line">In [<span class="number">4</span>]: <span class="built_in">next</span>(dss) <span class="comment"># 注                                                                                                                                                                                                                                                </span></span><br><span class="line">Out[<span class="number">5</span>]: <span class="number">0</span></span><br><span class="line"></span><br><span class="line">In [<span class="number">6</span>]: dynamic_step = <span class="number">1</span> </span><br><span class="line">    ...: <span class="keyword">while</span> <span class="literal">True</span>: </span><br><span class="line">    ...:     <span class="keyword">try</span>: </span><br><span class="line">    ...:         x = dss.send(dynamic_step) </span><br><span class="line">    ...:         dynamic_step += <span class="number">1</span> </span><br><span class="line">    ...:         <span class="built_in">print</span>(x, end=<span class="string">&#x27; &#x27;</span>) </span><br><span class="line">    ...:     <span class="keyword">except</span> StopIteration: </span><br><span class="line">    ...:         <span class="built_in">print</span>() </span><br><span class="line">    ...:         <span class="keyword">break</span> </span><br><span class="line">    ...:                                                                                                                                                                                                                                                                 </span><br><span class="line"><span class="number">1</span> <span class="number">3</span> <span class="number">6</span> <span class="number">10</span> <span class="number">15</span> <span class="number">21</span> <span class="number">28</span> <span class="number">36</span> <span class="number">45</span> </span><br><span class="line">  </span><br></pre></td></tr></table></figure>
+
+<p><strong>注</strong>：此处初看有些奇怪，但是通过 yield 作用我们能推断出原理：需要首先调用 next 将函数运行至 yield 处，才能通过 <code>generator.send</code> 给 generator 传送对象。</p>
+<h2 id="效用"><a href="#效用" class="headerlink" title="效用"></a>效用</h2><p>那么使用生成器有什么好处呢？简单来说，主要有两大好处：</p>
+<ul>
+<li>精简代码</li>
+<li>提高性能</li>
+</ul>
+<h3 id="精简代码"><a href="#精简代码" class="headerlink" title="精简代码"></a>精简代码</h3><p>使用 yield 关键字或者生成器表达式可以很方便的生成一个迭代器对象。为了说明这一点，我们来比较一下对于一个需求的不同实现。该需求很简单：获取前 n 个自然数。</p>
+<p>最直观的方法为，构造一个数组然后返回：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Build and return a list</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">firstn</span>(<span class="params">n</span>):</span><br><span class="line">    num, nums = <span class="number">0</span>, []</span><br><span class="line">    <span class="keyword">while</span> num &lt; n:</span><br><span class="line">        nums.append(num)</span><br><span class="line">        num += <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> nums</span><br><span class="line"></span><br><span class="line">sum_of_first_n = <span class="built_in">sum</span>(firstn(<span class="number">1000000</span>))</span><br></pre></td></tr></table></figure>
+
+<p>当 n 很小的时候，该实现没有什么问题，但是当 n 变得很大，你的机器内存是吃不消的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">4</span>]: a = firstn(<span class="number">10000000000000000000</span>)                                                                                                                                                                                                                                 </span><br><span class="line">Killed</span><br></pre></td></tr></table></figure>
+
+<p>IPython 直接内存爆掉被 kill 了。</p>
+<p>于是，我们很自然的想起可以用<strong>生成器模式</strong>，但是你仍然不想用 yield，于是你需要构造一个对象，并实现<code> __iter__</code> 和 <code>__next__ </code>方法：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Using the generator pattern (an iterable)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">firstn</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, n</span>):</span><br><span class="line">        self.n = n</span><br><span class="line">        self.num, self.nums = <span class="number">0</span>, []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__iter__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">return</span> self</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__next__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">if</span> self.num &lt; self.n:</span><br><span class="line">            cur, self.num = self.num, self.num+<span class="number">1</span></span><br><span class="line">            <span class="keyword">return</span> cur</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">raise</span> StopIteration()</span><br><span class="line"></span><br><span class="line">sum_of_first_n = <span class="built_in">sum</span>(firstn(<span class="number">1000000</span>))</span><br></pre></td></tr></table></figure>
+
+<p><strong>注</strong>：在 Python3 中，如果你的类实现了<code>__iter__</code> ，则成为一个可迭代对象，可以调用 <strong>iter</strong>(instance) 得到一个迭代器。如果你的类实现了 <code>__next__</code>，那么你的类实例本身就成为了一个迭代器，可以通过 <strong>next</strong>(instance) 来调用，进行迭代。</p>
+<p>这些代码终于实现了我们的要求。但是，它有如下问题：</p>
+<ol>
+<li>为了实现一个简单的需求却不得不构造冗长的代码。</li>
+<li>使用了很多语言约定，读起来不直观。</li>
+<li>逻辑表达的绕来绕去。</li>
+</ol>
+<p>于是，你忍不住了，终于使用了 yield：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># a generator that yields items instead of returning a list</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">firstn</span>(<span class="params">n</span>):</span><br><span class="line">    num = <span class="number">0</span></span><br><span class="line">    <span class="keyword">while</span> num &lt; n:</span><br><span class="line">        <span class="keyword">yield</span> num</span><br><span class="line">        num += <span class="number">1</span></span><br><span class="line"></span><br><span class="line">sum_of_first_n = <span class="built_in">sum</span>(firstn(<span class="number">1000000</span>))</span><br></pre></td></tr></table></figure>
+
+<p>于是你使用了寥寥几行，构造出了一个生成器函数。</p>
+<p>其实[坏笑]，Python 3 中，就有该函数： <code>range(n)</code>。</p>
+<p>利用此函数以及 Iterator expression，你可以用很紧凑的代码构造出很多<strong>迭代数列</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">squares = (x * x <span class="keyword">for</span> x <span class="keyword">in</span> <span class="built_in">range</span>(n))</span><br><span class="line">evens = (<span class="number">2</span> * x <span class="keyword">for</span> x <span class="keyword">in</span> <span class="built_in">range</span>(n))</span><br></pre></td></tr></table></figure>
+
+<p>注意，他们都只能迭代一次。</p>
+<h3 id="提高性能"><a href="#提高性能" class="headerlink" title="提高性能"></a>提高性能</h3><p>这一条主要是针对内存使用上来说的。因为迭代器不会保存所有值，而是在运行中动态的计算出数列的各个值，并将之前的数值扔掉，因此是很省内存的，这点在前面的例子也有体现。这里举另外一个更实际一点例子。</p>
+<p>假设我们有一个很大的文件（比如说 8G） ，但是你的电脑只有 4G 内存，你如何利用 Python 对其进行处理？</p>
+<p>答案是使用 yield 构造 generator Iterator：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">read_by_chunks</span>(<span class="params">file, chunk_size=<span class="number">1024</span></span>):</span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        data = file.read(chunk_size)</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> data:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">yield</span> data</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">f = <span class="built_in">open</span>(<span class="string">&#x27;your_big_file.dat&#x27;</span>)</span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> read_by_chunks(f):</span><br><span class="line">    process_chunk(chunk)</span><br></pre></td></tr></table></figure>
+
+<p>这种通过构造 generator 逐块读取的方法又叫<strong>惰性加载</strong>，也叫<strong>流式读取</strong>，是处理大文件的一种常见方式。如果你的是文本文件，可以按行读取，那代码就更简单了：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">with</span> <span class="built_in">open</span>(<span class="string">&#x27;your_big_file.txt&#x27;</span>) <span class="keyword">as</span> f:</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> f: </span><br><span class="line">        process_line(line)</span><br></pre></td></tr></table></figure>
+
+<p>Python3 文件类句柄就是一个迭代器，默认会将文件按行分割以惰性加载。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li><p>Python 3 术语对照表：<a target="_blank" rel="noopener" href="https://docs.python.org/3/glossary.html">https://docs.python.org/3/glossary.html</a></p>
+</li>
+<li><p>Python 3 wiki：<a target="_blank" rel="noopener" href="https://wiki.python.org/moin/Generators">https://wiki.python.org/moin/Generators</a></p>
+</li>
+<li><p>Iterator vs Iterable: <a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/52056146/separating-the-iter-and-next-methods/52056290">https://stackoverflow.com/questions/52056146/separating-the-iter-and-next-methods/52056290</a> </p>
+</li>
+<li><p>Lazy read big file：<a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/519633/lazy-method-for-reading-big-file-in-python">https://stackoverflow.com/questions/519633/lazy-method-for-reading-big-file-in-python</a></p>
+</li>
+</ol>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/generator/" rel="tag"># generator</a>
+              <a href="/tags/%E7%94%9F%E6%88%90%E5%99%A8/" rel="tag"># 生成器</a>
+              <a href="/tags/iterator/" rel="tag"># iterator</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/10/26/split-bst/" rel="prev" title="数据结构与算法（三）：拆分二叉搜索树">
+      <i class="fa fa-chevron-left"></i> 数据结构与算法（三）：拆分二叉搜索树
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/11/14/rdd/" rel="next" title="Spark 系统的理论基石 —— RDD">
+      Spark 系统的理论基石 —— RDD <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E5%AD%90"><span class="nav-number">1.</span> <span class="nav-text">引子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E5%BF%B5"><span class="nav-number">2.</span> <span class="nav-text">概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B7%B1%E5%85%A5"><span class="nav-number">3.</span> <span class="nav-text">深入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E5%99%A8-vs-%E8%BF%AD%E4%BB%A3%E5%99%A8"><span class="nav-number">3.1.</span> <span class="nav-text">生成器 vs 迭代器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#yield-%E5%8E%9F%E7%90%86"><span class="nav-number">3.2.</span> <span class="nav-text">yield 原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%88%E7%94%A8"><span class="nav-number">4.</span> <span class="nav-text">效用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B2%BE%E7%AE%80%E4%BB%A3%E7%A0%81"><span class="nav-number">4.1.</span> <span class="nav-text">精简代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E9%AB%98%E6%80%A7%E8%83%BD"><span class="nav-number">4.2.</span> <span class="nav-text">提高性能</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2019/11/03/python3-generator/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '0efad8aba2f5408a97033f82357e1fc4',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

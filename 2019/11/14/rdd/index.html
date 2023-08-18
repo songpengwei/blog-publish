@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="概述RDD，学名可伸缩的分布式数据集（Resilient Distributed Dataset）。是一种对数据集形态的抽象，基于此抽象，使用者可以在集群中执行一系列计算，而不用将中间结果落盘。而这正是之前 MR 抽象的一个重要痛点，每一个步骤都需要落盘，使得不必要的开销很高。 对于分布式系统，容错支持是必不可少的。为了支持容错，RDD 只支持粗粒度的变换。即，输入数据集是 immutable （">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spark 系统的理论基石 —— RDD">
+<meta property="og:url" content="https://www.qtmuniao.com/2019/11/14/rdd/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="概述RDD，学名可伸缩的分布式数据集（Resilient Distributed Dataset）。是一种对数据集形态的抽象，基于此抽象，使用者可以在集群中执行一系列计算，而不用将中间结果落盘。而这正是之前 MR 抽象的一个重要痛点，每一个步骤都需要落盘，使得不必要的开销很高。 对于分布式系统，容错支持是必不可少的。为了支持容错，RDD 只支持粗粒度的变换。即，输入数据集是 immutable （">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/dPmJ2nb1zUNGuAo.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/Jj8GFN5qP3aWZHY.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/aiyjrGJ8IkwtWRY.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/6U1yOcZELsTH5uC.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/6KVtu2qrYFSMv84.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/SaPvyV2LtiAhezJ.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/EYIeyaDqo3cmdFu.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/f1pw8jLhYeNtEoO.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
+<meta property="article:published_time" content="2019-11-14T12:32:07.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.281Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="spark">
+<meta property="article:tag" content="rdd">
+<meta property="article:tag" content="数据处理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/dPmJ2nb1zUNGuAo.jpg">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2019/11/14/rdd/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Spark 系统的理论基石 —— RDD | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/11/14/rdd/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Spark 系统的理论基石 —— RDD
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-11-14 20:32:07" itemprop="dateCreated datePublished" datetime="2019-11-14T20:32:07+08:00">2019-11-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>RDD，学名可伸缩的分布式数据集（Resilient Distributed Dataset）。是一种对数据集形态的抽象，基于此抽象，使用者可以在集群中执行一系列计算，而不用将中间结果落盘。而这正是之前 MR 抽象的一个重要痛点，每一个步骤都需要落盘，使得不必要的开销很高。</p>
+<p>对于分布式系统，容错支持是必不可少的。为了支持容错，RDD 只支持粗粒度的变换。即，输入数据集是 immutable （或者说只读）的，每次运算会产生新的输出。不支持对一个数据集中细粒度的更新操作。这种约束，大大简化了容错支持，并且能满足很大一类的计算需求。</p>
+<span id="more"></span>
+
+<p>初次接触 RDD 的概念的时候，不大能够理解为什么要以数据集为中心做抽象。后来随着不断深入的了解，对数据集的一致性抽象正是计算流水线（pipeline）得以存在和优化的精髓所在。在定义了数据集的基本属性（不可变，分区，依赖关系，存放位置等）后，就可以在此基础上施加各种高阶算子，以构建 DAG 执行引擎，并做适当优化。从这个角度来说，RDD 实在是一种精妙设计。</p>
+<p>例行总结一下 RDD 论文的主要设计点有：</p>
+<ol>
+<li><strong>显式抽象</strong>。将运算中的数据集进行显式抽象，定义了其接口和属性。由于数据集抽象的统一，从而可以将不同的计算过程组合起来进行统一的 DAG 调度。</li>
+<li><strong>基于内存</strong>。相较于 MapReduce 中间结果必须落盘，RDD 通过将结果保存在内存中，从而大大降低了单个算子计算延迟以及不同算子之间的加载延迟。</li>
+<li><strong>宽窄依赖</strong>。在进行 DAG 调度时，定义了宽窄依赖的概念，并以此进行阶段划分，优化调度计算。</li>
+<li><strong>谱系容错</strong>。主要依赖谱系图计算来进行错误恢复，而非进行冗余备份，因为内存实在是有限，只能以计算换存储了。</li>
+<li><strong>交互查询</strong>。修改了 Scala 的解释器，使得可以交互式的查询基于多机内存的大型数据集。进而支持类 SQL 等高阶查询语言。</li>
+</ol>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
+<h2 id="小引"><a href="#小引" class="headerlink" title="小引"></a>小引</h2><p>Dryad 和 MapReduce 是业已流行的大数据分析工具。它们给用户提供了一些高阶算子来使用，而不用去关心底层的分布式和容错细节。但它们都缺少对分布式内存的抽象，不同计算过程之间只能够通过外存来耦合：前驱任务将计算结果写到外存上去，后继任务再将其作为输入加载到内存，然后才能接着执行后继计算任务。这样的设计有两个很大的劣势：复用性差、延迟较高。这对于像 Page-Rand，K-Means，LR 等要求迭代式计算的机器学习算法（需要数据复用）极其不友好；对于一些随机的交互式查询（要求延迟低）也是个灾难。因为他们将大部分的时间都耗费在数据备份、硬盘 IO 和数据序列化之上。</p>
+<p>在 RDD 之前，为了解决数据复用的问题，业界已有诸多尝试。包括将中间结果放在内存中的迭代式图计算系统——Pregel，以及将多个 MR 串在一块，缓存循环不变量的 HaLoop。但这些系统只支持受限的计算模型（比如MR），而且只进行隐式[1]的数据复用。如何进行更通用的数据复用，以支持更复杂的查询计算，仍是一个难题。</p>
+<p>RDD 正是为解决这个问题而设计，高效地复用数据的一个<strong>数据结构抽象</strong>。RDD 支持数据容错、数据并行；在此之上，能够让用户利用多机内存、控制数据分区、构建一系列运算过程。从而解决很多应用中连续计算过程对于数据复用的需求。</p>
+<p>其中比较难的一个设计是如何针对内存数据进行<strong>高效的容错</strong>。现有的一些基于集群内存的系统，比如分布式KV、共享内存、Piccolo 都提供一种可以细粒度的修改的可变数据集抽象。为了支持这种抽象之上的容错，就需要进行数据多机冗余或者操作日志备份。这些操作都会导致多机间大量的数据传输，由于网络带宽远慢于 RAM，使得分布式利用内存这件事失去其优势。</p>
+<p>与之相对，RDD 只提供粗粒度的、基于整个数据集的计算接口，即数据集中的所有条目都施加同一种操作。这样一来，为了容错，我们只需要<strong>备份每个操作而非数据本身</strong>（因为是整体更新的）；在某个分区数据出现问题进行错误恢复时，只需要从原始数据集出发，按顺序再算一遍即可。</p>
+<p>初看起来，这种计算抽象很受限，但它其实能满足现有的一大类的集群计算需求，包括 MR、 DryadLINQ、 SQL、Pregel 和 HaLoop。并且能满足一些其他计算需求，比如说交互式计算。RDD 的实现系统 Spark，提供类似 DryadLINQ 的高阶算子，应该是第一个提供交互式的集群运算接口。</p>
+<h2 id="RDD"><a href="#RDD" class="headerlink" title="RDD"></a>RDD</h2><p>本节首先给出 RDD 的详细定义，然后介绍下 Spark 的中针对 RDD 的操作接口，继而对比了 RDD 与提供细粒度更新接口的共享内存抽象优劣。最后就 RDD 的局限性讨论一下。</p>
+<h3 id="RDD-抽象"><a href="#RDD-抽象" class="headerlink" title="RDD 抽象"></a>RDD 抽象</h3><p>RDD  是一个基于分区的、只读的数据记录集抽象。RDD 只可以通过对持久存储或其他 RDD 进行确定性运算得来，这种运算被称为<strong>变换</strong>。常用的<strong>变换</strong>算子包括：map，filter 和 join。</p>
+<p>RDD 没有选择不断的做检查点以进行容错，而是会记下 RDD 从最初的外存的数据集变化而来的变化路径，也就是其<strong>谱系</strong>（lineage）。理论上所有的 RDD 都可以在出错后从外存中依据谱系图进行重建。一般来说，重建的粒度是分区（Partition）而非整个数据集，一来代价更小，二来不同分区可能在不同机器上。</p>
+<p>用户可以对 RDD 的两个方面进行控制：持久化和分区控制。对于前者，如果某些 RDD 需要复用，那么用户可以指示系统按照某种策略将其进行持久化。后者来说，用户可以定制分区路由函数，将数据集合中的记录按照某个键值路由到不同分区。比如进行 Join 操作的时候，可以讲待 Join 数据集按照相同的策略进行分区，以并行 Join。</p>
+<h3 id="Spark-编程接口"><a href="#Spark-编程接口" class="headerlink" title="Spark 编程接口"></a>Spark 编程接口</h3><p>Spark 通过暴露与编程语言集成的算子来提供操作 RDD 的接口。 其中 RDD 表现为编程语言中的类，而 RDD 的算子为作用于这些类上的函数。之前的系统如 DryadLINQ 和 FlumeJava 也使用了类似的形式。 </p>
+<p>用户使用 RDD 时，首先将数据从持久化存储中通过<em>变换</em>（<strong>Transformations</strong>，如 <em>map</em> 或者 <em>filter</em>）将其载入内存，然后可以对 RDD 施加任何系统支持的一系列变换，最后利用<em>动作</em>（<strong>Action</strong>）算子，将 RDD 重新持久化到外存中或者将控制权交还用户。和 DryadLINQ 一样，这个加载-变换-落盘的过程是<strong>声明式</strong>（Declarative，或者说是惰式[2]）的，Spark 在拿到整个拓扑后会利用执行引擎进行执行优化（比如将并行化、流水线化，之后会进一步讨论）。</p>
+<p>此外很重要的一个接口是 <em>persist</em>，可以由用户来告诉系统<strong>哪些</strong> RDD 需要持久化，<strong>如何</strong>持久化（本机硬盘还是跨机器存储），如果有多个 RDD 需要持久化，那么<strong>优先级</strong>如何确定。Spark 默认将 RDD 保存在内存中，如果内存不够用了会根据用户配置将数据溢出（spill）到硬盘上。</p>
+<h4 id="举个栗子"><a href="#举个栗子" class="headerlink" title="举个栗子"></a>举个栗子</h4><p>假设我们相对存在于 HDFS 上的日志文件，找出错误条目，针对出现 hdfs 关键字的具体条目进行分析。利用 Spark 接口，使用 Scala 语言实现，代码如下：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">lines = spark.textFile(<span class="string">&quot;hdfs://...&quot;</span>)</span><br><span class="line">errors = lines.filter(_.startsWith(<span class="string">&quot;ERROR&quot;</span>))</span><br><span class="line">errors.persist()</span><br><span class="line"></span><br><span class="line"><span class="comment">// Return the time fields of errors mentioning</span></span><br><span class="line"><span class="comment">// HDFS as an array (assuming time is field</span></span><br><span class="line"><span class="comment">// number 3 in a tab-separated format):</span></span><br><span class="line">errors.filter(_.contains(<span class="string">&quot;HDFS&quot;</span>))</span><br><span class="line">      .map(_.split(’\t’)(<span class="number">3</span>))</span><br><span class="line">      .collect()</span><br></pre></td></tr></table></figure>
+
+<p>第一行基于某个 hdfs 上的文件定义一个 rdd（每一行作为集合中的一个条目）。第二行通过 filter 变换生成新的 rdd，第三行请求 spark 将其结果进行暂存。最后一行是链式操作，以一个 collect 的动作结尾，求出包含 HDFS 关键字的所有行数的各个字段。</p>
+<p>其计算的谱系图（lineage）如下：</p>
+<p><img src="https://i.loli.net/2020/02/09/dPmJ2nb1zUNGuAo.jpg" alt="rdd-example-lineage.jpg"></p>
+<p>有两点需要注意：</p>
+<ol>
+<li>直到遇到 collect 这个<strong>动作</strong>（Action）之前都没有发生实际的运算。</li>
+<li>链式操作时不保存中间结果；</li>
+</ol>
+<p>由于第三行将结果在内存中进行了缓存，因此还可以基于此做其他动作。比如，计算包含 ‘MySQL’ 关键字的错误条数：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Count errors mentioning MySQL:</span></span><br><span class="line">errors.filter(_.contains(<span class="string">&quot;MySQL&quot;</span>)).count()</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="RDD-模型的优点"><a href="#RDD-模型的优点" class="headerlink" title="RDD 模型的优点"></a>RDD 模型的优点</h3><p>为了理解 RDD 带来的好处，可以看下面一个表，将 RDD 与 DSM （Distributed Shared Memory）做了详细对比。DSM 在这里是一个很宽泛的抽象，不仅包括一般的内存共享系统，还包括其他支持细粒度的状态更新的框架，比如说 Piccolo、分布式数据库等。</p>
+<p><img src="https://i.loli.net/2020/02/09/Jj8GFN5qP3aWZHY.jpg" alt="rdd-compare-dsm-table.jpg"></p>
+<p>首先， DSM 和 RDD 最主要的区别在于，DSM 支持对数据集细粒度的更新。即，可以对任意内存位置进行更新。而 RDD 舍弃了这一点，只允许批量的写入数据，从而提高了容错效率：</p>
+<ol>
+<li>使用 lineage 来按需恢复数据，而不用定期 snapshot，减小了不必要开销。</li>
+<li>每个 Partition 出错后可以单独进行恢复，而不用进行全数据集的重建。</li>
+</ol>
+<p>其次，RDD 的不可变的特点允许系统叫较容易的对某些计算进行迁移。比如说 MR 中的某些 Stragger 任务就可以很方便的迁移到其他计算节点上去，因为其输入数据一定不会被改变，因此不用考虑一致性的问题。</p>
+<p>最后还有两个好处值得一提：</p>
+<ol>
+<li>由于只支持批量计算，因此调度系统可以比较好的利用数据局部性的特点加快运算速度。</li>
+<li>如果集群内存不够的话，只要数据支持迭代，就可以分批加载到内存进行运算，或者分批将结果 spill 到外存。如此一来，在内存不够时能提供很优雅的退化操作，并不太损失性能。</li>
+</ol>
+<h3 id="RDD-不适用的场景"><a href="#RDD-不适用的场景" class="headerlink" title="RDD 不适用的场景"></a>RDD 不适用的场景</h3><p>如前所述，RDD 适用于针对全数据集统一处理的粗粒度变换的抽象。相对的，就不适用于要求对数据进行细粒度的、异步更新的数据集。比如说 web 应用，再比如说爬虫等等。对于这些引用类型，传统的快照+操作日志的容错方式可能更适合一些。如数据库 RAMCloud , Percolator 和 Piccolo。 RDD 的目标在于批量分析型应用，而将这些异步应用的需求留给那些专有系统。</p>
+<h2 id="Spark-编程接口-1"><a href="#Spark-编程接口-1" class="headerlink" title="Spark 编程接口"></a>Spark 编程接口</h2><p>Spark 利用 Scala 语言作为 RDD 抽象的接口，因为 Scala 兼顾了精确（其函数式语义适合交互式场景）与高效（使用静态类型）。当然，对于 RDD 本身来说，不限定于任何特定的语言表达。下面从<strong>执行流程</strong>与<strong>代码分发</strong>两个方面来详细说明下 Spark 是如何执行用户代码的。</p>
+<p><img src="https://i.loli.net/2020/02/09/aiyjrGJ8IkwtWRY.jpg" alt="rdd-spark-runtime.jpg"></p>
+<p>开发者利用 Spark 提供的库编写<em>驱动程序</em> （driver programe）以使用 Spark。驱动程序会定义一到多个 RDD，并对其进行各种变换。Spark 提供的库会连接 Spark 集群，生成计算拓扑，并将拓扑分散到多个 workers 上去进行执行，同时记下变换的谱系（lineage）。这些 workers 是分散在 Spark 集群内各个机器上的常驻进程，它们在内存里保存计算过程中生成的 RDD 的各个分区。</p>
+<p>像前面举的例子一样，开发者需要将函数作为参数传给 map 等 Spark 算子。Spark 会将这些函数（或者说<strong>闭包</strong>）序列化为 Java 对象，然后分发给执行节点进行加载。闭包所涉及的变量会被当做上述生成对象的字段值。RDD 本身会被包装成静态类型的参数进行传递。由于 Scala 支持类型推断，大部分例子都省掉了 RDD 数据类型。</p>
+<p>尽管 Spark 暴露的 Scala 的 RDD 接口在概念上看起来很简单，但实在实现上有一些很脏的角落，比如说 Scala 的闭包得使用反射， 比如说尽量避免修改 Scala 的解释器。</p>
+<h3 id="Spark-中的-RDD-操作"><a href="#Spark-中的-RDD-操作" class="headerlink" title="Spark 中的 RDD 操作"></a>Spark 中的 RDD 操作</h3><p>下表列出了 Spark 中支持的 RDD 操作。如前面所说，<strong>变换</strong>（transformations）是生成新 RDD 的惰性算子，而<strong>动作</strong>（actions）是触发调度的算子，它会返回一个结果或者将数据写到外存中。</p>
+<p><img src="https://i.loli.net/2020/02/09/6U1yOcZELsTH5uC.jpg" alt="rdd-operations-table.jpg"></p>
+<p>需要注意的是：</p>
+<ol>
+<li>有些操作如 <em>join</em>，要求操作数 RDD 必须是键值对（key value pairs）。</li>
+<li><em>map</em> 是一对一的映射，而 <em>flatMap</em> 是类似于 MapReduce 中一对一或者一对多的映射。</li>
+<li><em>save</em> 会将 RDD 进行持久化。</li>
+<li><em>groupByKey</em>，<em>reduceByKey</em> 和 <em>sort</em> 都会导致 RDD 中不同分区进行再哈希或者重排。</li>
+</ol>
+<h2 id="RDD-的表示"><a href="#RDD-的表示" class="headerlink" title="RDD 的表示"></a>RDD 的表示</h2><p>提供 RDD 抽象的一个难点在于，如何高效的<strong>跟踪谱系</strong>并能提供丰富的<strong>变换支持</strong>。最后我们选用了基于图的调度模型，将调度和算子进行了解耦。从而能够在不改变调度模块逻辑的前提下，很方便的增加算子支持。具体来说，RDD 抽象的核心组成主要有以下五个部分：</p>
+<ol>
+<li><strong>分区集</strong>（partition set）。分区是每个 RDD 的最小构成单元。</li>
+<li><strong>依赖集</strong>（dependencies set）。主要是 RDD 间的父子依赖关系。</li>
+<li><strong>变换函数</strong>（compute function）。作用于分区上的变换函数，可以由几个父分区计算得到一个子分区。</li>
+<li><strong>分区模式</strong>（partition scheme）。该 RDD 的分区是基于<strong>哈希分片</strong>的还是<strong>直接切分</strong>的。</li>
+<li><strong>数据放置</strong>（data placement）。知道分区的存放位置可以进行计算优化。</li>
+</ol>
+<p><img src="https://i.loli.net/2020/02/09/6KVtu2qrYFSMv84.jpg" alt="RDD 抽象接口组成"></p>
+<p>在 RDD 的接口设计中最有趣的一个点是如何对 RDD 间的<strong>依赖关系</strong>进行规约。最后发现可以将所有依赖归纳为两种类型：</p>
+<ol>
+<li><strong>窄依赖</strong>（narrow dependencies）：父 RDD 的分区最多被一个子 RDD 的分区所依赖，比如 <em>map</em>。</li>
+<li><strong>宽依赖</strong>（wide dependencies）：父 RDD 的分区可能被多个子 RDD 的分区所依赖，比如 <em>join</em>。</li>
+</ol>
+<p><img src="https://i.loli.net/2020/02/09/SaPvyV2LtiAhezJ.jpg" alt="宽依赖和窄依赖"></p>
+<p>如此归纳的原因主要有两点。</p>
+<p><strong>调度优化</strong>。对于窄依赖，可以对分区间进行并行<strong>流水化</strong>调度，先计完成某个窄依赖算子（比如说 map）的分区不用等待其他分区而直接进行下一个窄依赖算子（比如 filter ）的运算。与之相对，宽依赖的要求父 RDD 的所有分区就绪，并进行跨节点的传送后，才能进行计算。类似于 MapReduce 中的 shuffle。</p>
+<p><strong>数据恢复</strong>。在某个分区出现错误或者丢失时，窄依赖的恢复更为高效。因为涉及到的父分区相对较少，并且可以并行恢复。而对于宽依赖，由于依赖复杂（如上图，子 RDD 的每个分区都会依赖父 RDD 的所有分区），一个分区的丢失可能就会引起全盘的重新计算。</p>
+<p>这样将调度和算子解耦的设计大大简化了变换的实现，大部分变换都可以用20余行代码来实现。由于不需要了解调度细节，任何人都可以很快的上手实现一个新的变换。试举几例：</p>
+<p><strong>HDFS 文件</strong>：<em>partitions</em> 函数返回 HDFS 文件的所有 block，每个 block 被当做一个 partition。 <em>preferredLocations</em> 返回每个 block 所在的位置，<em>Iterator</em> 会对每个 block 进行读取。</p>
+<p><strong>map</strong>：在任意 RDD 上调用 map 会返回一个 MappedRDD 对象，该对象的 <em>partitions</em> 函数和 <em>preferredLocations</em> 与父 RDD 保持一致。对于 <em>iterator</em>，只需要将传给 map 算子的函数以此作用到其父 RDD 的各个分区即可。</p>
+<p><strong>union</strong>: 在两个 RDD 上调用 union 会返回一个新的 RDD，该 RDD 的每个分区由对应的两个父 RDD 通过窄依赖计算而来。</p>
+<p><strong>sample</strong>：抽样函数和 map 大体一致。但该函数会给每个分区保存一个随机数种子来决定父 RDD 的每个记录是否保留。</p>
+<p><strong>join</strong>：在两个 RDD 上调用 join 操作可能会导致两个窄依赖（比如其分区都是按待 join 的key 哈希的），两个宽依赖，或者混合依赖。每种情况下，子 RDD 都会有一个 <em>partitioner</em> 函数，或继承自父分区，或是默认的hash 分区函数。</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>Spark 最初版本（论文里提到的），只有 1.4w 行 Scala 代码，由 mesos 管理资源分配，可以和 Hadoop 生态共用资源，并从 Hadoop&#x2F;Hbase 中加载数据。对于 Spark 的实现，有几个值得一说的点： Job 调度，交互式解释器，内存管理和检查点机制（checkpointing）。</p>
+<h3 id="Job-调度"><a href="#Job-调度" class="headerlink" title="Job 调度"></a>Job 调度</h3><p>Spark 调度设计依赖于上一节提到的 RDD 的抽象。它的调度策略和 Dryad 有点像，但又不尽相同。在用户在某个 RDD 上调用 Action 类型（count，save 等等）的算子时，调度器就会根据用户代码中调用算子的顺序生成计算拓扑。我们把每一个变换前后的 RDD 当做<em>点</em>，算子产生的 RDD 间的依赖&#x2F;父子关系当做<em>边</em>，如此构成一个<em>有向无环图</em>（DAG）。为了减小传输，调度器会将几个连续的计算进行归并，称为<em>阶段</em>（Stage），进行阶段归并的依据为是否需要 shuffle，也即是否为宽依赖。这样，会形成一个新的由阶段组成的更精简的 DAG。</p>
+<p><img src="https://i.loli.net/2020/02/09/EYIeyaDqo3cmdFu.png" alt="RDD 阶段划分"></p>
+<p>之后，调度器会从目标 RDD 出发，沿着 DAG 图中的边往前遍历，对每个不在内存中的<strong>分区</strong>进行计算。如果需要计算的分区已经在内存中了，则直接利用结果即可，如上图所示。</p>
+<p>然后，调度器会将任务调度到离其依赖 RDD 的 Partition 近的地方去：</p>
+<ol>
+<li>如果 Partition 在某节点的内存中，则将任务的调度到该节点上。</li>
+<li>如果 Partition 还在硬盘上，则将任务调度到 preferredLocations 函数返回的地方去（如 HDFS 文件）。</li>
+</ol>
+<p>对于宽依赖，Spark 和 MR 一样，会将其中间结果输出持久化起来，以简化容错。如果某个 Stage 的父 RDD 不可用，调度器就会新提交一些<strong>并行运行</strong>的任务，来生成这些缺失的分区。不过现在 Spark 还不能对调度器本身故障进行恢复，虽然看起来对 RDD 的谱系图进行冗余备份或许是一个简单可行的方案。</p>
+<p>最后，现在仍是由用户 Driver 程序调用 Action 算子来触发调度任务。但我们正在探索维持一些周期性的检查性任务，对 RDD 中某些缺失的分区进行补足。</p>
+<h3 id="解释器集成"><a href="#解释器集成" class="headerlink" title="解释器集成"></a>解释器集成</h3><p>像 Python 和 Ruby 一样，Scala 提供交互式的 shell 环境。由于 Spark 将数据保存在内存中，我们希望可以借助 Scala 的这个交互式环境让用户对大数据集进行交互式实时的查询。</p>
+<p>Scala 的解释器对用户代码进行解释执行的通常做法是，将用户键入的每一行 Scala 命令编译成一个 Java Class 字节码，然后将其加载到 JVM 中。该类包含一个初始化过的单例实例，实例中包含用户定义的变量和函数。比如，用户输入：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> x = <span class="number">5</span></span><br><span class="line">println(x)</span><br></pre></td></tr></table></figure>
+
+<p>Scala 解释器会针对第一行生成一个叫做 <code>Line1</code> 的类，其中有一个 x 的字段，并且将第二行编译为：<code>println(Line1.getInstance().x)</code></p>
+<p>为了让 Scala 解释器能在分布式环境运行，我们在 Spark 中对其进行了以下修改：</p>
+<ol>
+<li><strong>类代码传输（Class shipping）</strong>：为了让工作节点（Worker Nodes）可以拉取驱动节点（Driver Node）上解释器用户输入编译成的字节码，我们让解释器可以通过 HTTP 将每个类的访问开放出来。</li>
+<li><strong>代码生成修改（Modified  code generation）</strong>：Scala 解释器在处理不同行的访问时，会通过一个静态方法来获取其<strong>初始化后</strong>单例，进而访问上一行的变量 <code>Line.x</code>。但是我们只能通过 HTTP 传字节码而没有将初始化后实例（即 x 已经被赋值）传过来，因此工作节点不能访问到 x。因此我们改变了代码生成逻辑，使得不同行之间能够直接引用实例。</li>
+</ol>
+<p>下图反映了我们修改后的 Scala 解释器生成 Java 对象的过程：</p>
+<p><img src="https://i.loli.net/2020/02/09/f1pw8jLhYeNtEoO.png" alt="spark 解释器"></p>
+<p>我们发现解释器在对大型数据集进行交互式查询时很有帮助，我们计划对更高级的查询语言进行支持，如 SQL。</p>
+<h3 id="内存管理"><a href="#内存管理" class="headerlink" title="内存管理"></a>内存管理</h3><p>Spark 提供了三种存储 RDD 的方式：</p>
+<ol>
+<li>内存中没有序列化过的 Java 对象</li>
+<li>内存中序列化过的数据</li>
+<li>磁盘</li>
+</ol>
+<p>由于 Spark 跑在 JVM 上，因此第一种存储方式访问最快，第二种允许用户牺牲一点性能以换取更高效的内存利用。当数据尺度太大以至于内存装不下的时候，第三种方式很有用。</p>
+<p>为了有效的利用有限的内存，我们在 RDD 分区级别上进行 LRU 式的驱逐策略。即，当我们新计算出一个 RDD 的分区时，如果发现内存不够用，就会从内存中驱逐出去一个最久没有使用过的 RDD 的分区。但是，如果这个最久没有使用过的分区和新计算出的分区属于同一个 RDD，我们会接着寻找，直到找到一个和当前分区不属于一个 RDD 并且最久没用过的分区。因为 Spark 的大部分计算会施加于整个 RDD 上，这样做可以防止这些分区被反复的计算-驱逐。这个策略在论文成文时用的很好，不过，我们仍然提供给了用户进行深度控制的接口——指定存储优先级。</p>
+<p>现在每个 Spark 实例拥有自己的分立的内存空间，我们计划将来提供跨 Spark 实例的统一的内存管理。</p>
+<h3 id="检查点机制"><a href="#检查点机制" class="headerlink" title="检查点机制"></a>检查点机制</h3><p>尽管所有失败的 RDD 都可以通过谱系（lineage）来重新计算得出，但是对于某些谱系特别长的 RDD 来说，这将是一个很耗时间的操作，因此提供 RDD 级别的外存检查点（checkpointing）可能会很有用。</p>
+<p>对于具有很长谱系图，并且谱系图中存在很多宽依赖的 RDD，在外存上做检查点会很有帮助，因为某一两个的分区可能会引起全盘的重算，对于这种又臭又长的计算拓扑来说，依据谱系图重算无疑非常浪费时间。而对于只有窄依赖的、不那么长谱系图来说，在外存做检查点可能有些得不偿失，因为他们可以很简单的并行计算出来。</p>
+<p>Spark 现阶段提供检查点的 API （给 persist 函数传 REPLICATE 标志），然后由用户来决定是否对其持久化。但我们在思考，是否可以进行一些自动的检查点计算。由于调度器知道每个数据集的内存占用以及计算使用时间，我们或许可以选择性的对某些关键 RDD进行持久化以最小化宕机恢复时间。</p>
+<p>最后，由于 RDD 的只读特性，我们在做检查点时不用像通用共享内存模型那样过分考虑一致性的问题，因此可以用后台线程默默地干这些事情而不用影响主要工作流，也不用使用复杂的分布式的快照算法来解决一致性问题。</p>
+<h2 id="注解"><a href="#注解" class="headerlink" title="注解"></a>注解</h2><p>[1] <strong>隐式与显示显式</strong>：在这里可以理解为，显式是把数据集这个概念完整的构造出来，定义他的内涵和边界，并基于其上做一些外延拓展。而隐式只是事实上复用了数据，但并没有定义被复用的数据格式。</p>
+<p>[2] <strong>声明式（Declarative）语言与命令式（Imperative）语言</strong>：前者例子有 SQL，HTML；后者例子最常见的有 Shell，其他的常见编程语言 C，Java，Python 也属于此列。前者的好处在于将”干什么”和”怎么干”这两件事解耦，这样一来就可以开发不同的执行引擎，针对不同场景来优化”怎么干”这件事。而后者会告诉机器以特定的顺序执行特定的操作，与直觉一致，是一般编程语言的路子。</p>
+<hr>
+<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
+<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
+              <a href="/tags/spark/" rel="tag"># spark</a>
+              <a href="/tags/rdd/" rel="tag"># rdd</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86/" rel="tag"># 数据处理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/11/03/python3-generator/" rel="prev" title="Python3 生成器（Generator）概念浅析">
+      <i class="fa fa-chevron-left"></i> Python3 生成器（Generator）概念浅析
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/12/07/bazel-build-golang/" rel="next" title="Bazel 构建 Golang 项目">
+      Bazel 构建 Golang 项目 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E5%BC%95"><span class="nav-number">2.</span> <span class="nav-text">小引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RDD"><span class="nav-number">3.</span> <span class="nav-text">RDD</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RDD-%E6%8A%BD%E8%B1%A1"><span class="nav-number">3.1.</span> <span class="nav-text">RDD 抽象</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-%E7%BC%96%E7%A8%8B%E6%8E%A5%E5%8F%A3"><span class="nav-number">3.2.</span> <span class="nav-text">Spark 编程接口</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BE%E4%B8%AA%E6%A0%97%E5%AD%90"><span class="nav-number">3.2.1.</span> <span class="nav-text">举个栗子</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RDD-%E6%A8%A1%E5%9E%8B%E7%9A%84%E4%BC%98%E7%82%B9"><span class="nav-number">3.3.</span> <span class="nav-text">RDD 模型的优点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RDD-%E4%B8%8D%E9%80%82%E7%94%A8%E7%9A%84%E5%9C%BA%E6%99%AF"><span class="nav-number">3.4.</span> <span class="nav-text">RDD 不适用的场景</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Spark-%E7%BC%96%E7%A8%8B%E6%8E%A5%E5%8F%A3-1"><span class="nav-number">4.</span> <span class="nav-text">Spark 编程接口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-%E4%B8%AD%E7%9A%84-RDD-%E6%93%8D%E4%BD%9C"><span class="nav-number">4.1.</span> <span class="nav-text">Spark 中的 RDD 操作</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RDD-%E7%9A%84%E8%A1%A8%E7%A4%BA"><span class="nav-number">5.</span> <span class="nav-text">RDD 的表示</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">6.</span> <span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Job-%E8%B0%83%E5%BA%A6"><span class="nav-number">6.1.</span> <span class="nav-text">Job 调度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E9%87%8A%E5%99%A8%E9%9B%86%E6%88%90"><span class="nav-number">6.2.</span> <span class="nav-text">解释器集成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-number">6.3.</span> <span class="nav-text">内存管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A3%80%E6%9F%A5%E7%82%B9%E6%9C%BA%E5%88%B6"><span class="nav-number">6.4.</span> <span class="nav-text">检查点机制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E8%A7%A3"><span class="nav-number">7.</span> <span class="nav-text">注解</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2019/11/14/rdd/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '52e4ae4886601d9ec38fe950d2bbca76',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

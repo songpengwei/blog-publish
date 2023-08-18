@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="前言上一次在做完 lab2a 即 raft 的 leader 选举之后，一直卡在日志同步这一块（log replication）；直到昨晚进行了一下 appendEntries 的优化（prevLog 不匹配时，一下跳过本 term 所有 logEntries），一直困扰的 TestBackup2B 竟然神奇 Passed 的了。跑了两遍还不大信，特地将其改回去，看到果然 Fail 才放心下来，看">
+<meta property="og:type" content="article">
+<meta property="og:title" content="6.824 - Raft 实现（二）：日志同步（Log Replication）">
+<meta property="og:url" content="https://www.qtmuniao.com/2018/08/29/raft-log-replication/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="前言上一次在做完 lab2a 即 raft 的 leader 选举之后，一直卡在日志同步这一块（log replication）；直到昨晚进行了一下 appendEntries 的优化（prevLog 不匹配时，一下跳过本 term 所有 logEntries），一直困扰的 TestBackup2B 竟然神奇 Passed 的了。跑了两遍还不大信，特地将其改回去，看到果然 Fail 才放心下来，看">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-08-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2018-08-29T12:06:00.000Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="distributed system">
+<meta property="article:tag" content="raft">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2018/08/29/raft-log-replication/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>6.824 - Raft 实现（二）：日志同步（Log Replication） | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2018/08/29/raft-log-replication/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          6.824 - Raft 实现（二）：日志同步（Log Replication）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2018-08-29 00:00:00 / 修改时间：20:06:00" itemprop="dateCreated datePublished" datetime="2018-08-29T00:00:00+08:00">2018-08-29</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/Raft/" itemprop="url" rel="index"><span itemprop="name">Raft</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>上一次在做完 lab2a 即 raft 的 leader 选举之后，一直卡在日志同步这一块（log replication）；直到昨晚进行了一下 appendEntries 的优化（prevLog 不匹配时，一下跳过本 term 所有 logEntries），一直困扰的 TestBackup2B 竟然神奇 Passed 的了。跑了两遍还不大信，特地将其改回去，看到果然 Fail 才放心下来，看来是效率太低超时了。</p>
+<p>趁着还新鲜，索性今晚就将这一段时间的血泪史记下来吧。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
+<h2 id="实验概述"><a href="#实验概述" class="headerlink" title="实验概述"></a>实验概述</h2><p>6.824是MIT的一门分布式课程，我跟的是<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/lab-raft.html">2018 spring</a> 。在第二个实验中要求简单实现一个分布式一致性协议–<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">raft</a>。</p>
+<p>这是一个专为方便教学和工程实现所设计的协议，它将协议拆解为几个相对独立的模块–leader选举，日志同步，安全保证。论文里图二基本给出了Raft的所有实现细节，可谓字字珠玑。但也因为太微言大义了，导致有些状态转换分散在不同描述中，假如你真只照着这幅图实现，很容易遗漏些细节。</p>
+<h2 id="日志同步（Log-Replication）"><a href="#日志同步（Log-Replication）" class="headerlink" title="日志同步（Log Replication）"></a>日志同步（Log Replication）</h2><p>这是lab2B的内容，又是反反复复，猜坑，排雷，放弃，捡起一月余才将日志同步这一块完成，最终代码不到七百行（694），其间有些实现细节还受过网上的启发。其间状态类似于网上看到的一幅调侃程序猿的漫画——啊，出bug了，为什么啊，改改改；还是不对，改改改；啊终于对了，可是，又是为什么啊？</p>
+<p>最终 Passed 版本我觉得还待改进，有些地方隐隐然感觉略多余。但暂时先高兴会，把心得赶到纸上来，毕竟老年人脑袋的内存实在有限，而且易挥发。</p>
+<p>上一篇 leader 选举中主要是对实现技巧做了些记录，这一篇主要是对实现各个逻辑细节进行探讨。</p>
+<h3 id="大致流程"><a href="#大致流程" class="headerlink" title="大致流程"></a>大致流程</h3><p>当初论文大概看明白了，觉得各个细节都搞懂了，但是整个流程在脑中还是转不起来。现在想来，Leader上线后，日志同步过程大概是这样：</p>
+<ol>
+<li>Leader 选出后，进行初始化，主要是对 nextIndex 数组和 matchIndex 数组的初始化，可能有多种思路，但是我是这么做的：所有 <code>nextIndex = len(rf.log)</code> ，所有 <code>matchIndex = 0</code></li>
+<li>然后立即开始心跳，即 AppendEntries，论文上说开始发一个不带内容的心跳就行，但是我的实现中还是发了带一个 logEntry 的心跳。这取决于我上面的初始化方法以及下面的参数构造策略。</li>
+<li>同步过程，我将其分为对 match 位置的 <strong>试探阶段</strong> 和 match 后的<strong>传送阶段</strong>；即首先通过每次前移 <code>prevLogIndex+prevLogTerm</code> 匹配上 Follower 中的某个 <code>logEntry</code>，然后 Leader 将匹配到的 <code>logEntry</code> 之后的 entries 一次性送给 Follower。</li>
+<li>每次参数构造，其他几个都比较确定，主要考虑三个字段 <code>prevLogIndex</code>，<code>prevLogTerm</code> 和 <code>entires</code>。其中 <code>prevLogTerm</code> 又由 <code>prevLogIndex</code> 决定，因此主要考虑 <code>prevLogIndex</code> 和 <code>entries</code>。对于 <code>prevLogIndex</code>，在 <strong>试探阶段</strong> 我将其定为 <code>nextIndex-1</code>，这么做是为了在试探时降低不必要的 <code>entries</code>传输；在<strong>传送阶段</strong>，可以将 <code>prevLogIndex</code> 定为 <code>matchIndex</code>，也即已经匹配上的最后一条数据。对于 <code>entries</code>，即取 Leader log 中  <code>[prevIndex+1, min(nextIndex, len(rf.log)-1)]</code> 的一个闭区间。</li>
+<li>这样，每次试探的时候是不传送数据的（即为 [] ，因为此时<code>prevLogIndex</code> &#x3D; <code>nextIndex</code>-1），在传送阶段可以一次性的将所有匹配之后的 Leader 上的 logEntries 全部传送过去。如果没有新日志了，几个变量将维持在：<code>nextIndex = len(rf.log)；prevLogIndex = matchIndex = len(rf.log)-1</code>，<code>entries</code> 为 []；</li>
+</ol>
+<p>其他点就是附着于此流程之上的一些细节：</p>
+<ol>
+<li>定时检测大多数 logEntry match Index，以决定是否要进行 commit，即前移 Leader 的 <code>commitIndex</code> ，并且在以后的 <code>AppendEntries</code> 的 RPC 中将其同步给各个 Follower。</li>
+<li>同时另一个线程要检测 <code>lastApplied</code> 是否跟上了 <code>commitIndex</code> ，保证将已提交 log 及时应用到状态机中。这两个变量分开我觉得主要是为了逻辑上的解耦——在 Leader 上是 Leader 主动检测来更新 <code>commitIndex</code> 的，在 Follower 上，是被动接受 Leader 消息来更新的。</li>
+<li>Leader 接受了新的 cmd 后，需要将 <code>matchIndex</code> 数组中本身对应的位置更新，因为它本身也是最后计算大多数时的一票。</li>
+<li>Follower 连不上之后，Leader要及时终止执行回调后边内容。</li>
+</ol>
+<h3 id="AppendEntries-心跳-amp-同步"><a href="#AppendEntries-心跳-amp-同步" class="headerlink" title="AppendEntries 心跳&amp;同步"></a>AppendEntries 心跳&amp;同步</h3><p>主要对应上面说的两个阶段，试探阶段和传送阶段；其他要注意的就是上一篇提到的加锁和状态自检。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// need handle the reply</span></span><br><span class="line"><span class="keyword">if</span> reply.Term &gt; rf.currentTerm &#123;</span><br><span class="line">    rf.becomeFollower(reply.Term)</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> !reply.Success &#123;</span><br><span class="line">        <span class="comment">// roll back per term every time</span></span><br><span class="line">        nextIndex := rf.nextIndex[server] - <span class="number">1</span></span><br><span class="line">        <span class="keyword">for</span> nextIndex &gt; <span class="number">1</span> &amp;&amp; rf.log[nextIndex].Term == args.PrevLogTerm  &#123;</span><br><span class="line">            nextIndex--</span><br><span class="line">        &#125;</span><br><span class="line">        rf.nextIndex[server] = nextIndex</span><br><span class="line"></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// if match, sync all after</span></span><br><span class="line">        rf.matchIndex[server] = args.PrevLogIndex + <span class="built_in">len</span>(args.Entries)</span><br><span class="line">        rf.nextIndex[server] = <span class="built_in">len</span>(rf.log)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后就是参数构造，对于 <code>prevIndex </code> 来说，也是两个阶段不同构造。然后取合适窗口的 <code>entries</code>。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> constructAppendEntriesArg(idx <span class="type">int</span>) *AppendEntriesArgs &#123;</span><br><span class="line">  prevLogIndex := <span class="number">0</span></span><br><span class="line">  <span class="keyword">if</span> rf.matchIndex[idx] == <span class="number">0</span> &#123;</span><br><span class="line">    prevLogIndex = rf.nextIndex[idx] - <span class="number">1</span>	<span class="comment">// try to find a match</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    prevLogIndex = rf.matchIndex[idx]		<span class="comment">// after match to sync</span></span><br><span class="line">  &#125;</span><br><span class="line">  prevLogTerm := rf.log[prevLogIndex].Term</span><br><span class="line"></span><br><span class="line">  <span class="comment">// the need to replica window [prevLogIndex+1, nextIndex)</span></span><br><span class="line">  <span class="keyword">var</span> entries []*LogEntry</span><br><span class="line">  start := prevLogIndex + <span class="number">1</span></span><br><span class="line">  end := min(rf.nextIndex[idx], <span class="built_in">len</span>(rf.log)<span class="number">-1</span>)</span><br><span class="line">  <span class="keyword">for</span> i := start; i &lt;= end; i++ &#123;</span><br><span class="line">    entries = <span class="built_in">append</span>(entries, rf.log[i])</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> &amp;AppendEntriesArgs&#123;rf.currentTerm, rf.me, prevLogIndex,</span><br><span class="line">    prevLogTerm, entries, rf.commitIndex&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最后 AppendLogEntries 回调，看到先前 term 的请求，直接拒绝，这没什么好说的，注意将自己的 term 带回去就行。此外，无论 args.Term &gt; or &#x3D; rf.currentTerm ，收到 AppendEntries 的 peer 都要变成 Follower，并且重置 timer。此外在匹配 logEntry 的时候，要注意进行截断。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) &#123;</span><br><span class="line">  rf.mu.Lock()</span><br><span class="line">  <span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">  reply.Term = rf.currentTerm</span><br><span class="line">  <span class="comment">// reject the append entries</span></span><br><span class="line">  <span class="keyword">if</span> args.Term &lt; rf.currentTerm &#123;</span><br><span class="line">    reply.Success = <span class="literal">false</span></span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  rf.leaderId = args.LeaderId</span><br><span class="line">  rf.becomeFollower(args.Term)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> args.PrevLogIndex &gt;= <span class="built_in">len</span>(rf.log) &#123;</span><br><span class="line">    reply.Success = <span class="literal">false</span></span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> rf.log[args.PrevLogIndex].Term != args.PrevLogTerm &#123;</span><br><span class="line">    reply.Success = <span class="literal">false</span></span><br><span class="line">    rf.log = rf.log[:args.PrevLogIndex]</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    reply.Success = <span class="literal">true</span></span><br><span class="line">        </span><br><span class="line">    <span class="comment">// delete not match and append new ones</span></span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(args.Entries) &gt; <span class="number">0</span> &#123;</span><br><span class="line">      rf.log = <span class="built_in">append</span>(rf.log[:args.PrevLogIndex+<span class="number">1</span>], args.Entries...)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// commit index</span></span><br><span class="line">    <span class="keyword">if</span> args.LeaderCommit &gt; rf.commitIndex &#123;</span><br><span class="line">      rf.commitIndex = min(args.LeaderCommit, <span class="built_in">len</span>(rf.log)<span class="number">-1</span>)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="CommitIndex-更新"><a href="#CommitIndex-更新" class="headerlink" title="CommitIndex 更新"></a>CommitIndex 更新</h3><p>主要依赖 leader 的 matchIndex[] ，具体做法是将其升序排序，然后取中位数位置的 Index（当时拍脑袋想出来的，感觉很神奇）。另一个要注意的点是论文中着重强调的，就是只能提交本 Term 中的 logEntry，这是为了 Leader 你方唱罢我方登场引起的反复覆盖。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> checkCommitIndex() &#123;</span><br><span class="line">  peersCount := <span class="built_in">len</span>(rf.peers)</span><br><span class="line">  matchIndexList := <span class="built_in">make</span>([]<span class="type">int</span>, peersCount)</span><br><span class="line">  <span class="built_in">copy</span>(matchIndexList, rf.matchIndex)</span><br><span class="line">  sort.Ints(matchIndexList)</span><br><span class="line"></span><br><span class="line">  <span class="comment">// match index before the &quot;majority&quot; are all matched by majority peers</span></span><br><span class="line">  <span class="comment">// before we inc commitIndex, we must check if its term match currentTerm</span></span><br><span class="line">  majority := peersCount / <span class="number">2</span></span><br><span class="line">    peerMatchIndex := matchIndexList[majority]</span><br><span class="line">    <span class="keyword">if</span> peerMatchIndex &gt; rf.commitIndex &amp;&amp; rf.log[peerMatchIndex].Term == rf.currentTerm &#123;</span><br><span class="line">        rf.commitIndex = peerMatchIndex</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="响应投票"><a href="#响应投票" class="headerlink" title="响应投票"></a>响应投票</h3><p>每个 peer 在每个 term 最多投一票，但是每次更新 term 后，可将 votedFor 赋值为 -1，即又可以投票了。这个 case 发生在响应 candidate 要求投票时，如果他已经投了票，这是好像不能投票，但是发现 term 没有 candidate 的大，那么需要立即变为 Follower ，并且给该 candidate 投票。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) &#123;</span><br><span class="line">  rf.mu.Lock()</span><br><span class="line">  <span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line">    </span><br><span class="line">  reply.Term = rf.currentTerm</span><br><span class="line"></span><br><span class="line">  <span class="comment">// once find a peer with higher term, follow</span></span><br><span class="line">  <span class="keyword">if</span> args.Term &gt; rf.currentTerm &#123;</span><br><span class="line">    rf.becomeFollower(args.Term)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// compare term and test if it voted</span></span><br><span class="line">  <span class="keyword">if</span> args.Term &lt; rf.currentTerm || rf.votedFor != <span class="number">-1</span> &#123;</span><br><span class="line">    reply.VotedGranted = <span class="literal">false</span></span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// compare the last log entry</span></span><br><span class="line">  lastIndex := <span class="built_in">len</span>(rf.log) - <span class="number">1</span></span><br><span class="line">  lastLogTerm := rf.log[lastIndex].Term</span><br><span class="line">  <span class="keyword">if</span> args.LastLogTerm &gt; lastLogTerm ||</span><br><span class="line">    args.LastLogTerm == lastLogTerm &amp;&amp; args.LastLogIndex &gt;= lastIndex &#123;</span><br><span class="line">    reply.VotedGranted = <span class="literal">true</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// convert to follower</span></span><br><span class="line">    rf.becomeFollower(args.Term)</span><br><span class="line">    rf.votedFor = args.CandidateId <span class="comment">// do not forget</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    reply.VotedGranted = <span class="literal">false</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里涉及到 becomeFollower 的实现，即更改状态，然后重设 timer，并且根据 term 是否更新来决定是否可以投票。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> becomeFollower(term <span class="type">int</span>) &#123;</span><br><span class="line">  DPrintf(<span class="string">&quot;%d[%d] become follower&quot;</span>, rf.me, term)</span><br><span class="line">  rf.resetElectionTimer()</span><br><span class="line">  rf.state = Follower</span><br><span class="line">  <span class="keyword">if</span> term &gt; rf.currentTerm &#123;</span><br><span class="line">    rf.votedFor = <span class="number">-1</span></span><br><span class="line">  &#125;</span><br><span class="line">  rf.currentTerm = term</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/07/11/raft-leader-election/" rel="bookmark">6.824 - Raft 实现（一）：Leader选举</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/distributed-system/" rel="tag"># distributed system</a>
+              <a href="/tags/raft/" rel="tag"># raft</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/07/11/raft-leader-election/" rel="prev" title="6.824 - Raft 实现（一）：Leader选举">
+      <i class="fa fa-chevron-left"></i> 6.824 - Raft 实现（一）：Leader选举
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/02/17/hexo-blog/" rel="next" title="使用Hexo引擎配置静态博客">
+      使用Hexo引擎配置静态博客 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%A6%82%E8%BF%B0"><span class="nav-number">2.</span> <span class="nav-text">实验概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E5%90%8C%E6%AD%A5%EF%BC%88Log-Replication%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">日志同步（Log Replication）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%A7%E8%87%B4%E6%B5%81%E7%A8%8B"><span class="nav-number">3.1.</span> <span class="nav-text">大致流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AppendEntries-%E5%BF%83%E8%B7%B3-amp-%E5%90%8C%E6%AD%A5"><span class="nav-number">3.2.</span> <span class="nav-text">AppendEntries 心跳&amp;同步</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CommitIndex-%E6%9B%B4%E6%96%B0"><span class="nav-number">3.3.</span> <span class="nav-text">CommitIndex 更新</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%93%8D%E5%BA%94%E6%8A%95%E7%A5%A8"><span class="nav-number">3.4.</span> <span class="nav-text">响应投票</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2018/08/29/raft-log-replication/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '0168780f4ab23686897cbabc04516cdf',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="（贾）岛初赴举京师，一日驴上得句云：“鸟宿池边树，僧敲月下门”。始欲着“推”字，又欲着“敲”字，练之未定，遂于驴上吟哦，时时引手作推敲之势。  —— 宋·胡仔《苕溪渔隐丛话》卷十九引《刘公嘉话》  命名，是编码中最为紧要的事情，其之于程序，便如脸面之于少女。好的命名，能清晰的传达代码的意图，甚而，有一种韵律的美感。而懒散随意的起名，则令人如堕云雾，不忍卒读，会一遍遍地消耗维护者的精气神儿。此外，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="好好写代码之命名篇——推敲">
+<meta property="og:url" content="https://www.qtmuniao.com/2021/12/12/how-to-write-code-scrutinize-names/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="（贾）岛初赴举京师，一日驴上得句云：“鸟宿池边树，僧敲月下门”。始欲着“推”字，又欲着“敲”字，练之未定，遂于驴上吟哦，时时引手作推敲之势。  —— 宋·胡仔《苕溪渔隐丛话》卷十九引《刘公嘉话》  命名，是编码中最为紧要的事情，其之于程序，便如脸面之于少女。好的命名，能清晰的传达代码的意图，甚而，有一种韵律的美感。而懒散随意的起名，则令人如堕云雾，不忍卒读，会一遍遍地消耗维护者的精气神儿。此外，">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg">
+<meta property="article:published_time" content="2021-12-12T07:02:04.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.287Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="编程规范">
+<meta property="article:tag" content="命名">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2021/12/12/how-to-write-code-scrutinize-names/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>好好写代码之命名篇——推敲 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/12/12/how-to-write-code-scrutinize-names/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          好好写代码之命名篇——推敲
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-12 15:02:04" itemprop="dateCreated datePublished" datetime="2021-12-12T15:02:04+08:00">2021-12-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>（贾）岛初赴举京师，一日驴上得句云：“鸟宿池边树，僧敲月下门”。始欲着“推”字，又欲着“敲”字，练之未定，遂于驴上吟哦，时时引手作推敲之势。</p>
+<p> —— 宋·胡仔《苕溪渔隐丛话》卷十九引《刘公嘉话》</p>
+</blockquote>
+<p>命名，是编码中最为紧要的事情，其之于程序，便如脸面之于少女。好的命名，能清晰的传达代码的意图，甚而，有一种韵律的美感。而懒散随意的起名，则令人如堕云雾，不忍卒读，会一遍遍地消耗维护者的精气神儿。此外，混乱的命名体系，能轻巧的掩藏 BUG，贻祸千里。</p>
+<p>因此，我们在写代码时，有必要花一点时间，对关键命名进行推敲，与人方便，与己方便。对于生命周期越长的项目，其益处便越明显。那么该如何推敲呢？结合自己写代码、看代码、Review 代码的一些经验，聊聊我的一些体会。</p>
+<p>最近写 golang 多一点，因此例子用的都是 golang ，但都是伪代码，有些例子并不不严格遵从语法。此外，例子大多出于现造，因此可能并不是特别贴合。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2021/12/12/how-to-write-code-scrutinize-names">https://www.qtmuniao.com/2021/12/12/how-to-write-code-scrutinize-names</a> 转载请注明出处</em></p>
+<h2 id="诚信"><a href="#诚信" class="headerlink" title="诚信"></a>诚信</h2><p>说到命名，其实有很多原则，我思来想去，觉得最需要强调的一个思想便是——<strong>诚信</strong>（笑）。我们在写代码、改代码时决计不能挂羊头卖狗肉，做有意无意的骗子。换言之，要让命名要真实、完整的体现意图。否则，维护者很容易受命名误导，先入为主，忽略一些细节，甚而，忽略一些 bug。</p>
+<p>最常见的有几种情形。</p>
+<p>其一，<strong>函数在做 A 的逻辑，却随意起了一个 B 的名字</strong>。这种情况要么是起名太随意了，觉得无关紧要，要么是函数逻辑太复杂，找不到合适的名字，便随意安了一个。前者态度有问题，我们按下不表。后者一般是需要将逻辑进行拆分，拆到名字能清晰体现其逻辑为止。</p>
+<p>其二，<strong>函数有副作用，但是名字中没有体现</strong>。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Company)</span></span> check(p *Person) &#123;</span><br><span class="line">  <span class="keyword">if</span> p.age &lt; <span class="number">0</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;age can&#x27;t be negative&quot;</span>)</span><br><span class="line">  &#125; </span><br><span class="line"></span><br><span class="line">  c.p = p</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面代码中，既然名字说只是 <code>check</code>，便不能偷偷的 <code>set</code>。如果也想 <code>set</code>，可以改名为 <code>checkAndSet()</code>。</p>
+<p>另外一个典型的例子：看起来像纯函数，却偷偷的改变了全局状态；</p>
+<p>其三，<strong>对代码进行了改动，名称却没有随之变动</strong>。比如，我们改造一个函数时，塞了一些新逻辑，却维持其名字不变；甚而，我们完全改变了代码逻辑，却没有改动名字；当然最常见的是，代码变了，注释却忘改了。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// pseudocode</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Content)</span></span> dumpToFile() <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// origin code</span></span><br><span class="line">  f, _ := os.Open(fiename)</span><br><span class="line">  f.Write()</span><br><span class="line"></span><br><span class="line">  <span class="comment">// added code</span></span><br><span class="line">  db, _ = getDb()</span><br><span class="line">  db.Add()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其四，<strong>用一些约定俗成的名字去指代不同含义</strong>。比如在 golang 中，说到 <code>context</code>，我们一般会想到指官方库中用于控制生命周期的 <code>Context</code>。那么在命名时，就不要随意占用这个名字，如某种情况下，我们需要一个保存任务运行上下文的类，务必加上前缀，比如 <code>JobContext</code> ，这时如果直接用 <code>Context</code> 作为类名，哪怕细读之后能理解其含义，也会让人感觉很别扭。</p>
+<h2 id="直白"><a href="#直白" class="headerlink" title="直白"></a>直白</h2><p>当我们实现某个功能时，会反复思考很多细节，这些细节便是我们当时思想的上下文。处在这些上下文之中，我们很容易写出一些当时觉得无比自然，后面看来无比迷惑的代码。因为随着时间流逝，你脑中的上下文会消失。</p>
+<p>比如，当判断某个条件时，用了一个很隐晦、间接或者反直觉的判断语句。这种情况，可以换成更直接的信号，或者通过增加一个变量，以变量名字来进行释义。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(p *Project)</span></span> Get(req *GetRequest) (*GetResponse, <span class="type">error</span>)&#123;</span><br><span class="line">  <span class="keyword">if</span> req.names == <span class="literal">nil</span> &#123;</span><br><span class="line">    resp := &amp;GetResponse&#123;&#125;</span><br><span class="line">    resp.Teacher = &amp;Teacher&#123;&#125;</span><br><span class="line">    <span class="keyword">return</span> resp, <span class="literal">nil</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// xxxxx</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面例子本来想表达， 当 <code>req.names</code> 是一个非空数组时，则只对该数组指定学生信息进行返回；如果 <code>req.names == nil</code> 时，则表明为项目组全部学生，需要额外返回老师的信息。但是后面这个信息就完全是隐式的、反直觉的。</p>
+<p>可以通过一些手段将其变为显式，比如 <code>bool isAll = req.names == nil</code> 。同理，对于长一些匿名函数，最好也将其赋给一个变量，通过变量名来对函数进行释义。</p>
+<p>因此，最好能不断带入他人视角思考，持续消除隐式上下文依赖，才能写出符合直觉、无须过多注释的代码。另外，多找几个不具有这种<strong>实现细节</strong>（但最好明白设计方案）上下文的人来 Review 也是一种很好的消除隐式依赖手段。</p>
+<h2 id="简洁"><a href="#简洁" class="headerlink" title="简洁"></a>简洁</h2><p>有的命名简直又臭又长，须知超过三个词的命名并不能使语义更清楚，还会加重理解负担。出现这种情况，一般是没有仔细推敲，利用程序结构来消除信息冗余，举几个例子。</p>
+<p>其一，<strong>通过层级信息消除冗余。</strong>比如包名（或者命名空间，看语言而定）、类名。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> student</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Student <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewStudent</span><span class="params">()</span></span> (*Student, <span class="type">error</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>上述包名中已经表明是 <code>student</code> ，则函数名中可以省去 <code>Student</code> 字样，即改为 <code>func New()(*Student, error)</code> ，使用时 <code>student.New()</code>  便可以清楚地看出 New 的对象类型。</p>
+<p>借助数据结构的视角来看，通过树形组织来概念，可以让单个<strong>树节点</strong>的命名变得相对简单，同时利用<strong>树的路径</strong>来表达足够丰富的含义。</p>
+<p>其二，<strong>利用参数名来消除冗余</strong>。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">handleStudent</span><span class="params">(student *Student)</span></span></span><br></pre></td></tr></table></figure>
+
+<p>参数名即函数的处理对象，因此函数名中不需要再次说明：<code>func handle(student *Student)</code> 。</p>
+<p>其三，<strong>作用域越小，名字可以越短。</strong>最常见的便是迭代变量、小函数局部变量。因为作用域越小，其冲突的可能性就越小。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// case 1: iteration</span></span><br><span class="line"><span class="keyword">for</span> i, s := <span class="keyword">range</span> students &#123;</span><br><span class="line">  fmt.Println(i, s)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// case 2: small function</span></span><br><span class="line">sort.Slice(students, <span class="function"><span class="keyword">func</span><span class="params">(i, j <span class="type">int</span>)</span></span> <span class="type">bool</span> &#123; <span class="keyword">return</span> students[i].Name &lt; students[j].Name &#125;)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><strong>但简洁是有度的，以不引入二义性为限</strong>。仍以上面 Student 为例：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> student</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> Student <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> StudentManager student&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">New</span><span class="params">()</span></span> (*StudentManager, <span class="type">error</span>)</span><br></pre></td></tr></table></figure>
+
+<p>此间的 New 函数就有点太短，因为在调用时 <code>student.New()</code> 很容易引起误解，以为返回的是 <code>Student</code> 类型，因此最好改成 <code>student.NewManager()</code> 。</p>
+<h2 id="系统"><a href="#系统" class="headerlink" title="系统"></a>系统</h2><p>最后，但也是最重要的，命名是需要成体系的。而只有对所解决的问题有了足够的认识，才能做出足够贴切的抽象，写出足够简明扼要的代码，命出<strong>简短、对称、一致</strong>的名字。仍然借用数据结构来概括下命名系统组织原则：宏观角度看，代码是分层的树形组织；微观角度看，层与层之间是类二分图组织。</p>
+<p>下面来从几个侧面举几个例子。</p>
+<p>其一，<strong>一致性、相容性</strong>。在自己设计代码时，表现为多个组件间风格的一致性；在修改别人代码时，表现为延续其风格的相容性。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// student.go</span></span><br><span class="line"><span class="function">func <span class="title">get</span><span class="params">(name string)</span> <span class="params">(*Student, error)</span></span></span><br><span class="line"><span class="function">func <span class="title">process</span><span class="params">(student *Student)</span> error</span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"><span class="comment">// teacher.go</span></span></span><br><span class="line"><span class="function">func <span class="title">fetch</span><span class="params">(name string)</span> <span class="params">(*Teacher, error)</span></span></span><br><span class="line"><span class="function">func <span class="title">handle</span><span class="params">(teacher *Teacher)</span> error</span></span><br></pre></td></tr></table></figure>
+
+<p>上面例子便是一个反面，同样的意思，用了不同名字。更恶劣的是，相似的地方、相似的名字，却指代不同的含义。这会给维护者带来极大的心智负担。</p>
+<p>其二，<strong>原子性、正交性</strong>。单个函数尽量短小，函数名才能完整体现代码意思；基础函数尽量正交，才能去除冗余，通过组合来表达强大的生命力。</p>
+<p>一个常见的例子，是 WebService 中围绕某种实体的 CRUD，如针对 <code>Student</code> 的 <code>StudentManager</code> 。上层便可以利用这些基本的增删改查完成更细节的业务逻辑。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> StudentManager <span class="keyword">struct</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span><span class="params">(m *StudentManager)</span></span> Create(id, name <span class="type">string</span>, age <span class="type">int</span>)</span><br><span class="line"><span class="function"><span class="keyword">func</span><span class="params">(m *StudentManager)</span></span> Remove(id <span class="type">string</span>)</span><br><span class="line"><span class="function"><span class="keyword">func</span><span class="params">(m *StudentManager)</span></span> Update(s *Student)</span><br><span class="line"><span class="function"><span class="keyword">func</span><span class="params">(m *StudentManager)</span></span> Delete(id <span class="type">string</span>)</span><br></pre></td></tr></table></figure>
+
+<p>其三，<strong>体系性</strong>。使用某种手段，将系统拆解为几个很自然的模块。这种自然，本质上是通过利用你和读者共享的上下文来做到的。</p>
+<p>如需要适配多种存储后端时，关于 <code>Storage</code> 的抽象。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Storage <span class="keyword">interface</span> &#123;</span><br><span class="line">  <span class="function"><span class="keyword">func</span> <span class="title">Create</span><span class="params">(uri <span class="type">string</span>)</span></span> (*File, <span class="type">error</span>)</span><br><span class="line">  <span class="function"><span class="keyword">func</span> <span class="title">Remove</span><span class="params">(uri <span class="type">string</span>)</span></span> <span class="type">error</span></span><br><span class="line">  <span class="function"><span class="keyword">func</span> <span class="title">Open</span><span class="params">(uri <span class="type">string</span>, mode <span class="type">int</span>)</span></span>(io.ReaderWriter, <span class="type">error</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如需要管理任务生命周期时 ，关于  <code>Task</code> 的抽象。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Task <span class="keyword">interface</span> &#123;</span><br><span class="line">  <span class="function"><span class="keyword">func</span> <span class="title">Start</span><span class="params">()</span></span> <span class="type">error</span></span><br><span class="line">  <span class="function"><span class="keyword">func</span> <span class="title">Stop</span><span class="params">()</span></span> <span class="type">error</span></span><br><span class="line">  <span class="function"><span class="keyword">func</span> <span class="title">Suspend</span><span class="params">()</span></span> <span class="type">error</span></span><br><span class="line">  <span class="function"><span class="keyword">func</span> <span class="title">Resume</span><span class="params">()</span></span> <span class="type">error</span></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">func</span> <span class="title">IsRunning</span><span class="params">()</span></span> <span class="type">bool</span></span><br><span class="line">  <span class="function"><span class="keyword">func</span> <span class="title">IsSuspending</span><span class="params">()</span></span> <span class="type">bool</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其惯常的做法是，参考数据结构、操作系统、数据库、网络中一些常见的抽象，比如消息队列、文件系统、进程线程、传输协议等等，做适当变化来为我们服务。大多数程序员都共享这些基本概念，因此可以很快速的理清你代码的脉络。</p>
+<p>另一种常用的方式，是借鉴日常生活中大家都熟悉的概念，围绕其性状、时空等特性，对系统进行拆解。比如之前呆过的一个公司，利用鹰（Eagle），鹰眼（监控）、鹰爪（爬取）等概念来拆解一个监控系统。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>古人写文章，讲究反复推敲，方能有佳作。代码命名，也需要仔细锤炼，才能不断延长生命周期，免于过快腐烂。如果仅仅追求写代码快，第一反应是什么，就用什么做名字，代码便难逃运行一次就被重构甚至遗弃的命运。</p>
+<p>见识所囿，必有诸多遗漏。关于代码命名，大家还有什么心得或吐槽，欢迎留言讨论。</p>
+<hr>
+<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，更多有意思的文章，欢迎关注我的公众号：“木鸟杂记”。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%BC%96%E7%A8%8B%E8%A7%84%E8%8C%83/" rel="tag"># 编程规范</a>
+              <a href="/tags/%E5%91%BD%E5%90%8D/" rel="tag"># 命名</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/12/07/cuckoo-hash-and-cuckoo-filter/" rel="prev" title="布谷鸟哈希和布谷鸟过滤器">
+      <i class="fa fa-chevron-left"></i> 布谷鸟哈希和布谷鸟过滤器
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/02/19/ddia-reading-chapter1/" rel="next" title="DDIA 读书笔记（一）：可靠、可扩展、可维护">
+      DDIA 读书笔记（一）：可靠、可扩展、可维护 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%9A%E4%BF%A1"><span class="nav-number">1.</span> <span class="nav-text">诚信</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B4%E7%99%BD"><span class="nav-number">2.</span> <span class="nav-text">直白</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E6%B4%81"><span class="nav-number">3.</span> <span class="nav-text">简洁</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F"><span class="nav-number">4.</span> <span class="nav-text">系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2021/12/12/how-to-write-code-scrutinize-names/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '4c8852f06e2f4019bacc7919808384c9',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

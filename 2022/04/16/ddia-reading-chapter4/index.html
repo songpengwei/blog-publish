@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。  第三章讲了存储引擎，本章继续下探，探讨编码相关问题。 所有涉及跨进程通信的地方">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DDIA 读书笔记（四）：编码和演进">
+<meta property="og:url" content="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter4/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。  第三章讲了存储引擎，本章继续下探，探讨编码相关问题。 所有涉及跨进程通信的地方">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/zDLbrhSIuscaQpO.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/VC1ckpB3fi7FPQ6.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/IvwdYEu8ZqHJeCP.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/8NZAFpMU4PRfGqa.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/amgw7pUeodGhisb.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/2rfkGMa3dDWq7YZ.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/KZt8aSOpivxuJbB.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/WTvpoenYzxJhqOB.png">
+<meta property="og:image" content="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg">
+<meta property="article:published_time" content="2022-04-16T01:57:28.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.288Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="读书笔记">
+<meta property="article:tag" content="DDIA">
+<meta property="article:tag" content="设计数据密集型应用">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2022/04/16/zDLbrhSIuscaQpO.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter4/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>DDIA 读书笔记（四）：编码和演进 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DDIA 读书笔记（四）：编码和演进
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-04-16 09:57:28" itemprop="dateCreated datePublished" datetime="2022-04-16T09:57:28+08:00">2022-04-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">这里</a>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。</p>
+</blockquote>
+<p>第三章讲了存储引擎，本章继续下探，探讨编码相关问题。</p>
+<p>所有涉及跨进程通信的地方，都需要对数据进行<strong>编码</strong>（<strong>Encoding</strong>），或者说<strong>序列化</strong>（<strong>Serialization</strong>）。因为持久化存储和网络传输都是面向字节流的。序列化本质上是一种“<strong>降维</strong>”操作，将内存中高维的数据结构降维成单维的字节流，于是底层硬件和相关协议，只需要处理一维信息即可。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter4">https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter4</a> 转载请注明出处</em></p>
+<p>编码主要涉及两方面问题：</p>
+<ol>
+<li>如何编码能够节省空间、提高性能。</li>
+<li>如何编码以适应数据的演化和兼容。</li>
+</ol>
+<p>第一小节，以几种常见的编码工具（JSON，XML，Protocol Buffers 和 Avro）为例，逐一探讨了其如何进行编码、如何进行多版本兼容。这里引出了两个非常重要的概念：</p>
+<ol>
+<li>向后兼容 (backward compatibility)：当前代码可以读取旧版本代码写入的数据。</li>
+<li>向前兼容(forward compatibility)：当前代码可以读取新版本代码写入的数据。</li>
+</ol>
+<blockquote>
+<p>翻译成中文后，很容易混淆，主要原因在于“后”的歧义性，到底指<strong>身后</strong>（过去），还是指<strong>之后</strong>（将来），私以为还不如翻译为，<em>兼容过去</em>和<em>兼容将来</em>。但为了习惯，后面行文仍然用向后&#x2F;前兼容。</p>
+</blockquote>
+<p>其中，向后兼容比较常见，因为时间总是向前流逝，版本总是升级，那么升级之后的代码总要处理历史积压的数据，自然会产生向后兼容的问题。向前兼容比较少见，书中给出的例子是多实例滚动升级，但其持续时间也很短。</p>
+<p>第二小节，结合几个具体的应用场景：数据库、服务和消息系统，来分别谈了相关数据流中涉及到的编码与演化。</p>
+<h1 id="数据编码的格式"><a href="#数据编码的格式" class="headerlink" title="数据编码的格式"></a>数据编码的格式</h1><p><img src="https://s2.loli.net/2022/04/16/zDLbrhSIuscaQpO.png" alt="ddia4-encoding-decoding.png"></p>
+<p>编码（Encoding）有多种称谓，如<strong>序列化（serialization）</strong>或 <strong>编组（marshalling）</strong>。对应的，解码（Decoding）也有多种别称，<strong>解析（Parsing）</strong>，<strong>反序列化（deserialization）</strong>，<strong>反编组 (unmarshalling）。</strong></p>
+<ul>
+<li><p>为什么内存中数据和外存、网络中的会有如此不同呢？</p>
+<p>  在内存中，借助编译器，我们可以将内存解释为各种数据结构；但在文件系统和网络中，我们只能通过 seek\read 等几个有限的操作来流式的读取字节流。那 mmap 呢？</p>
+</li>
+<li><p>编码和序列化撞车了？</p>
+<p>  在事务中，也有序列化相关的术语，所以这里专用编码，以避免歧义。</p>
+</li>
+<li><p>编码（encoding）和加密（<strong>encryption</strong>）？</p>
+<p>  研究的范畴不太一样，编码是为了持久化或者传输，着重点在格式和演化；而加密是为了安全，着重点在于安全、防破解。</p>
+</li>
+</ul>
+<h2 id="编程语言内置"><a href="#编程语言内置" class="headerlink" title="编程语言内置"></a>编程语言内置</h2><p>很多编程语言内置了一些缺省的编码方法：</p>
+<ol>
+<li>Java 有 <code>java.io.Serializable</code></li>
+<li>Ruby 有 <code>Marshal</code></li>
+<li>Python 有 <code>pickle</code></li>
+</ol>
+<p>如果你确定你的数据只会被某种特定的语言所读取，那么这种内置的编码方法很好用。比如深度学习研究员因为基本都用 Python，所以常会把数据以 <a target="_blank" rel="noopener" href="https://docs.python.org/zh-cn/3/library/pickle.html" title="pickle 官方文档">pickle</a> 的格式传来传去。</p>
+<p>但这些编程语言内置的编码格式有以下缺点：</p>
+<ol>
+<li>和特定语言绑定</li>
+<li>安全问题</li>
+<li>兼容性支持不够</li>
+<li>效率不高</li>
+</ol>
+<h2 id="JSON、XML-及其二进制变体"><a href="#JSON、XML-及其二进制变体" class="headerlink" title="JSON、XML 及其二进制变体"></a>JSON、XML 及其二进制变体</h2><p>JSON，XML 和 CSV 属于常用的<strong>文本编码</strong>格式，其好处在于肉眼可读，坏处在于不够紧凑，占空间较多。</p>
+<p>JSON 最初由 JavaScript 引入，因此在 Web Service 中用的较多，当然随着 web 的火热，现在成为了比较通用的编码格式，比如很多日志格式就是 JSON 的。</p>
+<p>XML 比较古老了，比 JSON 冗余度还高，有时候配置文件中会用，但总体而言用的越来越少了。</p>
+<p>CSV （以逗号\TAB、换行符分割）还算紧凑，但是表达能力有限。数据库表导出有时会用。</p>
+<p>除了不够紧凑外，<strong>文本编码（text encoding）</strong>还有以下缺点：</p>
+<ol>
+<li>对<strong>数值类型支持不够</strong>。CSV 和 XML 直接不支持，万物皆字符串。JSON 虽区分字符串和数值，但是不进一步区分细分数值类型。可以理解，毕竟文本编码嘛，主要还是面向字符串。</li>
+<li><strong>对二进制数据支持不够</strong>。支持 Unicode，但是对二进制串支持不够，可能会显示为乱码。虽然可以通过 Base64 编码来绕过，但有点做无用功的感觉。</li>
+<li><strong>XML和 JSON 支持额外的模式</strong>。模式会描述数据的类型，告诉你如何理解数据。配合这些模式语言，虽然可以让 XML 和 JSON 变得强大，但是大大增加了复杂度。</li>
+<li><strong>CSV 没有任何模式</strong>。</li>
+</ol>
+<p>凡事讲究够用，很多场景下需要数据可读，并且不关心编码效率，那么这几种编码格式就够用了。</p>
+<h3 id="二进制编码"><a href="#二进制编码" class="headerlink" title="二进制编码"></a>二进制编码</h3><p>如果数据只被单一程序读取，不需要进行交换，不需要考虑易读性等问题。则可以用二进制编码，在数据量到达一定程度后，二进制编码所带来的空间节省、速度提高都很可观。</p>
+<p>因此，JSON 有很多二进制变种：MessagePack、BSON、BJSON、UBJSON、BISON 和 Smile 等。</p>
+<p>对于下面例子，</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;userName&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Martin&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;favoriteNumber&quot;</span><span class="punctuation">:</span> <span class="number">1337</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;interests&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;daydreaming&quot;</span><span class="punctuation">,</span> <span class="string">&quot;hacking&quot;</span><span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>如果用 MessagePack 来编码，则为：</p>
+<p><img src="https://s2.loli.net/2022/04/16/VC1ckpB3fi7FPQ6.png" alt="ddia-4-messagepack-enc.png"></p>
+<p>可以看出其基本编码策略为：使用类型，长度，bit 串，顺序编码，去掉无用的冒号、引号、花括号。</p>
+<p>从而将 JSON 编码的 81 字节缩小到了 66 字节，微有提高。</p>
+<h2 id="Thrift-和-Protocol-Buffers"><a href="#Thrift-和-Protocol-Buffers" class="headerlink" title="Thrift 和 Protocol Buffers"></a>Thrift 和 Protocol Buffers</h2><p>Thrift 最初由 Facebook，ProtoBuf 由 Google 在 07~08 年左右开源。他们都有对应的 RPC 框架和编解码工具。表达能力类似，语法也类似，在编码前都需要由接口定义语言（IDL）来描述模式：</p>
+<figure class="highlight protobuf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">struct Person &#123;</span><br><span class="line">    <span class="number">1</span>: <span class="keyword">required</span> <span class="type">string</span>       userName,</span><br><span class="line">    <span class="number">2</span>: <span class="keyword">optional</span> i64          favoriteNumber,</span><br><span class="line">    <span class="number">3</span>: <span class="keyword">optional</span> list&lt;<span class="type">string</span>&gt; interests</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight protobuf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">message </span><span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="keyword">required</span> <span class="type">string</span> user_name       = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">optional</span> <span class="type">int64</span>  favorite_number = <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">repeated</span> <span class="type">string</span> interests       = <span class="number">3</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>IDL 是编程语言无关的，可以利用相关代码生成工具，可以将上述 IDL 翻译为指定语言的代码。即，集成这些生成的代码，无论什么样的语言，都可以使用同样的格式编解码。</p>
+<p>这也是不同 service 可以使用不同编码语言，且能够互相通信的基础。</p>
+<p>此外，Thrift 还支持多种不同的编码格式，常用的有：Binary、Compact、JSON。可以让用户自行在：编码速度、占用空间、可读性方便进行取舍。</p>
+<p><img src="https://s2.loli.net/2022/04/16/IvwdYEu8ZqHJeCP.png" alt="ddia4-thrift-binary-enc.png"></p>
+<p>可以看出其特点：</p>
+<ol>
+<li><strong>使用 field tag 编码</strong>。field tag 其实蕴含了字段<strong>类型</strong>和<strong>名字</strong>。</li>
+<li>使用类型、tag、长度、bit 数组的顺序编码。</li>
+</ol>
+<p><img src="https://s2.loli.net/2022/04/16/8NZAFpMU4PRfGqa.png" alt="ddia4-thrift-compact-enc.png"></p>
+<p>相比 Binary Protocol，Compact Protocol 由以下优化：</p>
+<ol>
+<li>filed tag 只记录 delta。</li>
+<li>从而将 field tag 和 type 压缩到一个字节中。</li>
+<li>对数字使用变长编码和<a target="_blank" rel="noopener" href="https://izualzhy.cn/protobuf-encode-varint-and-zigzag">Zigzag编码</a>。</li>
+</ol>
+<p>ProtoBuf 与 Thrift Compact Protocol 编码方式很类似，也用了变长编码和 Zigzag 编码。但 ProtoBuf 对于数组的处理与 Thrift 显著不同，使用了 repeated 前缀而非真数组，好处后面说。</p>
+<p><img src="https://s2.loli.net/2022/04/16/amgw7pUeodGhisb.png" alt="ddia4-pb-enc.png"></p>
+<h3 id="字段标号和模式演变"><a href="#字段标号和模式演变" class="headerlink" title="字段标号和模式演变"></a>字段标号和模式演变</h3><p><strong>模式</strong>，即有哪些字段，字段分别为什么类型。</p>
+<p>随着时间的推移，业务总会发生变化，我们也不可避免的<strong>增删字段</strong>，<strong>修改字段类型</strong>，即<strong>模式演变</strong>。</p>
+<p>在模式发生改变后，需要：</p>
+<ol>
+<li><strong>向后兼容</strong>：新的代码，在处理新的增量数据格式的同时，也得处理旧的存量数据。</li>
+<li><strong>向前兼容</strong>：旧的代码，如果遇到新的数据格式，不能 crash。</li>
+</ol>
+<ul>
+<li><p>ProtoBuf 和 Thrift 是怎么解决这两个问题的呢？</p>
+<p>  <strong>字段标号</strong> + <strong>限定符</strong>（optional、required）</p>
+<p>  向后兼容：新加的字段需为 optional。这样在解析旧数据时，才不会出现字段缺失的情况。</p>
+<p>  向前兼容：字段标号不能修改，只能追加。这样旧代码在看到不认识的标号时，省略即可。</p>
+</li>
+</ul>
+<h3 id="数据类型和模式演变"><a href="#数据类型和模式演变" class="headerlink" title="数据类型和模式演变"></a>数据类型和模式演变</h3><p>修改数据类型比较麻烦：只能够在相容类型中进行修改。</p>
+<p>如不能将字符串修改为整形，但是可以在整形内修改： 32 bit 到 64 bit 整形。</p>
+<p>ProtoBuf 没有列表类型，而有一个 repeated 类型。其好处在于<strong>兼容数组类型</strong>的同时，支持将可选（optional）<strong>单值字段</strong>，修改为<strong>多值字段</strong>。修改后，旧代码在看到新的多值字段时，只会使用最后一个元素。</p>
+<p>Thrift 列表类型虽然没这个灵活性，但是可以<strong>嵌套</strong>呀。</p>
+<h2 id="Avro"><a href="#Avro" class="headerlink" title="Avro"></a>Avro</h2><p>Apache Avro 是 Apache Hadoop 的一个子项目，专门为数据密集型场景设计，对模式演变支持的很好。支持 <strong>Avro IDL</strong> 和 <strong>JSON</strong> 两种模式语言，前者适合人工编辑，后者适合机器读取。</p>
+<figure class="highlight protobuf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">record Person &#123;</span><br><span class="line">    <span class="type">string</span>                userName;</span><br><span class="line">    union &#123; null, long &#125;  favoriteNumber = null;</span><br><span class="line">    array&lt;<span class="type">string</span>&gt;         interests;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;record&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Person&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;fields&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">        <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;userName&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;string&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;favoriteNumber&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;null&quot;</span><span class="punctuation">,</span> <span class="string">&quot;long&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span> <span class="attr">&quot;default&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;interests&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;array&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;items&quot;</span><span class="punctuation">:</span> <span class="string">&quot;string&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看到 Avro 没有使用字段标号。</p>
+<ul>
+<li><p>仍是编码之前例子，Avro 只用了 32 个字节，为什么呢？</p>
+<p>  他没有编入类型。</p>
+</li>
+</ul>
+<p><img src="https://s2.loli.net/2022/04/16/2rfkGMa3dDWq7YZ.png" alt="ddia4-avro-enc.png"></p>
+<p>因此，Avro 必须配合模式定义来解析，如 Client-Server 在通信的握手阶段会先交换数据模式。</p>
+<h3 id="写入模式和读取模式"><a href="#写入模式和读取模式" class="headerlink" title="写入模式和读取模式"></a>写入模式和读取模式</h3><ul>
+<li><p>没有字段标号，Avro 如何支持模式演进呢？</p>
+<p>  答案是<strong>显式的</strong>使用两种模式。</p>
+</li>
+</ul>
+<p>即，在对数据进行编码（写入文件或者进行传输）时，使用模式 A，称为<strong>写入模式</strong>（writer schema）；在对数据进行解码（从文件或者网络读取）时，使用模式 B，称为<strong>读取模式</strong>（reader schema），而两者不必相同，只需兼容。</p>
+<p>也就是说，只要模式在演进时，是<strong>兼容</strong>的，那么 Avro 就能够处理向后兼容和向前兼容。</p>
+<p><strong>向后兼容</strong>：新代码读取旧数据。即读取时首先得到旧数据的写入模式（即旧模式），然后将其与读取模式（即新模式）对比，得到转换映射，即可拿着此映射去解析旧数据。</p>
+<p><strong>向前兼容</strong>：旧代码读取新数据。原理类似，只不过是需要得到一个逆向映射。</p>
+<p>在由写入模式到读取模式建立映射时有一些规则：</p>
+<ol>
+<li><strong>使用字段名来进行匹配</strong>。因此写入模式和读取模式字段名顺序不一样无所谓。</li>
+<li><strong>忽略多出的字段</strong>。</li>
+<li><strong>对缺少字段填默认值</strong>。</li>
+</ol>
+<p><img src="https://s2.loli.net/2022/04/16/KZt8aSOpivxuJbB.png" alt="ddia-4avro-map.png"></p>
+<h3 id="模式演化规则"><a href="#模式演化规则" class="headerlink" title="模式演化规则"></a>模式演化规则</h3><ul>
+<li>那么如何保证写入模式的兼容呢？<ol>
+<li>在增删字段时，只能添加或删除具有默认值的字段。</li>
+<li>在更改字段类型时，需要 Avro 支持相应的类型转换。</li>
+</ol>
+</li>
+</ul>
+<p>Avro 没有像 ProtoBuf、Thrift 那样的 optional 和 required 限定符，是通过 union 的方式，里指定默认值，甚至多种类型：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">union</span> &#123;</span>null, <span class="type">long</span>, <span class="built_in">string</span>&#125; field;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注</strong>：默认值必须是联合的第一个分支的类型。</p>
+<p>更改字段名和在 union 中添加类型，都是向后兼容，但是不能向前兼容的，想想为什么？</p>
+<h3 id="如何从编码中获取写入模式"><a href="#如何从编码中获取写入模式" class="headerlink" title="如何从编码中获取写入模式"></a>如何从编码中获取写入模式</h3><p>对于一段给定的 Avro 编码数据，Reader 如何从其中获得其对应的写入模式？</p>
+<p>这取决于不同的应用场景。</p>
+<ul>
+<li><p><strong>所有数据条目同构的大文件</strong></p>
+<p>  典型的就是 Hadoop 生态中。如果一个大文件所有记录都使用相同模式编码，则在文件头包含一次写入模式即可。</p>
+</li>
+<li><p><strong>支持模式变更的数据库表</strong></p>
+<p>  由于数据库表允许模式修改，其中的行可能写入于不同模式阶段。对于这种情况，可以在编码时额外记录一个模式版本号（比如自增），然后在某个地方存储所有的模式版本。</p>
+<p>  解码时，通过版本去查询对应的写入模式即可。</p>
+</li>
+<li><p><strong>网络中发送数据</strong></p>
+<p>  在两个进程通信的握手阶段，交换写入模式。比如在一个 session 开始时交换模式，然后在整个 session 生命周期内都用此模式。</p>
+</li>
+</ul>
+<h3 id="动态生成数据中的模式"><a href="#动态生成数据中的模式" class="headerlink" title="动态生成数据中的模式"></a>动态生成数据中的模式</h3><p>Avro 没有使用字段标号的一个好处是，不需要手动维护字段标号到字段名的映射，这对于动态生成的数据模式很友好。</p>
+<p>书中给的例子是对数据库做导出备份，注意和数据库本身使用 Avro 编码不是一个范畴，此处是指导出的数据使用 Avro 编码。</p>
+<p>在数据库表模式发生改变前后，Avro 只需要在导出时依据当时的模式，做相应的转换，生成相应的模式数据即可。但如果使用 PB，则需要自己处理多个备份文件中，字段标号到字段名称的映射关系。其本质在于，Avro 的数据模式可以和数据存在一块，但是 ProtoBuf 的数据模式只能体现在生成的代码中，需要手动维护新旧版本备份数据与PB 生成的代码间的映射。</p>
+<h3 id="代码生成和动态语言"><a href="#代码生成和动态语言" class="headerlink" title="代码生成和动态语言"></a>代码生成和动态语言</h3><p>Thrift 和 Protobuf 会依据语言无关的 IDL 定义的模式，生成给定语言的编解码的代码。这对静态语言很有用，因为它允许利用 IDE 和编译器进行类型检查，并且能够提高编解码效率。</p>
+<p><strong>上述思路本质上在于，将模式内化到了生成的代码中。</strong></p>
+<p>但对于动态语言，或者说解释型语言，如 JavaScript、Ruby 或 Python，由于没有了编译期检查，生成代码的意义没那么大，反而会有一定的冗余。这时 Avro 这种支持不生成代码的框架就节省一些，它可以将模式写入数据文件，读取时利用 Avro 进行动态解析即可。</p>
+<h2 id="模式的优点"><a href="#模式的优点" class="headerlink" title="模式的优点"></a>模式的优点</h2><p><strong>模式的本质是显式类型约束，即，先有模式，才能有数据。</strong></p>
+<p>相比于没有任何类型约束的文本编码 JSON，XML 和 CSV，Protocol Buffers，Thrift 和 Avro 这些基于显式定义二进制编码优点有：</p>
+<ol>
+<li>省去字段名，从而更加紧凑。</li>
+<li>模式是数据的注释或者文档，并且总是最新的。</li>
+<li>数据模式允许不读取数据，仅比对模式来做低成本的兼容性检查。</li>
+<li>对于静态类型来说，可以利用代码生成做编译时的类型检查。</li>
+</ol>
+<p>模式演化 vs 读时模式</p>
+<h1 id="几种数据流模型"><a href="#几种数据流模型" class="headerlink" title="几种数据流模型"></a>几种数据流模型</h1><p>数据可以以很多种形式从一个系统流向另一个系统，但不变的是，流动时都需要编码与解码。</p>
+<p>在数据流动时，会涉及编解码双方模式匹配问题，上一小节已经讨论，本小节主要探讨几种进程间典型的数据流方式：</p>
+<ol>
+<li>通过数据库</li>
+<li>通过服务调用</li>
+<li>通过异步消息传递</li>
+</ol>
+<h2 id="经由数据库的数据流"><a href="#经由数据库的数据流" class="headerlink" title="经由数据库的数据流"></a>经由数据库的数据流</h2><p>访问数据库的程序，可能：</p>
+<ol>
+<li><strong>只由同一个进程访问</strong>。则数据库可以理解为该进程向将来发送数据的中介。</li>
+<li><strong>由多个进程访问</strong>。则多个进程可能有的是旧版本，有的是新版本，此时数据库需要考虑向前和向后兼容的问题。</li>
+</ol>
+<p>还有一种比较棘手的情况：在某个时刻，你给一个表增加了一个字段，较新的代码写入带有该字段的行，之后又被较旧的代码覆盖成缺少该字段的行。这时候就会出现一个问题：我们更新了一个字段 A，更新完后，却发现字段 B 没了。</p>
+<p><img src="https://s2.loli.net/2022/04/16/WTvpoenYzxJhqOB.png" alt="ddia-4-update-by-old.png"></p>
+<h3 id="不同时间写入的数据"><a href="#不同时间写入的数据" class="headerlink" title="不同时间写入的数据"></a>不同时间写入的数据</h3><p>对于应用程序，可能很短时间就可以由旧版本替换为新版本。但是对于数据，旧版本的代码写入的数据量，经年累月，可能很大。在变更了模式之后，由于这些旧模式的数据量很大，全部更新对齐到新版本的代价很高。</p>
+<p>这种情况我们称之为：<strong>数据的生命周期超过了其对应代码的生命周期</strong>。</p>
+<p>在读取时，数据库一般会对缺少对应列的旧数据：</p>
+<ol>
+<li>填充新版本字段的<strong>默认值</strong>（default value）</li>
+<li>如果没有默认值则填充<strong>空值</strong>（nullable）</li>
+</ol>
+<p>后返回给用户。一般来说，在更改模式时（比如 alter table），数据库不允许增加既没有默认值、也不允许为空的列。</p>
+<h3 id="存储归档"><a href="#存储归档" class="headerlink" title="存储归档"></a>存储归档</h3><p>有时候需要对数据库做备份到外存。在做备份（或者说快照）时，虽然会有不同时间点生成的数据，但通常会将各种版本数据转化、对齐到最新版本。毕竟，总是要全盘拷贝数据，那就顺便做下转换好了。</p>
+<p>之前也提到了，对于这种场景，生成的是一次性的不可变的备份或者快照数据，使用 Avro 比较合适。此时也是一个很好地契机，可以将数据按需要的格式输出，比如面向分析的按列存储格式：<a target="_blank" rel="noopener" href="https://parquet.apache.org/docs/file-format/" title="Parquet">Parquet</a>。</p>
+<h2 id="经由服务的数据流：REST-和-RPC"><a href="#经由服务的数据流：REST-和-RPC" class="headerlink" title="经由服务的数据流：REST 和 RPC"></a>经由服务的数据流：REST 和 RPC</h2><p>通过网络通信时，通常涉及两种角色：服务器（server）和客户端（client）。</p>
+<p>通常来说，暴露于公网的多为 HTTP 服务，而 RPC 服务常在内部使用。</p>
+<p>服务器也可以同时是客户端：</p>
+<ol>
+<li>作为客户端访问数据库。</li>
+<li>作为客户端访问其他服务。</li>
+</ol>
+<p>对于后者，是因为我们常把一个大的服务拆成一组功能独立、相对解耦的服务，这就是 <strong>面向服务的架构（service-oriented architecture，SOA）</strong>，或者最近比较火的<strong>微服务架构（micro-services architecture）</strong>。这两者有一些不同，但这里不再展开。</p>
+<p>服务在某种程度上和数据库类似：允许客户端以某种方式存储和查询数据。但不同的是，数据库通常提供某种灵活的查询语言，而服务只能提供相对死板的 API。</p>
+<h3 id="web-服务"><a href="#web-服务" class="headerlink" title="web 服务"></a>web 服务</h3><p>当服务使用 HTTP 作为通信协议时，我们通常将其称为 <strong>web 服务</strong>。但其并不局限于 web，还包括：</p>
+<ol>
+<li>用户终端（如移动终端）通过 HTTP 向服务器请求。</li>
+<li>同组织内的一个服务向另一个服务发送 HTTP 请求（微服务架构，其中的一些组件有时被称为中间件）。</li>
+<li>不同组织的服务进行数据交换。一般要通过某种手段进行验证，比如 OAuth。</li>
+</ol>
+<p>有两种设计 HTTP API 的方法：REST 和 SOAP。</p>
+<ol>
+<li><strong>REST 并不是一种协议，而是一种设计哲学</strong>。它强调简单的 API 格式，使用 URL 来标识资源，使用 HTTP 的动作（GET、POST、PUT、DELETE ）来对资源进行增删改查。由于其简洁风格，越来越受欢迎。</li>
+<li>SOAP 是基于 XML 的协议。虽然使用 HTTP，但目的在于独立于 HTTP。现在提的比较少了。</li>
+</ol>
+<h3 id="RPC-面临的问题"><a href="#RPC-面临的问题" class="headerlink" title="RPC 面临的问题"></a>RPC 面临的问题</h3><p>RPC 想让调用远端服务像调用本地（同进程中）函数一样自然，虽然设想比较好、现在用的也比较多，但也存在一些问题：</p>
+<ol>
+<li>本地函数调用要么成功、要么不成功。但是 RPC 由于经过网络，可能会有各种复杂情况，比如请求丢失、响应丢失、hang 住以至于超时等等。因此，可能需要重试。</li>
+<li>如果重试，需要考虑<strong>幂等性</strong>问题。因为上一次的请求可能已经到达了服务端，只是请求没有成功返回。那么多次调用远端函数，就要保证不会造成额外副作用。</li>
+<li>远端调用延迟不可用，受网络影响较大。</li>
+<li>客户端与服务端使用的编程语言可能不同，但如果有些类型不是两种语言都有，就会出一些问题。</li>
+</ol>
+<p>REST 相比 RPC 的好处在于，它不试图隐去网络，更为显式，让使用者不易忽视网络的影响。</p>
+<h3 id="RPC-当前方向"><a href="#RPC-当前方向" class="headerlink" title="RPC 当前方向"></a>RPC 当前方向</h3><p>尽管有上述问题，但其实在工程中，大部分情况下，上述情况都在容忍范围内：</p>
+<ol>
+<li>比如局域网的网络通常比较快速、可控。</li>
+<li>多次调用，使用幂等性来解决。</li>
+<li>跨语言，可以使用 RPC 框架的 IDL 来解决。</li>
+</ol>
+<p>但 RPC 程序需要考虑上面提到的极端情况，否则可能会偶然出一个很难预料的 BUG。</p>
+<p>另外，基于二进制编码的 RPC 通常比基于 HTTP 服务效率更高。但 HTTP 服务，或者更具体一点，RESTful API 的好处在于，生态好、有大量的工具支持。而 RPC 的 API 通常和 RPC 框架生成的代码高度相关，因此很难在不同组织中无痛交换和升级。</p>
+<p>因此，如本节开头所说：暴露于公网的多为 HTTP 服务，而 RPC 服务常在内部使用。</p>
+<h3 id="数据编码和-RPC-的演化"><a href="#数据编码和-RPC-的演化" class="headerlink" title="数据编码和 RPC 的演化"></a>数据编码和 RPC 的演化</h3><p>通过服务的数据流通常可以假设：所有的服务器先更新，然后服务端再更新。因此，只需要在请求里考虑后向兼容性，在响应中考虑前向兼容性：</p>
+<ol>
+<li>Thrift、gRPC（Protobuf）和 Avro RPC 可以根据编码格式的兼容性规则进行演变。</li>
+<li>RESTful API 通常使用 JSON 作为请求响应的格式，JSON 比较容易添加新的字段来进行演进和兼容。</li>
+<li>SOAP 按下不表。</li>
+</ol>
+<p>对于 RPC，服务的兼容性比较困难，因为一旦 RPC 服务的 SDK 提供出去之后，你就无法对其生命周期进行控制：总有用户因为各种原因，不会进行主动升级。因此可能需要长期保持兼容性，或者提前通知和不断预告，或者维护多个版本 SDK 并逐渐对早期版本进行淘汰。</p>
+<p>对于 RESTful API，常用的兼容方法是，将版本号做到 URL 或者 HTTP 请求头中。</p>
+<h2 id="经由消息传递的数据流"><a href="#经由消息传递的数据流" class="headerlink" title="经由消息传递的数据流"></a>经由消息传递的数据流</h2><p>前面研究了编码解码的不同方式：</p>
+<ol>
+<li>数据库：一个进程写入（编码），将来一个进程读取（解码）</li>
+<li>RPC 和 REST：一个进程通过网络（发送前会编码）向另一个进程发送请求（收到后会解码）并同步等待响应。</li>
+</ol>
+<p>本节研究介于数据库和 RPC 间的<strong>异步消息系统</strong>：一个存储（消息 broker、消息队列来临时存储消息）+ 两次 RPC（生产者一次，消费者一次）。</p>
+<p>与 RPC 相比，使用消息队列的优点：</p>
+<ol>
+<li>如果消费者暂时不可用，可以充当暂存系统。</li>
+<li>当消费者宕机重启后，自动地重新发送消息。</li>
+<li>生产者不必知道消费者 IP 和端口。</li>
+<li>能将一条消息发送给多个消费者。</li>
+<li>将生产者和消费者解耦。</li>
+</ol>
+<h3 id="消息队列"><a href="#消息队列" class="headerlink" title="消息队列"></a>消息队列</h3><p>书中用的是<strong>消息代理</strong>（Message Broker），但另一个名字，消息队列，可能更为大家熟知，因此，本小节之后行文都用消息队列。</p>
+<p>过去，消息队列为大厂所垄断。但近年来，开源的消息队列越来越多，可以适应不同场景，如 RabbitMQ、ActiveMQ、HornetQ、NATS 和 Apache Kafka 等等。</p>
+<p>消息队列的<strong>送达保证</strong>因实现和配置而异，包括：</p>
+<ol>
+<li><strong>最少一次 （at-least-once）</strong>：同一条数据可能会送达多次给消费者。</li>
+<li><strong>最多一次（at-most-once）</strong>：同一条数据最多会送达一次给消费者，有可能丢失。</li>
+<li><strong>严格一次（exactly-once）</strong>：同一条数据保证会送达一次，且最多一次给消费者。</li>
+</ol>
+<p>消息队列的逻辑抽象叫做 <strong>Queue</strong> 或者 <strong>Topic</strong>，常用的消费方式两种：</p>
+<ol>
+<li>多个消费者互斥消费一个 Topic</li>
+<li>每个消费者独占一个 Topic</li>
+</ol>
+<p><strong>注</strong>：我们有时会区分这两个概念：将点对点的互斥消费称为 Queue，多点对多点的发布订阅称为 Topic，但这并不通用，或者说没有形成共识。</p>
+<p>一个 Topic 提供一个单向数据流，但可以组合多个 Topic，形成复杂的数据流拓扑。</p>
+<p>消息队列通常是面向<strong>字节数组</strong>的，因此你可以将消息按任意格式进行编码。如果编码是前后向兼容的，同一个主题的消息格式，便可以进行灵活演进。</p>
+<h3 id="分布式的-Actor-框架"><a href="#分布式的-Actor-框架" class="headerlink" title="分布式的 Actor 框架"></a>分布式的 Actor 框架</h3><p><strong>Actor 模型</strong>是一种基于消息传递的并发编程模型。 Actor 通常是由状态（State）、行为（Behavior）和信箱（MailBox，可以认为是一个消息队列）三部分组成：</p>
+<ol>
+<li>状态：Actor 中包含的状态信息。</li>
+<li>行为：Actor 中对状态的计算逻辑。</li>
+<li>信箱：Actor 接受到的消息缓存地。</li>
+</ol>
+<p>由于  Actor 和外界交互都是通过消息，因此本身可以并行的，且不需要加锁。</p>
+<p>分布式的 Actor 框架，本质上是将消息队列和 actor 编程模型集成到一块。自然，在 Actor 滚动升级是，也需要考虑前后向兼容问题。</p>
+<hr>
+<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心~<br><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter2/" rel="bookmark">DDIA 读书笔记（二）：数据模型和查询语言</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="bookmark">DDIA 读书笔记（三）： TP AP 和列存</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA 读书笔记（五）：冗余</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/10/18/influence-notes/" rel="bookmark">查理芒格推荐——《影响力》读书笔记+精要分析</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/" rel="tag"># 读书笔记</a>
+              <a href="/tags/DDIA/" rel="tag"># DDIA</a>
+              <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8/" rel="tag"># 设计数据密集型应用</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="prev" title="DDIA 读书笔记（三）： TP AP 和列存">
+      <i class="fa fa-chevron-left"></i> DDIA 读书笔记（三）： TP AP 和列存
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/05/04/distributed-database-storage-components/" rel="next" title="层层剥开数据库存储层">
+      层层剥开数据库存储层 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BC%96%E7%A0%81%E7%9A%84%E6%A0%BC%E5%BC%8F"><span class="nav-number">1.</span> <span class="nav-text">数据编码的格式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E5%86%85%E7%BD%AE"><span class="nav-number">1.1.</span> <span class="nav-text">编程语言内置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JSON%E3%80%81XML-%E5%8F%8A%E5%85%B6%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%8F%98%E4%BD%93"><span class="nav-number">1.2.</span> <span class="nav-text">JSON、XML 及其二进制变体</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8C%E8%BF%9B%E5%88%B6%E7%BC%96%E7%A0%81"><span class="nav-number">1.2.1.</span> <span class="nav-text">二进制编码</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Thrift-%E5%92%8C-Protocol-Buffers"><span class="nav-number">1.3.</span> <span class="nav-text">Thrift 和 Protocol Buffers</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%97%E6%AE%B5%E6%A0%87%E5%8F%B7%E5%92%8C%E6%A8%A1%E5%BC%8F%E6%BC%94%E5%8F%98"><span class="nav-number">1.3.1.</span> <span class="nav-text">字段标号和模式演变</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E5%92%8C%E6%A8%A1%E5%BC%8F%E6%BC%94%E5%8F%98"><span class="nav-number">1.3.2.</span> <span class="nav-text">数据类型和模式演变</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Avro"><span class="nav-number">1.4.</span> <span class="nav-text">Avro</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E6%A8%A1%E5%BC%8F%E5%92%8C%E8%AF%BB%E5%8F%96%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.4.1.</span> <span class="nav-text">写入模式和读取模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%BC%8F%E6%BC%94%E5%8C%96%E8%A7%84%E5%88%99"><span class="nav-number">1.4.2.</span> <span class="nav-text">模式演化规则</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BB%8E%E7%BC%96%E7%A0%81%E4%B8%AD%E8%8E%B7%E5%8F%96%E5%86%99%E5%85%A5%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.4.3.</span> <span class="nav-text">如何从编码中获取写入模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E7%94%9F%E6%88%90%E6%95%B0%E6%8D%AE%E4%B8%AD%E7%9A%84%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.4.4.</span> <span class="nav-text">动态生成数据中的模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E7%94%9F%E6%88%90%E5%92%8C%E5%8A%A8%E6%80%81%E8%AF%AD%E8%A8%80"><span class="nav-number">1.4.5.</span> <span class="nav-text">代码生成和动态语言</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%BC%8F%E7%9A%84%E4%BC%98%E7%82%B9"><span class="nav-number">1.5.</span> <span class="nav-text">模式的优点</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%87%A0%E7%A7%8D%E6%95%B0%E6%8D%AE%E6%B5%81%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">几种数据流模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E7%94%B1%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B5%81"><span class="nav-number">2.1.</span> <span class="nav-text">经由数据库的数据流</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E5%90%8C%E6%97%B6%E9%97%B4%E5%86%99%E5%85%A5%E7%9A%84%E6%95%B0%E6%8D%AE"><span class="nav-number">2.1.1.</span> <span class="nav-text">不同时间写入的数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E5%BD%92%E6%A1%A3"><span class="nav-number">2.1.2.</span> <span class="nav-text">存储归档</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E7%94%B1%E6%9C%8D%E5%8A%A1%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B5%81%EF%BC%9AREST-%E5%92%8C-RPC"><span class="nav-number">2.2.</span> <span class="nav-text">经由服务的数据流：REST 和 RPC</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#web-%E6%9C%8D%E5%8A%A1"><span class="nav-number">2.2.1.</span> <span class="nav-text">web 服务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RPC-%E9%9D%A2%E4%B8%B4%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">2.2.2.</span> <span class="nav-text">RPC 面临的问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RPC-%E5%BD%93%E5%89%8D%E6%96%B9%E5%90%91"><span class="nav-number">2.2.3.</span> <span class="nav-text">RPC 当前方向</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BC%96%E7%A0%81%E5%92%8C-RPC-%E7%9A%84%E6%BC%94%E5%8C%96"><span class="nav-number">2.2.4.</span> <span class="nav-text">数据编码和 RPC 的演化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E7%94%B1%E6%B6%88%E6%81%AF%E4%BC%A0%E9%80%92%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B5%81"><span class="nav-number">2.3.</span> <span class="nav-text">经由消息传递的数据流</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97"><span class="nav-number">2.3.1.</span> <span class="nav-text">消息队列</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E7%9A%84-Actor-%E6%A1%86%E6%9E%B6"><span class="nav-number">2.3.2.</span> <span class="nav-text">分布式的 Actor 框架</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter4/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '71e149229b5668ad31751cd3fdebb202',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
