@@ -193,6 +193,101 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/01/18/raft-implement-points/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/01/18/raft-implement-points/" class="post-title-link" itemprop="url">MIT 6.824 2020 Raft 实现细节备忘</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-01-18 22:02:26" itemprop="dateCreated datePublished" datetime="2020-01-18T22:02:26+08:00">2020-01-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/Raft/" itemprop="url" rel="index"><span itemprop="name">Raft</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>18年的时候做过一些 6.824，旧文<a href="https://www.qtmuniao.com/categories/courses/">在此</a>，无奈做到 Part 2C，无论如何也跑不过测试，便一直搁置起来。但在后来的日子，却时时念起此门神课，心下伤感。拖到今日，终于可以来还愿了。</p>
+<p>这次能跑过所有测试，原因有三：一来，之前做过一次，很多原理还留有印象；二来，这一年多在工作上有了很多分布式系统的实践；三来，golang 的驾驭上也精进了一些。但是在做的过程中，仍然遇到了大量令人纠结的细节，为了方便日后回顾，将这些细节梳理一下，记在此处。若能好巧对其他做此门课的人有些微启发，则又是快事一件了。</p>
+<h2 id="6-824-与-Raft"><a href="#6-824-与-Raft" class="headerlink" title="6.824 与 Raft"></a>6.824 与 Raft</h2><p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/">6.824</a> 是一门关于分布式系统的非常棒的公开课，做课程实验的过程中时时惊叹于其构思之精巧、材料准备之翔实。MIT 的大师们能将这样精华的课程开放出来，实乃名校和大师们的气度，更是我们计算机人的幸事。</p>
+<p>Raft 是一个面向理解的分布式共识（consensus）协议。分布式共识算法是分布式领域非常非常经典的问题，同时也是分布式系统中非常难的一块，直观的说，就如同流沙上打下分布式系统大楼的地基。不可靠的网络、易故障的主机，造成的状态变化之复杂，实在不是一般人能在脑中模拟得了的。本人愚钝，只能是感性把握加细节堆叠，堪堪有些认识。说回 Raft，有同领域 Paxos 珠玉在前，何以 Raft 仍能脱颖而出？应该是抓住了以下两点：</p>
+<ol>
+<li><strong>易于理解</strong>。Paxos 是出了名的难以理解，因此也就难以飞入寻常百姓家。而 Raft 通过解耦出多个模块，将算法复杂度进行降维，大大降低了一般人的理解难度。此外，Raft 还有很多精巧的设计，以尽可能避免引入复杂度，从而进一步减轻大家的心智负担。</li>
+<li><strong>易于实现</strong>。易于理解客观上会导致利于实现，但不等同于就能据此产出优秀系统。如果理解流于感性，则实现成空中楼阁。Raft 论文的厉害之处就在于既有感性把握又有细节组织，几乎就是一个系统的设计文档，还是详细设计文档。</li>
+</ol>
+<p>要想做好该<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/lab-Raft.html">实验</a>，需要涉猎大量的材料，我把实验中提到的和我看到的汇总在文末。当然，还有英文劝退。虽然我最后测试用例都过了，但仍有很多没实现好的点以及不理解之处。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/01/18/raft-implement-points/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/01/06/go-value-pointer-method/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1185,95 +1280,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/04/30/map-reduce/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/04/30/map-reduce/" class="post-title-link" itemprop="url">MapReduce —— 历久而弥新</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-04-30 09:33:12" itemprop="dateCreated datePublished" datetime="2019-04-30T09:33:12+08:00">2019-04-30</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><img src="https://i.loli.net/2020/02/09/nKVyYJ7QtaLfIMx.png" alt="MR执行流"></p>
-<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>MapReduce 是谷歌 2004 年（Google 内部是从03年写出第一个版本）发表的论文里提出的一个概念。虽然已经过去15 年了，但现在回顾这个大数据时代始祖级别概念的背景、原理和实现，仍能获得对分布式系统的很多直觉性的启发，所谓温故而知新。</p>
-<p>在Google 的语境里，MapReduce 既是一种编程模型，也是支持该模型的一种分布式系统实现。它的提出，让没有分布式系统背景的开发者，也能较轻松的利用大规模集群以高吞吐量的方式来处理海量数据。其解决问题思路很值得借鉴：找到需求的痛点（如海量索引如何维护，更新和排名），对处理关键流程进行高阶抽象（分片Map，按需Reduce），以进行高效的系统实现（所谓量体裁衣）。这其中，如何找到一个合适的计算抽象，是最难的部分，既要对需求有直觉般的了解，又要具有极高的计算机科学素养。当然，并且可能更为接近现实的是，该抽象是在根据需求不断试错后进化出的海水之上的冰山一角。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2019/04/30/map-reduce/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1345,19 +1351,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">93</span>
+          <span class="site-state-item-count">94</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">31</span>
+        <span class="site-state-item-count">32</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">158</span>
+        <span class="site-state-item-count">160</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
