@@ -193,6 +193,172 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/08/21/life-engineering-many-passes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2023/08/21/life-engineering-many-passes/" class="post-title-link" itemprop="url">生活工程学（一）：多轮次拆解</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2023-08-21 16:19:43 / 修改时间：16:27:52" itemprop="dateCreated datePublished" datetime="2023-08-21T16:19:43+08:00">2023-08-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id=""><a href="#" class="headerlink" title=""></a></h1><blockquote>
+<p>我们在工程实践中，有些构建代码的小技巧，其背后所体现的思想，生活中也常常可见。本系列便是这样一组跨越生活和工程的奇怪联想。这是第一篇：多轮次拆解，也即，<strong>很多我们习惯一遍完成的事情，有时候拆成多个轮次完成，会简单、高效很多</strong>。</p>
+</blockquote>
+<p>我在进行 code review 时，常看到一些新手同学在一个 for 循环中干太多事情。常会引起多层嵌套，或者 for 循环内容巨大无比。此时，如果不损失太多性能，我通常建议同学将要干的事情拆成多少个步骤，每个步骤一个 for 循环。甚至，可以每个步骤一个函数。</p>
+<p>当然，这些全是从维护角度着眼的。因为人一下总是记不了太多事情，一步步来，而不是揉在一块来，会让每个步骤逻辑清晰很多。后者，我通常称之为”<strong>摊大饼</strong>“式代码，这种代码的特点是写时很自然，但是维护起来很费劲——细节揉在一起总会让复杂度爆炸。软件工程中的最小可用原型，也是类似的理念。</p>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2023/08/21/life-engineering-many-passes">https://www.qtmuniao.com/2023/08/21/life-engineering-many-passes</a> 转载请注明出处</em></p>
+<p>这种理念，其实在”函数式“编程中也随处可见，即对一个数据集操作时，我们会链式的应用一系列变换函数，从而让数据流清晰的展示出来。在大数据处理中，这种范式就更常见了，比如 spark 论文中提到的：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">errors.<span class="built_in">filter</span>(_.<span class="built_in">contains</span>(<span class="string">&quot;HDFS&quot;</span>))</span><br><span class="line">      .<span class="built_in">map</span>(_.<span class="built_in">split</span>(’\t’)(<span class="number">3</span>))</span><br><span class="line">      .<span class="built_in">collect</span>()</span><br></pre></td></tr></table></figure>
+
+<p> SQL 查询引擎在实现时也是用的类似机制，即将一个查询语句，转换成对一个行列组成的二维数据集，施加<strong>多轮次的算子变换</strong>。如下图所示。</p>
+<p><img src="https://pic.imgdb.cn/item/64e31ef4661c6c8e54aa6e71.png"></p>
+<p>图源：CMU15445，<span class="exturl" data-url="aHR0cHM6Ly8xNTQ0NS5jb3Vyc2VzLmNzLmNtdS5lZHUvZmFsbDIwMjIvbm90ZXMvMTItcXVlcnlleGVjdXRpb24xLnBkZg==">查询引擎讲义<i class="fa fa-external-link-alt"></i></span>。</p>
+<p>我高中时学过一点点素描，虽然没有入门，但其多轮次的做图技法给我印象很深：先勾轮廓，再逐层完善。打线的时候也是一层层的打，而非一个地方画完再画另一个地方。我最近常常翻译文章，开始时，我总是务求一遍翻译好。但结果就是非常慢，且很容易放弃。后面开始使用多轮次、逐层打磨法。一开始用 ChatGPT 帮忙翻译一遍，然后自己再对照原文订正语义，最后扫一遍调换语序理顺词句等等。常言道，好文章是改出来的，应该也是这个道理。</p>
+<p>滑铁卢大学教授 Srinivasan Keshav 在其 ”<span class="exturl" data-url="aHR0cDovL2Njci5zaWdjb21tLm9yZy9vbmxpbmUvZmlsZXMvcDgzLWtlc2hhdkEucGRm">How to Read a Paper<i class="fa fa-external-link-alt"></i></span>“ 中阐述了经典的”三遍（three-pas approach）读论文“方法，也是类似的思想：</p>
+<ol>
+<li>The first pass：鸟瞰式略读，抓摘要、章节标题、结论等重点内容。</li>
+<li>The second pass：稍微细一些，但不要陷入细节。</li>
+<li>The third pass：细读，完全理解。</li>
+</ol>
+<p>其中任何一步都可以及时停止：这可能不是你需要的论文。但我之前读论文就长陷入一个误区，我愿称之为”地毯式读法“——逐字句过每一个细节。包括我刚开始进行 code review 时，也常常陷入这个误区。</p>
+<p>一次性的、按顺序把事情做完，是大部分人的天性，但这种天性往往是低效的，我们要通过不断地训练来克服。说起来，我和老婆出去点菜的时候，也常用两遍法——第一遍把想吃的都加上，第二遍考虑各种约束（偏好强弱、价格高低、吃过与否等等）来将菜品去到一个合理的范围内。</p>
+<p>我想背后的原因是：</p>
+<ol>
+<li>人的注意力是有限的，因此只擅长一次专注的做好一件事情。</li>
+<li>人的认知也是一个由浅入深的过程，一层层细化便是利用了这个特点。</li>
+</ol>
+<hr>
+<p>本文来自我的小报童付费专栏《系统日知录》，专注分布式系统、存储和数据库，有图数据库、代码解读、优质英文播客翻译、数据库学习、论文解读等等系列，欢迎喜欢我文章的朋友订阅👉<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">专栏<i class="fa fa-external-link-alt"></i></span>支持，你的支持对我持续创作优质文章非常重要。下面是当前文章列表：</p>
+<p><strong>图数据库系列</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2ZiNGNhNzQ4LTUzZDktNDk1Yy05OWNhLTQwNDkzMzJhZDY5NQ==">图数据库资料汇总<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzY5MTRhOGY2LWI1MDYtNGEzNy04YjU1LTg0OTE4NTQzOWQxNQ==">译： Factorization &amp; Great Ideas from Database Theory<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzY1NmQ4ZDczLWY4ZWQtNDYwNC05ZjE0LWY3Nzc5N2U4NzdiMA==">Memgraph 系列（二）：可串行化实现<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzJlODA5MWEwLTgzNjMtNDk4Zi1iNjA5LWNlOGUyMzExMGM5ZQ==">Memgraph 系列（一）：数据多版本管理<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2I0MGZkYzIzLTEyYTktNGE4NS04ZDNhLWUzNWY2ZDFiMWIwYw==">【图数据库系列四】与关系模型的“缘”与“争”<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzY2MDc1Y2U5LWZjNzYtNGUzNS1hOTFjLTkwY2Q2MTFmYzczMg==">【图数据库系列三】图的表示与存储<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0Lzc3NTcyZWQ0LTcyM2QtNGRmZC1iYTE2LTViMTM2ZmY5YTdhMw==">【图数据库系列二】 Cypher 初探<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzIzZjBiZjExLWUxNjctNGY4MC04NDE1LTJlYjRhYjE3OTdiNQ==">【图数据库系列一】属性图模型是啥、有啥不足<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">🔥<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+<p><strong>数据库</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2FmM2RjM2E3LThkMmUtNDJhOC05NWMxLTNmY2MzZTZlNzA0NQ==">译：数据库五十年来研究趋势<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0Lzk4MjRjYjlmLTIyODktNDg5NS1hOTM4LTQzMGQ1NWJhMWViYQ==">译：数据库中的代码生成（Codegen in Databas…<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2NhMDIwMjk3LTA5MDEtNDVkMS04YWNjLTFkODg0YmYxY2M4NA==">Facebook Velox 运行机制解析<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzE3NDdkNjQ4LTBiMGQtNDNmMy1iNDg0LWM5OTJhZDlmNmUyNQ==">分布式系统架构（二）—— Replica Placement<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzMzMjcxMDdiLTA5MTItNGQ3ZC05ZDk0LTM0Mzk1NGY1NmQ1ZA==">【好文荐读】DuckDB 中的流水线构建<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzIwMzc5YzlkLTBiMDctNDFkNy05OWFhLTNiMzkwMDYzMmY1Mw==">译：时下大火的向量数据库，你了解多少？<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzMyZDgwYWVhLTM0NjYtNDU5Ni1iMDY4LWE3MTE1YmI3Y2JhYQ==">数据处理的大一统——从 Shell 脚本到 SQL 引擎<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzIyZmZjYjUzLTFjZDItNDFhNS04MzA3LWEyOGEwZDZkNmZhNg==">Firebolt：如何在十八个月内组装一个商业数据库<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzhjZjk0ZDQzLWE5MWMtNGZlMy1iODMxLTYxNWVhYzhjOWUzYQ==">论文：NUMA-Aware Query Evaluation Framework 赏析<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzI4ZTAzMDMyLWUwOWYtNDkwNS04ZGJhLTU1OTE4MGIxNmMwMA==">优质信息源：分布式系统、存储、数据库<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">🔥<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2Y3NzhjOWRiLTFiOWUtNDQ0YS05ZDY3LWQ0MGI3YWYzNDllNA==">向量数据库 Milvus 架构解析（一）<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzIzYTQ5MWRhLTE3ZjgtNGRmNy05ZThhLTI5YTc4ODk1NmI0MQ==">ER 模型背后的建模哲学<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzI5ZmY2MWZkLTI1ZTItNDEwNC05NDQ2LTZjY2I3MDJiY2Y1YQ==">什么是云原生数据库？<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+<p><strong>存储</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2Y3NGUzNmIyLTE5MWEtNDcyZi1iMDczLTFiY2QxNDA0ZmMzOA==">存储引擎概述和资料汇总<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">🔥<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzcxY2Y5NzMzLWVlNzQtNGViYi1hYTI3LWY2M2Q3MmFmNjcxNg==">译：RocksDB 是如何工作的<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzZmZGQ5NTllLTk2MjktNGY3YS1hYjk3LWMxYTVjNDJmNWVkMg==">RocksDB 优化小解（二）：Prefix Seek 优化<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2UwNjk2YzRjLTdmYWYtNDQ0YS1iZTQwLWJhMjI4MDFjOTdmZg==">RocksDB 优化小解（三）：Async IO<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzdjY2MzYTcxLTBjNTktNGVmMy1hNTRiLTExMjZiMzIxY2ZkMQ==">大规模系统中使用 RocksDB 的一些经验<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+<p><strong>代码&amp;编程</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0Lzc1MGUwOGY5LWY2NjctNDQ1OS05ZDk0LTUzZjM4YzA1MjlkYw==">影响我写代码的三个 “Code”<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">🔥<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzZjMmNmMzdjLWI3ZTMtNDliYy04ODFlLWJmNDRlYmE2YmNhZQ==">Folly 异步编程之 futures<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzQ2YzExOGVmLTkwY2ItNDg2OC1iYTEwLTU2MDQ1OWM2ZmEyYQ==">关于接口和实现<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2RmNTZjZDMyLTI3ZTgtNGNjOS1iYjQyLTJmZjM2MzUxMzQ5OQ==">C++ 私有函数的 override<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzlkOGY0OTNkLThlZmYtNDJjZS04NzNjLTFlODFlZDZlMWNjNA==">ErrorCode 还是 Exception ？<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0Lzg0ODYwNTYxLWJhNTYtNGRlNC1hZGU4LWI3MzIwZDE1ODU4Ng==">Infra 面试之数据结构（一）：阻塞队列<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2VkZmRiYjE4LTJiYjEtNDlkMy1iMDdmLWRkMmEyZjU2MjkyOQ==">数据结构与算法（四）：递归和迭代<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+<p><strong>每天学点数据库系列</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2E0OTIyOTllLWRkMGUtNDY5ZS04NzA2LTI4MzZlMjBmODFmMA==">【每天学点数据库】Lecture #06：内存管理<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzgxOWMwMjk0LTBlZDQtNDE2MS1iM2M2LThhNjIzMTM2ZmE2Mg==">【每天学点数据库】Lecture #05：数据压缩<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzA1ZWEyY2Y2LTRiM2QtNDE2YS05MjRhLTNjMWY3YWQzN2ExZQ==">【每天学点数据库】Lecture #05：负载类型和存储模型<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzdlNjk1N2Q2LTRmZWUtNDJkYi1hNTFkLWQ3MmYyODRlMjczMw==">【每天学点数据库】Lecture #04：数据编码<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzVlMzRlZTBmLThmYTMtNGM3ZS05YjA5LTIxMjg3ZTBkYTYzOQ==">【每天学点数据库】Lecture #04：日志构型存储<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzIzZDZmNDk5LWVlZTctNDFiMi1iOGRlLTU1ZmIwMDAwN2NkNA==">【每天学点数据库】Lecture #03：Data Layout<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2IzYWQ4MTU0LTJlMjktNGVjMS1hNjI3LWZkMzI4OGI1ZDJhOQ==">【每天学点数据库】Lecture #03: Database and OS<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2FlMmUxZTM1LTNkY2MtNGZiZC05ZjZiLTM5ZTY0NWU5OTA2NQ==">【每天学点数据库】Lecture #03：存储层次体系<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2E2ZTVmOTc2LTBlOTktNDExMS1hMWU5LWMwZWE4NTNiMjJiYg==">【每天学点数据库】Lecture #01：关系代数<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzFkM2U5OGE4LTBkZWUtNGI3OS05M2Q0LWE5NjQwOTQxMzI1Mw==">【每天学点数据库】Lecture #01：关系模型<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2M0NDE2OGNmLTljM2ItNGM1My1iNDllLWEzZTUxZTg1NzZhZA==">【每天学点数据库】Lecture #01：数据模型<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+<p><strong>杂谈</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">数据库面试的几个常见误区 🔥<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzJlNzgzNWE1LTRhZDUtNDViMC05ZWJjLWQxMjk0NWU4NjZmMQ==">生活工程学（一）：多轮次拆解<i class="fa fa-external-link-alt"></i></span><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">🔥<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2Q1OGViMmZhLWZjM2QtNGE2ZS1hOWZkLWI4NTQxZGZhNTFiZQ==">系统中一些有趣的概念对<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2VmZTZjNzRkLWY2ZGMtNDk0Yy04NDdiLTVmZDIxMzhjMGYwNQ==">系统设计时的简洁和完备<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzM0ZGMzYzRiLWRkM2QtNGNhMi04ZWNjLTFlZmFiNWVjZjcwOQ==">工程经验的周期<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2RlMmNjNTI5LTBhN2UtNDE4Ni05N2UxLWFiNTE0ZWM5MTZjYg==">关于“名字”拿来<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzY2NDcyMGE1LWI5NDMtNDU2OC1hODEwLWUyNzhiYzZjMTczYw==">Cache 和 Buffer 都是缓存有什么区别？<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/08/21/unify-data-processing/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -218,7 +384,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2023-08-21 15:44:11 / 修改时间：16:15:03" itemprop="dateCreated datePublished" datetime="2023-08-21T15:44:11+08:00">2023-08-21</time>
+              <time title="创建时间：2023-08-21 15:44:11 / 修改时间：16:28:01" itemprop="dateCreated datePublished" datetime="2023-08-21T15:44:11+08:00">2023-08-21</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1181,101 +1347,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/08/21/rocksdb-file-indexer/" class="post-title-link" itemprop="url">RocksDB 优化小解（一）：Indexing SST</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-08-21 10:44:43" itemprop="dateCreated datePublished" datetime="2022-08-21T10:44:43+08:00">2022-08-21</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/RocksDB/" itemprop="url" rel="index"><span itemprop="name">RocksDB</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>Google LevelDB 是一个 LSM-Tree 的实现典范。但在开源出来后，为了保持轻量、简洁的风格，除了修修 Bug 之外，一直没有做太大的更新迭代。为了让其能够满足工业环境中<strong>多样性的负载</strong>， Facebook（Meta） 在 Fork 了 LevelDB 之后，做了多方面的优化。硬件方面，可以更有效地利用现代硬件，如闪存和快速磁盘、多核 CPU等；软件方面，针对读写路径、Compaction 也做了大量优化，如 SST 索引、索引分片、前缀 Bloom Filter、列族等。</p>
-<p>本系列文章，依据 <a target="_blank" rel="noopener" href="https://rocksdb.org/blog/">RocksDB 系列博客</a>，结合源码和一些使用经验，分享一些有趣的优化点，希望能对大家有所启发。水平所限，不当之处，欢迎留言讨论。</p>
-</blockquote>
-<p>本篇是 RocksDB 优化系列第一篇，为了优化深层查询性能，将不同层级的 SST 通过一定方式索引起来。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/08/21/rocksdb-file-indexer/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1343,7 +1418,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">96</span>
+          <span class="site-state-item-count">97</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1355,7 +1430,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">163</span>
+        <span class="site-state-item-count">165</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
