@@ -10053,4 +10053,147 @@
         <tag>NUMA</tag>
       </tags>
   </entry>
+  <entry>
+    <title>数据处理的大一统——从 Shell 脚本到 SQL 引擎</title>
+    <url>/2023/08/21/unify-data-processing/</url>
+    <content><![CDATA[<p>“工业流水线”的鼻祖，<span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj1BczBscXNkMi1OSQ==">福特 T 型汽车<i class="fa fa-external-link-alt"></i></span>的电机装配，将组装过程拆成 29 道工序，将装备时间由平均二十分钟降到五分钟，效率提升四倍 ，下图<span class="exturl" data-url="aHR0cHM6Ly93d3cubW90b3IxLmNvbS9mZWF0dXJlcy8xNzgyNjQvZm9yZC1tb2RlbC10LWZhY3RvcnktY3V0YXdheS1raW1ibGUv">图源<i class="fa fa-external-link-alt"></i></span>。</p>
+<p><img src="https://s2.loli.net/2023/08/21/BrMe3j9oapmX8f2.png" alt="T-model-car.png"></p>
+<p>这种流水线的思想在数据处理过程中也随处可见。其核心概念是：</p>
+<ol>
+<li><strong>标准化的数据集合</strong>：对应待组装对象，是对数据处理中各个环节输入输出的一种<strong>一致性抽象</strong>。所谓一致，就是一个任意处理环节的输出，都可以作为任意处理环节的输入。</li>
+<li><strong>可组合的数据变换</strong>：对应单道组装工序，定义了对数据进行变换的一个<strong>原子</strong>操作。通过组合各种原子操作，可以具有强大的表达力。</li>
+</ol>
+<p>则，数据处理的本质是：<strong>针对不同需求，读取并标准化数据集后，施加不同的变换组合</strong>。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2023/08/21/unify-data-processing">https://www.qtmuniao.com/2023/08/21/unify-data-processing</a> 转载请注明出处</em></p>
+<h2 id="Unix-管道"><a href="#Unix-管道" class="headerlink" title="Unix 管道"></a>Unix 管道</h2><p>Unix 管道是一项非常伟大的发明，体现了 Unix 的一贯哲学：</p>
+<blockquote>
+<p>程序应该只关注一个目标，并尽可能把它做好。让程序能够互相协同工作。应该让程序处理文本数据流，因为这是一个通用的接口。</p>
+</blockquote>
+<blockquote>
+<p>— Unix Pipe 机制发明者 Malcolm Douglas McIlroy</p>
+</blockquote>
+<p>上述三句话哲学正体现了我们提到的两点，标准化的数据集合——来自<strong>标准输入输出</strong>的<strong>文本</strong>数据流，可组合的数据变换——能够协同工作的程序（如像 sort, head, tail 这种 Unix 自带的工具，和用户自己编写的符合管道要求的程序）。</p>
+<p>让我们来看一个使用 Unix tools 和管道来解决实际问题的例子。假设我们有一些关于服务访问的日志文件（<code>var/log/nginx/access.log</code> ，例子来自 <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">DDIA<i class="fa fa-external-link-alt"></i></span> 第十章），日志的每一行格式如下：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// $remote_addr - $remote_user [$time_local] &quot;$request&quot;</span></span><br><span class="line"><span class="comment">// $status $body_bytes_sent &quot;$http_referer&quot; &quot;$http_user_agent&quot;</span></span><br><span class="line"><span class="number">216.58</span><span class="number">.210</span><span class="number">.78</span> - - [<span class="number">27</span>/Feb/<span class="number">2015</span>:<span class="number">17</span>:<span class="number">55</span>:<span class="number">11</span> +<span class="number">0000</span>] <span class="string">&quot;GET /css/typography.css HTTP/1.1&quot;</span> </span><br><span class="line"><span class="number">200</span> <span class="number">3377</span> <span class="string">&quot;http://martin.kleppmann.com/&quot;</span> <span class="string">&quot;Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) </span></span><br><span class="line"><span class="string">AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.115 Safari/537.36&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>我们的需求是，统计出日志文件中最受欢迎的五个网页。使用 Unix Shell ，我们会写出类似的命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">cat</span> /var/log/nginx/access.log | <span class="comment"># 读取文件，打入标准输出</span></span><br><span class="line">    awk <span class="string">&#x27;&#123;print $7&#125;&#x27;</span> | <span class="comment"># 取出每行按空格分割的第七个字段</span></span><br><span class="line">    <span class="built_in">sort</span>             | <span class="comment"># 对每行按字面值进行排序</span></span><br><span class="line">    <span class="built_in">uniq</span> -c          | <span class="comment"># 归并重复行，并给出重复次数</span></span><br><span class="line">    <span class="built_in">sort</span> -r -n       | <span class="comment"># 按重复次数降序进行排序</span></span><br><span class="line">    <span class="built_in">head</span> -n 5          <span class="comment"># 输出前五行</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看出上述 Shell 命令有以下几个特点：</p>
+<ol>
+<li>每个命令实现的功能都很简单（高内聚）</li>
+<li>所有命令通过<strong>管道</strong>进行组合（低耦合），当然这也要求可组合的程序只面向标准输入、标准输出进行编程，无其他副作用（比如输出到文件）</li>
+<li>输入输出面向文本而非二进制</li>
+</ol>
+<p>此外，Unix 的管道的另一大优点是——流式的处理数据。也即所有程序中间结果并非都计算完成之后，才送入下一个命令，而是边算边送，从而达到多个程序并行执行的效果，这就是流水线的精髓了。</p>
+<p>当然，管道也有缺点——只能进行<strong>线性</strong>的流水线排布，这也限制了他的表达能力。</p>
+<h2 id="GFS-和-MapReduce"><a href="#GFS-和-MapReduce" class="headerlink" title="GFS 和 MapReduce"></a>GFS 和 MapReduce</h2><p>MapReduce 是谷歌 2004 年的论文 <span class="exturl" data-url="aHR0cHM6Ly9yZXNlYXJjaC5nb29nbGUuY29tL2FyY2hpdmUvbWFwcmVkdWNlLW9zZGkwNC5wZGY=">MapReduce: Simplified Data Processing on Large Clusters<i class="fa fa-external-link-alt"></i></span> 提出的，用以解决大规模集群、并行数据处理的一种算法。GFS 是与 MapReduce 配套使用的基于磁盘的分布式文件系统。</p>
+<p>MapReduce 算法主要分为三个阶段：</p>
+<ol>
+<li><strong>Map</strong>：在不同机器上并行的对每个数据分区执行用户定义的 <code>map() → List&lt;Key, Value&gt;</code> 函数。</li>
+<li><strong>Shuffle</strong>：将 map 的输出结果（KV 对）按 key 进行重新分区，按 key 聚集送到不同机器上， <code>Key→ List&lt;Value&gt;</code>。</li>
+<li><strong>Reduce</strong>：在不同机器上并行地对 map 输出的每个 key 对应的<code>List&lt;Value&gt;</code> 调用 reduce 函数。</li>
+</ol>
+<p>（下图源 DDIA 第十章）</p>
+<p><img src="https://s2.loli.net/2023/08/21/vWfR7J5pUTub89i.png" alt="mapreduce.png"></p>
+<p>每个 MapReduce 程序就是对存储在 GFS 上的数据集（标准化的数据集）的一次变换。理论上，我们可以通过组合多个 MapReduce 程序（可组合的变换），来满足任意复杂的数据处理需求。</p>
+<p>但与管道不同的是，每次 MapReduce 的输出都要进行“<strong>物化</strong>”，即完全落到分布式文件系统 GFS 上，才会执行下一个 MapReduce 程序。好处是可以进行任意的、非线性的 MapReduce 程序排布。坏处是代价非常高，尤其考虑到 GFS 上的文件是多机多副本的数据集，这意味着大量的跨机器数据传输、额外的数据拷贝开销。</p>
+<p>但要考虑到历史上开创式的创新，纵然一开始缺点多多，但会随着时间迭代而慢慢克服。GFS + MapReduce 正是这样一种在工业界开创了在大规模集群尺度上处理海量数据的先河。</p>
+<h2 id="Spark"><a href="#Spark" class="headerlink" title="Spark"></a>Spark</h2><p>Spark 便是为了解决 MapReduce 中每次数据集都要落盘的一种演进。</p>
+<p>首先，Spark 提出了标准的数据集抽象——<a href="https://www.qtmuniao.com/2019/11/14/rdd/">RDD</a>，这是一种通过<strong>分片</strong>的形式分散在<strong>多机</strong>上、<strong>基于内存</strong>的数据集。基于内存可以使得每次处理结果不用落盘，从而处理延迟更低。基于分片可以使得在机器宕机时，只用恢复少量分片，而非整个数据集。逻辑上，我们可以将其当做一个整体来进行变换，物理上，我们使用多机内存承载其每个分片。</p>
+<p>其次，基于 RDD，Spark 提供了多种可灵活组合的算子集，这相当于对一些常用的变换逻辑进行“<strong>构件化</strong>”，可以让用户开箱即用。（下面图源 <span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9zeXN0ZW0vZmlsZXMvY29uZmVyZW5jZS9uc2RpMTIvbnNkaTEyLWZpbmFsMTM4LnBkZg==">RDD 论文<i class="fa fa-external-link-alt"></i></span>）</p>
+<p><img src="https://s2.loli.net/2023/08/21/wTIi7SbOnRmMpZX.png" alt="rdd-operators.png"></p>
+<p>基于此，用户可以进行任意复杂数据处理，在物理上多个数据集（点）和算子（边）会构成一个复杂的 DAG （有向无环图）执行拓扑：</p>
+<p><img src="https://s2.loli.net/2023/08/21/xuYijZW6GoqSMFd.png" alt="rdd-dag.png"></p>
+<h2 id="关系型数据库"><a href="#关系型数据库" class="headerlink" title="关系型数据库"></a>关系型数据库</h2><p>关系型数据库是数据处理系统的集大成者。一方面，它对外提供强大的声明式查询语言——SQL，兼顾了灵活性和易用性。另一方面，他对内使用紧凑、索引友好的存储方式，可以支撑高效的数据查询需求。关系型数据库系统同时集计算和存储于一身，又会充分利用硬盘，甚至网络（分布式数据库）特点，是对计算机各种资源全方位使用的一个典范。本文不去过分展开关系型数据库实现的各个环节，而是聚焦本文重点——标准的数据集和可组合的算子。</p>
+<p>关系型数据库对用户提供的数据基本组织单位是——关系，或者说表。在 SQL 模型中，这是一种由行列组成的、强模式的二维表。所谓强模式，可以在逻辑上理解为表格中每个单元所存储的数据必须要符合该列“表头”的类型定义。针对这种标准的二维表，用户可以施加各种关系代数算子（选择、投影、笛卡尔乘积）。</p>
+<p>一条 SQL 语句，在进入 RDBMS 之后，经过解析、校验、优化，最后转化成算子树进行执行。对应的 RDBMS 中的逻辑单元，我们通常称之为——<strong>执行引擎</strong>，<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2ZhY2Vib29raW5jdWJhdG9yL3ZlbG94">Facebook Velox<i class="fa fa-external-link-alt"></i></span> 就是专门针对该生态位的一个 C++ 库。</p>
+<p>传统的执行引擎多使用火山模型，一种属于拉（ pull-based ）流派的执行方式。其基本概念就是以树形的方式组织算子，并从根节点开始，自上而下的进行递归调用，算子间自下而上的以行（row）或者批（batch）的粒度返回数据。</p>
+<p><img src="https://pic.imgdb.cn/item/64e31c15661c6c8e549fa073.png"></p>
+<p>近些年来，基于推（push-based）的流派渐渐火起来了，DuckDB、Velox 都属于此流派。类似于将递归转化为迭代，自下而上，从叶子节点进行计算，然后推给父亲节点，直到根节点。每个算子树都可以拆解为多个可以并行执行的算子流水线（下图源，<span class="exturl" data-url="aHR0cHM6Ly9mYWNlYm9va2luY3ViYXRvci5naXRodWIuaW8vdmVsb3gvZGV2ZWxvcC90YXNrLmh0bWw=">Facebook Velox 文档<i class="fa fa-external-link-alt"></i></span>）</p>
+<p><img src="https://s2.loli.net/2023/08/21/RUnOCV2wEtHxFW4.png" alt="pipeline-break.png"></p>
+<p>我们把上图顺时针旋转九十度，可以发现他和 Spark 的执行方式如出一辙，更多关于 velox 机制的解析，可以参考我写的<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82MTQ5MTgyODk=">这篇文章<i class="fa fa-external-link-alt"></i></span>。</p>
+<p>但无论推还是拉，其对数据集和算子的抽象都符合本文一开始提出的理论。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>考察完上述四种系统之后，可以看出，数据处理在某种角度上是大一统的——<strong>首先抽象出归一化的数据集，然后提供施加于该数据集之上的运算集，最终通过组合的形式表达用户的各种数据处理需求</strong>。</p>
+<hr>
+<p>本文来自我的小报童付费专栏《系统日知录》，专注分布式系统、存储和数据库，有图数据库、代码解读、优质英文播客翻译、数据库学习、论文解读等等系列，欢迎喜欢我文章的朋友订阅👉<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">专栏<i class="fa fa-external-link-alt"></i></span>支持（也可点击下方跳转原文），你的支持对我持续创作优质文章非常重要。下面是当前文章列表：</p>
+<p><strong>图数据库系列</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2ZiNGNhNzQ4LTUzZDktNDk1Yy05OWNhLTQwNDkzMzJhZDY5NQ==">图数据库资料汇总<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzY5MTRhOGY2LWI1MDYtNGEzNy04YjU1LTg0OTE4NTQzOWQxNQ==">译： Factorization &amp; Great Ideas from Database Theory<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzY1NmQ4ZDczLWY4ZWQtNDYwNC05ZjE0LWY3Nzc5N2U4NzdiMA==">Memgraph 系列（二）：可串行化实现<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzJlODA5MWEwLTgzNjMtNDk4Zi1iNjA5LWNlOGUyMzExMGM5ZQ==">Memgraph 系列（一）：数据多版本管理<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2I0MGZkYzIzLTEyYTktNGE4NS04ZDNhLWUzNWY2ZDFiMWIwYw==">【图数据库系列四】与关系模型的“缘”与“争”<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzY2MDc1Y2U5LWZjNzYtNGUzNS1hOTFjLTkwY2Q2MTFmYzczMg==">【图数据库系列三】图的表示与存储<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0Lzc3NTcyZWQ0LTcyM2QtNGRmZC1iYTE2LTViMTM2ZmY5YTdhMw==">【图数据库系列二】 Cypher 初探<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzIzZjBiZjExLWUxNjctNGY4MC04NDE1LTJlYjRhYjE3OTdiNQ==">【图数据库系列一】属性图模型是啥、有啥不足<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">🔥<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+<p><strong>数据库</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2FmM2RjM2E3LThkMmUtNDJhOC05NWMxLTNmY2MzZTZlNzA0NQ==">译：数据库五十年来研究趋势<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0Lzk4MjRjYjlmLTIyODktNDg5NS1hOTM4LTQzMGQ1NWJhMWViYQ==">译：数据库中的代码生成（Codegen in Databas…<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2NhMDIwMjk3LTA5MDEtNDVkMS04YWNjLTFkODg0YmYxY2M4NA==">Facebook Velox 运行机制解析<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzE3NDdkNjQ4LTBiMGQtNDNmMy1iNDg0LWM5OTJhZDlmNmUyNQ==">分布式系统架构（二）—— Replica Placement<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzMzMjcxMDdiLTA5MTItNGQ3ZC05ZDk0LTM0Mzk1NGY1NmQ1ZA==">【好文荐读】DuckDB 中的流水线构建<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzIwMzc5YzlkLTBiMDctNDFkNy05OWFhLTNiMzkwMDYzMmY1Mw==">译：时下大火的向量数据库，你了解多少？<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzMyZDgwYWVhLTM0NjYtNDU5Ni1iMDY4LWE3MTE1YmI3Y2JhYQ==">数据处理的大一统——从 Shell 脚本到 SQL 引擎<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzIyZmZjYjUzLTFjZDItNDFhNS04MzA3LWEyOGEwZDZkNmZhNg==">Firebolt：如何在十八个月内组装一个商业数据库<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzhjZjk0ZDQzLWE5MWMtNGZlMy1iODMxLTYxNWVhYzhjOWUzYQ==">论文：NUMA-Aware Query Evaluation Framework 赏析<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzI4ZTAzMDMyLWUwOWYtNDkwNS04ZGJhLTU1OTE4MGIxNmMwMA==">优质信息源：分布式系统、存储、数据库<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">🔥<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2Y3NzhjOWRiLTFiOWUtNDQ0YS05ZDY3LWQ0MGI3YWYzNDllNA==">向量数据库 Milvus 架构解析（一）<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzIzYTQ5MWRhLTE3ZjgtNGRmNy05ZThhLTI5YTc4ODk1NmI0MQ==">ER 模型背后的建模哲学<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzI5ZmY2MWZkLTI1ZTItNDEwNC05NDQ2LTZjY2I3MDJiY2Y1YQ==">什么是云原生数据库？<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+<p><strong>存储</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2Y3NGUzNmIyLTE5MWEtNDcyZi1iMDczLTFiY2QxNDA0ZmMzOA==">存储引擎概述和资料汇总<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">🔥<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzcxY2Y5NzMzLWVlNzQtNGViYi1hYTI3LWY2M2Q3MmFmNjcxNg==">译：RocksDB 是如何工作的<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzZmZGQ5NTllLTk2MjktNGY3YS1hYjk3LWMxYTVjNDJmNWVkMg==">RocksDB 优化小解（二）：Prefix Seek 优化<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2UwNjk2YzRjLTdmYWYtNDQ0YS1iZTQwLWJhMjI4MDFjOTdmZg==">RocksDB 优化小解（三）：Async IO<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzdjY2MzYTcxLTBjNTktNGVmMy1hNTRiLTExMjZiMzIxY2ZkMQ==">大规模系统中使用 RocksDB 的一些经验<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+<p><strong>代码&amp;编程</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0Lzc1MGUwOGY5LWY2NjctNDQ1OS05ZDk0LTUzZjM4YzA1MjlkYw==">影响我写代码的三个 “Code”<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">🔥<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzZjMmNmMzdjLWI3ZTMtNDliYy04ODFlLWJmNDRlYmE2YmNhZQ==">Folly 异步编程之 futures<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzQ2YzExOGVmLTkwY2ItNDg2OC1iYTEwLTU2MDQ1OWM2ZmEyYQ==">关于接口和实现<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2RmNTZjZDMyLTI3ZTgtNGNjOS1iYjQyLTJmZjM2MzUxMzQ5OQ==">C++ 私有函数的 override<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzlkOGY0OTNkLThlZmYtNDJjZS04NzNjLTFlODFlZDZlMWNjNA==">ErrorCode 还是 Exception ？<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0Lzg0ODYwNTYxLWJhNTYtNGRlNC1hZGU4LWI3MzIwZDE1ODU4Ng==">Infra 面试之数据结构（一）：阻塞队列<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2VkZmRiYjE4LTJiYjEtNDlkMy1iMDdmLWRkMmEyZjU2MjkyOQ==">数据结构与算法（四）：递归和迭代<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+<p><strong>每天学点数据库系列</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2E0OTIyOTllLWRkMGUtNDY5ZS04NzA2LTI4MzZlMjBmODFmMA==">【每天学点数据库】Lecture #06：内存管理<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzgxOWMwMjk0LTBlZDQtNDE2MS1iM2M2LThhNjIzMTM2ZmE2Mg==">【每天学点数据库】Lecture #05：数据压缩<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzA1ZWEyY2Y2LTRiM2QtNDE2YS05MjRhLTNjMWY3YWQzN2ExZQ==">【每天学点数据库】Lecture #05：负载类型和存储模型<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzdlNjk1N2Q2LTRmZWUtNDJkYi1hNTFkLWQ3MmYyODRlMjczMw==">【每天学点数据库】Lecture #04：数据编码<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzVlMzRlZTBmLThmYTMtNGM3ZS05YjA5LTIxMjg3ZTBkYTYzOQ==">【每天学点数据库】Lecture #04：日志构型存储<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzIzZDZmNDk5LWVlZTctNDFiMi1iOGRlLTU1ZmIwMDAwN2NkNA==">【每天学点数据库】Lecture #03：Data Layout<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2IzYWQ4MTU0LTJlMjktNGVjMS1hNjI3LWZkMzI4OGI1ZDJhOQ==">【每天学点数据库】Lecture #03: Database and OS<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2FlMmUxZTM1LTNkY2MtNGZiZC05ZjZiLTM5ZTY0NWU5OTA2NQ==">【每天学点数据库】Lecture #03：存储层次体系<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2E2ZTVmOTc2LTBlOTktNDExMS1hMWU5LWMwZWE4NTNiMjJiYg==">【每天学点数据库】Lecture #01：关系代数<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzFkM2U5OGE4LTBkZWUtNGI3OS05M2Q0LWE5NjQwOTQxMzI1Mw==">【每天学点数据库】Lecture #01：关系模型<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2M0NDE2OGNmLTljM2ItNGM1My1iNDllLWEzZTUxZTg1NzZhZA==">【每天学点数据库】Lecture #01：数据模型<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+<p><strong>杂谈</strong></p>
+<ul>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">数据库面试的几个常见误区 🔥<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzJlNzgzNWE1LTRhZDUtNDViMC05ZWJjLWQxMjk0NWU4NjZmMQ==">生活工程学（一）：多轮次拆解<i class="fa fa-external-link-alt"></i></span><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzEwZjRmNzg0LThiYjEtNGNhMy1hNjM1LWVlOWZiMTRlM2IxZA==">🔥<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2Q1OGViMmZhLWZjM2QtNGE2ZS1hOWZkLWI4NTQxZGZhNTFiZQ==">系统中一些有趣的概念对<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2VmZTZjNzRkLWY2ZGMtNDk0Yy04NDdiLTVmZDIxMzhjMGYwNQ==">系统设计时的简洁和完备<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzM0ZGMzYzRiLWRkM2QtNGNhMi04ZWNjLTFlZmFiNWVjZjcwOQ==">工程经验的周期<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2RlMmNjNTI5LTBhN2UtNDE4Ni05N2UxLWFiNTE0ZWM5MTZjYg==">关于“名字”拿来<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzY2NDcyMGE1LWI5NDMtNDU2OC1hODEwLWUyNzhiYzZjMTczYw==">Cache 和 Buffer 都是缓存有什么区别？<i class="fa fa-external-link-alt"></i></span></li>
+</ul>
+]]></content>
+      <categories>
+        <category>分布式系统</category>
+      </categories>
+      <tags>
+        <tag>data processing</tag>
+      </tags>
+  </entry>
 </search>
