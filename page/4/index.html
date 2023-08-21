@@ -193,6 +193,101 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/04/02/bolt-transaction/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/04/02/bolt-transaction/" class="post-title-link" itemprop="url">Boltdb 源码导读（三）：Boltdb 事务实现</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-04-02 21:46:55" itemprop="dateCreated datePublished" datetime="2021-04-02T21:46:55+08:00">2021-04-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>boltdb 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于 Howard Chu’s LMDB 项目 ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 bbolt。</p>
+<p>为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。</p>
+<p>本系列计划分成三篇文章，依次围绕<a href="https://www.qtmuniao.com/2020/11/29/bolt-data-organised/"><strong>数据组织</strong></a>、<a href="https://www.qtmuniao.com/2020/12/14/bolt-index-design/"><strong>索引设计</strong></a>、<strong>事务实现</strong>等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第三篇， boltdb 事务实现。</p>
+</blockquote>
+<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>在分析 boltd 的事务之前，我们有必要对事务概念做一个界定，以此来明确我们的讨论范围。<strong>数据库事务</strong>（简称：<strong>事务</strong>）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93">数据库</a>操作序列构成<a href="%E7%BB%B4%E5%9F%BA%E7%99%BE%E7%A7%91%E4%BA%8B%E5%8A%A1%EF%BC%9Ahttps://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1">^1</a>。wiki 上的定义有点拗口，理解时只需抓住几个关键点即可：</p>
+<ol>
+<li>执行：计算层面</li>
+<li>逻辑单位：意味着不可分割</li>
+<li>操作序列有限：一般粒度不会太大</li>
+</ol>
+<p>那为什么要有事务呢？事务出现于上世纪七十年代，是为了解放数据库用户的心智而出现的：事务帮助用户组织一组操作、并在出错时自动进行扫尾。后来，NoSQL 和一些分布式存储为了高性能而舍弃了完整事务的支持。然而，历史是螺旋上升的，事务的便利性让 NewSQL 等新一代分布式数据库又将其重新请回。</p>
+<p>提起事务，最脍炙人口的便是 ACID 四大特性。 其实 ACID 更像一种易于记忆的口号而非严格的描述，因为他们在概念上并不怎么对称，而且依赖于一些上下文阐释。本文仍然会按照这四个方面对 boltdb 对事务的支持进行剖析，但在每个小结开始，会先参考 Martin Kleppmann 的演讲[^2]，试着从不同角度先阐释其内涵；然后在再分析 boltdb 对其实现。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/04/02/bolt-transaction/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/03/30/beijing-hiking-big-crack/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1265,91 +1360,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/06/07/an-old-song/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/06/07/an-old-song/" class="post-title-link" itemprop="url">让我们荡起双桨</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-06-07 22:01:06" itemprop="dateCreated datePublished" datetime="2020-06-07T22:01:06+08:00">2020-06-07</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><img src="https://i.loli.net/2020/06/11/egfPnaXUzvFQ5Nt.jpg" alt="1591539058644.jpg"></p>
-<p>儿时初学“让我们荡起双桨”，只感觉旋律朗朗；年岁稍长，偶尔哼起，三言两语，味出千万意境；后来，求学帝都，游北海，正是“湖面倒映着美丽的白塔，四周环绕着绿树红墙”，光阴荏苒，不变的是文字的生命力。</p>
-<p>歌词为乔羽先生所做，很多脍炙人口的名作皆出自其手：《我的祖国》、《难忘今宵》、《爱我中华》。词分三段，层层递进。第一段写划船之景，寥寥几句，首尾勾连、推近及远、勾勒出四合景象。第二段写欢快之情，童真昂扬，心情轻快，描绘出饱满的童趣。第三段继而升华，设问如此美景、如此生活、如此时代，如何得来？尔后戛然而止，语已尽而意无穷。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/06/07/an-old-song/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1421,7 +1431,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">94</span>
+          <span class="site-state-item-count">95</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
