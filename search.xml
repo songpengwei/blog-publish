@@ -2,7 +2,7 @@
 <search>
   <entry>
     <title>Hadoop-0.1.0代码调试运行</title>
-    <url>/2017/06/29/hadoop-0.1.0-code-debug/</url>
+    <url>/2017/06/28/hadoop-0.1.0-code-debug/</url>
     <content><![CDATA[<p>之前雄心勃勃的从GitHub上下了Hadoop源码，想要通读涨涨姿势，甚至想自己写一个简易版本。<br>不料代码啃起来味同嚼蜡，在读了基本的RPC之后，就此搁置。</p>
 <span id="more"></span>
 
@@ -43,7 +43,7 @@
   </entry>
   <entry>
     <title>Hadoop 源码阅读之DFS（一）：一些基本的类</title>
-    <url>/2017/07/02/hadoop-source-DFS/</url>
+    <url>/2017/07/01/hadoop-source-DFS/</url>
     <content><![CDATA[<p>计划花一个月左右的时间，通读一遍Hadoop 0.1.0的源码，尽量少写一些废话，多记录一些思考。</p>
 <p>Random一下，就从分布式文件系统（DFS）开始吧。<br>DFS即分布式文件系统，集合多台机器存储在预定义位置上的一组文件作为存储构件，在此基础上实现一些分布式操作，从而对外抽象出一套基本文件读写API。</p>
 <span id="more"></span>
@@ -91,7 +91,7 @@
   </entry>
   <entry>
     <title>Hadoop 源码阅读之DFS（二）：DataNode</title>
-    <url>/2017/07/11/hadoop-source-DataNode/</url>
+    <url>/2017/07/10/hadoop-source-DataNode/</url>
     <content><![CDATA[<p>上一篇把一些零碎的小类集在一起，凑成一篇。这篇打算对比较长的一个类<code>DataNode</code>读读。<br>每个DataNode代表一个数据节点，对应某台机器的一个文件夹，本质上是一定数量的Block的集合，能够和NameNode，client以及其他DataNode进行通信，以对该Block集合进行操作，主要包括client的读和写，其他DataNode block的复制，以及响应NameNode操作，进行删除等操作。<br>具体实现来说，数据结构上，维持了一个block到byte array的表；执行时，DataNode内部是一个无限循环，不断询问NameNode，报告状态（心跳），执行命令<strong>（RPC）</strong>。</p>
 <ol>
 <li>状态信息。[<code>DataNodeInfo</code>](&#x2F;hadoop-source-DFS#datanode-info)：总大小，剩余大小，上次更新时间。</li>
@@ -179,7 +179,7 @@
   </entry>
   <entry>
     <title>一些有意思的细节</title>
-    <url>/2017/07/15/java-details/</url>
+    <url>/2017/07/14/java-details/</url>
     <content><![CDATA[<p>编程中有很多有意思的细节，看到了，就记在这里。</p>
 <h3 id="简化判断"><a href="#简化判断" class="headerlink" title="| 简化判断"></a><code>|</code> 简化判断</h3><p>一堆数按位或，只要有多于一个数为负，则结果为负。</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">write</span><span class="params">(<span class="type">byte</span> b[], <span class="type">int</span> off, <span class="type">int</span> len)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">   <span class="keyword">if</span> ((off | len | (b.length - (len + off)) | (off + len)) &lt; <span class="number">0</span>)</span><br><span class="line">       <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IndexOutOfBoundsException</span>();</span><br><span class="line"></span><br><span class="line">   <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span> ; i &lt; len ; i++) &#123;</span><br><span class="line">       write(b[off + i]);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -195,7 +195,7 @@
   </entry>
   <entry>
     <title>Hadoop 源码阅读之DFS（三）：FileSystem</title>
-    <url>/2017/07/23/hadoop-0.1.0-file-system/</url>
+    <url>/2017/07/22/hadoop-0.1.0-file-system/</url>
     <content><![CDATA[<h3 id="FileSystem"><a href="#FileSystem" class="headerlink" title="FileSystem"></a>FileSystem</h3><p>FileSystem是一个抽象基类，为<code>LocalFileSystem</code>和<code>DistributedFileSystem</code>提供一些公共方法。通过<code>HashMap</code>:name-&gt; filesystem，维护所有使用的的文件系统，其key或者为“Local”，或者为“Host:Port”（标识一个NameNode）。<br>继承了<code>Configured</code>类，可以通过配置加载一些基本参数，保存在<code>Configuration</code>中。<br>为了提高可靠性，给每个文件生成一个校验和，保存在<code>.*.crc</code>的<strong>隐藏</strong>文件中。</p>
 ]]></content>
       <categories>
@@ -211,7 +211,7 @@
   </entry>
   <entry>
     <title>一些设计模式</title>
-    <url>/2017/08/03/design-patterns/</url>
+    <url>/2017/08/02/design-patterns/</url>
     <content><![CDATA[<p>写程序的时候，规模小，尚不能感觉设计模式的重要性。等规模一上来，需求一迭代，一个应用了恰当设计模式的工程，总能以最小的代价进行最快的迭代。<br>但是一个奇怪的点是，我总记不住具体的实现所对应的设计模式的名字，但是对他们背后的设计思想，却是念念不忘——依赖于抽象而非具体；对扩展开放，对修改关闭；</p>
 <span id="more"></span>
 
@@ -232,7 +232,7 @@
   </entry>
   <entry>
     <title>Android 学习笔记（一）：搜索框的实现</title>
-    <url>/2017/12/02/android-search-box/</url>
+    <url>/2017/12/01/android-search-box/</url>
     <content><![CDATA[<h3 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h3><p>输入关键字，实时显示搜索结果。</p>
 <span id="more"></span>
 
@@ -296,7 +296,7 @@
   </entry>
   <entry>
     <title>Hadoop源码阅读之MapReduce（一）：基本概念和接口</title>
-    <url>/2018/02/24/hadoop-map-reduce/</url>
+    <url>/2018/02/23/hadoop-map-reduce/</url>
     <content><![CDATA[<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>梳理一下MapReduce框架涉及到的一些基本接口和类。</p>
 <span id="more"></span>
 
@@ -321,7 +321,7 @@
   </entry>
   <entry>
     <title>数据结构与算法（一）：二叉树的非递归遍历</title>
-    <url>/2018/02/24/tree-traversal-nonrecursive/</url>
+    <url>/2018/02/23/tree-traversal-nonrecursive/</url>
     <content><![CDATA[<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>最近在琢磨关于树的非递归遍历的一些思路和对应的实现，写在这里，聊以备忘。 </p>
 <span id="more"></span>
 
@@ -378,7 +378,7 @@
   </entry>
   <entry>
     <title>数据结构与算法（二）：二分搜索</title>
-    <url>/2018/03/11/binary-search/</url>
+    <url>/2018/03/10/binary-search/</url>
     <content><![CDATA[<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>以前对二分查找的认识只停留在有序数组查找给定整数上，后来发现一类问题都可以用二分的思想来做，概括来说就是：如果要求的结果所在的集合（值域）和要搜索的数的集合（定义域）存在单调（映射）关系，就可以通过二分思想来解决，说起来有点抽象，后面将用几个例子来说明。</p>
 <p>二分思想以其每次迭代将规模砍一半的效率，有着极其广阔的应用。</p>
 <p>本文分两大部分，第一部分对二分查找的各个细节探讨；第二部分拓展二分查找为一般的二分思想。</p>
@@ -430,7 +430,7 @@
   </entry>
   <entry>
     <title>6.824 - Raft 实现（二）：日志同步（Log Replication）</title>
-    <url>/2018/08/29/raft-log-replication/</url>
+    <url>/2018/08/28/raft-log-replication/</url>
     <content><![CDATA[<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>上一次在做完 lab2a 即 raft 的 leader 选举之后，一直卡在日志同步这一块（log replication）；直到昨晚进行了一下 appendEntries 的优化（prevLog 不匹配时，一下跳过本 term 所有 logEntries），一直困扰的 TestBackup2B 竟然神奇 Passed 的了。跑了两遍还不大信，特地将其改回去，看到果然 Fail 才放心下来，看来是效率太低超时了。</p>
 <p>趁着还新鲜，索性今晚就将这一段时间的血泪史记下来吧。</p>
 <span id="more"></span>
@@ -490,7 +490,7 @@
   </entry>
   <entry>
     <title>6.824 - Raft 实现（一）：Leader选举</title>
-    <url>/2018/07/11/raft-leader-election/</url>
+    <url>/2018/07/10/raft-leader-election/</url>
     <content><![CDATA[<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>记录下在实现6.824 lab2 raft 的一些想法和经验，聊以备忘。</p>
 <h2 id="实验概述"><a href="#实验概述" class="headerlink" title="实验概述"></a>实验概述</h2><p>6.824是MIT的一门分布式课程，我跟的是<a href="https://pdos.csail.mit.edu/6.824/labs/lab-raft.html">2018 spring</a> 。在第二个实验中要求简单实现一个分布式一致性协议–<a href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">raft</a>。</p>
 <p>这是一个专为方便教学和工程实现所设计的协议，它将协议拆解为几个相对独立的模块–leader选举，log复制，安全保证。论文里图二基本给出了Raft的所有实现细节，可谓字字珠玑。但也因为太微言大义了，导致有些状态转换分散在不同描述中，假如你真只照着这幅图实现，很容易遗漏些细节。</p>
@@ -547,7 +547,7 @@
   </entry>
   <entry>
     <title>使用Hexo引擎配置静态博客</title>
-    <url>/2019/02/17/hexo-blog/</url>
+    <url>/2019/02/16/hexo-blog/</url>
     <content><![CDATA[<h2 id="hexo-博客搭建"><a href="#hexo-博客搭建" class="headerlink" title="hexo 博客搭建"></a>hexo 博客搭建</h2><p>今年新年愿望之一，督促自己每周写博客。作为一个新的开始，打扫屋子清爽一番是我的一贯风格。加上感觉jeklly 引擎不怎么好使，就想换个新的引擎 hexo。去年注意到越来越多的博客开始用这个引擎，于是关注了下，感觉的确不错（主题，模式等等），说干就干。想着作为科班出身，看别人教程多low，于是直接看官方文档开搞，当然了，坑是不可避免的，下面来聊一下。</p>
 <span id="more"></span>
 
@@ -1419,7 +1419,7 @@
   </entry>
   <entry>
     <title>Ray 源码解析（一）：任务的状态转移和组织形式</title>
-    <url>/2019/07/28/ray-source-reading-1/</url>
+    <url>/2019/07/27/ray-source-reading-1/</url>
     <content><![CDATA[<p><img src="https://i.loli.net/2020/02/09/YqVzB7QvTmcuijo.png" alt="ray-task-state-transfer.png"></p>
 <p>之前文章写了 Ray 的论文翻译。后来我花了些时间读了读 Ray 的源码，为了学习和记忆，后续预计会出一系列的源码解析文章。为了做到能持续更新，尽量将模块拆碎些，以保持较短篇幅。另外，阅历所限，源码理解不免有偏颇指出，欢迎大家一块讨论。</p>
 <span id="more"></span>
@@ -1493,7 +1493,7 @@
   </entry>
   <entry>
     <title>Android 学习笔记（二）：代码组织</title>
-    <url>/2017/12/12/android-dail-pad/</url>
+    <url>/2017/12/11/android-dail-pad/</url>
     <content><![CDATA[<h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><p>在进行模块化的时候，试图将诸如<code>SearchListener</code>, <code>CallManager</code> 的模块从<code>MainActivity</code>中拆出来，然而在响应事件的时候，不可避免的需要改变其他资源状态，那么就需要获取其句柄。由此还需要把<code>MainActivity</code>作为句柄传入代码。</p>
 <span id="more"></span>
 
@@ -1839,7 +1839,7 @@
   </entry>
   <entry>
     <title>GFS —— 取舍的艺术</title>
-    <url>/2019/05/26/gfs/</url>
+    <url>/2019/05/25/gfs/</url>
     <content><![CDATA[<p><img src="https://i.loli.net/2020/02/09/BnLY4kVzAIOX5Si.jpg" alt="write control and data flow"></p>
 <h2 id="小引"><a href="#小引" class="headerlink" title="小引"></a>小引</h2><p>GFS 是谷歌为其业务定制开发的，支持弹性伸缩，为海量数据而生的分布式大文件存储系统。它运行于通用廉价商用服务器集群上，具有自动容错功能，支持大量客户端的并发访问。</p>
 <p>GFS 是为大文件而生的，针对读多于写的场景。虽然支持对文件修改，但只对追加做了优化。同时不支持 POSIX 语义，但是实现了类似的文件操作的API。它是谷歌在 MapReduce 同时期，为了解决大规模索引等数据存储所实现的具有开创性的工业级的大规模存储系统。</p>
@@ -2634,7 +2634,7 @@
   </entry>
   <entry>
     <title>Kafka —— 弥合日志系统和消息队列的鸿沟</title>
-    <url>/2019/12/22/kafka/</url>
+    <url>/2019/12/21/kafka/</url>
     <content><![CDATA[<h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>Kafka （该论文发表于2011年6月**[1]**）是日志处理和消息队列系统的集大成者。较低的延迟、极高的容量和吞吐，使其可以应用于在线服务和离线业务。为了兼顾性能和可扩展性，Kafka 做了一些看起来反直觉但是却很实用的设计。例行总结一下其设计特点：</p>
 <ol>
 <li><p><strong>面向存储的消息队列</strong>：意味在近实时的情况下能够将传统消息队列的存储增加几个数量级。实现原理是充分利用了磁盘的顺序写和操作系统自身的缓存；此外为了提高访盘、传输效率，使用了文件分段、段首索引、零拷贝和批量拉取等技术。</p>
@@ -4983,7 +4983,7 @@
   </entry>
   <entry>
     <title>Cmu15445 数据库系统实验一：Buffer Pool Manager</title>
-    <url>/2021/02/10/cmu15445-project1-buffer-pool/</url>
+    <url>/2021/02/09/cmu15445-project1-buffer-pool/</url>
     <content><![CDATA[<blockquote>
 <p>cmu15445 是一门关于数据库管理系统（DBMS）设计与实现的经典公开课。该课程以 <a href="https://www.db-book.com/db7/index.html">Database System Concepts</a> 为教材，提供随堂讲义、笔记和视频，精心准备了几个互相勾连的小实验。该课程十分注重系统设计和编程实现，用主讲教授 <a href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a> 的话说，这是一门可以写在简历上、并且能帮你拿到好 offer 的课程。</p>
 <p>这个假期得空，翻出这门课程，即被其翔实的内容、精当的组织所折服。无奈时间有限，只能以<a href="https://15445.courses.cs.cmu.edu/fall2020/assignments.html">实验</a>为主线，辅以<a href="https://15445.courses.cs.cmu.edu/fall2020/slides/">讲义</a>和<a href="https://15445.courses.cs.cmu.edu/fall2020/notes/">笔记</a>，简单跟一跟。如果再有时间，就去扫下<a href="https://www.db-book.com/db7/index.html">教材</a>和<a href="https://www.youtube.com/watch?v=oeYBdghaIjc&list=PLSE8ODhjZXjbohkNBWQs_otTrBTrjyohi">视频</a>。从实验一开始，每个实验 <a href="https://www.gradescope.com/">autograder</a> 跑过之后，出一篇笔记，聊以备忘。 <a href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a>  教授建议不要公开实验代码仓库，因此文章尽量少贴代码，多写思路。</p>
@@ -5582,7 +5582,7 @@
   </entry>
   <entry>
     <title>分布式系统学习资料汇总</title>
-    <url>/2021/05/16/distributed-system-material/</url>
+    <url>/2021/05/15/distributed-system-material/</url>
     <content><![CDATA[<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>时下，随着通信技术的发展、移动互联网的普及、物联网车联网人工智能的兴起，每天所产生的数据呈爆炸性的增长。这种尺度的数据不是传统单机系统可以独立处理的，而只能借助于大规模的分布式系统，因而分布式系统渐渐的变成一门“显学”。而作为一个分布式系统初学者，面对网上未加归类、浩如烟海的学习资料，很容易两眼抓瞎。</p>
 <p>但分布式系统有其基本研究内容和独特发展脉络，比如：</p>
 <ol>
@@ -8155,7 +8155,7 @@
   </entry>
   <entry>
     <title>解析谷歌兼容 PostgreSQL 的云原生数据库——AlloyDB 的存储层</title>
-    <url>/2022/05/15/google-alloydb-storage/</url>
+    <url>/2022/05/14/google-alloydb-storage/</url>
     <content><![CDATA[<p>在<a href="https://io.google/2022/">Google I&#x2F;O 2022</a> 大会上，Google Cloud 发布了兼容 PostgreSQL 标准的云原生数据库 AlloyDB（注：Alloy 意为合金），号称比 Amazon 的同类产品（Aurora？）快两倍，这个口号，对老用户来说，应该不足以让其迁移，但对于新用户来说，确有一些吸引力。</p>
 <p>由于笔者主要做存储，下面基于谷歌这篇介绍 AlloyDB 存储层<a href="https://cloud.google.com/blog/products/databases/alloydb-for-postgresql-intelligent-scalable-storage">博文</a>，剖析下 AlloyDB 存储层架构，看看其设计有何亮色。</p>
 <blockquote>
@@ -9004,7 +9004,7 @@
   </entry>
   <entry>
     <title>2022 年终总结 —— 充实和迷茫</title>
-    <url>/2023/01/05/2022-summary/</url>
+    <url>/2023/01/04/2022-summary/</url>
     <content><![CDATA[<p>不知道为何，今年朋友圈分享年终总结的朋友格外多。我挺喜欢这个形式，一来，我很爱看别人的年终总结，看故事之余还能看到一些不同路径；二来，每年定期回顾下，也确实能帮着梳理下思路，简单做下展望。</p>
 <p>古代知识垄断的时代，只有帝王将相才能有纪传；而今信息爆炸的世代，人人皆可记之，为自己代言。于短期来说，年岁渐长，思虑日增，很多事不记下来，旬月便忘，通过年终回顾，日后回头追踪下自己思想变迁轨迹，也算三省吾身，冀有新得；于长期来说，我们终将作古，若借助互联网能留下个一鳞半爪，博后世一笑，也算雁过留声。</p>
 <span id="more"></span>
@@ -10369,12 +10369,70 @@
 </ol>
 <p>这些概念最初取材于现实的工业生产，我们将其拿来，通过合理地定义这些概念的含义和联系，可以轻松地构造复杂的任务调度系统。</p>
 <p>最后，希望类比成为你打开新世界大门的钥匙。</p>
+<hr>
+<p>本文来自我的小报童付费专栏《系统日知录》，专注分布式系统、存储和数据库，有图数据库、代码解读、优质英文播客翻译、数据库学习、论文解读等等系列，欢迎喜欢我文章的朋友订阅👉<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">专栏<i class="fa fa-external-link-alt"></i></span>支持，你的支持对我持续创作优质文章非常重要。下面是当前文章列表：</p>
 ]]></content>
       <categories>
         <category>生活</category>
       </categories>
       <tags>
         <tag>类比</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>【图解面试基础】三种基本排序算法</title>
+    <url>/2023/09/18/3-basic-sort/</url>
+    <content><![CDATA[<blockquote>
+<p>这是使用 <span class="exturl" data-url="aHR0cHM6Ly9wcm9jcmVhdGUuY29tLw==">Procreate<i class="fa fa-external-link-alt"></i></span> 画图之余，心血来潮开的一个<span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTIvY2hhbm5lbC9jb2xsZWN0aW9uZGV0YWlsP3NpZD0xNjU1MDY5">面试基础系列<i class="fa fa-external-link-alt"></i></span>，力求图文并茂、代码视频兼顾，做成最好看的面试系列。欢迎喜欢的小伙伴点赞、转发和打赏，如果支持的同学多，我就继续更下去。</p>
+</blockquote>
+<p><img src="https://s2.loli.net/2023/09/18/g78B3XunFliWv6a.png" alt="3-basic-sort.png"></p>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2023/09/18/3-basic-sort">https://www.qtmuniao.com/2023/09/18/3-basic-sort</a> 转载请注明出处</em></p>
+<p>{[order-list], [unorder-list]}</p>
+<p>冒泡排序、选择排序和插入排序是三种最基本的排序算法。其原理是相通的：</p>
+<ol>
+<li>将数组划分成前后两个子集：前面是有序集，后面是无序集</li>
+<li>三种方法都是线性的一次从无序集中搬一个元素到有序集中，只不过搬法不同：<ul>
+<li>冒泡：从无序集最后逐个比较冒一个到有序集<strong>最后</strong>。</li>
+<li>选择：遍历无序集，选一个放到有序集<strong>最后</strong>。</li>
+<li>插入：从边界处选一个，插入到有序集中<strong>合适位置</strong>。</li>
+</ul>
+</li>
+</ol>
+<p>三种排序的复杂度都是 O(n^2)。</p>
+<h2 id="冒泡排序"><a href="#冒泡排序" class="headerlink" title="冒泡排序"></a>冒泡排序</h2><p>S-order &lt;–bubble– S-unorder</p>
+<p>像冒泡一样，每次让最小的数<strong>冒出</strong>剩余数据集（无序）“水面”，抵达有序集。</p>
+<p>口诀：</p>
+<ol>
+<li>数组分两块，初始前空置；</li>
+<li><strong>后面交换往前挤</strong>，前满后空则终止。</li>
+</ol>
+<h2 id="选择排序"><a href="#选择排序" class="headerlink" title="选择排序"></a>选择排序</h2><p>S-order &lt;–selection– S-unorder</p>
+<p>从剩余数据集（无序）中<strong>选择</strong>最值，放到有序集中。</p>
+<p>口诀：</p>
+<ol>
+<li>数组分两块，初始前空置；</li>
+<li><strong>后面选极前追加</strong>，前满后空则终止。</li>
+</ol>
+<h2 id="插入排序"><a href="#插入排序" class="headerlink" title="插入排序"></a>插入排序</h2><p>S-order &lt;–insertion– S-unorder</p>
+<p>从剩余数据集（无序）中随意取一个值，然后通过比较“插入”（也可以理解为往前冒泡）到有序集中。</p>
+<p>口诀：</p>
+<ol>
+<li>数组分两块，初始前空置；</li>
+<li><strong>边界选值前插入</strong>，前满后空则终止。</li>
+</ol>
+<hr>
+<p>代码仓库在<a href="%EF%BC%9Ahttps://github.com/DistSysCorp/infra-interview" title="infra 面试基础 repo">这里</a>，欢迎通过提 issue 来告诉我你想看图解的常见面试题目，如果发现有疏漏，也欢迎提 PR 来贡献。</p>
+<p>b 站视频在这里：<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL0JWMWR1NDExNzdpdQ==">https://www.bilibili.com/video/BV1du41177iu<i class="fa fa-external-link-alt"></i></span><br>Youtube 视频：<span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vcGxheWxpc3Q/bGlzdD1QTFNJU1J1MmIyTjU1SHRwXzN0VVFvcU1QUDRFc1RMR3h2">https://www.youtube.com/playlist?list=PLSISRu2b2N55Htp_3tUQoqMPP4EsTLGxv<i class="fa fa-external-link-alt"></i></span></p>
+<hr>
+<p>最后，如果喜欢我的文章，可以订阅我的小报童付费专栏《系统日知录》，专注互联网最基础的方向——<strong>大规模数据系统</strong>，有图数据库、代码解读、优质英文播客翻译、数据库学习、论文解读等等系列，欢迎喜欢我文章的朋友订阅👉<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">专栏<i class="fa fa-external-link-alt"></i></span>支持，你的支持对我持续创作优质文章非常重要。</p>
+]]></content>
+      <categories>
+        <category>计算机基础</category>
+      </categories>
+      <tags>
+        <tag>算法</tag>
+        <tag>排序算法</tag>
       </tags>
   </entry>
 </search>

@@ -193,7 +193,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/05/16/distributed-system-material/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/05/31/zookeeper/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -207,7 +207,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/05/16/distributed-system-material/" class="post-title-link" itemprop="url">分布式系统学习资料汇总</a>
+            <a href="/2021/05/31/zookeeper/" class="post-title-link" itemprop="url">分布式系统协调内核——Zookeeper</a>
         </h2>
 
         <div class="post-meta">
@@ -217,14 +217,109 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-05-16 01:32:04" itemprop="dateCreated datePublished" datetime="2021-05-16T01:32:04+08:00">2021-05-16</time>
+              <time title="创建时间：2021-05-31 15:59:37" itemprop="dateCreated datePublished" datetime="2021-05-31T15:59:37+01:00">2021-05-31</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="Zookeeper"><a href="#Zookeeper" class="headerlink" title="Zookeeper"></a>Zookeeper</h1><p>本篇要介绍 Patrick Hunt 等人在 2010 年发表的、至今仍然广泛使用的、定位于<strong>分布式系统协调组件</strong>的论文 —— Z<a target="_blank" rel="noopener" href="https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf">ooKeeper: Wait-free coordination for Internet-scale systems</a>。我们在多线程、多进程编程时，免不了进行同步和互斥，常见手段有共享内存、消息队列、锁、信号量等等。而在分布式系统中，不同组件间必然也需要类似的协调手段，于是 Zookeeper 应运而生。配合客户端库，Zookeeper 可以提供动态参数配置（configuration metadata）、分布式锁、共享寄存器（shared register）、服务发现、集群关系（group membership）、多节点选主（leader election）等一系列分布式系统的协调服务。</p>
+<p>总体来看，Zookeeper 有以下特点：</p>
+<ol>
+<li>Zookeeper 是一个分布式协调内核，本身功能比较内聚，以保持 API 的简洁与高效。</li>
+<li>Zookeeper 提供一组高性能的、保证 FIFO的、基于事件驱动的非阻塞 API。</li>
+<li>Zookeeper 使用类似文件系统的目录树方式对数据进行组织，表达能力强大，方便客户端构建更复杂的协调源语。</li>
+<li>Zookeeper 是一个自洽的容错系统，使用 Zab 原子广播（atomic broadcast）协议保证高可用和一致性。</li>
+</ol>
+<p>本文依从论文顺序，简要介绍下 Zookeeper 的服务接口设计与模块粗略实现。更多细节请参考<a target="_blank" rel="noopener" href="https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf">论文</a>和<a target="_blank" rel="noopener" href="https://zookeeper.apache.org/">开源项目主页</a>。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/05/31/zookeeper/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/05/15/distributed-system-material/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/05/15/distributed-system-material/" class="post-title-link" itemprop="url">分布式系统学习资料汇总</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-05-15 18:32:04" itemprop="dateCreated datePublished" datetime="2021-05-15T18:32:04+01:00">2021-05-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -258,7 +353,7 @@
 <p><strong>注：</strong>文中推荐的资料大多为英文，如果阅读有困难，推荐使用 Chrome 浏览器，并且给 Chrome 装一个 “<a target="_blank" rel="noopener" href="https://chrome.google.com/webstore/detail/google-translate/aapbdbdomjkkjkaonfhkkikfgjllcleb">google 翻译</a>”的插件，可以点击一键“翻译此页面”。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/05/16/distributed-system-material/#more" rel="contents">
+              <a class="btn" href="/2021/05/15/distributed-system-material/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -308,14 +403,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-05-09 23:15:48" itemprop="dateCreated datePublished" datetime="2021-05-09T23:15:48+08:00">2021-05-09</time>
+              <time title="创建时间：2021-05-09 16:15:48" itemprop="dateCreated datePublished" datetime="2021-05-09T16:15:48+01:00">2021-05-09</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -400,14 +495,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-05-08 21:57:20" itemprop="dateCreated datePublished" datetime="2021-05-08T21:57:20+08:00">2021-05-08</time>
+              <time title="创建时间：2021-05-08 14:57:20" itemprop="dateCreated datePublished" datetime="2021-05-08T14:57:20+01:00">2021-05-08</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -488,14 +583,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-04-17 15:53:25" itemprop="dateCreated datePublished" datetime="2021-04-17T15:53:25+08:00">2021-04-17</time>
+              <time title="创建时间：2021-04-17 08:53:25" itemprop="dateCreated datePublished" datetime="2021-04-17T08:53:25+01:00">2021-04-17</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -587,14 +682,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-04-02 21:46:55" itemprop="dateCreated datePublished" datetime="2021-04-02T21:46:55+08:00">2021-04-02</time>
+              <time title="创建时间：2021-04-02 14:46:55" itemprop="dateCreated datePublished" datetime="2021-04-02T14:46:55+01:00">2021-04-02</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -682,14 +777,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-03-30 23:17:19" itemprop="dateCreated datePublished" datetime="2021-03-30T23:17:19+08:00">2021-03-30</time>
+              <time title="创建时间：2021-03-30 16:17:19" itemprop="dateCreated datePublished" datetime="2021-03-30T16:17:19+01:00">2021-03-30</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -770,14 +865,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-03-14 23:12:27" itemprop="dateCreated datePublished" datetime="2021-03-14T23:12:27+08:00">2021-03-14</time>
+              <time title="创建时间：2021-03-14 15:12:27" itemprop="dateCreated datePublished" datetime="2021-03-14T15:12:27+00:00">2021-03-14</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -859,14 +954,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-02-15 22:13:33" itemprop="dateCreated datePublished" datetime="2021-02-15T22:13:33+08:00">2021-02-15</time>
+              <time title="创建时间：2021-02-15 14:13:33" itemprop="dateCreated datePublished" datetime="2021-02-15T14:13:33+00:00">2021-02-15</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -935,7 +1030,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/02/10/cmu15445-project1-buffer-pool/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/02/09/cmu15445-project1-buffer-pool/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -949,7 +1044,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/02/10/cmu15445-project1-buffer-pool/" class="post-title-link" itemprop="url">Cmu15445 数据库系统实验一：Buffer Pool Manager</a>
+            <a href="/2021/02/09/cmu15445-project1-buffer-pool/" class="post-title-link" itemprop="url">Cmu15445 数据库系统实验一：Buffer Pool Manager</a>
         </h2>
 
         <div class="post-meta">
@@ -959,14 +1054,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-02-10 00:13:33" itemprop="dateCreated datePublished" datetime="2021-02-10T00:13:33+08:00">2021-02-10</time>
+              <time title="创建时间：2021-02-09 16:13:33" itemprop="dateCreated datePublished" datetime="2021-02-09T16:13:33+00:00">2021-02-09</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1008,7 +1103,7 @@
 <p>本文首先从基本概念、核心数据流总体分析下实验内容，然后分别对两个子任务进行梳理。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/02/10/cmu15445-project1-buffer-pool/#more" rel="contents">
+              <a class="btn" href="/2021/02/09/cmu15445-project1-buffer-pool/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1058,14 +1153,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-01-09 14:51:46" itemprop="dateCreated datePublished" datetime="2021-01-09T14:51:46+08:00">2021-01-09</time>
+              <time title="创建时间：2021-01-09 06:51:46" itemprop="dateCreated datePublished" datetime="2021-01-09T06:51:46+00:00">2021-01-09</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1147,14 +1242,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-12-14 23:23:28" itemprop="dateCreated datePublished" datetime="2020-12-14T23:23:28+08:00">2020-12-14</time>
+              <time title="创建时间：2020-12-14 15:23:28" itemprop="dateCreated datePublished" datetime="2020-12-14T15:23:28+00:00">2020-12-14</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1207,96 +1302,6 @@
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2020/12/14/bolt-index-design/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/11/29/bolt-data-organised/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/11/29/bolt-data-organised/" class="post-title-link" itemprop="url">Boltdb 源码导读（一）：Boltdb 数据组织</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-11-29 11:54:52" itemprop="dateCreated datePublished" datetime="2020-11-29T11:54:52+08:00">2020-11-29</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p><a target="_blank" rel="noopener" href="https://github.com/boltdb/bolt">boltdb</a> 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于  <a target="_blank" rel="noopener" href="https://twitter.com/hyc_symas">Howard Chu’s</a> <a target="_blank" rel="noopener" href="http://symas.com/mdb/">LMDB 项目</a> ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 <a target="_blank" rel="noopener" href="https://github.com/etcd-io/bbolt">bbolt</a>。</p>
-<p>为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。</p>
-<p>本系列计划分成三篇文章，依次围绕<strong>数据组织</strong>、<strong>索引设计</strong>、<strong>事务实现</strong>等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第一篇， boltdb 数据组织。</p>
-</blockquote>
-<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>一个存储引擎最底层的构成，就是处理数据在各种物理介质（比如在磁盘上、在内存里）上的组织。而这些数据组织也体现了该存储引擎在设计上的取舍哲学。</p>
-<p>在文件系统上，boltdb 采用<strong>页</strong>（page）的组织方式，将一切数据都<strong>对齐</strong>到页；在内存中，boltdb 按 B+ 树组织数据，其基本单元是<strong>节点</strong>（node），一个内存中的树节点对应文件系统上一个或者多个<strong>连续的</strong>页。boltdb 就在数据组织上就只有这两种核心抽象，可谓设计简洁。当然，这种简洁必然是有代价的，后面文章会进行详细分析。</p>
-<p>本文首先对节点和页的关系进行总体说明，然后逐一分析四种页的格式及其载入内存后的表示，最后按照 db 的生命周期串一下 db 文件的增长过程以及载入内存的策略。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/11/29/bolt-data-organised/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1389,19 +1394,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">99</span>
+          <span class="site-state-item-count">100</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">33</span>
+        <span class="site-state-item-count">34</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">166</span>
+        <span class="site-state-item-count">167</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

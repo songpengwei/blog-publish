@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="小引GFS 是谷歌为其业务定制开发的，支持弹性伸缩，为海量数据而生的分布式大文件存储系统。它运行于通用廉价商用服务器集群上，具有自动容错功能，支持大量客户端的并发访问。 GFS 是为大文件而生的，针对读多于写的场景。虽然支持对文件修改，但只对追加做了优化。同时不支持 POSIX 语义，但是实现了类似的文件操作的API。它是谷歌在 MapReduce 同时期，为了解决大规模索引等数据存储所实现的具">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GFS —— 取舍的艺术">
+<meta property="og:url" content="https://www.qtmuniao.com/2019/05/25/gfs/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="小引GFS 是谷歌为其业务定制开发的，支持弹性伸缩，为海量数据而生的分布式大文件存储系统。它运行于通用廉价商用服务器集群上，具有自动容错功能，支持大量客户端的并发访问。 GFS 是为大文件而生的，针对读多于写的场景。虽然支持对文件修改，但只对追加做了优化。同时不支持 POSIX 语义，但是实现了类似的文件操作的API。它是谷歌在 MapReduce 同时期，为了解决大规模索引等数据存储所实现的具">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/BnLY4kVzAIOX5Si.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/03/21/tsEkSRB5vdx27jO.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/rtYVFlPubGpaSqL.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/BnLY4kVzAIOX5Si.jpg">
+<meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
+<meta property="article:published_time" content="2019-05-25T16:10:06.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.280Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="distributed system">
+<meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="存储">
+<meta property="article:tag" content="gfs">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/BnLY4kVzAIOX5Si.jpg">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2019/05/25/gfs/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>GFS —— 取舍的艺术 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/05/25/gfs/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          GFS —— 取舍的艺术
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-05-25 17:10:06" itemprop="dateCreated datePublished" datetime="2019-05-25T17:10:06+01:00">2019-05-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="https://i.loli.net/2020/02/09/BnLY4kVzAIOX5Si.jpg" alt="write control and data flow"></p>
+<h2 id="小引"><a href="#小引" class="headerlink" title="小引"></a>小引</h2><p>GFS 是谷歌为其业务定制开发的，支持弹性伸缩，为海量数据而生的分布式大文件存储系统。它运行于通用廉价商用服务器集群上，具有自动容错功能，支持大量客户端的并发访问。</p>
+<p>GFS 是为大文件而生的，针对读多于写的场景。虽然支持对文件修改，但只对追加做了优化。同时不支持 POSIX 语义，但是实现了类似的文件操作的API。它是谷歌在 MapReduce 同时期，为了解决大规模索引等数据存储所实现的具有开创性的工业级的大规模存储系统。</p>
+<span id="more"></span>
+
+<p>其主要设计细节如下：</p>
+<ul>
+<li><strong>简化系统元信息</strong>：Master 中维持了两个重要的映射，分别是文件路径到逻辑数据块，逻辑块与其多副本之间的关系。</li>
+<li><strong>较大的数据块</strong>：选择了当时看来相当大的 64M 作为数据存储的基本单位，以此来减少元信息。</li>
+<li><strong>放宽的一致性</strong>：允许多副本间内容不一致来简化实现、提高性能，通过读校验来保证损坏数据对用户不可见。</li>
+<li><strong>高效副本同步</strong>：在多副本同步时分离控制流和数据流，利用网络拓扑提高同步效率。</li>
+<li><strong>租约分散压力</strong>：Master 通过租约将部分权力下放给某个 Chunkserver ，负责某个块的多副本间的读写控制。</li>
+<li><strong>追加并发优化</strong>：多客户端对同一文件进行并发追加，保证数据原子性及At Least Once的语义。</li>
+<li><strong>快速备份支持</strong>：使用 COW 策略实现快照操作，并通过块的引用计数来进行写时拷贝。</li>
+<li><strong>逐节点锁控制</strong>：对于每个操作，需要沿着文件路径逐节点获取读锁，叶子节点获取读锁或者写锁，当然文件路径会进行前缀压缩。</li>
+<li><strong>异步垃圾回收</strong>：将数据删除与其他一些主节点的维护操作（损坏块清除，过期数据块移除）统一起来，成为一个定期过程。</li>
+<li><strong>版本号标记</strong>：帮助客户端识别过期数据。</li>
+<li><strong>数据块校验和</strong>：针对每 64KB 的小块打上 32 bit 的校验和。</li>
+</ul>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><h3 id="基本假设"><a href="#基本假设" class="headerlink" title="基本假设"></a>基本假设</h3><p>像任何系统一样，其面向的场景需要有一些核心假设，这样其后的所有设计，才能根据这些假设进行取舍。那么 GFS 作为一个分布式的文件系统，其基本假设是什么？可以从几方面来看：错误处理、文件尺寸、修改方式、一致性模型。</p>
+<h4 id="错误处理"><a href="#错误处理" class="headerlink" title="错误处理"></a>错误处理</h4><p>该文件系统的开创之一在于摒弃昂贵工业级的系统硬件，选用普通廉价的商用服务器硬盘集群作为存储介质。于是就必须在软件层面屏蔽这些廉价硬件的不可靠性，为上层应用提供一个可靠的存储服务，这个和 MapReduce 这种计算框架面对的问题是一致的。另外，在软件层面，通常会有成百上千的客户端在同时访问集群，而他们可能又分布在同等规模的其他机器上。</p>
+<p>也就是说，在这种存储介质上构建如此尺度的系统，软硬组件出问题不应该被当做异常而应该认为是常态。比如用户代码有bug、操作系统出 bug、硬盘内存网络甚至电源供应，统统有可能出问题。</p>
+<p>那么我们在设计系统的时候，就必须在系统内引入持续的监控以监控各个软硬组件的健康状态；整合出错检测、错误容忍、自动恢复机制，以对基本的错误进行告警、处理和自动恢复。</p>
+<h4 id="面向大文件"><a href="#面向大文件" class="headerlink" title="面向大文件"></a>面向大文件</h4><p>GFS 设计目标是针对单文件数十M到数G的尺寸。这在当时（2003）看来，已经是很大尺寸的了。当然，随着互联网和通信基础设施的进一步发展，图片和视频等非文本数据的爆炸式增长，现在看来这个假设已经很稀松平常了；不过也由此看出谷歌系统演进的前瞻性。</p>
+<p>回到当时的情景，对于数百万计的 KB 尺寸的文件，纵然文件系统可以支持其存储，但是却难以高效地对其管理。因此，GFS 重新对常规文件系统的一些基本设计做了调整：包括文件块（block）的大小，IO操作的流程等等。</p>
+<h4 id="追加为主"><a href="#追加为主" class="headerlink" title="追加为主"></a>追加为主</h4><p>在 GFS 针对的场景下，所有的文件修改类型，基本以<strong>追加</strong>为主，很少出现对已经存在的部分的覆盖。至于随机写，虽然支持，但是场景很少。大体上来说，一旦写入完毕，文件就变为只读，并且是<strong>顺序读</strong>。</p>
+<p>这样的场景有很多，比如应用持续运行所产生的数据流，比如归档数据，比如一些机器产生的待另一些机器同步或者异步消费的中间数据集。考虑到这些访问模式都是针对大数据文件，如何保证<strong>追加操作</strong>的<strong>并发性</strong>和<strong>原子性</strong>成为文件系统设计的要点；而传统的考虑数据访问局部性而在客户端做cache，在这里就没有那么有吸引力了，并不需要针对其做额外优化。</p>
+<h4 id="协同设计"><a href="#协同设计" class="headerlink" title="协同设计"></a>协同设计</h4><p>通过对系统侧和应用侧的联合设计，能够大大提升系统的灵活性。比如 GFS 弱化了一致性模型，在不加重用户代码负担的情况下大大简化了系统设计；又比如，GFS 引入了原子的追加操作，使得多个客户端不用额外的同步操作就可以并发地对同一文件进行追加。</p>
+<h4 id="高吞吐"><a href="#高吞吐" class="headerlink" title="高吞吐"></a>高吞吐</h4><p>设计上，高吞吐优先于低延迟。因此为了保证吞吐量，可以适当牺牲延迟。也就是说，GFS 比较适合批量任务而非实时任务。</p>
+<h3 id="接口"><a href="#接口" class="headerlink" title="接口"></a>接口</h3><p>GFS 虽然并没有实现 POSIX （可移植操作系统接口） 语义，但其 API 和文件系统类似，有 create, delete, open, close, read 和 write。此外，比较特别的一个操作是 record append，这个就比较厉害了，或者说是谷歌针对其场景专门优化的——支持多客户端并发写，在 MapReduce 任务 reduce 落盘阶段能大大提高吞吐。</p>
+<p>那 GFS 相对于 POSIX的文件系统语义削减了什么呢？比如细粒度的权限控制，多用户、组用户控制，符号链接等等。</p>
+<h3 id="架构图"><a href="#架构图" class="headerlink" title="架构图"></a>架构图</h3><p><img src="https://i.loli.net/2020/03/21/tsEkSRB5vdx27jO.png" alt="gfs-architecture.png"></p>
+<p>图画的微言大义，能看出不少信息：</p>
+<ol>
+<li><strong>物理上</strong>来说，系统有三种<strong>角色</strong>。<strong>客户端（Client），Master 节点和 Chunkserver 节点</strong>。Master 节点只有一个，其他的都有多个。本质上，Chunkserver 和 Client 都表现为 Linux 系统上的一个或一组进程。因此 Client 和 Chunkserver 可能在同一台 Linux 机器上。</li>
+<li><strong>逻辑上</strong>来说，系统有两大部分，<strong>元信息和数据</strong>。其中元信息主要包括文件系统命名空间，访问控制信息，文件到其 所包含文件块的映射信息。这部分数据结构存在 Master 上。数据包括一个个文件的实际数据部分，每个文件又被划分为固定大小的 chunk，以某种方式分散在各个 Chunkserver 上。</li>
+<li>Client 端包括用户代码和 GFS Client Library 两部分。后者以库代码形式提供，为前者调用。每次进行文件操作，Client 会首先向 Master 询问文件元信息，然后依据获取的数据位置信息去相应 Chunkserver 找对应数据。</li>
+</ol>
+<p>还有一些东西图中没详细说明，但是实现上却十分重要的：</p>
+<ol>
+<li>Master 维持一些和 Chunkserver 间的系统事件， 包括租约管理、孤儿块回收、数据块的迁移等等。Master 和 Chunkservers 间通过心跳来收集元信息并下发上述控制信息。</li>
+<li>每个文件块（chunk）会在不同机器机架上进行三备份，这是进行容错的最直接粗暴的做法。但是它能带来很多其他的好处，如并发读等等，后面会详细说明。</li>
+<li>客户端（Client）和 块服务器（Chunkserver）都没有像计算机的存储体系结构一样，在 GFS 层面对最近访问的数据进行缓存。一来能简化设计，二来数据块太大，缓存也没啥用。三来，可以利用 linux 系统自身的缓存。</li>
+</ol>
+<h3 id="单点-Master"><a href="#单点-Master" class="headerlink" title="单点 Master"></a>单点 Master</h3><p>都说单点不好，怎么还爱用单点 Master 呢？因为实在太能简化设计了。如果有全局信息的话，可以很方便的实现复杂的全局控制策略。但是缺点当然也是很明显的，最主要的就是，Master 挂了怎么办，Master 对外带宽过小怎么办。</p>
+<p>对于前者，可以通过多种方式来做 backup。在 MapReduce paper解读中分析过几种：snapshot+log，主从，状态外存，心跳恢复。GFS 应该1，3，4都用到了。</p>
+<p>对于后者，就是尽量减小 Client 端与 Master 的请求交互与数据传输。GFS 的主要做法：</p>
+<ol>
+<li>Client 不与 Master 发生实际文件数据交互，只请求元信息，比如 Primary 数据块的位置信息，然后就去找相应 Chunkserver。</li>
+<li>Client 端会做有限时间内的元信息的缓存，这样对于同客户端的一系列连续请求，对于元信息的请求次数也会降到最低。</li>
+</ol>
+<p>下面来详细说下读取（filename+offset）流程：</p>
+<ol>
+<li>Client 将文件内 offset 翻译为 chunk id + chunk 内 offset。</li>
+<li>Client 与 Master 交互，通过 filename + chunk id + chunk inner offset 获取该 chunk 所有 replica 的位置。Client 会缓存此信息到 filename+chunk id -&gt; replica locations 的字典中。</li>
+<li>Client 于是就近选一个（当然失败了会尝试下一个）replica， 给其发送请求，带上 chunk handle + byte range，读取数据。</li>
+</ol>
+<p>由于上述缓存存在，只要其不过期，后面同一 chunk 的访问就不必在经过 Master。而且这还可以再继续优化，比如说 Client 一个请求中同时请求多个 chunk 位置；比如说 Master 返回的时候不仅返回该 chunk 的各个 replica 位置，还返回在同一文件中请求的 chunk 后面几个 chunk 的各 replica 位置。这些都能有效减小 Master 的负载。</p>
+<h3 id="块尺寸（Chunk-Size）"><a href="#块尺寸（Chunk-Size）" class="headerlink" title="块尺寸（Chunk Size）"></a>块尺寸（Chunk Size）</h3><p><strong>chunk 大小选择是个核心设计点</strong>。选择了当时看来比较大的尺寸 64MB 作为 chunk 的固定大小，每个块物理上是一个 linux 系统下的文件。这么做好处有三：</p>
+<ol>
+<li><strong>减小 Client 与 Master 的交互次数</strong>：Client 向 Master 请求信息，是以 chunk 为单位的，因此在请求数据量一定的情况下，单个 chunk 越大，请求次数就越少。</li>
+<li><strong>减少单个请求的跨 chunk 读取</strong>：也好理解，单个 chunk 越大，同一个请求的 byte range 就越大概率落到单个 chunk 中。</li>
+<li><strong>减少总 chunk 的原信息尺寸</strong>：存总大小一定的数据，单个块越大，所需块的数量就越少。而单个块的元信息是相对固定的，因此元信息总量就会变小。在 Master 的内存不变的情况下，就能存下更多的元信息，从而使整个系统的容量上限提高。</li>
+</ol>
+<p>任何设计都是取舍，选择大块既然有以上好处，就会随之带来以下坏处：</p>
+<ol>
+<li><strong>内部碎片</strong>。比如需要存储大量小文件，这些小文件的单个文件尺寸小于一个 chunk 大小，但在 GFS 也至少得占一个 chunk，由此带来大量内部碎片。当然每个文件的最后一个 chunk 大概率也会存在一些碎片。</li>
+<li><strong>小文件热点</strong>。如果系统中有大量小文件，并且被分配到一个 Chunkserver 上的话，那么该 Chunkserver 就可能会成为热点（因为每个 Chunkserver 可以存的 chunk 一定的话，单个文件占 chunk 少，那么其 serve 的文件数就会多），一般不会有问题。如果真碰到这种问题，可以通过<strong>提高小文件 replica</strong> 个数来临时解决（那么就可以有更多的备胎来分散请求了）。其他可能的办法，谷歌开始开脑洞了：用类似于 p2p 的方式解决，即<strong>一个 Client 可以从其他 Client 上读数据。</strong></li>
+</ol>
+<p>不过对于 GFS 来说，小文件不是主要目标流量。</p>
+<h3 id="元数据"><a href="#元数据" class="headerlink" title="元数据"></a>元数据</h3><p>主要包括几大集合和映射，都存在 Master 的内存中。因此 <strong>Master 内存</strong>和<strong>单位尺寸的数据对应的元信息大小</strong>决定了系统的容量。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1.</span> file <span class="built_in">list</span> 和 logic chunk <span class="built_in">list</span></span><br><span class="line"><span class="number">2.</span> file name -&gt; chunks(identify by <span class="built_in">id</span>)</span><br><span class="line"><span class="number">3.</span> chunk <span class="built_in">id</span> -&gt; chunk replica location</span><br></pre></td></tr></table></figure>
+
+<p>这里 GFS 学了数据库的惯常操作，将对前两个数据结构的任何改动都存在了<strong>操作日志</strong>里，以在必要的时候进行恢复。至于最后一个映射，它采用了另外一种策略：每次 Master 恢复时，通过各个 Chunkserver 的心跳来构建和维持该映射。为什么会有这个不同呢，卖个关子，下面讲。</p>
+<h4 id="基于内存的优劣-In-Memory-Data-Structures"><a href="#基于内存的优劣-In-Memory-Data-Structures" class="headerlink" title="基于内存的优劣(In-Memory Data Structures)"></a>基于内存的优劣(In-Memory Data Structures)</h4><p>将所有元信息存放在 Master 内存中，有诸多好处：</p>
+<ol>
+<li>最直接的就是<strong>简单</strong>。很多时候简单就是强大：意味着好维护，好扩展，性能好等等。</li>
+<li>Master 能很方便获取全局信息，从而用来：<strong>回收孤儿 chunk 以释放空间，重新备份 chunk 以应对故障，不断迁移 chunk 以平衡负载</strong>。</li>
+<li>内存成为瓶颈了，加内存就好了。</li>
+</ol>
+<p>坏处就是 Master 内存确实可能成为瓶颈和单点。单点这里不细说。关于容量瓶颈问题，首先当时 GFS 的面对的存储量级还没现在这么大；其次每 64M 文件块可以压缩到只有平均 64 bit 元信息。最后，大多数文件假设都是占好多块的。总体来说，<strong>就是尽量压缩单位数据所对应的元信息，从而在 Master 内存受限的情况下最大化系统容量</strong>。这个上面好像说了，没办法，谷歌的论文就是重复再重复，毕竟，对于写文章来说，呼应就是美嘛。</p>
+<h4 id="块位置-Chunk-Locations"><a href="#块位置-Chunk-Locations" class="headerlink" title="块位置(Chunk Locations)"></a>块位置(Chunk Locations)</h4><p>一开始 GFS 也是打算在 Master 上持久化 chunk 的各个副本位置的信息。后来发现，每次被动从各个 Chunkserver 中那里收集更简单直接。因为每个 Chunkserver 天然知道自己一亩三分地的 chunk replica 的信息，每次由他们汇报给 Master 能保持信息最一致。假设这个信息持久化在 Master 中，Master 宕机后恢复时从本地恢复这个信息到内存，但是在这个空当内，好多 Chunkserver 挂了，好多 Chunkserver 又加入了集群，这样信息就不一致了嘛，还得通过心跳来同步达到一致，那么干嘛不一开始就通过心跳来构建呢？</p>
+<p>我思考了下，以为这么设计 chunk id -&gt; chunk replica location 的持久化方案的核心点在于，它不像 filename，file -&gt; chunk 这两个映射，<strong>在 Master 宕机的情况下，是无法更新的</strong>；而由于大规模集群的中单个 Chunkserver 的不靠谱性以及各种运维操作的不确定性，是<strong>不断变化</strong>着的。这是分布式集群的一个固有特点，因此这个设计可以说是会心一击。</p>
+<h4 id="操作日志-Operation-Log"><a href="#操作日志-Operation-Log" class="headerlink" title="操作日志(Operation Log)"></a>操作日志(Operation Log)</h4><p>操作日志，用来持久化 file namespace 和  file name -&gt; chunk 的映射，有两方面的作用：</p>
+<ol>
+<li>如前所述，用以持久化上述元信息，并且在 Master 宕机恢复后进行元信息重建。</li>
+<li>对于并发操作，用来确定操作顺序，相当于一个’’锁’’的概念。</li>
+</ol>
+<p>因此，对于 GFS中文件，文件块以及版本号的信息，都可以唯一的由他们写入操作日志的顺序所决定。</p>
+<p>操作日志如此重要，因此我们不能只在 Master 硬盘上对其进行备份，万一 Master 整个完蛋了呢？还要将其同步至其他远程机器。之前也提到了，这个日志有点类似于 WAL （Write Ahead Log），所有修改操作必须先要写入操作日志之后，才能应用到 Master 的内存数据结构中，进而暴露给 Client。否则，宕机恢复时，Client 和 Master 拿到的信息的往往不一致。(当然为了避免频繁刷盘影响正常的请求性能，可以将一些操作 batch 后再刷盘，但是也这会带来不一致问题，因此这些考虑需要根据实际业务场景进行灵活调整)</p>
+<p><strong>有操作日志的地方就有 checkpoint</strong>。因为一个大型系统面对的请求实在太多，如果每次 Master 恢复时，就从最开始读操作日志进行恢复，这个过程将会相当漫长。为了压缩操作日志，很自然的想法便是定期 checkpoint，将某个时间节点之前的日志所对应的<strong>状态机</strong>或者<strong>内存数据结构</strong>以某种方式持久化下来。GFS 选的是 B 树，因为它可以对应加载到内存中，而不用做一些转化（比如说 通过kv 对构建字典），从而进一步加速恢复时间。</p>
+<p>做 snapshot 时，GFS 用了一个小技巧，来避免和当前对操作日志的写入冲突（毕竟同时修改一个文件得加锁）。就是每次到了做 checkpoint 的时间了，就将操作日志切到一个新文件中。然后新启动一个线程，在后台将老文件转化为 checkpoint。</p>
+<p>虽然做完最新的 checkpoint 之后老的 snapshot 就可以释放了。但是小心驶得万年船，GFS 在实践中往往会多保留几个 checkpoint。</p>
+<h3 id="一致性模型"><a href="#一致性模型" class="headerlink" title="一致性模型"></a>一致性模型</h3><p>这一块是我最初读论文的时候比较难以理解的地方，但是后来想通了发现很巧妙——在系统<strong>满足应用需求</strong>的情况下，适当放宽一致性的限制，会<strong>大大简化实现</strong>。</p>
+<p>在详细展开 GFS 的设计之前呢，必须先要搞清楚一个问题，<strong>是什么引出了一致性问题</strong>？如果这个问题不清楚，那么下面所讲 GFS 的一大堆设计，你可能根本不知道它在干嘛，这也是当初我读不懂这一块的原因。答案是<strong>多副本</strong>（replica），凡是有多副本的系统，必然需要面对一致性问题。因为网络的不靠谱性，Client 的不靠谱性，Chunkserver 的不靠谱性，总而言之，就是分布式系统各个节点，以及各个节点间的通信都不靠谱。而将一份内容同步到多个副本是需要时间的（因此该操作<strong>不是原子的</strong>，可能会使系统停在一种蛋疼的中间状态），在这个时间段内，任何一个部件（Client，Chunkserver以及网络）出现问题，就会造成不同副本的不一致，后面的 Client 在读的时候面对不一致的 replica 就会发愁了，以谁为准呢？</p>
+<h4 id="GFS-的承诺"><a href="#GFS-的承诺" class="headerlink" title="GFS 的承诺"></a>GFS 的承诺</h4><p>GFS 觉得，不用提供完全的 POSIX 文件系统的语义，只需要以下几个基本承诺，在所面对的场景下，就够用了：</p>
+<ol>
+<li><strong>文件命名空间的改动（如文件创建操作）是原子的</strong></li>
+</ol>
+<p>对于第一点，最简单的实现就是在 Master 中文件命名空间的数据结构外加一把大锁，所有操作都是互斥的，也就是对他的任何改动是原子的，通过操作日志能将所有的操作确定一个顺序。但是锁的粒度太大必然影响性能，因此在文件目录树中，其实每个节点都会有锁，具体加锁过程，稍后会详述。</p>
+<ol start="2">
+<li><strong>修改后的文件块的状态取决于修改类型，修改成功或者失败，是否为并发改动</strong>。</li>
+</ol>
+<p><img src="https://i.loli.net/2020/02/09/rtYVFlPubGpaSqL.png" alt="修改后的文件状态"></p>
+<p>如上图，文件块的状态有三种，一致性级别由高到底：已定义（defined），未定义（undefined）但是一致的（consistent），不一致的。理解这几个级别需要一些背景，论文中不同的地方提到了，这里重新组织一下：</p>
+<ol>
+<li><strong>修改操作</strong>。包括写操作和追加操作，写操作需要指定文件块+offset。追加操作成功后系统会将追加成功的偏移量返回给客户端。</li>
+<li><strong>并发写</strong>。如果两个客户端同时写同一个文件块的同一偏移量，那么就有个先后顺序问题，如果接近同时，系统不保证并发顺序。那么其中客户端再去读，就不一定能读到自己刚写的数据。</li>
+<li><strong>追加失败</strong>。追加操作会保证至少成功一次。追加操作时，假设配置三副本，但是只有两个副本写成功，最后一个副本超时了（可能对应块服务器宕机，当然重启后 GFS 会用 chunk version 来标记其过期 stale 了，从而跳过该 offset。），那么追加操作会重试，并且会失败数据<strong>不会删除</strong>，但是 GFS 有对齐操作，即重试成功后，三个副本中该追加数据的起始偏移量是定义的（也就是一致的），那么其中那个上次失败的副本就会有个空洞，系统会用特殊字符填充。</li>
+</ol>
+<p>明白了这些背景，先说一个结论，<strong>定义未定义针对的是多客户端并发写同一个偏移量的覆盖顺序问题；一致不一致针对的是多个副本相同偏移量的内容是否相同</strong>。再来详细解释这几个名词：</p>
+<ol>
+<li><strong>已定义（defined）</strong>：客户端写某个偏移量后，再读该偏移量的数据，读到的一定是刚才自己所写。</li>
+<li><strong>未定义的但是一致的（undefined but consistent）</strong>：多个客户端并发写同一个偏移量，不确定谁会覆盖谁（这个顺序由 Primary Replica 所在 Chunkserver 来安排，后面将会讲），即写完后再读，不确定是自己写的还是其他人写的。但是保证最终一致性，即并发写完成后，最后几个副本是一致的。</li>
+<li><strong>不一致的（inconsistent）</strong>：即修改操作后，所有副本同一偏移量的数据并不完全相同。</li>
+</ol>
+<p>此外值得一提的是，由于客户端会缓存文件块位置，他可能会读到旧的信息。当然，过期事件和重新打开其所在文件会刷新此信息，但是有一个窗口期会拿到过期信息。但由于GFS大部分场景是追加的，因此一般不会拿到过期数据。</p>
+<h4 id="对用户代码的影响"><a href="#对用户代码的影响" class="headerlink" title="对用户代码的影响"></a>对用户代码的影响</h4><p>通过使用其他技术手段：依赖<strong>追加</strong>而非随机写，<strong>检查点技</strong>术以及可以<strong>自校验，自定位</strong>的 Record 写（就是在应用层或者库中做校验和打ID），可以放心使用上面所放宽的一致性模型。下面对这几个技术详细解释一下。</p>
+<ol>
+<li><p><strong>追加写和检查点</strong></p>
+<p>GFS 事实上面对的场景是追加写远多于随机写的，那么在几乎只有追加写的场景下，保持一致性的策略就可以简单的多了。一个典型的场景，就是一个 writer 从头写到结尾，利用两个小手段可以保证一致性：<strong>a. 写完后重命名；b. 定期做检查点。</strong>前者可以保证写文件的原子性，要么完全可以见，要么完全不可见。后者来说，每个检查点其实就是已定义的，自然是一致的，reader 可以放心的读到最后一个检查点。哪怕 writer 故障重启后，也可以从上一个检查点开始增量写。在此过程中，reader 不会读到不一致的数据。</p>
+</li>
+<li><p><strong>自校验和自定位</strong></p>
+<p>另一个经典的场景是多 writer 并发追加以合并分片结果或者充当生产消费队列。之前也提到，对于追加写，GFS 提供<strong>至少成功一次</strong>的语义保证。由于记录写失败了会重试，但是并不会删除，那么就必然存在一些失败记录（表现为一些 replica 上的失败记录和另一些 replica 上的 padding）。</p>
+<p>GFS的策略是将对这些错误记录留给 reader 进行处理。具体处理方法是，对于写坏的记录，可以用 writer 写入的校验和进行校验从而跳过；对于写重的记录，writer 提供了 record id，reader 可以在读取的时候根据其进行过滤。</p>
+<p>当然，上述逻辑的代码都内置在了库函数中，应用层代码可以很方便的调用。</p>
+</li>
+</ol>
+<h2 id="系统交互"><a href="#系统交互" class="headerlink" title="系统交互"></a>系统交互</h2><p>所有读写流程设计有个基本原则——尽量减少主节点(Master)的参与。因为主节点很容易变成单点瓶颈。接下来详细描述一下客户端、主节点、块服服务器是如何交互来完成<em>数据的变动</em>、<em>原子记录追加</em>以及<em>快照操作</em>的。</p>
+<h3 id="租约和修改顺序"><a href="#租约和修改顺序" class="headerlink" title="租约和修改顺序"></a>租约和修改顺序</h3><p>分布式系统上的文件修改包括<strong>元信息的修改</strong>和<strong>文件块的写入、追加</strong>操作。文件块的修改操作会作用于其所有副本上，不同副本写入时需要确定一个顺序。如前所述，我们需要尽可能地减少主节点的参与，那么就不能由主节点来直接做这个决策。GFS 使用了<strong>租约</strong>(lease)的手段，Master 会定期向 chunk 的某个 replica 所在的服务器进行授权（有超时时间，所以称为租约），拿到授权的副本称为<strong>主副本</strong>（primary replica），由其进行写入顺序的安排。这样就将主节点就将<em>某些权力</em>在<em>一段时间</em>内授权给了某个的副本所在的服务器，即，有两个限制：</p>
+<ol>
+<li><strong>权力范围</strong>。只针对该 Chunk 的所有读写操作。</li>
+<li><strong>租约时间</strong>。有超时时间（初始为60s），需要定期续约。一般只要其不死，Master 都会同意其续约请求。不过偶尔 Master 为了防止特定 Chunk 被修改，会主动收回租约，比如说做快照前。</li>
+</ol>
+<p>使用租约的确减少了客户端与 Master 节点的交互，但是它很依赖<strong>多个节点的时钟同步</strong>。举个例子，假设每个租约会带上其失效的时间戳。此时间戳在 Master 上产生、在主备份节点上被检查，如果主备份节点时钟慢，那么它续约之前 Master 可能就认为该租约超时了，从而将租约授权给另一个备份节点。这时就同时存在了两个备份节点，从而带来一些问题。此外，如果主节点和主备份节点间的网络不连通了，master 将租约授权给另外一个节点，而客户端仍然缓存有原主备份节点地址，并且和该节点可以通信，也会产生问题。</p>
+<p>下面来对照流程图来分步骤详细说一下写流程：</p>
+<p><img src="https://i.loli.net/2020/02/09/BnLY4kVzAIOX5Si.jpg" alt="write control and data flow"></p>
+<ol>
+<li>客户端向 Master 询问要写的 Chunk 的<strong>主副本和其他副本的位置</strong>。如果还没有主副本，那么 Master 就通过租约授权一个。</li>
+<li>Master 将这些信息发送给客户端后，客户端会将其缓存起来。并且除非主副本不可达或者其租约到期，客户端不会再向 Master 发送请求。</li>
+<li>客户端将要写的数据推送给各个副本所在的块服务器。值得一提的设计是，GFS 将<strong>数据流和控制流进行了解耦</strong>，即客户端可以以任何顺序进行数据推送而不用像控制流一样先到主备份再到从备份。这样可以使我们独立优化数据流的推送，甚至可以并行推送；对于大数据块写入是很有好处的，下面章节会详细讨论这个事情。每个 Chunkserver 收到数据后不立即落盘，而是使用 LRU 策略放在缓存里，这也是一个将网络IO和硬盘IO进行解耦的一个操作，一是为了提高效率，一是等待<strong>主备份安排写入顺序</strong>。</li>
+<li>当客户端被告知所有副本的数据推送完成后，会向主备份服务器发送写（落盘）请求。主备份所在服务器会把多个并发客户端（如果有的话）的写请求安排一个写入顺序（给每个写请求指定一个<strong>序列号</strong>），并将其写入前面所说的操作日志。</li>
+<li>主备份服务器将客户端的写请求以及序列号转给其他副本所在服务器。有了这个唯一对应的序列号，所有副本的落盘顺序就能保持一致。</li>
+<li>所有从备份服务器落完盘后给主备份所在服务器复命。</li>
+<li>主备份所在服务器回复客户端，如果任何副本写入出现了问题，都会报告给客户端。如果遇到问题，可能有两种：a. 所有副本数据均未落盘。b.部分副本数据落盘成功。对于后者就会出现不一致的状态。客户端的<strong>库代码</strong>（意味着不用应用代码进行处理）检测到错误后会进行重试，因此在真正成功写入之前，步骤 3~7 可能会重复多次。</li>
+</ol>
+<p>这里需要一提的是一种特殊情况，如果要写入的数据过大，超过一个设计的 Chunk 大小怎么办？答案是将其拆开分成多次写。每次写的流程和上面一样，因此所有副本的数据顺序肯定会保持一致。但是如果同时有其他客户端也在进行写入的话，<strong>那么该次写请求的数据可能会被间隔开，由此造成前面所说一致但是未定义的状态</strong>（consistent but undefined）。</p>
+<h3 id="数据流"><a href="#数据流" class="headerlink" title="数据流"></a>数据流</h3><p>GFS 将控制流和数据流解耦以充分利用网络带宽。控制流都是从主备份节点到从备份节点，但是数据流就可以根据实际情况来动态调整。主要目标就是最大化利用网络带宽，避免网络瓶颈，最小化数据传输延迟。</p>
+<p>GFS 的主要手段有：</p>
+<ol>
+<li>利用网络拓扑来组织传输顺序</li>
+<li>线性的、流水式的传输数据</li>
+</ol>
+<p>对于第一点，GFS 利用 IP 组织来反应网络拓扑——即根据 IP 的关系可以判断出其节点的网络上的远近关系。</p>
+<p>对于第二点，如果是树形传输可能会造成根节点的负载过重，不能均摊负载和网络带宽。但如果只是单纯线性同步而不做流水并行的话，效率又会很低。</p>
+<h3 id="记录追加"><a href="#记录追加" class="headerlink" title="记录追加"></a>记录追加</h3><p>GFS 提供一种原子性的追加操作，叫做<strong>记录追加</strong>（<em>Record Append</em>）。不同于需要指定偏移量和数据的写入操作，记录追加操作只需要<strong>指定数据</strong>，在写成功后，写成功的记录偏移量将会返回给客户端。如果多个客户端并发写同一个区域，大概率会造成数据的交叠：即重叠区域的数据部分来自客户端A，另外部分来自客户端B，从而造成不一致的现象。但是对于记录追加操作，系统会通过以下手段来保证写入的数据的<strong>原子性</strong>（即单个记录内容只来自一个客户端）和<strong>可靠性</strong>：</p>
+<ol>
+<li>如果遇到多客户端并发，由系统统一安排追加顺序，并且单个记录追加时不会被中断。</li>
+<li>如果由于节点或者网络故障导致追加失败，会对记录进行重试，即保证至少写成功一次。</li>
+</ol>
+<p>这个设定有点像 Linux 文件系统中，多个线程使用 O_APPEND 标志进行文件追加操作。设置此标志位后，Linux 的系统调用保证<strong>移动到文件末尾并且进行数据追加</strong>是一个<strong>原子调用</strong>。而对于记录追加操作，GFS 也提供了类似的原子性保证。只不过 Linux 是针对多进程，而 GFS是针对可能跨节点的多个客户端。</p>
+<p>GFS 的分布在多台机器上的多个客户端并发写一个文件的应用很依赖此操作。如果 GFS 只支持传统的写入操作，那此类应用就必须要自己进行互斥写以保证数据不产生交叠。比如说分布式锁，但是代码复杂度就上去了，而性能，也大概率会下来。在 GFS 所面对的场景中，就常利用这个记录原子追加的特性，拿 <strong>GFS 上的文件</strong>当多生产者单消费者的队列用，或者充当多个客户端对结果进行合并的媒介（比如 MR 的多个 Paritition Reduce 后的结果归并）。</p>
+<p>具体到实现上，只需要在上面图2提到的数据流中稍作改动即可。在数据被推送到各个备份节点之后，客户端会向主备份节点发送落盘请求。主备份节点首先会检查写入数据之后，当前块是否会超过规定块尺寸（64M）。如果超过，则并不落盘，而将当前块剩余空间打满padding（比如说填入特殊字符），然后提醒客户端进行重试。因此追加写对记录的最大大小是有要求的，不能超过块大小的四分之一，这样每次追加写的时候每个块浪费最多不超过四分之一。</p>
+<p>如果记录在任何一个备份节点上写入失败，客户端都会对该追加操作进行重试。由此可能会造成某个备份中存在超过一份的该记录数据。如前面一致性一些所说，<strong>GFS 不严格保证所有备份间数据逐字节一致，它仅保证记录作为一个整体被原子的成功的写入一次</strong>，并且各个备份的这份成功数据的所有偏移量保持一致。由此，才能仅返回一个偏移量给客户端，并且下一个操作可以从同一个偏移量进行下一次写。</p>
+<p>根据前面所定义的一致性模型，对于记录追加操作来说，成功写入的请求是已定义的，因此也是一致的。而不成功写入的请求，是不一致的即未定义的。至于应用在读取时如何处理这些失败的写入部分，之前讨论过，这里不再详述。</p>
+<h3 id="快照操作"><a href="#快照操作" class="headerlink" title="快照操作"></a>快照操作</h3><p>快照操作可以很快的对单个文件或者文件目录树做一个拷贝，注意此接口是会暴露给用户的，而不是像有些系统一样只是系统用来自己做备份的。用户通常使用此操作进行大数据集的拷贝与做实验操作前的备份。</p>
+<p>实现上，和 AFS 一样，用的写时复制（copy-on-write）的技术。当要执行快照操作时，Master 会召回所有待拷贝的文件所包含的块的租约，暂时冻结这些文件的写入操作，以进行复制。复制时只是对这些文件的元信息进行拷贝，拷贝后的元信息逻辑上变成新文件， 但是其数据仍然指向原文件。</p>
+<p>当进行快照操作后，客户端想对做了快照的文件进行写入时，首先会向 Master 询问租约持有者，Master 注意到该块的<strong>引用数超过1</strong>，于是 Master 先不急进行租约授权，而是通知该数据块 C 及其副本所在的服务器对其各个副本在本地进行数据块复制，产生新数据块 C’。Master 然后修改文件的引用为新数据块，并对其中一个副本进行租约授权，然后将被授权副本返回给客户端。</p>
+<p>如此一来，Client 就可以在无感知的情况下以为写了一个新文件。并且所有的写时复制都发生在本地，以加快复制速度，减小网络开销。</p>
+<h2 id="主节点操作（Master-Operation）"><a href="#主节点操作（Master-Operation）" class="headerlink" title="主节点操作（Master Operation）"></a>主节点操作（Master Operation）</h2><p>Master 负责所有的文件命名空间的操作。此外，还负责管理全系统范围内的数据块各备份的相关操作。包括：</p>
+<ol>
+<li>副本放置决策</li>
+<li>数据块的创建</li>
+<li>各副本的同步</li>
+<li>块服务器间的负载均衡</li>
+<li>回收无用的资源</li>
+</ol>
+<p>下面将对上述内容逐一讨论。</p>
+<h3 id="命名空间的管理和上锁"><a href="#命名空间的管理和上锁" class="headerlink" title="命名空间的管理和上锁"></a>命名空间的管理和上锁</h3><p>Master 上的有些操作，比如说快照操作是很耗时的，因为它需要收回所有相关块的租约。但是 GFS 不想让这些耗时操作中断其他操作，但同时又要保证操作间互不影响。于是就只能有一种解决方法——<strong>分区域加锁</strong>。当多个操作作用于不同文件区域时，可以并行；当作用于同一文件区域时，需要通过锁来保持互斥。</p>
+<p>不同于传统文件系统，GFS 没有专门针对每个目录的数据结构（比如 inode）以列出该目录下的所有文件。GFS 也没有对文件或者目录取别名的操作（对应 Unix-like 文件系统的硬链接和符号链接）。GFS 使用一个查找表来保存<strong>文件路径</strong>到其元信息的映射，并且使用<strong>前缀压缩</strong>（prefix compression）的技术来优化存储（这么看来有可能使用了压缩过的<strong>前缀树</strong>作为数据结构？）。</p>
+<p>命名空间树中的有效节点，要么是一个文件路径，要么是一个文件目录路径，GFS 为每个节点都配了一把读写锁，以此作为命名空间互斥操作的数据结构基础。具体来说，每当涉及到命名空间改动（重命名，文件增删等）的操作时，都要顺着文件路径每个节点从前到后依次获取锁。举个例子，针对路径 &#x2F;d1&#x2F;d2&#x2F;…&#x2F;dn&#x2F;leaf，Master 会依次获取 &#x2F;d1，&#x2F;d1&#x2F;d2，…， &#x2F;d1&#x2F;d2&#x2F;..&#x2F;dn 的读锁，然后依据<strong>操作类型</strong>获取  &#x2F;d1&#x2F;d2&#x2F;…&#x2F;dn&#x2F;leaf 读锁或者写锁。当然，leaf 可能是个文件，也可能是个文件目录。</p>
+<p>使用此种获取锁的策略可以保证，当 &#x2F;home&#x2F;user 被做快照到 &#x2F;save&#x2F;user 时，&#x2F;home&#x2F;user&#x2F;foo 不能够同时被创建。根据上面的策略描述，GFS 在做快照时，会分别获取 &#x2F;home 和 &#x2F;save 的读锁以及 &#x2F;home&#x2F;user 和 &#x2F;save&#x2F;user 的写锁。而在创建 &#x2F;home&#x2F;user&#x2F;foo 时，会需要获取 &#x2F;home， &#x2F;home&#x2F;user 的读锁以及 &#x2F;home&#x2F;user&#x2F;foo 的写锁。因此这两个操作一定是互斥的，因为他们同时只能有一个操作获取 &#x2F;home&#x2F;user 的锁。</p>
+<p>一个问题是，对于路径上的”父级”节点，只需要获取<strong>读锁</strong>就够了。因为 GFS 是没有真正的文件系统层级组织或者说 inode-like 的概念的。因此只需要获取读锁避免”父级”节点被删除就够了，而不需要像传统文件系统一般获取 inode 的写锁，互斥地更改其元信息。这样做有另一个好处，就是多个<strong>客户端可以并发的往一个文件目录写多个文件</strong>，因为每个客户端只需要获取目录的读锁，从而避免目录被<strong>删除，重命名或者做快照等</strong>修改操作，就够了。而对于同一个文件，需要获取写锁，从而将多个客户端的的对同一个文件的修改<strong>请求序列化</strong>（指安排一个特定顺序，而非数据结构序列化反序列化中的序列化）。</p>
+<p>另一个很自然的疑问是，每个操作都获取这么多锁，会不会造成死锁？答案是不会，因为针对相同的文件区域（例如同一个文件路径），每个操作获取锁的<strong>顺序是一样</strong>的（按照文件路径的来说，不同层是从上到下，同一层是按照字母序）。因此针对同一块资源，不会发生占有并等待的情况，不满足死锁的条件。由于每个操作都要获取很多锁，GFS 又想保证尽可能的高吞吐高并发，因此需要及时的释放不用的锁避免不必要的等待。</p>
+<h3 id="副本放置（Replica-Placement）"><a href="#副本放置（Replica-Placement）" class="headerlink" title="副本放置（Replica Placement）"></a>副本放置（Replica Placement）</h3><p>GFS 面对的物理环境是多层次的：单个 GFS 集群可能分布于多个数据中心的多个机架上的上千台机器，这样就有 数据中心 -&gt; 机架 -&gt; 物理机 三个层次。但一般一个 GFS 集群会局限在一个数据中心中，这样也有两层。这样不同块服务器的通信可能会跨越机架，通过交换机。而机架内网络带宽一般会大于机架间网络带宽。这种多层次的网络拓扑为 GFS 保持可<strong>扩展性（scalability），可靠性（reliability）和可用性（availability）</strong>提出了很大挑战，当然，<strong>这也是任何分布式系统设计所面临的问题</strong>。</p>
+<p>基于此，GFS 中的副本放置策略有两大目标：</p>
+<ol>
+<li>最大化大数据的可靠性和可用性。</li>
+<li>最大化网络带宽的利用。</li>
+</ol>
+<p>为了满足第一点，我们不能把鸡蛋放一个篮子里，即同一个集群的 Chunkserver 不能只放一个机架内，以容忍整个机架故障。同时意味着需要有大量的跨机架的读写请求，一方面可以充分利用网络带宽，但是跨机架间的读写请求又会存在一些性能问题，总之都是<strong>权衡（tradeoff）</strong>。</p>
+<h3 id="副本创建（creation），副本补齐（re-replication）和副本平衡（rebalancing）、"><a href="#副本创建（creation），副本补齐（re-replication）和副本平衡（rebalancing）、" class="headerlink" title="副本创建（creation），副本补齐（re-replication）和副本平衡（rebalancing）、"></a>副本创建（creation），副本补齐（re-replication）和副本平衡（rebalancing）、</h3><p>数据块被创建，有三种情况：数据块初始创建时，副本补齐时与跨节点再平衡时。</p>
+<p>首先，当 Master 在给一个新创建的数据块副本选择位置时，会考虑以下几个因素：</p>
+<ol>
+<li><strong>节点的硬盘利用率</strong>。以使得数据分布均衡。</li>
+<li><strong>节点最近备份的数量</strong>。 GFS 所面对场景大多是一次写后紧跟多次读，为了均衡负载，需要将最近写入尽量分散到多个节点。</li>
+<li><strong>多副本的多机架分散</strong>。</li>
+</ol>
+<p>其次，当某个数据块的实际存活副本数量小于系统设定值时，就会启动备份补齐流程。造成备份补齐的原因有很多，比如说某些机器宕机，某些硬盘故障，某些数据块设定值增大等等。GFS 中数据块一般都会很多，因此同一时刻可能有很多数据块需要进行再备份，因此我们必须给所有再备份请求安排一个优先级。在安排先后次序时，我们有这么几个要考虑的点：</p>
+<ol>
+<li><strong>存活数与设定值的差值</strong>。副本数差的越多，优先级就越高，这不难理解，毕竟差的越多，该数据块不可恢复的危险就越大。</li>
+<li><strong>文件的活跃状态</strong>。举两个极端例子，如果最近文件很活跃，比如说在创建中，那么就优先对该文件所含文件块进行副本补齐。如果文件刚被删除，那么明显地，我们就不在需要对其进行操作。</li>
+<li><strong>是否阻塞当前客户端操作</strong>。如果因为某数据块副本数不足导致某个客户端等待，那么就优先处理此数据块的补齐请求。</li>
+</ol>
+<p>在对所有副本补齐请求按照上述三个影响因子加权排序后，Master 渐次选择权重最高的请求，指示某个块服务器进行副本的复制，复制后放置策略跟初次创建时放置策略大体相同。为了不影响客户端的正常请求，GFS 会在集群总范围和单个块服务器范围内都限制副本复制的进程数。同时，在也在带宽层面对副本补齐的总带宽进行了限制。</p>
+<p>最后，Master 会周期性的进行系统范围内的副本挪动以<strong>充分利用硬盘空间并进行负载均衡</strong>。同时，这种周期性操作也会将一个新加入集群的节点慢慢的填满，而不是直接将所有的写请求打过去以迅速填满该节点。后者很容易造成请求震荡以及系统复杂度的提升。在删除副本时，倾向于对硬盘剩余空间少于平均水平的节点下手；而增加副本时，策略任何创建时大抵相同。</p>
+<h3 id="垃圾回收"><a href="#垃圾回收" class="headerlink" title="垃圾回收"></a>垃圾回收</h3><p>当 GFS 上的文件被删除后，GFS 不会立即回收相应的物理存储。而是通过周期性的垃圾回收程序在文件层面和数据块层面对这些不用的存储做回收。将删除和回收解耦会使得系统变的简单和健壮。至于为什么，下面一一道来。</p>
+<h4 id="基本机制"><a href="#基本机制" class="headerlink" title="基本机制"></a>基本机制</h4><p>和其他操作一样，当 GFS 的用户删除一个文件时，Master 会立即在操作日志上记下一笔。不同的是，GFS 并不会真的立即删除文件并且回收对应资源，而是将该文件重命名为一个隐藏文件，并且带上删除操作的时间戳。GFS 文件系统命名空间有周期性的检查操作，当某个隐藏文件存在超过三天（这是一个运维人员可配置项）时，会将其元信息进行删除，注意，此时该文件对应的数据还在块服务器的的，只不过我们没法找到它们了。</p>
+<p>与 Master 上的命名空间（文件路径到逻辑块）周期性检查一样，Master 也会对所有的数据块（逻辑块到物理副本）进行检查，当发现某些逻辑块不能通过任何文件访问时（结合前面 Snapshot 操作可以猜想，逻辑块中应该都维护了文件的引用计数，因此只要引用计数减到0 就说明该逻辑块已经没有文件引用，变成了<strong>孤儿块</strong>），就会删除该该逻辑块的信息。注意，此时仍不会<strong>同步的</strong>去删除块服务器上的数据。</p>
+<p>每个块服务器会周期性的上报其所持有的数据块物理副本的信息，Master 收到这些信息后，会去上面提到的数据块到物理副本的集合中逐一查找对应信息，并在心跳 RPC 的回应中将这些信息带回。块服务器拿到本机上所有孤儿物理副本的信息后，才会真正的将这些副本删除（不晓得这一步是不是同步的，大概率不是）。</p>
+<h4 id="额外探讨"><a href="#额外探讨" class="headerlink" title="额外探讨"></a>额外探讨</h4><p>虽然对于编程语言来说，垃圾回收是一个复杂的话题。但在 GFS 的设定下，垃圾数据块的定位相当简单，它的追踪主要依据之前提到的<strong>两个数据结构</strong>。一个是文件路径到逻辑块的映射，所有不在该映射中被引用的数据块都是无用数据块。另一个是逻辑块到物理副本（以Linux 文件形式存储）的映射，它们由各个块服务器心跳汇报来构建，所有存在块服务器上，但是不为 Master 所知（即其对应的逻辑数据块不在第一个映射中了），都可以被认为是垃圾。</p>
+<p>相比于同步相应删除操作，异步的垃圾回收有诸多好处：</p>
+<ol>
+<li><strong>在各种出错的大型集群中，垃圾回收更简单可靠</strong>。不可靠的环境下，创建可能会出错，删除可能会出错，更改可能也会出错，因此这些操作都可能会留下垃圾。对于同步删除来说，如果出错还要记下出错数据，不断进行重试。而垃圾回收能够提供一种统一的回收上述出错遗留的垃圾的方法。如果使用同步的删除的方法，处理其他出错留下的垃圾的话还得产生很多冗余相似代码。</li>
+<li><strong>垃圾回收将分散的删除操作改为定期集中清理</strong>。批量回收，效率可能更好一些。而且因为所有的垃圾回收操作被集中到了 Master 的周期性检查上，因此就可以对具体的操作时机做选择，以避开用户正常请求的高峰期。</li>
+<li><strong>异步、惰性的垃圾回收还能应对误删操作。</strong></li>
+</ol>
+<p>凡事利弊相随，异步惰性垃圾回收策略在我们真想立即删除某些数据的时候就很捉急了。此外，如果有大量的临时小文件产生，会很影响集群利用率。为了解决这些问题，可以做以下优化：</p>
+<ol>
+<li>被删除的文件变成隐藏文件后，如果再被显式的删除，我们就会加快其的删除步伐。</li>
+<li>按文件命名空间分而治之。比如用户可以指定某些目录下的文件不进行多备份；比如又可以规定另外一些文件目录下的文件删除后就会真正立即删除。</li>
+</ol>
+<p>当然，这样都会带来额外的逻辑和实现复杂度，如何在不可靠环境中优雅的实现、如何和现有的代码逻辑相洽，那就是另外的，干起来不那么美好的事情了。</p>
+<h3 id="过期副本检测（Stale-Replica-Detection）"><a href="#过期副本检测（Stale-Replica-Detection）" class="headerlink" title="过期副本检测（Stale Replica Detection）"></a>过期副本检测（Stale Replica Detection）</h3><p>当数据块服务器宕机恢复时，其存储的一些数据块可能在此间进行了更改操作，这就导致该服务器上存储的对应数据块的副本过期。为了解决这一问题，GFS 引入了针对逻辑块的版本，以此来甄别同一数据块的不同副本是否过期。</p>
+<p>具体做法为，每次 Master 对数据块进行租约授权时，都会增加版本号并通知所有副本进行更新，Master 和所有副本都会持久化最新版本号。然后 Master 将持有租约的副本以及更新后的版本号发送给客户端。客户端在读写数据的时，会根据最新版本号逐一检查所有副本是否为最新副本，所有过期副本会被当做不存在，上文提到的垃圾回收程序会周期性的将其清除。</p>
+<h2 id="容错和诊断"><a href="#容错和诊断" class="headerlink" title="容错和诊断"></a>容错和诊断</h2><p>GFS 设计和构建的一大挑战就是单个组件不可靠而组件数量又特别多。我们既不能完全信任机器，也不能完全信任硬盘，组件故障会导致系统故障，甚至数据损坏。接下来讲一讲 GFS 在这方面遇到的问题以及应对之道。</p>
+<h3 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h3><p>对于数百台机器组成的集群，任何给定时刻都可能出现组件故障。为了应对这些问题，GFS 使用了两条看来简单但是行之有效的策略：<strong>数据备份和快速恢复</strong>。</p>
+<h4 id="快速恢复（Fast-Recovery）"><a href="#快速恢复（Fast-Recovery）" class="headerlink" title="快速恢复（Fast Recovery）"></a>快速恢复（Fast Recovery）</h4><p>GFS 系统中总共有三个角色：Master， Chunkserver 和 Client。前两者都设计为无论如何死掉都可以快速恢复其状态，最后一个在遭遇问题是会通过提供的系统库做一些重试策略。事实上，GFS 也不区分是人为关闭，意外退出还是偶尔超时，所有失败组件都会迅速重启，重试和重连（对于客户端来说）。</p>
+<h4 id="数据块备份（Chunk-Replication）"><a href="#数据块备份（Chunk-Replication）" class="headerlink" title="数据块备份（Chunk Replication）"></a>数据块备份（Chunk Replication）</h4><p>如前所述，对于数据块我们默认进行三备份，但是应用侧可以按命名空间（比如说某个目录下）来对数据块副本数进行调整。GFS 系统中 Master 会控制保持数据块副本数满足要求，即当数据块副本数因为 Chunkserver 宕机、校验和出错，用户设置等等而小于设定数时，Master 会指定 <strong>Chunkserver 去增加副本</strong>。有时候，哪怕副本数满足容错需求，GFS 为了高并发等需求也会提高副本数量。此外，<strong>还探索了 EC 等方式进行跨机器冗余</strong>。当然，GFS 希望能够松耦合的实现这些额外的设计，毕竟 GFS 的流量是面对追加写和顺序读而不是随机写。</p>
+<h4 id="Master-冗余"><a href="#Master-冗余" class="headerlink" title="Master 冗余"></a>Master 冗余</h4><p>Master 的状态会通过操作日志的形式在本机持久化并且同步到多台其他物理机。GFS 中的一个操作，只有在被提交到操作日志后才会被认为是应用到了文件系统中；不过为了不影响正常文件操作和后台工作，这些都是额外进程在做的，如果进程死掉，会很快被重启。如果 Master 硬盘或者系统故障而不能提供服务，GFS 外部的基础设施会及时检测到，在其他机器重启一个 Master，并通过操作日志副本进行状态恢复。那么客户端如何发现新的 Master 呢？ GFS 用了主机名而非具体 IP 来让客户端连接 Master，因此只需要修改内部 DNS，将 Master 主机名指向新的机器 IP 就行。</p>
+<p>此外，还可以使用影子 Master 来分流数据读取压力。影子 Master 会在延迟上稍微有些牺牲，通常在一秒左右。因此适用于应对那些不怎么发生改变的文件或者对稍微过期数据不是很敏感的流量。所有决策（主要是各个副本的位置决策）依赖于真正的 Master，影子 Master 只做被动信息同步，即要么通过操作日志加载，要么通过和块服务器握手来获取。</p>
+<h3 id="数据完整性（Data-Integrity）"><a href="#数据完整性（Data-Integrity）" class="headerlink" title="数据完整性（Data Integrity）"></a>数据完整性（Data Integrity）</h3><p>块数据服务器使用校验和来发现损坏的数据块。考虑到一个 GFS 集群通常由横跨数百台机器的数千块硬盘组成，读写时遇到损坏的数据块很正常。GFS 会通过其他副本来恢复损坏副本，但是将不同副本逐字节校验来保证数据正确性是不可行的，一来性能受不了，二来 GFS 并不保证多副本的数据逐字节一致（比如说并行追加重试遗留的未完成数据块）。因此每个块服务器通过校验和来分别对自己所管辖的块进行校验。</p>
+<p>每个数据块会以64kb 为一个小块（block），构造一个对应的的32bit 的校验和，作为元信息存在内存中，并且通过操作日持进行持久化。即，校验和与真正用户数据是分开存储的。</p>
+<p>在读取前，主要包括客户端读取或者其他块服务器读取，块服务器会校验读取的数据范围所对应的所有小块的校验和。如果校验出现不一致，块服务器会返回错误，并且将其报告给 Master，因此数据块损坏并不会在块服务器间进行传播。收到报错后，请求者会去读取其它副本，Master 会指示选定块服务器对其进行拷贝，以维持有效副本数。新副本就位后，损坏副本会被当做垃圾进行回收。校验和对于读取的性能影响并不大，首先其所占的额外存储和计算开销并不大，其次校验和都存在内存中，其计算和验证不耗费额外IO，可以和数据流 IO 进行并行。</p>
+<p>写请求包括常规写和并行追加写。后者是 GFS 的主要流量，GFS 针对其做校验和进行了高度优化。每次只需要不断对最后一个小块的校验和进行更新。但是对于指定偏移量覆盖写来说，在写入前必须先对要写范围对应的首尾小块做验证，<strong>因为他们可能是部分写，不经验证直接部分覆盖的话，可能会隐藏原来数据块已经损坏的事实</strong>。</p>
+<p>最后，块服务器会周期性的对不活跃的数据块进行校验，检测到任何不一致，会像前面提的流程一样，向 Master 进行报告，重新备份该块，然后删除损坏块。</p>
+<h3 id="诊断工具"><a href="#诊断工具" class="headerlink" title="诊断工具"></a>诊断工具</h3><p>GFS 会保存额外的系统日志以进行问题定位，bug调试和性能分析，这样做会带来很小额外空间开销。但如果不保存这些日志，事后可能会很难理解机器间的一些系统行为，由于网络的复杂性和普通商用机的不稳定性，它们当时的情景可能很难复现。当然，如何记录合适的日志事件也需要一些经验和技巧。GFS 会对一些机器关键性（块服务器的上下线）的事件，所有的 RPC 请求和回应等等，在空间允许的情况下，GFS 会尽可能多的保留系统日志。</p>
+<p>通过收集所有的 RPC 请求，可以重建 GFS 组件间系统交互的历史，以辅助定位问题。我们也可以通过对日志挖掘来对其负载分布进行追踪。再次强调一遍，记这些日志并不会对正常的客户端请求有太多影响，因为所有日志都是异步的、顺序地记录下来的，所有实时的状态信息都存在内存中并且以监控页面的形式呈现给用户。</p>
+<h2 id="名词释义"><a href="#名词释义" class="headerlink" title="名词释义"></a>名词释义</h2><p><strong>Master</strong>：主节点，GFS 集群中用于维护文件系统元信息和中心控制的中央节点，实际表现为 Master 节点上的一组进程。</p>
+<p><strong>Client</strong>： 客户端，本文专指连接 GFS 集群进行文件操作的的应用。</p>
+<p><strong>Chunkserver</strong>：块服务器，以普通 linux 文件存储数据块的数据节点（实际上是运行于节点上的进程）。</p>
+<p><strong>consistent but undefined</strong>：有时候指 chunk 的某个副本；有时候指 chunk 某个副本所在的服务器。</p>
+<p><strong>Operation Log</strong>：操作日志，用来进行错误恢复和确定并发写入顺序。</p>
+<p><strong>consistent but undefined</strong>：一致但是未定义，指多个客户端并发写入的时候，虽然最终副本的数据顺序一致，但是如果某个客户端再去读数据，并不知道能读到自己写的数据，还是被其他客户端覆盖写的数据。</p>
+<p><strong>Primay Replica</strong>：主副本&#x2F;备份，或者主副本&#x2F;备份所在节点。</p>
+<p><strong>Re-replication</strong>：翻译成了副本&#x2F;备份补齐</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li>GFS 论文：<a target="_blank" rel="noopener" href="https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf">https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf</a></li>
+<li><a target="_blank" rel="noopener" href="https://me.csdn.net/qiaojialin">铁头乔</a> GFS一致性总结： <a target="_blank" rel="noopener" href="https://blog.csdn.net/qiaojialin/article/details/71574203">https://blog.csdn.net/qiaojialin/article/details/71574203</a></li>
+</ol>
+<hr>
+<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
+<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/04/30/map-reduce/" rel="bookmark">MapReduce —— 历久而弥新</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/04/06/ray/" rel="bookmark">继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/01/18/raft-implement-points/" rel="bookmark">MIT 6.824 2020 Raft 实现细节备忘</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/02/16/not-cp-or-ap/" rel="bookmark">（译）请不要再称数据库为 CP 和 AP</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/07/03/distributed-system-1-master-workers/" rel="bookmark">分布式系统架构（一）—— Master-Workers 架构</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/distributed-system/" rel="tag"># distributed system</a>
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
+              <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
+              <a href="/tags/gfs/" rel="tag"># gfs</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/04/30/map-reduce/" rel="prev" title="MapReduce —— 历久而弥新">
+      <i class="fa fa-chevron-left"></i> MapReduce —— 历久而弥新
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/07/27/ray-source-reading-1/" rel="next" title="Ray 源码解析（一）：任务的状态转移和组织形式">
+      Ray 源码解析（一）：任务的状态转移和组织形式 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E5%BC%95"><span class="nav-number">1.</span> <span class="nav-text">小引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">2.</span> <span class="nav-text">概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E5%81%87%E8%AE%BE"><span class="nav-number">2.1.</span> <span class="nav-text">基本假设</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86"><span class="nav-number">2.1.1.</span> <span class="nav-text">错误处理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9D%A2%E5%90%91%E5%A4%A7%E6%96%87%E4%BB%B6"><span class="nav-number">2.1.2.</span> <span class="nav-text">面向大文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%BD%E5%8A%A0%E4%B8%BA%E4%B8%BB"><span class="nav-number">2.1.3.</span> <span class="nav-text">追加为主</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%8F%E5%90%8C%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.1.4.</span> <span class="nav-text">协同设计</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%AB%98%E5%90%9E%E5%90%90"><span class="nav-number">2.1.5.</span> <span class="nav-text">高吞吐</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3"><span class="nav-number">2.2.</span> <span class="nav-text">接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-number">2.3.</span> <span class="nav-text">架构图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%95%E7%82%B9-Master"><span class="nav-number">2.4.</span> <span class="nav-text">单点 Master</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9D%97%E5%B0%BA%E5%AF%B8%EF%BC%88Chunk-Size%EF%BC%89"><span class="nav-number">2.5.</span> <span class="nav-text">块尺寸（Chunk Size）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE"><span class="nav-number">2.6.</span> <span class="nav-text">元数据</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E5%86%85%E5%AD%98%E7%9A%84%E4%BC%98%E5%8A%A3-In-Memory-Data-Structures"><span class="nav-number">2.6.1.</span> <span class="nav-text">基于内存的优劣(In-Memory Data Structures)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9D%97%E4%BD%8D%E7%BD%AE-Chunk-Locations"><span class="nav-number">2.6.2.</span> <span class="nav-text">块位置(Chunk Locations)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E6%97%A5%E5%BF%97-Operation-Log"><span class="nav-number">2.6.3.</span> <span class="nav-text">操作日志(Operation Log)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.7.</span> <span class="nav-text">一致性模型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#GFS-%E7%9A%84%E6%89%BF%E8%AF%BA"><span class="nav-number">2.7.1.</span> <span class="nav-text">GFS 的承诺</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9%E7%94%A8%E6%88%B7%E4%BB%A3%E7%A0%81%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">2.7.2.</span> <span class="nav-text">对用户代码的影响</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E4%BA%A4%E4%BA%92"><span class="nav-number">3.</span> <span class="nav-text">系统交互</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A7%9F%E7%BA%A6%E5%92%8C%E4%BF%AE%E6%94%B9%E9%A1%BA%E5%BA%8F"><span class="nav-number">3.1.</span> <span class="nav-text">租约和修改顺序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E6%B5%81"><span class="nav-number">3.2.</span> <span class="nav-text">数据流</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%B0%E5%BD%95%E8%BF%BD%E5%8A%A0"><span class="nav-number">3.3.</span> <span class="nav-text">记录追加</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BF%AB%E7%85%A7%E6%93%8D%E4%BD%9C"><span class="nav-number">3.4.</span> <span class="nav-text">快照操作</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E8%8A%82%E7%82%B9%E6%93%8D%E4%BD%9C%EF%BC%88Master-Operation%EF%BC%89"><span class="nav-number">4.</span> <span class="nav-text">主节点操作（Master Operation）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E7%9A%84%E7%AE%A1%E7%90%86%E5%92%8C%E4%B8%8A%E9%94%81"><span class="nav-number">4.1.</span> <span class="nav-text">命名空间的管理和上锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%AF%E6%9C%AC%E6%94%BE%E7%BD%AE%EF%BC%88Replica-Placement%EF%BC%89"><span class="nav-number">4.2.</span> <span class="nav-text">副本放置（Replica Placement）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%AF%E6%9C%AC%E5%88%9B%E5%BB%BA%EF%BC%88creation%EF%BC%89%EF%BC%8C%E5%89%AF%E6%9C%AC%E8%A1%A5%E9%BD%90%EF%BC%88re-replication%EF%BC%89%E5%92%8C%E5%89%AF%E6%9C%AC%E5%B9%B3%E8%A1%A1%EF%BC%88rebalancing%EF%BC%89%E3%80%81"><span class="nav-number">4.3.</span> <span class="nav-text">副本创建（creation），副本补齐（re-replication）和副本平衡（rebalancing）、</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6"><span class="nav-number">4.4.</span> <span class="nav-text">垃圾回收</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%9C%BA%E5%88%B6"><span class="nav-number">4.4.1.</span> <span class="nav-text">基本机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%A2%9D%E5%A4%96%E6%8E%A2%E8%AE%A8"><span class="nav-number">4.4.2.</span> <span class="nav-text">额外探讨</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%87%E6%9C%9F%E5%89%AF%E6%9C%AC%E6%A3%80%E6%B5%8B%EF%BC%88Stale-Replica-Detection%EF%BC%89"><span class="nav-number">4.5.</span> <span class="nav-text">过期副本检测（Stale Replica Detection）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%B9%E9%94%99%E5%92%8C%E8%AF%8A%E6%96%AD"><span class="nav-number">5.</span> <span class="nav-text">容错和诊断</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8"><span class="nav-number">5.1.</span> <span class="nav-text">高可用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BF%AB%E9%80%9F%E6%81%A2%E5%A4%8D%EF%BC%88Fast-Recovery%EF%BC%89"><span class="nav-number">5.1.1.</span> <span class="nav-text">快速恢复（Fast Recovery）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%9D%97%E5%A4%87%E4%BB%BD%EF%BC%88Chunk-Replication%EF%BC%89"><span class="nav-number">5.1.2.</span> <span class="nav-text">数据块备份（Chunk Replication）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Master-%E5%86%97%E4%BD%99"><span class="nav-number">5.1.3.</span> <span class="nav-text">Master 冗余</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%AE%8C%E6%95%B4%E6%80%A7%EF%BC%88Data-Integrity%EF%BC%89"><span class="nav-number">5.2.</span> <span class="nav-text">数据完整性（Data Integrity）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%8A%E6%96%AD%E5%B7%A5%E5%85%B7"><span class="nav-number">5.3.</span> <span class="nav-text">诊断工具</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8D%E8%AF%8D%E9%87%8A%E4%B9%89"><span class="nav-number">6.</span> <span class="nav-text">名词释义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">7.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">100</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">167</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2019/05/25/gfs/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '0301819dd237eb4c6168057a325f45f0',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

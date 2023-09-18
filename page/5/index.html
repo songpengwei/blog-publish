@@ -193,6 +193,96 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/11/29/bolt-data-organised/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/11/29/bolt-data-organised/" class="post-title-link" itemprop="url">Boltdb 源码导读（一）：Boltdb 数据组织</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-11-29 03:54:52" itemprop="dateCreated datePublished" datetime="2020-11-29T03:54:52+00:00">2020-11-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p><a target="_blank" rel="noopener" href="https://github.com/boltdb/bolt">boltdb</a> 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于  <a target="_blank" rel="noopener" href="https://twitter.com/hyc_symas">Howard Chu’s</a> <a target="_blank" rel="noopener" href="http://symas.com/mdb/">LMDB 项目</a> ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 <a target="_blank" rel="noopener" href="https://github.com/etcd-io/bbolt">bbolt</a>。</p>
+<p>为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。</p>
+<p>本系列计划分成三篇文章，依次围绕<strong>数据组织</strong>、<strong>索引设计</strong>、<strong>事务实现</strong>等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第一篇， boltdb 数据组织。</p>
+</blockquote>
+<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>一个存储引擎最底层的构成，就是处理数据在各种物理介质（比如在磁盘上、在内存里）上的组织。而这些数据组织也体现了该存储引擎在设计上的取舍哲学。</p>
+<p>在文件系统上，boltdb 采用<strong>页</strong>（page）的组织方式，将一切数据都<strong>对齐</strong>到页；在内存中，boltdb 按 B+ 树组织数据，其基本单元是<strong>节点</strong>（node），一个内存中的树节点对应文件系统上一个或者多个<strong>连续的</strong>页。boltdb 就在数据组织上就只有这两种核心抽象，可谓设计简洁。当然，这种简洁必然是有代价的，后面文章会进行详细分析。</p>
+<p>本文首先对节点和页的关系进行总体说明，然后逐一分析四种页的格式及其载入内存后的表示，最后按照 db 的生命周期串一下 db 文件的增长过程以及载入内存的策略。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/11/29/bolt-data-organised/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -217,14 +307,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-11-18 21:32:23" itemprop="dateCreated datePublished" datetime="2020-11-18T21:32:23+08:00">2020-11-18</time>
+              <time title="创建时间：2020-11-18 13:32:23" itemprop="dateCreated datePublished" datetime="2020-11-18T13:32:23+00:00">2020-11-18</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -331,14 +421,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-07-12 17:25:16" itemprop="dateCreated datePublished" datetime="2020-07-12T17:25:16+08:00">2020-07-12</time>
+              <time title="创建时间：2020-07-12 10:25:16" itemprop="dateCreated datePublished" datetime="2020-07-12T10:25:16+01:00">2020-07-12</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -422,14 +512,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-07-03 23:21:23" itemprop="dateCreated datePublished" datetime="2020-07-03T23:21:23+08:00">2020-07-03</time>
+              <time title="创建时间：2020-07-03 16:21:23" itemprop="dateCreated datePublished" datetime="2020-07-03T16:21:23+01:00">2020-07-03</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -527,14 +617,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-06-13 15:30:18" itemprop="dateCreated datePublished" datetime="2020-06-13T15:30:18+08:00">2020-06-13</time>
+              <time title="创建时间：2020-06-13 08:30:18" itemprop="dateCreated datePublished" datetime="2020-06-13T08:30:18+01:00">2020-06-13</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -629,14 +719,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-06-07 22:01:06" itemprop="dateCreated datePublished" datetime="2020-06-07T22:01:06+08:00">2020-06-07</time>
+              <time title="创建时间：2020-06-07 15:01:06" itemprop="dateCreated datePublished" datetime="2020-06-07T15:01:06+01:00">2020-06-07</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -714,14 +804,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-05-09 23:12:20" itemprop="dateCreated datePublished" datetime="2020-05-09T23:12:20+08:00">2020-05-09</time>
+              <time title="创建时间：2020-05-09 16:12:20" itemprop="dateCreated datePublished" datetime="2020-05-09T16:12:20+01:00">2020-05-09</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -802,14 +892,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-04-27 20:52:29" itemprop="dateCreated datePublished" datetime="2020-04-27T20:52:29+08:00">2020-04-27</time>
+              <time title="创建时间：2020-04-27 13:52:29" itemprop="dateCreated datePublished" datetime="2020-04-27T13:52:29+01:00">2020-04-27</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -890,14 +980,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-04-01 23:20:25" itemprop="dateCreated datePublished" datetime="2020-04-01T23:20:25+08:00">2020-04-01</time>
+              <time title="创建时间：2020-04-01 16:20:25" itemprop="dateCreated datePublished" datetime="2020-04-01T16:20:25+01:00">2020-04-01</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -981,14 +1071,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-03-19 22:05:22" itemprop="dateCreated datePublished" datetime="2020-03-19T22:05:22+08:00">2020-03-19</time>
+              <time title="创建时间：2020-03-19 14:05:22" itemprop="dateCreated datePublished" datetime="2020-03-19T14:05:22+00:00">2020-03-19</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1070,14 +1160,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-03-15 15:23:42" itemprop="dateCreated datePublished" datetime="2020-03-15T15:23:42+08:00">2020-03-15</time>
+              <time title="创建时间：2020-03-15 07:23:42" itemprop="dateCreated datePublished" datetime="2020-03-15T07:23:42+00:00">2020-03-15</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1166,14 +1256,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-03-14 14:35:12" itemprop="dateCreated datePublished" datetime="2020-03-14T14:35:12+08:00">2020-03-14</time>
+              <time title="创建时间：2020-03-14 06:35:12" itemprop="dateCreated datePublished" datetime="2020-03-14T06:35:12+00:00">2020-03-14</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1211,102 +1301,6 @@
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2020/03/14/6-824-vidoe-notes-3-gfs/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/03/06/6-824-video-notes-2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/03/06/6-824-video-notes-2/" class="post-title-link" itemprop="url">MIT 6.824 2020 视频笔记二：RPC和线程</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-03-06 21:44:12" itemprop="dateCreated datePublished" datetime="2020-03-06T21:44:12+08:00">2020-03-06</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E5%85%AC%E5%BC%80%E8%AF%BE/" itemprop="url" rel="index"><span itemprop="name">公开课</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
-<p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <a target="_blank" rel="noopener" href="https://www.youtube.com/channel/UC_7WrbZTCODu1o_kfUMq88g/videos">Youtube</a>，<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/av90915526">B站</a>。课程资料：<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/schedule.html">6.824主页</a>。本篇是第二节课笔记，RPC 和线程。</p>
-</blockquote>
-<h2 id="为什么用-Go"><a href="#为什么用-Go" class="headerlink" title="为什么用 Go"></a>为什么用 Go</h2><ol>
-<li><strong>语法先进</strong>。在语言层面支持线程（goroutine）和管道（channel）。对线程间的加锁、同步支持良好。</li>
-<li><strong>类型安全（type safe）</strong>。内存访问安全（memory safe），很难写出像 C++ 一样内存越界访问等 bug。</li>
-<li><strong>支持垃圾回收（GC）</strong>。不需要用户手动管理内存，这一点在多线程编程中尤为重要，因为在多线程中你很容易引用某块内存，然后忘记了在哪引用过。</li>
-<li><strong>简洁直观</strong>。没 C++ 那么多复杂的语言特性，并且在报错上很友好。</li>
-</ol>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/03/06/6-824-video-notes-2/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1399,19 +1393,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">99</span>
+          <span class="site-state-item-count">100</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">33</span>
+        <span class="site-state-item-count">34</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">166</span>
+        <span class="site-state-item-count">167</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
