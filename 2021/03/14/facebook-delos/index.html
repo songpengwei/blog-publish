@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="本文整理自OSDI 2020 Virtual Consensus in Delos 论文演讲，探讨了分布式系统中控制面的存储系统，提出了一种基于分层抽象思想的分布式架构。其核心在于提出了一种逻辑协议层，使得物理层可以按需进行实现和移植，有点类似于单机系统中虚拟内存之于物理内存的味道。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Facebook Delos 中的虚拟共识协议">
+<meta property="og:url" content="https://www.qtmuniao.com/2021/03/14/facebook-delos/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="本文整理自OSDI 2020 Virtual Consensus in Delos 论文演讲，探讨了分布式系统中控制面的存储系统，提出了一种基于分层抽象思想的分布式架构。其核心在于提出了一种逻辑协议层，使得物理层可以按需进行实现和移植，有点类似于单机系统中虚拟内存之于物理内存的味道。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2021/03/14/K69lS8LIh57OdnZ.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/14/ZRxKvi8UTp2juPY.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/14/y83jTcWDXtILAGF.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/14/M8HJ7LX3m14NxpD.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/14/aIFxzr2EpYmbluf.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/14/Namb2vlGL5kcXP3.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/14/4W3M8gxISfwUVJk.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/14/Chg4esWOuHBXk8a.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/14/LSXWgwsxFVO6cQa.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/14/UzctHaiYvb9pFfh.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
+<meta property="article:published_time" content="2021-03-14T23:12:27.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.284Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="Facebook">
+<meta property="article:tag" content="Delos">
+<meta property="article:tag" content="共识协议">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/03/14/K69lS8LIh57OdnZ.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2021/03/14/facebook-delos/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Facebook Delos 中的虚拟共识协议 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/03/14/facebook-delos/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Facebook Delos 中的虚拟共识协议
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-03-14 23:12:27" itemprop="dateCreated datePublished" datetime="2021-03-14T23:12:27+00:00">2021-03-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>本文整理自OSDI 2020 Virtual Consensus in Delos 论文演讲，探讨了分布式系统中控制面的存储系统，提出了一种基于分层抽象思想的分布式架构。其核心在于提出了一种逻辑协议层，使得物理层可以按需进行实现和移植，有点类似于单机系统中虚拟内存之于物理内存的味道。</p>
+</blockquote>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记  <a href="https://www.qtmuniao.com/2021/03/14/facebook-delos/">https://www.qtmuniao.com/2021/03/14/facebook-delos/</a> , 转载请注明出处</em></p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Facebook 的软件系统栈一般包括两层：上层是数据平面， 下层是控制平面。</p>
+<p><img src="https://i.loli.net/2021/03/14/K69lS8LIh57OdnZ.png" alt="facebook software stack"></p>
+<p>数据平面包括大量的服务，他们需要存储和处理海量数据。控制平面用来支撑数据平面，起到一些控制作用：调度、配置、命名、切片等等。控制平面通常是有状态的，比如控制的元信息，为了存储这些元信息，控制平面需要有自己的存储。控制平面对存储有以下要求：</p>
+<ol>
+<li>容错：零依赖、可持久化、高可用。</li>
+<li>丰富的 API：事务，范围查询，二级索引。</li>
+</ol>
+<p>在 17 年的时候，  Facebook 使用几种组件来充当控制平面的存储，包括：</p>
+<ol>
+<li>MySQL：API 丰富，表达能力强，但是不支持容错。</li>
+<li>ZooKeeper：容错，零依赖，但是 API 表达能力弱。</li>
+</ol>
+<p>可以看出，他们都不能很好的同时满足控制平面对存储的需求。此外，作为单体架构，上述组件都比较难改造成同时支持容错和丰富 API 的系统。此外，还有一大问题，团队当时所面临的工期非常紧。最终，他们交出的答卷是 —— Delos。</p>
+<h2 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h2><p>Delos 是一个基于共享日志（shared log）的控制面存储系统。db 层的实例通过 append 和 read 与共享日志进行交互，从而保持对外状态的一致性。根据近几十年的研究，使用共享日志作为 API，可以很好的向 db 层隐藏共识协议的大量细节。</p>
+<p><img src="https://i.loli.net/2021/03/14/ZRxKvi8UTp2juPY.png" alt="design based sharedlog"></p>
+<h3 id="读写流程"><a href="#读写流程" class="headerlink" title="读写流程"></a>读写流程</h3><p><img src="https://i.loli.net/2021/03/14/y83jTcWDXtILAGF.png" alt="read write procedure via shared log"></p>
+<p>存储服务可以分为两层，db API 层和共享日志 runtime 层。如上图，以表格存储为例，在上层，DelosTable 负责提供表格存储的 API；在下层，DelosRuntime 负责共享日志的读写。则，一个典型的写流程如下：</p>
+<ol>
+<li>客户端发起一个写请求</li>
+<li>DelosTable 层将其转发给 DelosRuntime</li>
+<li>DelosRuntime 将该请求序列化后追加到共享日志</li>
+<li>各个服务器侦听到该追加后，读取其内容，以同一种顺序将其应用到本地状态机</li>
+</ol>
+<p>在该架构中，有两个关键的设计点：</p>
+<ol>
+<li>共享日志层提供了具有线性一致性保证的极简 API</li>
+<li>基于该简明 API，上层可以方便的提供不同存储接口的实现</li>
+</ol>
+<h3 id="虚拟共识"><a href="#虚拟共识" class="headerlink" title="虚拟共识"></a>虚拟共识</h3><p>到此为止，该架构设计看起来相当简单，但我们知道，复杂性只能被转移，但不可能凭空消失。可以看到，最复杂的共识协议被隐藏在了共享日志后面，于是问题随之而来：</p>
+<ol>
+<li>我们需要如何快速实现一个满足共识协议的的共享日志组件？</li>
+<li>随着技术的发展，如果我们之后想用更好的共识协议，该如何进行替换？</li>
+</ol>
+<p>为了解决这些问题，Delos 提出了<strong>虚拟共识</strong>（<strong>Virtual Consensus</strong>）。通过抽象出一层虚拟共识协议，Delos 的共享日志组件可以快速复用现有实现，比如 Zookeeper；之后为了提高性能，也可以借助此该层对下层进行不停机迁移。</p>
+<p>在 Delos 中，虚拟共识协议的承载层被称为 <strong>VirtualLog</strong>。对上，db 层基于 VirtualLog 层进行实现；对下，VirtualLog 被映射成一组物理共享日志，称为 <strong>Loglets</strong>。每个 loget 提供和共享日志同样的 API，外加一个 seal 命令。 一旦被 seal，Loglet 便不再接受追加。为了存储 VirtualLog 逻辑空间到 Loglets 物理空间的映射，Delos 引入了新的组件： <strong>MetaStore</strong>。</p>
+<p>MetaStore 是一个带版本的简单 KV 存储。通过存储的不同版本的 Loglet 的切换，VirtualLog 就自然的将流量打到新的 Loglet 上。如下图展示了 VirtualLog 向 MetaStore put 一个新版本（ver0 -&gt; ver1）的映射信息，将流量无宕机的从 Zookeeper 切换到了 LogDevice 的过程 。</p>
+<p><img src="https://i.loli.net/2021/03/14/M8HJ7LX3m14NxpD.png" alt="virtualizing consensus via the VirtualLog"></p>
+<h2 id="定制-Loglet"><a href="#定制-Loglet" class="headerlink" title="定制 Loglet"></a>定制 Loglet</h2><p>在满足基本需求后，为了进一步提升性能，Delos 想自己定制 Loglet，以满足以下特点：</p>
+<ol>
+<li>简单：simple</li>
+<li>快速：fast</li>
+<li>容错：fault tolerant</li>
+</ol>
+<h3 id="NativeLoglet"><a href="#NativeLoglet" class="headerlink" title="NativeLoglet"></a>NativeLoglet</h3><p>只实现其中两点，比较容易；若要三者皆得，有点困难。Delos 通过分治策略，将其分解为两个组件：</p>
+<ol>
+<li>MetaStore：进行容错</li>
+<li>Loglet：专注性能</li>
+</ol>
+<p>此时，所有一致性的来源便都移到了 MetaStore 之上。 而 MetaStore 功能相对简单，只需保存空间映射，并提供容错的 <strong>reconfiguration</strong> 源语（即对映射进行操作，比如 loglet 切换），且 reconfiguration 是个低频操作。因此 MetaStore 的实现无需关注性能优化，只需要按照 Lamport 最初的 Paxos 进行实现即可，可以保证 MetaStore 实现的简洁性。</p>
+<p>同时，将 Loglet 职能弱化，不再需要提供完全的容错机制，只需提供一个高可用的 seal 命令即可。如此一来，当一个 Loget 不可用时，VirtualLog 只需将其 seal，然后将流量切向其他 Loglet 即可。</p>
+<p>据此，Delos 实现了新的 Loglet 实例——<strong>NativeLoglet</strong> 。</p>
+<p> <img src="https://i.loli.net/2021/03/14/aIFxzr2EpYmbluf.png" alt="the NativeLoglet"></p>
+<p>直观感觉来说，NativeLoglet 类似一个弱化版的 LogDevice。其交互流程如下：</p>
+<ol>
+<li>正常运行时，集群中某个 LogServer 充当 Sequencer</li>
+<li>所有 DelosRuntime 发出的 Append 请求都要通过 Sequencer 定序后，追加到各个 LogServer</li>
+<li>当 Sequencer 所在 LogServer 宕机后，DelosRuntime 直接向所有 LogServer 发送 CheckTail 请求，以 quorum 协议确定 tail</li>
+<li>所有 DelosRuntime 都可以发起 seal 请求，对 NativeLoglet 进行 seal</li>
+</ol>
+<p>注意，NativeLoget 中所有 LogServer 可以和 DelosRuntime 部署在一块（称作 Converged 模式），也可以单独部署（称作 Disaggregated 模式）。前者能够获取更好的本地读性能，并且让数据库实例和日志实例生命周期绑定。后者将数据库层和日志层分离，可以避免不同层的资源争夺，并允许各自按需伸缩。</p>
+<p><img src="https://i.loli.net/2021/03/14/Namb2vlGL5kcXP3.png" alt="converged vs disaggregated"></p>
+<p>下图是一个替换 NativeLoglet 后的性能提升对比：</p>
+<p><img src="https://i.loli.net/2021/03/14/4W3M8gxISfwUVJk.png" alt="NativeLoglet compare"></p>
+<h3 id="StripedLoglet"><a href="#StripedLoglet" class="headerlink" title="StripedLoglet"></a>StripedLoglet</h3><p> 为了进一步提升性能，在 VirtualLog 的抽象下，Delos 利用分片思想又造出了一种叫做 <strong>StripedLoglet</strong> 的实现。该实现在底层组合了多个 Loglets 实例，当 Append 请求到来时，将其 round robin 的打到各个底层 Loglet 系统中，从而极大提升性能。</p>
+<p>此外，StripedLoglet 允许多个 DelosRuntime 使用不同策略进行并行 Append，并且允许暂时的空洞存在，之后使用类似滑动窗口的机制，进行捎带 ACK，从而进一步提升性能。</p>
+<p>底层多个 Loglet 系统可以视情况共享一个集群或分散到多个集群。</p>
+<p><img src="https://i.loli.net/2021/03/14/Chg4esWOuHBXk8a.png" alt="striped loglet"></p>
+<h2 id="The-Last-Thing：VirtualLog-Triming"><a href="#The-Last-Thing：VirtualLog-Triming" class="headerlink" title="The Last Thing：VirtualLog Triming"></a>The Last Thing：VirtualLog Triming</h2><p>此外值得一说的细节是，VirtualLog 提供的 Trim 操作。得益于虚拟化的抽象，Delos 可以通过删除映射，将老的日志进行移除。当然，一种更好的做法是，将老的日志移动到 BackupLoget 的冷集群中，然后改变映射，对外提供一种无限日志的抽象，进而允许按年龄对不同日志段进行细粒度的存储控制。</p>
+<p>另一方面，通过修改 MetaStore 中的映射，Delos 允许修改单个日志记录，对某些有问题的日志进行删除，以避免系统 hang 住或者反复重启宕机。这是之前的一致性协议无法做到的。</p>
+<p><img src="https://i.loli.net/2021/03/14/LSXWgwsxFVO6cQa.png" alt="trimming the VirtualLog"></p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>Delos 位于 Facebook 系统的底层（用于控制面的存储），它采用分层的设计，使得：</p>
+<ol>
+<li>在项目之初，可以在某些层复用现有系统，进行快速上线，投入使用。</li>
+<li>在上线之后，允许不停机的替换更高性能的组件、实验更新的一致性协议。</li>
+</ol>
+<p><img src="https://i.loli.net/2021/03/14/UzctHaiYvb9pFfh.png" alt="summary"></p>
+<p>虚拟共识之于分布式系统，有点像虚拟内存之于单机系统，通过分层解耦，使得设计者在系统构建时有更多腾挪空间。至于该思想是否能够实至名归，还得等待时间和实践的检验。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li><p>OSDI 20 该论文的讲解视频：<span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj13ZC1HQ19YaEEyZw==">https://www.youtube.com/watch?v=wd-GC_XhA2g<i class="fa fa-external-link-alt"></i></span></p>
+</li>
+<li><p>谷歌工程文章：<span class="exturl" data-url="aHR0cHM6Ly9lbmdpbmVlcmluZy5mYi5jb20vMjAxOS8wNi8wNi9kYXRhLWNlbnRlci1lbmdpbmVlcmluZy9kZWxvcy8=">https://engineering.fb.com/2019/06/06/data-center-engineering/delos/<i class="fa fa-external-link-alt"></i></span></p>
+</li>
+<li><p>论文 Virtual Consensus in Delos：<span class="exturl" data-url="aHR0cHM6Ly9yZXNlYXJjaC5mYi5jb20vcHVibGljYXRpb25zL3ZpcnR1YWwtY29uc2Vuc3VzLWluLWRlbG9zLw==">https://research.fb.com/publications/virtual-consensus-in-delos/<i class="fa fa-external-link-alt"></i></span></p>
+</li>
+</ol>
+<hr>
+<p>我是青藤木鸟，一个喜欢摄影的存储工程师，欢迎关注我的公众号：“木鸟杂记”。</p>
+<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
+              <a href="/tags/Facebook/" rel="tag"># Facebook</a>
+              <a href="/tags/Delos/" rel="tag"># Delos</a>
+              <a href="/tags/%E5%85%B1%E8%AF%86%E5%8D%8F%E8%AE%AE/" rel="tag"># 共识协议</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/02/15/cmu15445-introduction/" rel="prev" title="Cmu15445 课程介绍">
+      <i class="fa fa-chevron-left"></i> Cmu15445 课程介绍
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/03/30/beijing-hiking-big-crack/" rel="next" title="京郊徒步 霾下山桃">
+      京郊徒步 霾下山桃 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E5%86%99%E6%B5%81%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text">读写流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%99%9A%E6%8B%9F%E5%85%B1%E8%AF%86"><span class="nav-number">2.2.</span> <span class="nav-text">虚拟共识</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9A%E5%88%B6-Loglet"><span class="nav-number">3.</span> <span class="nav-text">定制 Loglet</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#NativeLoglet"><span class="nav-number">3.1.</span> <span class="nav-text">NativeLoglet</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#StripedLoglet"><span class="nav-number">3.2.</span> <span class="nav-text">StripedLoglet</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#The-Last-Thing%EF%BC%9AVirtualLog-Triming"><span class="nav-number">4.</span> <span class="nav-text">The Last Thing：VirtualLog Triming</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">5.</span> <span class="nav-text">结语</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">100</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">167</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2021/03/14/facebook-delos/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'd53f16b194be86e355c724ef54825f7d',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

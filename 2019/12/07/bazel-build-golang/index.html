@@ -32,7 +32,7 @@
 <meta property="og:description" content="引子Bazel 是一款谷歌开源的非常优秀的构建系统。它的定位，用官方的话来说是：  a fast, scalable, multi-language and extensible build system  大意为：  一款速度极快、可伸缩、跨语言并且可扩展的构建系统  使用 Bazel 构建 golang 项目，除了 Bazel 本身特性外，还需要了解针对 golang 的扩展包 rules_">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://i.loli.net/2020/02/09/DKg7uSkQoP9U2db.png">
-<meta property="article:published_time" content="2019-12-07T14:47:14.000Z">
+<meta property="article:published_time" content="2019-12-07T22:47:14.000Z">
 <meta property="article:modified_time" content="2023-07-31T06:26:06.281Z">
 <meta property="article:author" content="木鸟杂记">
 <meta property="article:tag" content="Bazel">
@@ -224,7 +224,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2019-12-07 14:47:14" itemprop="dateCreated datePublished" datetime="2019-12-07T14:47:14+00:00">2019-12-07</time>
+              <time title="创建时间：2019-12-07 22:47:14" itemprop="dateCreated datePublished" datetime="2019-12-07T22:47:14+00:00">2019-12-07</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -262,7 +262,7 @@
 
       
         <p><img src="https://i.loli.net/2020/02/09/DKg7uSkQoP9U2db.png" alt="bazel-golang.png"></p>
-<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p><a target="_blank" rel="noopener" href="https://bazel.build/">Bazel</a> 是一款谷歌开源的非常优秀的构建系统。它的定位，用官方的话来说是：</p>
+<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p><span class="exturl" data-url="aHR0cHM6Ly9iYXplbC5idWlsZC8=">Bazel<i class="fa fa-external-link-alt"></i></span> 是一款谷歌开源的非常优秀的构建系统。它的定位，用官方的话来说是：</p>
 <blockquote>
 <p>a fast, scalable, multi-language and extensible build system</p>
 </blockquote>
@@ -283,7 +283,7 @@
 </ol>
 <h3 id="可伸缩-scalable"><a href="#可伸缩-scalable" class="headerlink" title="可伸缩(scalable)"></a>可伸缩(scalable)</h3><p>Bazel 号称无论什么量级的项目都可以应对，无论是超大型单体项目（monorepo）、还是超多库的分布式项目（multirepo）。Bazel 还可以很方便的集成 CD&#x2F;CI ，并在云端利用分布式环境进行构建。</p>
 <p>它使用<strong>沙箱机制</strong>进行编译，即将所有编译依赖隔绝在一个沙箱中，比如编译 golang 项目时，不会依赖你本机的 GOPATH，从而做到同样源码、跨环境编译、输出相同，即构建的确定性。</p>
-<h3 id="跨语言-multi-language"><a href="#跨语言-multi-language" class="headerlink" title="跨语言(multi-language)"></a>跨语言(multi-language)</h3><p>如果一个项目不同模块使用不同的语言，利用 Bazel 可以使用<strong>一致的风格</strong>来管理项目外部依赖和内部依赖。典型的项目如 <a target="_blank" rel="noopener" href="https://github.com/ray-project/ray">Ray</a>。该项目使用 C++ 构建 Ray 的核心调度组件、通过 Python&#x2F;Java 来提供多语言的 API，并将上述所有模块用单个 repo 进行管理。如此组织使其项目整合相当困难，但 Bazel 在此处理的游刃有余，大家可以去该 <a target="_blank" rel="noopener" href="https://github.com/ray-project/ray">repo</a> 一探究竟。</p>
+<h3 id="跨语言-multi-language"><a href="#跨语言-multi-language" class="headerlink" title="跨语言(multi-language)"></a>跨语言(multi-language)</h3><p>如果一个项目不同模块使用不同的语言，利用 Bazel 可以使用<strong>一致的风格</strong>来管理项目外部依赖和内部依赖。典型的项目如 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3JheS1wcm9qZWN0L3JheQ==">Ray<i class="fa fa-external-link-alt"></i></span>。该项目使用 C++ 构建 Ray 的核心调度组件、通过 Python&#x2F;Java 来提供多语言的 API，并将上述所有模块用单个 repo 进行管理。如此组织使其项目整合相当困难，但 Bazel 在此处理的游刃有余，大家可以去该 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3JheS1wcm9qZWN0L3JheQ==">repo<i class="fa fa-external-link-alt"></i></span> 一探究竟。</p>
 <h3 id="可扩展-extensible"><a href="#可扩展-extensible" class="headerlink" title="可扩展(extensible)"></a>可扩展(extensible)</h3><p>Bazel 使用的语法是基于 Python 裁剪而成的一门语言：Startlark。其<strong>表达能力强大</strong>，往小了说，可以使用户自定义一些 rules （类似一般语言中的函数）对构建逻辑进行复用；往大了说，可以支持第三方编写适配新的语言或平台的 rules 集，比如 rules go。 Bazel 并不原生支持构建 golang 工程，但通过引入 rules go ，就能以比较一致的风格来管理 golang 工程。</p>
 <h2 id="Bazel-主要文件"><a href="#Bazel-主要文件" class="headerlink" title="Bazel 主要文件"></a>Bazel 主要文件</h2><p>使用 Bazel 管理的项目一般包含以下几种 Bazel 相关的文件：<em>WORKSPACE</em>，<em>BUILD(.bazel)<em>，</em></em>.bzl* 和 *.bazelrc *等。其中 WORKSPACE 和 .bazelrc 放置于项目的根目录下，BUILD.bazel 放项目中的每个文件夹中（包括根目录）， *.bzl 文件可以根据用户喜好自由放置，一般可放在项目根目录下的某个专用文件夹（比如 build）中。</p>
 <h3 id="WORKSPACE"><a href="#WORKSPACE" class="headerlink" title="WORKSPACE"></a>WORKSPACE</h3><ol>
@@ -292,7 +292,7 @@
 <li>管理项目外部依赖库。</li>
 </ol>
 <h3 id="BUILD-bazel"><a href="#BUILD-bazel" class="headerlink" title="BUILD.(bazel)"></a>BUILD.(bazel)</h3><p>该文件主要针对其所在文件夹进行<strong>依赖解析</strong>（label）和<strong>目标定义</strong>（bazel target）。拿 go 来说，构建目标可以是 go_binary、go_test、go_library 等。</p>
-<p>Bazel 的之前版本用的文件名是 <em>BUILD</em> ，但是在一些大小写不区分的系统上，它很容易跟 build 文件混淆，因此后来改为了显式的 <em>BUILD.bazel</em> 。如果项目中同时存在两者，Bazel 更倾向于使用后者。对于所有的新项目，都推荐使用显式的 <em>BUILD.bazel</em>。github 上有一些讨论在<a target="_blank" rel="noopener" href="https://github.com/bazelbuild/rules_go/issues/866">这里</a>。</p>
+<p>Bazel 的之前版本用的文件名是 <em>BUILD</em> ，但是在一些大小写不区分的系统上，它很容易跟 build 文件混淆，因此后来改为了显式的 <em>BUILD.bazel</em> 。如果项目中同时存在两者，Bazel 更倾向于使用后者。对于所有的新项目，都推荐使用显式的 <em>BUILD.bazel</em>。github 上有一些讨论在<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2JhemVsYnVpbGQvcnVsZXNfZ28vaXNzdWVzLzg2Ng==">这里<i class="fa fa-external-link-alt"></i></span>。</p>
 <p>为了引用一个依赖，Bazel 使用 <em>label</em> 语法对所有的包进行唯一标识，其格式如下：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@workerspace_name//path/of/package:target</span></span><br></pre></td></tr></table></figure>
 
@@ -303,16 +303,16 @@
 <h3 id="自定义-rule-bzl"><a href="#自定义-rule-bzl" class="headerlink" title="自定义 rule (*.bzl)"></a>自定义 rule (*.bzl)</h3><p>如果你的项目有一些复杂构造逻辑、或者一些需要复用的构造逻辑，那么可以将这些逻辑以函数形式保存在 .bzl 文件，供 WORKSPACE 或者 BUILD 文件调用。其语法跟 Python 类似：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">third_party_http_deps</span>():</span><br><span class="line">    http_archive(</span><br><span class="line">        name = <span class="string">&quot;xxxx&quot;</span>,</span><br><span class="line">        ...</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    http_archive(</span><br><span class="line">        name = <span class="string">&quot;yyyy&quot;</span>,</span><br><span class="line">        ...</span><br><span class="line">    )</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
-<h3 id="配置项-bazelrc"><a href="#配置项-bazelrc" class="headerlink" title="配置项 .bazelrc"></a>配置项 .bazelrc</h3><p>其中 rc 后缀的命名方式是个计算机中经典的小习俗，感兴趣可以看看 StackOverflow <a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/11030552/what-does-rc-mean-in-dot-files">这个回答</a>。简单的说，该文件用来配置对应的命令运行时的一些参数。常见的如 .vimrc，.bashrc 等。</p>
+<h3 id="配置项-bazelrc"><a href="#配置项-bazelrc" class="headerlink" title="配置项 .bazelrc"></a>配置项 .bazelrc</h3><p>其中 rc 后缀的命名方式是个计算机中经典的小习俗，感兴趣可以看看 StackOverflow <span class="exturl" data-url="aHR0cHM6Ly9zdGFja292ZXJmbG93LmNvbS9xdWVzdGlvbnMvMTEwMzA1NTIvd2hhdC1kb2VzLXJjLW1lYW4taW4tZG90LWZpbGVz">这个回答<i class="fa fa-external-link-alt"></i></span>。简单的说，该文件用来配置对应的命令运行时的一些参数。常见的如 .vimrc，.bashrc 等。</p>
 <p>对于 Bazel 来说，如果某些构建动作都需要某个参数，就可以将其写在此配置中，从而省去每次敲命令都重复输入该参数。举个 Go 的例子：由于国情在此，构建、测试和运行时可能都需要 GOPROXY，则可以配置如下：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># set GOPROXY</span></span><br><span class="line"><span class="built_in">test</span> --action_env=GOPROXY=https://goproxy.io</span><br><span class="line">build --action_env=GOPROXY=https://goproxy.io</span><br><span class="line">run --action_env=GOPROXY=https://goproxy.io</span><br></pre></td></tr></table></figure>
 
 
 
 <h2 id="Bazel-构建-golang-项目"><a href="#Bazel-构建-golang-项目" class="headerlink" title="Bazel 构建 golang 项目"></a>Bazel 构建 golang 项目</h2><p>在有了上面 Bazel 的基础知识后，构建 golang 项目还需要了解两个概念：rules_go 和 bazel gazelle。</p>
-<h4 id="rules-go"><a href="#rules-go" class="headerlink" title="rules_go"></a>rules_go</h4><p><a target="_blank" rel="noopener" href="https://github.com/bazelbuild/rules_go">rules_go</a> 是一个 Bazel 的扩展包，Bazel 可以编译 Go。它由一系列的 rule 构成，包括 go_libray\go_binary\go_test，支持 vendor、交叉编译；可以方便集成 protobuf 、cgo 、gogo、nogo等工具。</p>
+<h4 id="rules-go"><a href="#rules-go" class="headerlink" title="rules_go"></a>rules_go</h4><p><span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2JhemVsYnVpbGQvcnVsZXNfZ28=">rules_go<i class="fa fa-external-link-alt"></i></span> 是一个 Bazel 的扩展包，Bazel 可以编译 Go。它由一系列的 rule 构成，包括 go_libray\go_binary\go_test，支持 vendor、交叉编译；可以方便集成 protobuf 、cgo 、gogo、nogo等工具。</p>
 <p>它会在 Bazel 的沙箱中进行编译，不依赖本地 GOROOT&#x2F;GOPATH，而是自动下载对应 Go 版本，从而可以在不同平台上进行一致性的编译。</p>
-<h4 id="bazel-gazelle"><a href="#bazel-gazelle" class="headerlink" title="bazel gazelle"></a>bazel gazelle</h4><p>Gazelle 是一个自动生成 Bazel 编译文件工具，包括给 WORKSPACE 添加外部依赖、扫描源文件依赖自动生成 BUILD.bazel 文件等。Gazelle 原生支持 Go 和 protobuf，当然可以通过扩展来支持其他语言和规则。Gazelle 可以使用  bazel 命令结合 <a target="_blank" rel="noopener" href="https://github.com/bazelbuild/bazel-gazelle#bazel-rule">gazelle rule</a> 运行，也可以下载使用单独的 Gazelle 的命令行工具。</p>
+<h4 id="bazel-gazelle"><a href="#bazel-gazelle" class="headerlink" title="bazel gazelle"></a>bazel gazelle</h4><p>Gazelle 是一个自动生成 Bazel 编译文件工具，包括给 WORKSPACE 添加外部依赖、扫描源文件依赖自动生成 BUILD.bazel 文件等。Gazelle 原生支持 Go 和 protobuf，当然可以通过扩展来支持其他语言和规则。Gazelle 可以使用  bazel 命令结合 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2JhemVsYnVpbGQvYmF6ZWwtZ2F6ZWxsZSNiYXplbC1ydWxl">gazelle rule<i class="fa fa-external-link-alt"></i></span> 运行，也可以下载使用单独的 Gazelle 的命令行工具。</p>
 <ul>
 <li><strong>自动添加外部依赖</strong></li>
 </ul>
@@ -336,9 +336,9 @@
 </ol>
 <h3 id="一些实践"><a href="#一些实践" class="headerlink" title="一些实践"></a>一些实践</h3><p>Bazel 有一些比较实用的实践，比如使用 http_archive 下载确定版本的外部依赖包、使用 stamp 变量注入、打包和发布等等。可以多去一些有很好的 Bazel 构建项目实践的开源项目中去看看：</p>
 <ul>
-<li><p><a target="_blank" rel="noopener" href="https://github.com/kubernetes/test-infra">github.com&#x2F;kubernetes&#x2F;test-infra</a>（go 语言项目最佳实践，比较全面的 bazel 深度使用）</p>
+<li><p><span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2t1YmVybmV0ZXMvdGVzdC1pbmZyYQ==">github.com&#x2F;kubernetes&#x2F;test-infra<i class="fa fa-external-link-alt"></i></span>（go 语言项目最佳实践，比较全面的 bazel 深度使用）</p>
 </li>
-<li><p><a target="_blank" rel="noopener" href="https://github.com/kubernetes/repo-infra">github.com&#x2F;kubernetes&#x2F;repo-infra</a>（go 语言项目最佳实践，配置和脚本非常精妙）</p>
+<li><p><span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2t1YmVybmV0ZXMvcmVwby1pbmZyYQ==">github.com&#x2F;kubernetes&#x2F;repo-infra<i class="fa fa-external-link-alt"></i></span>（go 语言项目最佳实践，配置和脚本非常精妙）</p>
 </li>
 </ul>
 
@@ -368,13 +368,13 @@
       <div class="popular-posts-title"><a href="/2020/07/12/go-context/" rel="bookmark">Golang 笔记（二）：Context 源码剖析</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/12/14/bolt-index-design/" rel="bookmark">Boltdb 源码导读（二）：Boltdb 索引设计</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2021/01/09/go-slice/" rel="bookmark">Golang 笔记（三）：一种理解 Slice 的模型</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2021/04/02/bolt-transaction/" rel="bookmark">Boltdb 源码导读（三）：Boltdb 事务实现</a></div>
@@ -415,7 +415,7 @@
       <i class="fa fa-chevron-left"></i> Spark 系统的理论基石 —— RDD
     </a></div>
       <div class="post-nav-item">
-    <a href="/2019/12/21/kafka/" rel="next" title="Kafka —— 弥合日志系统和消息队列的鸿沟">
+    <a href="/2019/12/22/kafka/" rel="next" title="Kafka —— 弥合日志系统和消息队列的鸿沟">
       Kafka —— 弥合日志系统和消息队列的鸿沟 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>

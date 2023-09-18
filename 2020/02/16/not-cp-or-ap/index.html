@@ -35,7 +35,7 @@
 <meta property="og:image" content="https://blog.the-pans.com/content/images/2018/07/cap-availability.png">
 <meta property="og:image" content="https://blog.the-pans.com/content/images/2018/07/isolation-levels.png">
 <meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
-<meta property="article:published_time" content="2020-02-16T07:00:18.000Z">
+<meta property="article:published_time" content="2020-02-16T15:00:18.000Z">
 <meta property="article:modified_time" content="2023-07-31T06:26:06.282Z">
 <meta property="article:author" content="木鸟杂记">
 <meta property="article:tag" content="distributed system">
@@ -226,7 +226,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-02-16 07:00:18" itemprop="dateCreated datePublished" datetime="2020-02-16T07:00:18+00:00">2020-02-16</time>
+              <time title="创建时间：2020-02-16 15:00:18" itemprop="dateCreated datePublished" datetime="2020-02-16T15:00:18+00:00">2020-02-16</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -268,41 +268,41 @@
 
       
         <blockquote>
-<p>本文缘起于Lu Pan 的个人博客文章：<a target="_blank" rel="noopener" href="https://blog.the-pans.com/cap/">https://blog.the-pans.com/cap/</a> ，是他经过 Martin Kleppmann 授权并且翻译的博文”Please stop calling databases CP or AP”中文版本。但译文中不少句子读来颇为古怪，我对照<a target="_blank" rel="noopener" href="https://martin.kleppmann.com/2015/05/11/please-stop-calling-databases-cp-or-ap.html">英文原文</a>，按照自己理解，逐句校验、重译了一遍。这篇文章探讨了为什么不应该滥用 <strong>CAP定理</strong> 这个概念，旁征博引，入木三分，值得一读。更值得称道的是，Martin 文中所有关键观点都给出了来源，并在最后推荐了一些学习资料，都是不错的阅读材料。以下是正文。</p>
+<p>本文缘起于Lu Pan 的个人博客文章：<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLnRoZS1wYW5zLmNvbS9jYXAv">https://blog.the-pans.com/cap/<i class="fa fa-external-link-alt"></i></span> ，是他经过 Martin Kleppmann 授权并且翻译的博文”Please stop calling databases CP or AP”中文版本。但译文中不少句子读来颇为古怪，我对照<span class="exturl" data-url="aHR0cHM6Ly9tYXJ0aW4ua2xlcHBtYW5uLmNvbS8yMDE1LzA1LzExL3BsZWFzZS1zdG9wLWNhbGxpbmctZGF0YWJhc2VzLWNwLW9yLWFwLmh0bWw=">英文原文<i class="fa fa-external-link-alt"></i></span>，按照自己理解，逐句校验、重译了一遍。这篇文章探讨了为什么不应该滥用 <strong>CAP定理</strong> 这个概念，旁征博引，入木三分，值得一读。更值得称道的是，Martin 文中所有关键观点都给出了来源，并在最后推荐了一些学习资料，都是不错的阅读材料。以下是正文。</p>
 </blockquote>
-<p>在 Jeff Hodges 的精彩博文<a target="_blank" rel="noopener" href="https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/">给年轻人关于分布式系统的笔记 </a>中，他建议我们用<a target="_blank" rel="noopener" href="http://www.the-paper-trail.org/page/cap-faq/">CAP定理</a>来评判系统。不少人听从了这个建议，将他们的系统称为”CP” （提供一致性但在网络分区时不可用），“AP”（高可用但是在网络分区时不一致） 或者干脆 “CA” （说明还没有读过Coda的<a target="_blank" rel="noopener" href="https://codahale.com/you-cant-sacrifice-partition-tolerance/">五年前的文章</a>）。</p>
+<p>在 Jeff Hodges 的精彩博文<span class="exturl" data-url="aHR0cHM6Ly93d3cuc29tZXRoaW5nc2ltaWxhci5jb20vMjAxMy8wMS8xNC9ub3Rlcy1vbi1kaXN0cmlidXRlZC1zeXN0ZW1zLWZvci15b3VuZy1ibG9vZHMv">给年轻人关于分布式系统的笔记 <i class="fa fa-external-link-alt"></i></span>中，他建议我们用<span class="exturl" data-url="aHR0cDovL3d3dy50aGUtcGFwZXItdHJhaWwub3JnL3BhZ2UvY2FwLWZhcS8=">CAP定理<i class="fa fa-external-link-alt"></i></span>来评判系统。不少人听从了这个建议，将他们的系统称为”CP” （提供一致性但在网络分区时不可用），“AP”（高可用但是在网络分区时不一致） 或者干脆 “CA” （说明还没有读过Coda的<span class="exturl" data-url="aHR0cHM6Ly9jb2RhaGFsZS5jb20veW91LWNhbnQtc2FjcmlmaWNlLXBhcnRpdGlvbi10b2xlcmFuY2Uv">五年前的文章<i class="fa fa-external-link-alt"></i></span>）。</p>
 <p>我同意 Jeff 的所有其他观点，但其关于 CAP 定理的使用建议，我不能表示赞同。CAP 定理本身太过简化而且存在广泛的误解，以至于在界定系统时不能有效的起到作用。因此我请求大家不要再引用CAP定理， 不要再讨论CAP定理。取而代之，我们应该用更精确的术语来表述我们对系统的取舍。</p>
 <p>（当然，讽刺的是我不希望别人再讨论这个话题，自己却正在写一篇关于这个话题的文章。不过至少以后别人问我为什么不喜欢讨论CAP定理的时候，我可以把这篇文章的链接给他。还有，抱歉这篇文章会有些吐槽，但是至少这些吐槽给出了文献引用）</p>
 <span id="more"></span>
 
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2020/02/16/not-cp-or-ap">https://www.qtmuniao.com/2020/02/16/not-cp-or-ap</a>, 转载请注明出处</em></p>
-<h2 id="CAP-使用了十分狭义的定义"><a href="#CAP-使用了十分狭义的定义" class="headerlink" title="CAP 使用了十分狭义的定义"></a>CAP 使用了十分狭义的定义</h2><p>如果你想当做一个定理来引用 CAP（而不是作为一个模糊的、用来做数据库营销的噱头），你必须要精确，数学需要严谨。只有当你使用和该<a target="_blank" rel="noopener" href="https://webpages.cs.luc.edu/~pld/353/gilbert_lynch_brewer_proof.pdf">定理证明</a>一样的术语时，这个证明才有意义。该证明用了非常特殊的定义：</p>
+<h2 id="CAP-使用了十分狭义的定义"><a href="#CAP-使用了十分狭义的定义" class="headerlink" title="CAP 使用了十分狭义的定义"></a>CAP 使用了十分狭义的定义</h2><p>如果你想当做一个定理来引用 CAP（而不是作为一个模糊的、用来做数据库营销的噱头），你必须要精确，数学需要严谨。只有当你使用和该<span class="exturl" data-url="aHR0cHM6Ly93ZWJwYWdlcy5jcy5sdWMuZWR1L35wbGQvMzUzL2dpbGJlcnRfbHluY2hfYnJld2VyX3Byb29mLnBkZg==">定理证明<i class="fa fa-external-link-alt"></i></span>一样的术语时，这个证明才有意义。该证明用了非常特殊的定义：</p>
 <ul>
-<li><em>一致性（Consistency）</em> 在 CAP 中是<a target="_blank" rel="noopener" href="http://cs.brown.edu/~mph/HerlihyW90/p463-herlihy.pdf">可线性化</a>的意思（linearizability）。这是一个非常特殊（而且非常强）的一致性。需要说明的是，虽然 ACID 中的 C 也是一致性（Consistency），但它和这里的一致性没有任何关系，我会在后面解释可线性化是什么意思。</li>
+<li><em>一致性（Consistency）</em> 在 CAP 中是<span class="exturl" data-url="aHR0cDovL2NzLmJyb3duLmVkdS9+bXBoL0hlcmxpaHlXOTAvcDQ2My1oZXJsaWh5LnBkZg==">可线性化<i class="fa fa-external-link-alt"></i></span>的意思（linearizability）。这是一个非常特殊（而且非常强）的一致性。需要说明的是，虽然 ACID 中的 C 也是一致性（Consistency），但它和这里的一致性没有任何关系，我会在后面解释可线性化是什么意思。</li>
 <li><em>可用性（Availability）</em>在CAP中被定义为”<strong>所有</strong>工作中的[数据库]节点对于每一个收到的请求，都必须返回一个[非错误]的响应（response）”。只有部分节点能处理请求是不够的：所有工作中的节点都必须能正确处理请求。所以很多自称”高度可用”（如，系统总体很少宕机）的系统其实并没有满足这里的可用性的定义。</li>
-<li><em>分区容错（Partition Tolerance，这个名字误导性很强）</em> 基本上是说你在一个消息可能会被延迟发送或者干脆丢失的<a target="_blank" rel="noopener" href="http://www.the-paper-trail.org/page/cap-faq/">异步网络</a>中通信。互联网和数据中心都有这个<a target="_blank" rel="noopener" href="https://aphyr.com/posts/288-the-network-is-reliable">特性</a>，所以在这件事上我们没得选。</li>
+<li><em>分区容错（Partition Tolerance，这个名字误导性很强）</em> 基本上是说你在一个消息可能会被延迟发送或者干脆丢失的<span class="exturl" data-url="aHR0cDovL3d3dy50aGUtcGFwZXItdHJhaWwub3JnL3BhZ2UvY2FwLWZhcS8=">异步网络<i class="fa fa-external-link-alt"></i></span>中通信。互联网和数据中心都有这个<span class="exturl" data-url="aHR0cHM6Ly9hcGh5ci5jb20vcG9zdHMvMjg4LXRoZS1uZXR3b3JrLWlzLXJlbGlhYmxl">特性<i class="fa fa-external-link-alt"></i></span>，所以在这件事上我们没得选。</li>
 </ul>
 <p>还注意到，CAP不仅仅在描述旧的系统，而且是一个系统的某种特定模型：</p>
 <ul>
 <li>简单来说，CAP系统模型就是一个支持读写的单寄存器。CAP没有提到任何关于跨多个对象（object）的事务（transaction）相关的问题，这些问题不在定理的讨论范围内，除非你可以把这些问题简化为一个单个寄存器的问题。</li>
-<li>CAP定理只考虑了网络分区这一种故障情况（比如节点们还在运行，但是它们之间的网络出现了问题）。这种故障<a target="_blank" rel="noopener" href="https://aphyr.com/posts/288-the-network-is-reliable">肯定会发生</a>，但远不是会发生的唯一一种故障：节点可以整个崩溃（crash）或重启、可能没有足够的磁盘空间、可能会遇到一个软件故障（bug）等等。在构建分布式系统时，你需要考虑更加复杂的权衡取舍，如果太过关注 CAP 定理容易导致忽略其他重要问题。</li>
-<li>此外， CAP 没有提到延迟（latency）。相对可用性，人们其实<a target="_blank" rel="noopener" href="http://dbmsmusings.blogspot.com/2010/04/problems-with-cap-and-yahoos-little.html">更关心延迟</a>。事实上，满足<em>CAP可用性</em>**[1]**的系统可以花任意长的时间来回复一个请求，且仍然具有“可用性”。可以肯定的说，如果你的系统要花两分钟来加载一个页面，你的用户断不会称它为“可用的”。</li>
+<li>CAP定理只考虑了网络分区这一种故障情况（比如节点们还在运行，但是它们之间的网络出现了问题）。这种故障<span class="exturl" data-url="aHR0cHM6Ly9hcGh5ci5jb20vcG9zdHMvMjg4LXRoZS1uZXR3b3JrLWlzLXJlbGlhYmxl">肯定会发生<i class="fa fa-external-link-alt"></i></span>，但远不是会发生的唯一一种故障：节点可以整个崩溃（crash）或重启、可能没有足够的磁盘空间、可能会遇到一个软件故障（bug）等等。在构建分布式系统时，你需要考虑更加复杂的权衡取舍，如果太过关注 CAP 定理容易导致忽略其他重要问题。</li>
+<li>此外， CAP 没有提到延迟（latency）。相对可用性，人们其实<span class="exturl" data-url="aHR0cDovL2RibXNtdXNpbmdzLmJsb2dzcG90LmNvbS8yMDEwLzA0L3Byb2JsZW1zLXdpdGgtY2FwLWFuZC15YWhvb3MtbGl0dGxlLmh0bWw=">更关心延迟<i class="fa fa-external-link-alt"></i></span>。事实上，满足<em>CAP可用性</em>**[1]**的系统可以花任意长的时间来回复一个请求，且仍然具有“可用性”。可以肯定的说，如果你的系统要花两分钟来加载一个页面，你的用户断不会称它为“可用的”。</li>
 </ul>
 <p>如果你使用与 CAP定理证明中的精确定义相符的性质，那么该定理对你适用。但如果你的“一致性”和“可用性”还有其他意思，就不能指望 CAP 仍然适用。当然，这并不意味着你通过重新定义概念就可以做到一些不可能的事情！我只是想说你不能靠 CAP 定理来提供指导方向，也不能使用 CAP 定理为你的观点来辩解。</p>
 <p>如果 CAP 定理对你不适用，那就意味着你必须自己来思考如何进行取舍。你可以用自己的概念来阐释你系统中的一致性和可用性，当然，如果你能进一步给出定理的证明就更棒了。但是请不要称它为 CAP定理，因为这个名字已经被使用了（有其特定内涵和指称）。</p>
-<h2 id="可线性化"><a href="#可线性化" class="headerlink" title="可线性化"></a>可线性化</h2><p>以防你对可线性化**[2]**这个性质不熟（即CAP中的一致性），我来简要地解释一下。<a target="_blank" rel="noopener" href="http://cs.brown.edu/~mph/HerlihyW90/p463-herlihy.pdf">可线性化的正式定义</a>不是很直观，但其关键思想比较简单：</p>
+<h2 id="可线性化"><a href="#可线性化" class="headerlink" title="可线性化"></a>可线性化</h2><p>以防你对可线性化**[2]**这个性质不熟（即CAP中的一致性），我来简要地解释一下。<span class="exturl" data-url="aHR0cDovL2NzLmJyb3duLmVkdS9+bXBoL0hlcmxpaHlXOTAvcDQ2My1oZXJsaWh5LnBkZg==">可线性化的正式定义<i class="fa fa-external-link-alt"></i></span>不是很直观，但其关键思想比较简单：</p>
 <blockquote>
 <p>如果B操作始于 A 操作成功结束之后，那么对B操作来说，<em>整个系统</em>必须表现为一种 A 操作已经完成了或者更新的状态。</p>
 </blockquote>
-<p>为了解释的更清楚些，来看一个非可线性化系统的例子。请看下面这张图 （来自于我<a target="_blank" rel="noopener" href="http://dataintensive.net/">尚未发行的书</a>中的预览）：</p>
+<p>为了解释的更清楚些，来看一个非可线性化系统的例子。请看下面这张图 （来自于我<span class="exturl" data-url="aHR0cDovL2RhdGFpbnRlbnNpdmUubmV0Lw==">尚未发行的书<i class="fa fa-external-link-alt"></i></span>中的预览）：</p>
 <p><img src="https://martin.kleppmann.com/2015/05/linearizability.png" alt="img"></p>
-<p>这张图展示了同在一个房间的 Alice 和 Bob，同时在用手机关注 2014年<a target="_blank" rel="noopener" href="https://www.bbc.co.uk/sport/0/football/28181689">世界杯的决赛结果</a>。在最终结果刚发布时，Alice 刷新了页面，看到了冠军结果，然后很兴奋地告诉了Bob。Bob 满脸不信的刷新一下他的手机页面，但由于他的请求被打到了一个较慢数据库副本上，导致他的手机显示决赛尚在进行。</p>
+<p>这张图展示了同在一个房间的 Alice 和 Bob，同时在用手机关注 2014年<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmJjLmNvLnVrL3Nwb3J0LzAvZm9vdGJhbGwvMjgxODE2ODk=">世界杯的决赛结果<i class="fa fa-external-link-alt"></i></span>。在最终结果刚发布时，Alice 刷新了页面，看到了冠军结果，然后很兴奋地告诉了Bob。Bob 满脸不信的刷新一下他的手机页面，但由于他的请求被打到了一个较慢数据库副本上，导致他的手机显示决赛尚在进行。</p>
 <p>如果 Alice 和 Bob 同时刷新页面，拿到了不一样的结果，并不太会令人意外。因为不能准确知道服务器先处理了他们中哪一个请求。但在这个例子中， Bob 明显知道他是在 Alice 告诉了他最终结果<em>之后</em>刷新的页面，因此他预期他得到的结果一定不会比 Alice 的更旧。但他的确拿到了旧的结果，这就违反了可线性化性质。</p>
 <p>由于 Bob 从系统之外的其他渠道（ Alice 通过语言直接告诉他的）获取到了 Alice 的查询结果，我们可以判定 Bob 的请求一定落后于 Alice 的请求（即，两个请求不是并行的）。如果 Bob 没有从 Alice 那里得知比赛已经结束了，他就不会知道他看到的结果是旧的。</p>
 <p>如果你在构建一个数据库系统，并且不知道用户们会有什么样的额外沟通渠道，这时，如果你想提供可线性化的语义（<em>CAP一致性</em>），就需要让数据库看起来只有一个副本，即使系统实际上可能在多个位置有多个备份。</p>
-<p>这是一个非常昂贵的属性，因为它要求你做特别多的协调工作。代价大到甚至单机上的 CPU 都 <a target="_blank" rel="noopener" href="https://www.cl.cam.ac.uk/~pes20/weakmemory/cacm.pdf">不提供本地内存的线性化访问</a>！ 在如今的 CPU 上，你需要使用<a target="_blank" rel="noopener" href="https://mechanical-sympathy.blogspot.com/2011/07/memory-barriersfences.html">memory barrier 指令</a>才能进行线性访存，甚至检测一个系统是不是可线性化本身也是很<a target="_blank" rel="noopener" href="https://github.com/jepsen-io/knossos">困难的</a>。</p>
+<p>这是一个非常昂贵的属性，因为它要求你做特别多的协调工作。代价大到甚至单机上的 CPU 都 <span class="exturl" data-url="aHR0cHM6Ly93d3cuY2wuY2FtLmFjLnVrL35wZXMyMC93ZWFrbWVtb3J5L2NhY20ucGRm">不提供本地内存的线性化访问<i class="fa fa-external-link-alt"></i></span>！ 在如今的 CPU 上，你需要使用<span class="exturl" data-url="aHR0cHM6Ly9tZWNoYW5pY2FsLXN5bXBhdGh5LmJsb2dzcG90LmNvbS8yMDExLzA3L21lbW9yeS1iYXJyaWVyc2ZlbmNlcy5odG1s">memory barrier 指令<i class="fa fa-external-link-alt"></i></span>才能进行线性访存，甚至检测一个系统是不是可线性化本身也是很<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2plcHNlbi1pby9rbm9zc29z">困难的<i class="fa fa-external-link-alt"></i></span>。</p>
 <h2 id="CAP可用性"><a href="#CAP可用性" class="headerlink" title="CAP可用性"></a>CAP可用性</h2><p>下面来简单讨论一下为什么在有网络分区时，我们要放弃可用性和一致性二者之一。</p>
-<p>举个例子，你的数据库在不同的数据中心的各有一个副本。在这里，副本间选择什么样的同步策略并不重要，可以是single-leader（主从），或者multi-leader（多主），或者基于quorum**[3]**的备份（<a target="_blank" rel="noopener" href="https://blog.the-pans.com/cap/www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf">Dynamo风格</a> ）。我们只要求数据被写到一个数据中心时，它要被同步到另外一个数据中心。假设客户端只连接到其中一个数据中心，并且存在一条网络通路使得两个数据中心间可以进行数据同步。</p>
+<p>举个例子，你的数据库在不同的数据中心的各有一个副本。在这里，副本间选择什么样的同步策略并不重要，可以是single-leader（主从），或者multi-leader（多主），或者基于quorum**[3]**的备份（<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLnRoZS1wYW5zLmNvbS9jYXAvd3d3LmFsbHRoaW5nc2Rpc3RyaWJ1dGVkLmNvbS9maWxlcy9hbWF6b24tZHluYW1vLXNvc3AyMDA3LnBkZg==">Dynamo风格<i class="fa fa-external-link-alt"></i></span> ）。我们只要求数据被写到一个数据中心时，它要被同步到另外一个数据中心。假设客户端只连接到其中一个数据中心，并且存在一条网络通路使得两个数据中心间可以进行数据同步。</p>
 <p>假设现在该网络通路断了，也就是出现了我们所说的网络分区，将会发生什么?</p>
 <p><img src="https://blog.the-pans.com/content/images/2018/07/cap-availability.png" alt="cap-availability"></p>
 <p>显然你只能二择其一：</p>
@@ -312,47 +312,47 @@
 </ol>
 <p>（BTW，这本质上就是 CAP 定理的全部证明，仅此而已。这里的例子用到了两个数据中心，但对于一个数据中心内的网络故障也同样适用，但我觉得使用两个数据中心可以更容易的理解这个问题）</p>
 <p>注意到上面第二种情况，就算系统违反了<em>CAP可用性</em>，我们还是在其中一个数据中心里成功地处理着请求。所以当一个系统选择了可线性化（也就是放弃了 <em>CAP可用性</em>），并不一定意味着网络分区必定导致应用中断。如果系统可以把所有用户流量暂时迁移到 Leader 数据库副本，那么客户端根本不会注意到存在系统宕机时间。</p>
-<p>实际应用中的可用性和<em>CAP可用性</em> <a target="_blank" rel="noopener" href="http://blog.thislongrun.com/2015/04/cap-availability-high-availability-and_16.html">并不完全等价</a>。你应用的可用性大概率是通过某些 SLA来衡量的（比如99.9%的格式正确的请求必须在一秒钟之内成功响应），但是一个系统无论是否满足<em>CAP可用性</em>其实都可以达到要求的 SLA。</p>
+<p>实际应用中的可用性和<em>CAP可用性</em> <span class="exturl" data-url="aHR0cDovL2Jsb2cudGhpc2xvbmdydW4uY29tLzIwMTUvMDQvY2FwLWF2YWlsYWJpbGl0eS1oaWdoLWF2YWlsYWJpbGl0eS1hbmRfMTYuaHRtbA==">并不完全等价<i class="fa fa-external-link-alt"></i></span>。你应用的可用性大概率是通过某些 SLA来衡量的（比如99.9%的格式正确的请求必须在一秒钟之内成功响应），但是一个系统无论是否满足<em>CAP可用性</em>其实都可以达到要求的 SLA。</p>
 <p>在实践中，跨多个数据中心的系统通常使用异步同步策略（asynchronous replication），因此是不可线性化的。但这种选择选择通常是因为广域网延迟过大，而不仅是为了对数据中心和网络故障进行容错。</p>
 <h2 id="很多系统既不是可线性化的也不是CAP可用的"><a href="#很多系统既不是可线性化的也不是CAP可用的" class="headerlink" title="很多系统既不是可线性化的也不是CAP可用的"></a>很多系统既不是可线性化的也不是CAP可用的</h2><p>在CAP定理对可用性和一致性（可线性化）严格的定义下，系统如何运作？</p>
 <p>例如，使用单个 Leader 来管理多副本数据库，是关系型数据库进行数据备份的典型做法。在该配置下，如果客户端和 Leader 发生了网络隔离，就不能写数据到数据库。即便客户端还能从某个 Follower 那里读到数据，它也不能写任何数据，这就说明该配置下的多副本数据库不是<em>CAP可用</em>的。反而此种配置还常常声称自己是“高可用的（high availablity）”。</p>
 <p>如果这种单主的配置方法不是<em>CAP可用</em>的，那它是不是 CP 系统？先不要着急下结论，如果你允许应用从 Follower那里读取数据，并且数据备份是异步的（大多数数据库的默认做法），因此当你从 Follower 处读数据时，可能会读到稍微落后于 Leader 一点的数据。在这种情况下，你的系统的读操作是不可线性化的，即不满足<em>CAP一致性</em>。</p>
-<p>而且支持<a target="_blank" rel="noopener" href="http://research.microsoft.com/pubs/69541/tr-95-51.pdf">snapshot isolation</a>&#x2F;MVCC的数据库是故意设计为不可线性化的，否则会降低其本能提供的并发性。比如<a target="_blank" rel="noopener" href="https://drkp.net/papers/ssi-vldb12.pdf">PostgreSQL的SSI</a>提供可串行化而不是可线性化，<a target="_blank" rel="noopener" href="http://db.cs.berkeley.edu/cs286/papers/ssi-tods2005.pdf">Oracle两者都不提供</a>。数据库标榜自己是 ACID 并不意味着它一定满足CAP定理中关于一致性的定义。</p>
+<p>而且支持<span class="exturl" data-url="aHR0cDovL3Jlc2VhcmNoLm1pY3Jvc29mdC5jb20vcHVicy82OTU0MS90ci05NS01MS5wZGY=">snapshot isolation<i class="fa fa-external-link-alt"></i></span>&#x2F;MVCC的数据库是故意设计为不可线性化的，否则会降低其本能提供的并发性。比如<span class="exturl" data-url="aHR0cHM6Ly9kcmtwLm5ldC9wYXBlcnMvc3NpLXZsZGIxMi5wZGY=">PostgreSQL的SSI<i class="fa fa-external-link-alt"></i></span>提供可串行化而不是可线性化，<span class="exturl" data-url="aHR0cDovL2RiLmNzLmJlcmtlbGV5LmVkdS9jczI4Ni9wYXBlcnMvc3NpLXRvZHMyMDA1LnBkZg==">Oracle两者都不提供<i class="fa fa-external-link-alt"></i></span>。数据库标榜自己是 ACID 并不意味着它一定满足CAP定理中关于一致性的定义。</p>
 <p>所以这些系统既不满足<em>CAP一致性</em>，也不满足<em>CAP可用性</em>。他们既不是 CP 系统也不是 AP 系统，他们只是满足了 P 而已，不管这是什么意思。（是的，CAP 定理中 “三选二” 允许你只从三个中选一个，甚至一个都不选）</p>
-<p>那 NoSQL 呢？拿 MongoDB 来说：（如果不发生 split-brain 的话）每个 shard 都只有一个 Leader，根据前面的探讨，它不满足 <em>CAP可用性</em>。而且<a target="_blank" rel="noopener" href="https://aphyr.com/posts/322-call-me-maybe-mongodb-stale-reads">Kyle最近发现</a>，即使在最高级别一致性的配置下，MongoDB 仍然允许非线性读，所以它也不满足CAP一致性。</p>
+<p>那 NoSQL 呢？拿 MongoDB 来说：（如果不发生 split-brain 的话）每个 shard 都只有一个 Leader，根据前面的探讨，它不满足 <em>CAP可用性</em>。而且<span class="exturl" data-url="aHR0cHM6Ly9hcGh5ci5jb20vcG9zdHMvMzIyLWNhbGwtbWUtbWF5YmUtbW9uZ29kYi1zdGFsZS1yZWFkcw==">Kyle最近发现<i class="fa fa-external-link-alt"></i></span>，即使在最高级别一致性的配置下，MongoDB 仍然允许非线性读，所以它也不满足CAP一致性。</p>
 <p>至于 Dynamo 及其派生出的 Riak、Cassandra 和 Voldemort 这些专门为高可用做出了优化而被称为 AP 的系统们，他们是不是真的符合 CAP 中的 AP 特性呢？答案是取决于你的配置。如果你接受读写请求都落到一个副本（R&#x3D;W&#x3D;1），那么他们确实满足 <em>CAP可用性</em>。但如果你要求 quorum读写（R+W&gt;N），并且存在网络分区，那些落在少数派分区的副本就不能达成共识，所以 quorum 的读写方式不满足 <em>CAP可用性</em>（至少是偶尔不可用的，直到给少数派分区内加入了足够多的节点）。</p>
-<p>有时候会看到人们声称 quorum读写能保证可线性化，但真的去依赖这个条件就不明智了。因为在一些<a target="_blank" rel="noopener" href="http://basho.com/posts/technical/riaks-config-behaviors-part-3/">复杂的情况下</a>，read repair 操作和 sloppy quorum 同时发生，就有可能导致已经被删除了的数据重新出现；或者备份数（replicas）已经低于原来的 W 值（违反了quorum的条件），或者备份数增加到了高于原来的N值（也违反了quorum 的条件），这些都会导致非线性化的访问。</p>
+<p>有时候会看到人们声称 quorum读写能保证可线性化，但真的去依赖这个条件就不明智了。因为在一些<span class="exturl" data-url="aHR0cDovL2Jhc2hvLmNvbS9wb3N0cy90ZWNobmljYWwvcmlha3MtY29uZmlnLWJlaGF2aW9ycy1wYXJ0LTMv">复杂的情况下<i class="fa fa-external-link-alt"></i></span>，read repair 操作和 sloppy quorum 同时发生，就有可能导致已经被删除了的数据重新出现；或者备份数（replicas）已经低于原来的 W 值（违反了quorum的条件），或者备份数增加到了高于原来的N值（也违反了quorum 的条件），这些都会导致非线性化的访问。</p>
 <p>这些都不是失败的系统，人们一直很成功地将其用于线上环境。但到目前为止，我们并不能把他们严格分类为AP 或者 CP，要么是因为需要依赖特定的配置和操作，要么是因为这个系统既不满足 <em>CAP可用性</em>、也不满足 <em>CAP一致性</em>。</p>
-<h2 id="案例分析：ZooKeeper"><a href="#案例分析：ZooKeeper" class="headerlink" title="案例分析：ZooKeeper"></a>案例分析：ZooKeeper</h2><p>ZooKeeper 又是什么情况呢？他用了<a target="_blank" rel="noopener" href="http://ds.qcri.org/people/mserafini/zab.pdf">共识算法</a>，所以人们<a target="_blank" rel="noopener" href="https://web.archive.org/web/20160511230421/http://tech.knewton.com/blog/2014/12/eureka-shouldnt-use-zookeeper-service-discovery/">很自然的认定其选择了一致性而放弃了可用性</a>（即他是 CP系统）。</p>
-<p>但是如果你读过 ZooKeeper的<a target="_blank" rel="noopener" href="http://zookeeper.apache.org/doc/r3.4.6/zookeeperProgrammers.html#ch_zkGuarantees">文档</a>，里面很清楚地说了 ZooKeeper 默认不支持可线性化的读取操作。每个客户端只连接到一个服务器节点，当客户端要读的时候，即使别的节点有更新的数据，也只能看到其直连的服务器节点的数据。这样做可以使其读性能比每次读都去收集多数票（quorum）或者访问 Leader 要高很多，但这也说明 ZooKeeper 在默认配置下不满足<em>CAP一致性</em>。</p>
-<p>当然，也可以在每次<a target="_blank" rel="noopener" href="https://mail-archives.apache.org/mod_mbox/zookeeper-user/201303.mbox/%3CCAJwFCa0Hoekc14Zy6i0LyLj=eraF8JimqMZadohoKQJNTMtYSg@mail.gmail.com%3E">读操作之前发一个sync命令</a>使得ZooKeeper支持线性化的读取。但这不是默认设置，因为这样牺牲了一部分性能。人们只在必要的时候才会去用 sync 命令，而不会所有读操作前都用。</p>
-<p>那ZooKeeper的可用性呢？ZK 需要<a target="_blank" rel="noopener" href="http://www.tcs.hut.fi/Studies/T-79.5001/reports/2012-deSouzaMedeiros.pdf">集群节点的多数票</a>来达到数据共识，比如，只有在多数节点同意时才能成功执行一个写操作。如果出现有网络分区，一边有大多数节点，另一边只有少部分节点。此时，拥有大多数节点的分区还可以继续提供服务；但对于少数节点分区来说，即使节点都活着，也不能正常处理读写请求。所以在出现网络分区时，ZK 的写操作不满足<em>CAP可用性</em>（即使拥有大多数节点的分区仍然可以处理写操作）。</p>
-<p>更有意思的是，ZooKeeper 3.4.0 还加入了一个<a target="_blank" rel="noopener" href="http://zookeeper.apache.org/doc/r3.4.6/zookeeperAdmin.html#Experimental+Options%2FFeatures">只读模式</a>。在该模式下，少部分节点分区仍可以处理读操作 ，不需要quorum！ 这个只读模式是满足<em>CAP可用性</em>的。因此，ZooKeeper 默认设置既不不满足 <em>CAP一致性</em>（CP）也不满足 <em>CAP可用性</em>（AP），它真正满足的只有分区容错（P）。但你可以在需要的情况下调用 sync 命令让读请求满足 CP；或者在只读模式下，使其读操作（不包括写）满足 AP。</p>
-<p>这就很烦人了。如果仅因为ZooKeeper 的默认配置不是可线性化的就称其为“不一致”，会严重歪曲 ZK 的功能。他其实可以提供非常强的一致性！他支持<a target="_blank" rel="noopener" href="http://ds.qcri.org/people/mserafini/zab.pdf">原子广播</a>（<a target="_blank" rel="noopener" href="http://courses.csail.mit.edu/6.852/08/papers/CT96-JACM.pdf">可以简单理解为共识问题</a>）并且每个会话都提供<a target="_blank" rel="noopener" href="http://www-i2.informatik.rwth-aachen.de/i2/fileadmin/user_upload/documents/Seminar_MCMM11/Causal_memory_1996.pdf">因果一致性</a><strong>[4]</strong> – 这比<a target="_blank" rel="noopener" href="https://www.researchgate.net/profile/Douglas_Terry3/publication/3561300_Session_guarantees_for_weakly_consistent_replicated_data/links/02e7e52cdbe60a6cb4000000.pdf">read your writes, monotonic reads</a> 还有<a target="_blank" rel="noopener" href="http://research.microsoft.com/pubs/157411/ConsistencyAndBaseballReport.pdf">consistent prefix reads</a><a target="_blank" rel="noopener" href="https://blog.the-pans.com/cap/arxiv.org/pdf/1302.0309.pdf">在一起都要强</a>。ZK 文档上说提供<a target="_blank" rel="noopener" href="https://lamport.azurewebsites.net/pubs/multi.pdf">可序列化的一致性</a>，但这其实过于谦虚了，因为它可以提供比这强的多的一致性保证。</p>
-<p>从 ZooKeeper的例子可以看出，就算一个系统在有网络分区的时候既不满足 <em>CAP一致性</em>（CP），也不满足 <em>CAP可用性</em>；甚至就算没有网络分区时，其默认配置也不提供可线性化，但仍可以不失为一个好系统（我猜ZK在<a target="_blank" rel="noopener" href="http://dbmsmusings.blogspot.com/2010/04/problems-with-cap-and-yahoos-little.html">Abadi的PACELC的框架</a>下是PC&#x2F;EL，但我不觉得这比CAP更有启发性）。</p>
+<h2 id="案例分析：ZooKeeper"><a href="#案例分析：ZooKeeper" class="headerlink" title="案例分析：ZooKeeper"></a>案例分析：ZooKeeper</h2><p>ZooKeeper 又是什么情况呢？他用了<span class="exturl" data-url="aHR0cDovL2RzLnFjcmkub3JnL3Blb3BsZS9tc2VyYWZpbmkvemFiLnBkZg==">共识算法<i class="fa fa-external-link-alt"></i></span>，所以人们<span class="exturl" data-url="aHR0cHM6Ly93ZWIuYXJjaGl2ZS5vcmcvd2ViLzIwMTYwNTExMjMwNDIxL2h0dHA6Ly90ZWNoLmtuZXd0b24uY29tL2Jsb2cvMjAxNC8xMi9ldXJla2Etc2hvdWxkbnQtdXNlLXpvb2tlZXBlci1zZXJ2aWNlLWRpc2NvdmVyeS8=">很自然的认定其选择了一致性而放弃了可用性<i class="fa fa-external-link-alt"></i></span>（即他是 CP系统）。</p>
+<p>但是如果你读过 ZooKeeper的<span class="exturl" data-url="aHR0cDovL3pvb2tlZXBlci5hcGFjaGUub3JnL2RvYy9yMy40LjYvem9va2VlcGVyUHJvZ3JhbW1lcnMuaHRtbCNjaF96a0d1YXJhbnRlZXM=">文档<i class="fa fa-external-link-alt"></i></span>，里面很清楚地说了 ZooKeeper 默认不支持可线性化的读取操作。每个客户端只连接到一个服务器节点，当客户端要读的时候，即使别的节点有更新的数据，也只能看到其直连的服务器节点的数据。这样做可以使其读性能比每次读都去收集多数票（quorum）或者访问 Leader 要高很多，但这也说明 ZooKeeper 在默认配置下不满足<em>CAP一致性</em>。</p>
+<p>当然，也可以在每次<span class="exturl" data-url="aHR0cHM6Ly9tYWlsLWFyY2hpdmVzLmFwYWNoZS5vcmcvbW9kX21ib3gvem9va2VlcGVyLXVzZXIvMjAxMzAzLm1ib3gvJTNDQ0FKd0ZDYTBIb2VrYzE0Wnk2aTBMeUxqPWVyYUY4SmltcU1aYWRvaG9LUUpOVE10WVNnQG1haWwuZ21haWwuY29tJTNF">读操作之前发一个sync命令<i class="fa fa-external-link-alt"></i></span>使得ZooKeeper支持线性化的读取。但这不是默认设置，因为这样牺牲了一部分性能。人们只在必要的时候才会去用 sync 命令，而不会所有读操作前都用。</p>
+<p>那ZooKeeper的可用性呢？ZK 需要<span class="exturl" data-url="aHR0cDovL3d3dy50Y3MuaHV0LmZpL1N0dWRpZXMvVC03OS41MDAxL3JlcG9ydHMvMjAxMi1kZVNvdXphTWVkZWlyb3MucGRm">集群节点的多数票<i class="fa fa-external-link-alt"></i></span>来达到数据共识，比如，只有在多数节点同意时才能成功执行一个写操作。如果出现有网络分区，一边有大多数节点，另一边只有少部分节点。此时，拥有大多数节点的分区还可以继续提供服务；但对于少数节点分区来说，即使节点都活着，也不能正常处理读写请求。所以在出现网络分区时，ZK 的写操作不满足<em>CAP可用性</em>（即使拥有大多数节点的分区仍然可以处理写操作）。</p>
+<p>更有意思的是，ZooKeeper 3.4.0 还加入了一个<span class="exturl" data-url="aHR0cDovL3pvb2tlZXBlci5hcGFjaGUub3JnL2RvYy9yMy40LjYvem9va2VlcGVyQWRtaW4uaHRtbCNFeHBlcmltZW50YWwrT3B0aW9ucyUyRkZlYXR1cmVz">只读模式<i class="fa fa-external-link-alt"></i></span>。在该模式下，少部分节点分区仍可以处理读操作 ，不需要quorum！ 这个只读模式是满足<em>CAP可用性</em>的。因此，ZooKeeper 默认设置既不不满足 <em>CAP一致性</em>（CP）也不满足 <em>CAP可用性</em>（AP），它真正满足的只有分区容错（P）。但你可以在需要的情况下调用 sync 命令让读请求满足 CP；或者在只读模式下，使其读操作（不包括写）满足 AP。</p>
+<p>这就很烦人了。如果仅因为ZooKeeper 的默认配置不是可线性化的就称其为“不一致”，会严重歪曲 ZK 的功能。他其实可以提供非常强的一致性！他支持<span class="exturl" data-url="aHR0cDovL2RzLnFjcmkub3JnL3Blb3BsZS9tc2VyYWZpbmkvemFiLnBkZg==">原子广播<i class="fa fa-external-link-alt"></i></span>（<span class="exturl" data-url="aHR0cDovL2NvdXJzZXMuY3NhaWwubWl0LmVkdS82Ljg1Mi8wOC9wYXBlcnMvQ1Q5Ni1KQUNNLnBkZg==">可以简单理解为共识问题<i class="fa fa-external-link-alt"></i></span>）并且每个会话都提供<span class="exturl" data-url="aHR0cDovL3d3dy1pMi5pbmZvcm1hdGlrLnJ3dGgtYWFjaGVuLmRlL2kyL2ZpbGVhZG1pbi91c2VyX3VwbG9hZC9kb2N1bWVudHMvU2VtaW5hcl9NQ01NMTEvQ2F1c2FsX21lbW9yeV8xOTk2LnBkZg==">因果一致性<i class="fa fa-external-link-alt"></i></span><strong>[4]</strong> – 这比<span class="exturl" data-url="aHR0cHM6Ly93d3cucmVzZWFyY2hnYXRlLm5ldC9wcm9maWxlL0RvdWdsYXNfVGVycnkzL3B1YmxpY2F0aW9uLzM1NjEzMDBfU2Vzc2lvbl9ndWFyYW50ZWVzX2Zvcl93ZWFrbHlfY29uc2lzdGVudF9yZXBsaWNhdGVkX2RhdGEvbGlua3MvMDJlN2U1MmNkYmU2MGE2Y2I0MDAwMDAwLnBkZg==">read your writes, monotonic reads<i class="fa fa-external-link-alt"></i></span> 还有<span class="exturl" data-url="aHR0cDovL3Jlc2VhcmNoLm1pY3Jvc29mdC5jb20vcHVicy8xNTc0MTEvQ29uc2lzdGVuY3lBbmRCYXNlYmFsbFJlcG9ydC5wZGY=">consistent prefix reads<i class="fa fa-external-link-alt"></i></span><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLnRoZS1wYW5zLmNvbS9jYXAvYXJ4aXYub3JnL3BkZi8xMzAyLjAzMDkucGRm">在一起都要强<i class="fa fa-external-link-alt"></i></span>。ZK 文档上说提供<span class="exturl" data-url="aHR0cHM6Ly9sYW1wb3J0LmF6dXJld2Vic2l0ZXMubmV0L3B1YnMvbXVsdGkucGRm">可序列化的一致性<i class="fa fa-external-link-alt"></i></span>，但这其实过于谦虚了，因为它可以提供比这强的多的一致性保证。</p>
+<p>从 ZooKeeper的例子可以看出，就算一个系统在有网络分区的时候既不满足 <em>CAP一致性</em>（CP），也不满足 <em>CAP可用性</em>；甚至就算没有网络分区时，其默认配置也不提供可线性化，但仍可以不失为一个好系统（我猜ZK在<span class="exturl" data-url="aHR0cDovL2RibXNtdXNpbmdzLmJsb2dzcG90LmNvbS8yMDEwLzA0L3Byb2JsZW1zLXdpdGgtY2FwLWFuZC15YWhvb3MtbGl0dGxlLmh0bWw=">Abadi的PACELC的框架<i class="fa fa-external-link-alt"></i></span>下是PC&#x2F;EL，但我不觉得这比CAP更有启发性）。</p>
 <h2 id="CP-x2F-AP：失当的二分法"><a href="#CP-x2F-AP：失当的二分法" class="headerlink" title="CP&#x2F;AP：失当的二分法"></a>CP&#x2F;AP：失当的二分法</h2><p>一个数据库不能无歧义地分类为 CP&#x2F;AP 的事实，表明 CP&#x2F;AP 本就不适合作为描述系统的标签。</p>
 <p>基于以下几点，我认为不要再把数据存储系统强行归为AP或CP了：</p>
 <ul>
-<li>在同一个软件内，你可能有<a target="_blank" rel="noopener" href="https://groups.csail.mit.edu/tds/papers/Gilbert/Brewer2.pdf">多个一致性属性的选择</a>。</li>
+<li>在同一个软件内，你可能有<span class="exturl" data-url="aHR0cHM6Ly9ncm91cHMuY3NhaWwubWl0LmVkdS90ZHMvcGFwZXJzL0dpbGJlcnQvQnJld2VyMi5wZGY=">多个一致性属性的选择<i class="fa fa-external-link-alt"></i></span>。</li>
 <li>在CAP定理的严格定义下，大部分系统既不满足一致性也不满足可用性。然而我从来没听到别人称这些系统为”P”，或许这样听上去不大好。但这样的系统其实没那么糟糕，反而可能是非常合理的设计，只是不在CP&#x2F;AP这两个分类中罢了。</li>
 <li>虽然大部分软件都不能恰好的归到 CP&#x2F;AP 这两类中，但人们还是强行按其进行了划分。这就导致为了适应其应用的具体场景，不可避免地改变了对 CAP定理中“一致性”或者“可用性”的定义。不幸的是，当这个几个关键概念的定义改变后，CAP定理也就不生效了，此时 CP&#x2F;AP 的区分也就完全没有意义了。</li>
 <li>将一个系统强行归到两类中，容易让人忽略大量细微的差别。在设计分布式系统时，有很多因素需要考虑：服务的延迟、模型的简约、运维的难易等等，显然不可能把这么多细节压缩到仅用一个比特的信息来表示。比如，ZooKeeper 有一个符合 AP 的只读模式，但该模式同时提供对所有写操作的全局有序性，这个特性比 Riak 或者 Cassandra 这些所谓的 AP 系统提供的承诺要强得多，粗暴的将其归为 AP 显然很可笑。</li>
-<li>甚至 CAP 作者 Eric Brewer 也<a target="_blank" rel="noopener" href="http://cs609.cs.ua.edu/CAP12.pdf">承认 </a>CAP定理是一个有误导性且过于简化的模型。在2000年，抛出 CAP定理的意义在于引导业界针对分布式数据系统的取舍的讨论，CAP 定理的确也达到了这个效果。但该定理的目的不在于提出一个突破性的正式结论，也不是要成为一个严谨的数据系统的分类方式。十五年之后的现在，我们已经有了多得多的一致性和容错的模型来进行参考，CAP已经完成了他的使命，现在是时候往前看了。</li>
+<li>甚至 CAP 作者 Eric Brewer 也<span class="exturl" data-url="aHR0cDovL2NzNjA5LmNzLnVhLmVkdS9DQVAxMi5wZGY=">承认 <i class="fa fa-external-link-alt"></i></span>CAP定理是一个有误导性且过于简化的模型。在2000年，抛出 CAP定理的意义在于引导业界针对分布式数据系统的取舍的讨论，CAP 定理的确也达到了这个效果。但该定理的目的不在于提出一个突破性的正式结论，也不是要成为一个严谨的数据系统的分类方式。十五年之后的现在，我们已经有了多得多的一致性和容错的模型来进行参考，CAP已经完成了他的使命，现在是时候往前看了。</li>
 </ul>
 <h2 id="学着独立思考"><a href="#学着独立思考" class="headerlink" title="学着独立思考"></a>学着独立思考</h2><p>如果 CP&#x2F;AP 不适合用来描述和评判一个系统，那我们应当用什么？我觉得正确答案不唯一。很多前人花了不少精力思考过这些问题，也提出了很多术语和模型来帮助我们理解这些问题。想学习这些知识，你需要更深入地去阅读相关文献。</p>
 <ul>
-<li>Doug Terry 的论文是一个很好的开始，<a target="_blank" rel="noopener" href="http://research.microsoft.com/pubs/157411/ConsistencyAndBaseballReport.pdf">他以棒球为例解释了各种各样的最终一致性</a>。纵然你不是美国人，也不了解棒球，也会感觉该论文思路很清晰、可读性很强。</li>
-<li>如果你对事务的隔离性模型（isolation，不同于分布式系统的一致性，但比较相关）有兴趣，我的小项目<a target="_blank" rel="noopener" href="http://martin.kleppmann.com/2014/11/25/hermitage-testing-the-i-in-acid.html">Hermitage</a>可以一看。</li>
-<li><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1302.0309.pdf">Peter Bails 的这篇论文</a>探讨了一致性、事务的隔离性、可用性之间的关系（这篇论文描述了各种不同的一致性之间的层次化结构，Kyle Kingsbury<a target="_blank" rel="noopener" href="https://aphyr.com/posts/322-call-me-maybe-mongodb-stale-reads">很喜欢给别人讲这个</a>）。<img src="https://blog.the-pans.com/content/images/2018/07/isolation-levels.png" alt="isolation-levels"></li>
+<li>Doug Terry 的论文是一个很好的开始，<span class="exturl" data-url="aHR0cDovL3Jlc2VhcmNoLm1pY3Jvc29mdC5jb20vcHVicy8xNTc0MTEvQ29uc2lzdGVuY3lBbmRCYXNlYmFsbFJlcG9ydC5wZGY=">他以棒球为例解释了各种各样的最终一致性<i class="fa fa-external-link-alt"></i></span>。纵然你不是美国人，也不了解棒球，也会感觉该论文思路很清晰、可读性很强。</li>
+<li>如果你对事务的隔离性模型（isolation，不同于分布式系统的一致性，但比较相关）有兴趣，我的小项目<span class="exturl" data-url="aHR0cDovL21hcnRpbi5rbGVwcG1hbm4uY29tLzIwMTQvMTEvMjUvaGVybWl0YWdlLXRlc3RpbmctdGhlLWktaW4tYWNpZC5odG1s">Hermitage<i class="fa fa-external-link-alt"></i></span>可以一看。</li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9hcnhpdi5vcmcvcGRmLzEzMDIuMDMwOS5wZGY=">Peter Bails 的这篇论文<i class="fa fa-external-link-alt"></i></span>探讨了一致性、事务的隔离性、可用性之间的关系（这篇论文描述了各种不同的一致性之间的层次化结构，Kyle Kingsbury<span class="exturl" data-url="aHR0cHM6Ly9hcGh5ci5jb20vcG9zdHMvMzIyLWNhbGwtbWUtbWF5YmUtbW9uZ29kYi1zdGFsZS1yZWFkcw==">很喜欢给别人讲这个<i class="fa fa-external-link-alt"></i></span>）。<img src="https://blog.the-pans.com/content/images/2018/07/isolation-levels.png" alt="isolation-levels"></li>
 <li>当你读到过这些以后，应该已经准备好深入阅读文献。我在行文过程中加入了很多论文引用，不妨去看一下，专家们已经帮你把很多问题都解决了。</li>
-<li>作为最后的选择，如果你不想逐篇读这些原始论文，可以看一下<a target="_blank" rel="noopener" href="http://dataintensive.net/">我的书</a>，该书将大部分的重要思想用很平易的方式梳理了一遍（你看，我已经尽可能的让这篇文章看上去不是用来推销我的书的）</li>
-<li>如果你想学习更多关于 ZooKeeper 使用的正确打开方式 ，<a target="_blank" rel="noopener" href="http://shop.oreilly.com/product/0636920028901.do">Flavio Junqueira 和 Benjamin Reed的书</a>是不错的选择。</li>
+<li>作为最后的选择，如果你不想逐篇读这些原始论文，可以看一下<span class="exturl" data-url="aHR0cDovL2RhdGFpbnRlbnNpdmUubmV0Lw==">我的书<i class="fa fa-external-link-alt"></i></span>，该书将大部分的重要思想用很平易的方式梳理了一遍（你看，我已经尽可能的让这篇文章看上去不是用来推销我的书的）</li>
+<li>如果你想学习更多关于 ZooKeeper 使用的正确打开方式 ，<span class="exturl" data-url="aHR0cDovL3Nob3Aub3JlaWxseS5jb20vcHJvZHVjdC8wNjM2OTIwMDI4OTAxLmRv">Flavio Junqueira 和 Benjamin Reed的书<i class="fa fa-external-link-alt"></i></span>是不错的选择。</li>
 </ul>
 <p>不管你选择哪种学习方式，我都希望你保持好奇和耐心——这不是容易的学科。但一切付出都是值得的，你将学会如何合理的进行取舍，进而找出最适合你应用的架构。最后，不管怎么样，请不要再说 CP 和 AP 了，因为他们根本没有意义。</p>
 <h2 id="译注"><a href="#译注" class="headerlink" title="译注"></a>译注</h2><p>[1] <strong>CAP可用性</strong>。作者用术语 CAP-Available 来专指 CAP 定理中狭义、专用的可用性，因此文中 <em>CAP可用性</em> 整体是一个名词，用斜体来表示。同样的 CAP-Consistency 也是如此，作者为了避免歧义，干脆用可线性化（Linearizability）来代称。</p>
 <p>[2] <strong>可线性化</strong>。可以从另一个侧面进行理解，即系统中一系列具有偏序关系的事件，可以进行全局拓扑排序，即没有环。</p>
-<p>[3] <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Quorum_(distributed_computing)">Quorum机制</a>。是一种分布式系统中常用的，用来进行数据备份和保证最终一致性的投票算法，其主要数学思想来源于鸽巢原理，该算法可以保证同一份数据对象的多个副本不会被超过两个访问对象读写。每个使用此算法的系统，都有两个关键参数：最小读票数 R 和最小写票数 W。其关系需满足：1.R + W &gt; N  2. W &gt; N&#x2F;2，其中 N 是集群备份数。理解时可以类比读写锁，即系统不能同时有多个写写、读写，但是 R 设置的小一些可以同时有多个读。</p>
-<p>[4] 因果一致性。<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Causal_consistency">causal consistency</a>，是一种主要的内存一致性模型，它会保证存在因果关系的操作顺序发生，没有明显因果关系事件的执行顺序则不作保证。</p>
+<p>[3] <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvUXVvcnVtXyhkaXN0cmlidXRlZF9jb21wdXRpbmcp">Quorum机制<i class="fa fa-external-link-alt"></i></span>。是一种分布式系统中常用的，用来进行数据备份和保证最终一致性的投票算法，其主要数学思想来源于鸽巢原理，该算法可以保证同一份数据对象的多个副本不会被超过两个访问对象读写。每个使用此算法的系统，都有两个关键参数：最小读票数 R 和最小写票数 W。其关系需满足：1.R + W &gt; N  2. W &gt; N&#x2F;2，其中 N 是集群备份数。理解时可以类比读写锁，即系统不能同时有多个写写、读写，但是 R 设置的小一些可以同时有多个读。</p>
+<p>[4] 因果一致性。<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQ2F1c2FsX2NvbnNpc3RlbmN5">causal consistency<i class="fa fa-external-link-alt"></i></span>，是一种主要的内存一致性模型，它会保证存在因果关系的操作顺序发生，没有明显因果关系事件的执行顺序则不作保证。</p>
 <p>[5] replicate。可以翻译为副本、冗余、备份等等。</p>
 <hr>
 <p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
@@ -378,22 +378,22 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
-    </li>
-    <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/04/30/map-reduce/" rel="bookmark">MapReduce —— 历久而弥新</a></div>
-    </li>
-    <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/04/06/ray/" rel="bookmark">继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray</a></div>
-    </li>
-    <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/01/18/raft-implement-points/" rel="bookmark">MIT 6.824 2020 Raft 实现细节备忘</a></div>
-    </li>
-    <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2021/07/03/distributed-system-1-master-workers/" rel="bookmark">分布式系统架构（一）—— Master-Workers 架构</a></div>
-    </li>
-    <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2021/10/10/what-is-distributed-system/" rel="bookmark">分布式系统是什么</a></div>
     </li>
   </ul>
 

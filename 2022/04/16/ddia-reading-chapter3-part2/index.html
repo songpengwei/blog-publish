@@ -37,7 +37,7 @@
 <meta property="og:image" content="https://s2.loli.net/2022/04/16/WaqlOFXnHUI9RGw.png">
 <meta property="og:image" content="https://s2.loli.net/2022/04/16/e2m8uLaoDnMrfSC.png">
 <meta property="og:image" content="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg">
-<meta property="article:published_time" content="2022-04-16T01:52:32.000Z">
+<meta property="article:published_time" content="2022-04-16T08:52:32.000Z">
 <meta property="article:modified_time" content="2023-07-31T06:26:06.288Z">
 <meta property="article:author" content="木鸟杂记">
 <meta property="article:tag" content="读书笔记">
@@ -228,7 +228,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-04-16 02:52:32" itemprop="dateCreated datePublished" datetime="2022-04-16T02:52:32+01:00">2022-04-16</time>
+              <time title="创建时间：2022-04-16 09:52:32" itemprop="dateCreated datePublished" datetime="2022-04-16T09:52:32+01:00">2022-04-16</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -270,7 +270,7 @@
 
       
         <blockquote>
-<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">这里</a>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。</p>
+<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">这里<i class="fa fa-external-link-alt"></i></span>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。</p>
 </blockquote>
 <h1 id="事务型还是分析型"><a href="#事务型还是分析型" class="headerlink" title="事务型还是分析型"></a>事务型还是分析型</h1><p>术语 <strong>OL</strong>（Online）主要是指交互式的查询。</p>
 <p>术语<strong>事务</strong>（ transaction ）由来有一些历史原因。早期的数据库使用方多为商业交易（commercial ），比如买卖、发工资等等。但是随着数据库应用不断扩大，交易\事务作为名词保留了下来。</p>
@@ -337,7 +337,7 @@
 <p><img src="https://s2.loli.net/2022/04/16/P7OJ9fHMVXvW8uD.png" alt="ddia-3-10-store-by-column.png"></p>
 <p>不同列之间同一个行的字段可以通过下标来对应。当然也可以内嵌主键来对应，但那样存储成本就太高了。</p>
 <h2 id="列压缩"><a href="#列压缩" class="headerlink" title="列压缩"></a>列压缩</h2><p>将所有数据分列存储在一块，带来了一个意外的好处，由于同一属性的数据相似度高，因此更易压缩。</p>
-<p>如果每一列中值阈相比行数要小的多，可以用<strong>位图编码（ <em><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Bitmap_index" title="bitmap encoding">bitmap encoding</a></em> ）</strong>。举个例子，零售商可能有数十亿的销售交易，但只有 100,000 个不同的产品。</p>
+<p>如果每一列中值阈相比行数要小的多，可以用<strong>位图编码（ <em><span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQml0bWFwX2luZGV4">bitmap encoding<i class="fa fa-external-link-alt"></i></span></em> ）</strong>。举个例子，零售商可能有数十亿的销售交易，但只有 100,000 个不同的产品。</p>
 <p><img src="https://s2.loli.net/2022/04/16/WaqlOFXnHUI9RGw.png" alt="ddia-3-11-compress.png"></p>
 <p>上图中，是一个列分片中的数据，可以看出只有 {29, 30, 31, 68, 69, 74} 六个离散值。针对每个值出现的位置，我们使用一个 bit array 来表示：</p>
 <ol>
@@ -345,7 +345,7 @@
 <li>值为 0 则表示该下标没有出现该值</li>
 <li>值为 1 则表示该下标出现了该值</li>
 </ol>
-<p>如果 bit array 是稀疏的，即大量的都是 0，只要少量的 1。其实还可以使用 <strong><a target="_blank" rel="noopener" href="https://zh.wikipedia.org/zh/%E6%B8%B8%E7%A8%8B%E7%BC%96%E7%A0%81" title="游程编码">游程编码</a>（RLE， Run-length encoding）</strong> 进一步压缩：</p>
+<p>如果 bit array 是稀疏的，即大量的都是 0，只要少量的 1。其实还可以使用 <strong><span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3poLyVFNiVCOCVCOCVFNyVBOCU4QiVFNyVCQyU5NiVFNyVBMCU4MQ==">游程编码<i class="fa fa-external-link-alt"></i></span>（RLE， Run-length encoding）</strong> 进一步压缩：</p>
 <ol>
 <li>将连续的 0 和 1，改写成 <code>数量+值</code>，比如 <code>product_sk = 29</code> 是 <code>9 个 0，1 个 1，8 个 0</code>。</li>
 <li>使用一个小技巧，将信息进一步压缩。比如将同值项合并后，肯定是 0 1 交错出现，固定第一个值为 0，则交错出现的 0 和 1 的值也不用写了。则 <code>product_sk = 29</code>  编码变成 <code>9，1，8</code></li>
@@ -358,7 +358,7 @@
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">WHERE</span> product_sk <span class="operator">=</span> <span class="number">31</span> <span class="keyword">AND</span> store_sk <span class="operator">=</span> <span class="number">3</span></span><br></pre></td></tr></table></figure>
 
 <p>可以转换为 <code>product_sk = 31</code>和 <code>store_sk = 3</code>的 bit array 的按位与，就可以得到所有需要的位置。</p>
-<h3 id="列族"><a href="#列族" class="headerlink" title="列族"></a>列族</h3><p>书中特别提到<strong>列族（column families）</strong>。它是 Cassandra 和 HBase 中的的概念，他们都起源于自谷歌的 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Bigtable" title="BigTable">BigTable</a> 。注意到他们和<strong>列式（column-oriented）存储</strong>有相似之处，但绝不完全相同：</p>
+<h3 id="列族"><a href="#列族" class="headerlink" title="列族"></a>列族</h3><p>书中特别提到<strong>列族（column families）</strong>。它是 Cassandra 和 HBase 中的的概念，他们都起源于自谷歌的 <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQmlndGFibGU=">BigTable<i class="fa fa-external-link-alt"></i></span> 。注意到他们和<strong>列式（column-oriented）存储</strong>有相似之处，但绝不完全相同：</p>
 <ol>
 <li>同一个列族中多个列是一块存储的，并且内嵌行键（row key）。</li>
 <li>并且列不压缩（存疑？）</li>
@@ -367,7 +367,7 @@
 <h3 id="内存带宽和向量化处理"><a href="#内存带宽和向量化处理" class="headerlink" title="内存带宽和向量化处理"></a>内存带宽和向量化处理</h3><p>数仓的超大规模数据量带来了以下瓶颈：</p>
 <ol>
 <li>内存处理带宽</li>
-<li>CPU 分支预测错误和<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E6%B5%81%E6%B0%B4%E7%BA%BF%E5%81%9C%E9%A1%BF" title="流水线停顿">流水线停顿</a></li>
+<li>CPU 分支预测错误和<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU2JUI1JTgxJUU2JUIwJUI0JUU3JUJBJUJGJUU1JTgxJTlDJUU5JUExJUJG">流水线停顿<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
 <p>关于内存的瓶颈可已通过前述的数据压缩来缓解。对于 CPU 的瓶颈可以使用：</p>
 <ol>
@@ -437,10 +437,10 @@
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter2/" rel="bookmark">DDIA 读书笔记（二）：数据模型和查询语言</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA 读书笔记（五）：冗余</a></div>

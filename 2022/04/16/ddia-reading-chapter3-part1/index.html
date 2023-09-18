@@ -40,7 +40,7 @@
 <meta property="og:image" content="https://s2.loli.net/2022/04/16/ZuLcBm6HKd2AQra.png">
 <meta property="og:image" content="https://s2.loli.net/2022/04/16/K4gXhrzf9wySko7.png">
 <meta property="og:image" content="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg">
-<meta property="article:published_time" content="2022-04-16T01:37:46.000Z">
+<meta property="article:published_time" content="2022-04-16T08:37:46.000Z">
 <meta property="article:modified_time" content="2023-07-31T06:26:06.287Z">
 <meta property="article:author" content="木鸟杂记">
 <meta property="article:tag" content="读书笔记">
@@ -231,7 +231,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-04-16 02:37:46" itemprop="dateCreated datePublished" datetime="2022-04-16T02:37:46+01:00">2022-04-16</time>
+              <time title="创建时间：2022-04-16 09:37:46" itemprop="dateCreated datePublished" datetime="2022-04-16T09:37:46+01:00">2022-04-16</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -273,7 +273,7 @@
 
       
         <blockquote>
-<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">这里</a>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。</p>
+<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">这里<i class="fa fa-external-link-alt"></i></span>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。</p>
 </blockquote>
 <p>第二章讲了上层抽象：数据模型和查询语言。<br>本章下沉一些，聚焦数据库底层如何处理查询和存储。这其中，有个<strong>逻辑链条</strong>：</p>
 <blockquote>
@@ -369,7 +369,7 @@
 <li>Value 是 KV 条目的起始位置和长度。</li>
 </ol>
 <p><img src="https://s2.loli.net/2022/04/16/iXVWtdGLxb6RDqB.png" alt="ddia-3-1-hash-map-csv.png"></p>
-<p>看来很简单，但这正是 <a target="_blank" rel="noopener" href="https://docs.riak.com/riak/kv/2.2.3/setup/planning/backend/bitcask/index.html" title="Bitcask">Bitcask</a> 的基本设计，但关键是，他 Work（在小数据量时，即所有 key 都能存到内存中时）：能提供很高的读写性能：</p>
+<p>看来很简单，但这正是 <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnJpYWsuY29tL3JpYWsva3YvMi4yLjMvc2V0dXAvcGxhbm5pbmcvYmFja2VuZC9iaXRjYXNrL2luZGV4Lmh0bWw=">Bitcask<i class="fa fa-external-link-alt"></i></span> 的基本设计，但关键是，他 Work（在小数据量时，即所有 key 都能存到内存中时）：能提供很高的读写性能：</p>
 <ol>
 <li>写：文件追加写。</li>
 <li>读：一次内存查询，一次磁盘 seek；如果数据已经被缓存，则 seek 也可以省掉。</li>
@@ -437,13 +437,13 @@
 <p><strong>该方案的问题</strong>：如果出现宕机，内存中的数据结构将会消失。 解决方法也很经典：WAL。</p>
 <h3 id="从-SSTables-到-LSM-Tree"><a href="#从-SSTables-到-LSM-Tree" class="headerlink" title="从 SSTables 到 LSM-Tree"></a>从 SSTables 到 LSM-Tree</h3><p>将前面几节的一些碎片有机的组织起来，便是时下流行的存储引擎 LevelDB 和 RocksDB 后面的存储结构：LSM-Tree：</p>
 <p><img src="https://s2.loli.net/2022/04/16/pHgxdn4TPwCoil6.png" alt="ddia-3-leveldb-architecture.png"></p>
-<p>这种数据结构是 Patrick O’Neil 等人，在 1996 年提出的：<a target="_blank" rel="noopener" href="https://www.cs.umb.edu/~poneil/lsmtree.pdf" title="The Log-Structured Merge-Tree">The Log-Structured Merge-Tree</a>。</p>
+<p>这种数据结构是 Patrick O’Neil 等人，在 1996 年提出的：<span class="exturl" data-url="aHR0cHM6Ly93d3cuY3MudW1iLmVkdS9+cG9uZWlsL2xzbXRyZWUucGRm">The Log-Structured Merge-Tree<i class="fa fa-external-link-alt"></i></span>。</p>
 <p>Elasticsearch 和 Solr 的索引引擎 Lucene，也使用类似 LSM-Tree 存储结构。但其数据模型不是 KV，但类似：word → document list。</p>
 <h3 id="性能优化"><a href="#性能优化" class="headerlink" title="性能优化"></a>性能优化</h3><p>如果想让一个引擎工程上可用，还会做大量的性能优化。对于 LSM-Tree 来说，包括：</p>
 <p><strong>优化 SSTable 的查找。</strong>常用 <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/"><strong>Bloom Filter</strong></a>。该数据结构可以使用较少的内存为每个 SSTable 做一些指纹，起到一些初筛的作用。</p>
 <p><strong>层级化组织 SSTable</strong>。以控制 Compaction 的顺序和时间。常见的有 size-tiered 和 leveled compaction。LevelDB 便是支持后者而得名。前者比较简单粗暴，后者性能更好，也因此更为常见。</p>
 <p><img src="https://s2.loli.net/2022/04/16/yBxIZR8CusbQrPO.png" alt="ddia-sized-tierd-compact.png"></p>
-<p>对于 RocksDB 来说，工程上的优化和使用上的优化就更多了。在其 <a target="_blank" rel="noopener" href="https://github.com/facebook/rocksdb/wiki" title="rocksdb wiki">Wiki</a> 上随便摘录几点：</p>
+<p>对于 RocksDB 来说，工程上的优化和使用上的优化就更多了。在其 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2ZhY2Vib29rL3JvY2tzZGIvd2lraQ==">Wiki<i class="fa fa-external-link-alt"></i></span> 上随便摘录几点：</p>
 <ol>
 <li>Column Family</li>
 <li>前缀压缩和过滤</li>
@@ -451,7 +451,7 @@
 </ol>
 <p>但无论有多少变种和优化，LSM-Tree 的核心思想——<strong>保存一组合理组织、后台合并的 SSTables</strong> ——简约而强大。可以方便的进行范围遍历，可以变大量随机为少量顺序。</p>
 <h2 id="B-族树"><a href="#B-族树" class="headerlink" title="B 族树"></a>B 族树</h2><p>虽然先讲的 LSM-Tree，但是它要比 B+ 树新的多。</p>
-<p>B 树于 1970 年被 R. Bayer and E. McCreight <a target="_blank" rel="noopener" href="https://dl.acm.org/doi/10.1145/1734663.1734671" title="b tree paper">提出</a>后，便迅速流行了起来。现在几乎所有的关系型数据中，它都是数据索引标准一般的实现。</p>
+<p>B 树于 1970 年被 R. Bayer and E. McCreight <span class="exturl" data-url="aHR0cHM6Ly9kbC5hY20ub3JnL2RvaS8xMC4xMTQ1LzE3MzQ2NjMuMTczNDY3MQ==">提出<i class="fa fa-external-link-alt"></i></span>后，便迅速流行了起来。现在几乎所有的关系型数据中，它都是数据索引标准一般的实现。</p>
 <p>与 LSM-Tree 一样，它也支持高效的<strong>点查</strong>和<strong>范围查</strong>。但却使用了完全不同的组织方式。</p>
 <p>其特点有：</p>
 <ol>
@@ -551,8 +551,8 @@
 <li>使用特殊数据结构，如 R 树。</li>
 </ol>
 <h3 id="全文索引和模糊索引（Full-text-search-and-fuzzy-indexes）。"><a href="#全文索引和模糊索引（Full-text-search-and-fuzzy-indexes）。" class="headerlink" title="全文索引和模糊索引（Full-text search and fuzzy indexes）。"></a><strong>全文索引和模糊索引（Full-text search and fuzzy indexes）</strong>。</h3><p>前述索引只提供全字段的精确匹配，而不提供类似搜索引擎的功能。比如，按字符串中包含的单词查询，针对笔误的单词查询。</p>
-<p>在工程中常用 <a target="_blank" rel="noopener" href="https://lucene.apache.org/" title="Apace Lucene">Apace Lucene</a> 库，和其包装出来的服务：<a target="_blank" rel="noopener" href="https://www.elastic.co/cn/" title="Elasticsearch">Elasticsearch</a>。他也使用类似 LSM-tree 的日志存储结构，但其索引是一个有限状态自动机，在行为上类似 Trie 树。</p>
-<h3 id="全内存数据结构"><a href="#全内存数据结构" class="headerlink" title="全内存数据结构"></a>全内存数据结构</h3><p>随着单位内存成本下降，甚至支持持久化（<em>non-volatile memory，</em>NVM，如 Intel 的 <a target="_blank" rel="noopener" href="https://www.intel.cn/content/www/cn/zh/products/details/memory-storage/optane-dc-persistent-memory.html" title="傲腾">傲腾</a>），全内存数据库也逐渐开始流行。</p>
+<p>在工程中常用 <span class="exturl" data-url="aHR0cHM6Ly9sdWNlbmUuYXBhY2hlLm9yZy8=">Apace Lucene<i class="fa fa-external-link-alt"></i></span> 库，和其包装出来的服务：<span class="exturl" data-url="aHR0cHM6Ly93d3cuZWxhc3RpYy5jby9jbi8=">Elasticsearch<i class="fa fa-external-link-alt"></i></span>。他也使用类似 LSM-tree 的日志存储结构，但其索引是一个有限状态自动机，在行为上类似 Trie 树。</p>
+<h3 id="全内存数据结构"><a href="#全内存数据结构" class="headerlink" title="全内存数据结构"></a>全内存数据结构</h3><p>随着单位内存成本下降，甚至支持持久化（<em>non-volatile memory，</em>NVM，如 Intel 的 <span class="exturl" data-url="aHR0cHM6Ly93d3cuaW50ZWwuY24vY29udGVudC93d3cvY24vemgvcHJvZHVjdHMvZGV0YWlscy9tZW1vcnktc3RvcmFnZS9vcHRhbmUtZGMtcGVyc2lzdGVudC1tZW1vcnkuaHRtbA==">傲腾<i class="fa fa-external-link-alt"></i></span>），全内存数据库也逐渐开始流行。</p>
 <p>根据是否需要持久化，内存数据大概可以分为两类：</p>
 <ol>
 <li><strong>不需要持久化</strong>。如只用于缓存的 Memcached。</li>

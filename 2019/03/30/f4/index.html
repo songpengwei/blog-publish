@@ -37,7 +37,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png">
 <meta property="og:image" content="https://i.loli.net/2020/02/09/yUSnKop1hGH6QEj.png">
 <meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
-<meta property="article:published_time" content="2019-03-30T01:07:16.000Z">
+<meta property="article:published_time" content="2019-03-30T09:07:16.000Z">
 <meta property="article:modified_time" content="2023-07-31T06:26:06.279Z">
 <meta property="article:author" content="木鸟杂记">
 <meta property="article:tag" content="distributed system">
@@ -229,7 +229,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2019-03-30 01:07:16" itemprop="dateCreated datePublished" datetime="2019-03-30T01:07:16+00:00">2019-03-30</time>
+              <time title="创建时间：2019-03-30 09:07:16" itemprop="dateCreated datePublished" datetime="2019-03-30T09:07:16+00:00">2019-03-30</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -306,7 +306,7 @@
 <h3 id="容错（Fault-tolerance）"><a href="#容错（Fault-tolerance）" class="headerlink" title="容错（Fault tolerance）"></a>容错（Fault tolerance）</h3><p>Haystack 通过在一个数据中心的不同机架上各放一个副本，然后再不同数据中心再放一个副本的三副本策略获得了对硬盘，主机，机架甚至数据中心的容错能力。然后通过 RAID-6（1.2倍冗余数据编码，能够小范围的纠正错误，可以读读纠错码之类的文章）进行额外的硬盘容错，更上一层保险。但是付出的代价是 3*1.2 &#x3D; 3.6 倍的有效冗余因子，这也是 Haystack 的局限之处，虽然最大化了 IOPS，但是在存储使用上却并不高效，造成了很多 BLOB 的数据冗余。</p>
 <h3 id="暂存内容驱动（Expiry-Driven-Content）"><a href="#暂存内容驱动（Expiry-Driven-Content）" class="headerlink" title="暂存内容驱动（Expiry-Driven Content）"></a>暂存内容驱动（Expiry-Driven Content）</h3><p>有些类型的 BLOB 具有一定的过期时间，比如说用户上传的视频，会从原始格式转化为我们的存储格式。在此之后原始视频需要删掉。我们会避免将此类具有过期时间的数据移动到 F4 上，从而让 Haystack 负责这些频繁的删除请求，并通过频繁紧缩来回收空间。</p>
 <h2 id="f4-设计"><a href="#f4-设计" class="headerlink" title="f4 设计"></a>f4 设计</h2><p>设计目标是在容错的基础上尽可能高效。也就是在能够容忍硬盘错误，主机故障，机架问题，数据中心灾难的前提下，把有效冗余倍数降一降。</p>
-<h3 id="f4-概览（f4-Overview）"><a href="#f4-概览（f4-Overview）" class="headerlink" title="f4 概览（f4 Overview）"></a>f4 概览（f4 Overview）</h3><p>f4 是温数据存储架构的子系统。包含一系列  数据单元（cell），每个 cell 都在同一个数据中心（机房，datacenter）里。当前（2014）的 cell 包含 14 个机架，每个机架有15个主机，每个主机有三十块 4T 容量的硬盘。cell 负责存储逻辑卷，每个逻辑卷实际存储时，会将数据利用<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E9%87%8C%E5%BE%B7-%E6%89%80%E7%BD%97%E9%97%A8%E7%A0%81">里所码</a>（Reed-Solomon coding，简称RS，这是前面提到的RAID-6 标准的重要成员）进行冗余编码，比如 RS(n, k) 就是每存 n 个比特，就要编入额外的 k 个比特，以此来容忍最多 k 个比特的出错。通过这种编码方式可以解决硬盘，主机和机架出错问题。</p>
+<h3 id="f4-概览（f4-Overview）"><a href="#f4-概览（f4-Overview）" class="headerlink" title="f4 概览（f4 Overview）"></a>f4 概览（f4 Overview）</h3><p>f4 是温数据存储架构的子系统。包含一系列  数据单元（cell），每个 cell 都在同一个数据中心（机房，datacenter）里。当前（2014）的 cell 包含 14 个机架，每个机架有15个主机，每个主机有三十块 4T 容量的硬盘。cell 负责存储逻辑卷，每个逻辑卷实际存储时，会将数据利用<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU5JTg3JThDJUU1JUJFJUI3LSVFNiU4OSU4MCVFNyVCRCU5NyVFOSU5NyVBOCVFNyVBMCU4MQ==">里所码<i class="fa fa-external-link-alt"></i></span>（Reed-Solomon coding，简称RS，这是前面提到的RAID-6 标准的重要成员）进行冗余编码，比如 RS(n, k) 就是每存 n 个比特，就要编入额外的 k 个比特，以此来容忍最多 k 个比特的出错。通过这种编码方式可以解决硬盘，主机和机架出错问题。</p>
 <p>此外利用异或编码（XOR coding）来解决跨数据中心或者地理位置的出错问题。我们选取两个不同机房的对等数量 volume&#x2F;stripe&#x2F;block 结成对子，然后将每一对的异或值存在第三个机房。</p>
 <h3 id="单个-f4-cell（Individual-f4-Cell）"><a href="#单个-f4-cell（Individual-f4-Cell）" class="headerlink" title="单个 f4 cell（Individual f4 Cell）"></a>单个 f4 cell（Individual f4 Cell）</h3><p>每个 f4 数据单元（cell） 只处理锁定的卷（Volume），也就是只用支持读取和删除操作。数据文件和索引文件都是只读的，Haystack 中的备忘文件在 f4 中是不存在的。我们用了另一种方式来达到“删除”的效用，将每个 BLOB 进行加密后存储，将用于加密的秘钥（key）存在一个外部数据库中。响应删除请求时，<strong>只需要将 BLOB 对应的秘钥删掉就行</strong>（有点绝，对用户提供了隐私保证，而且将删除操作的延时降到很低）。</p>
 <p>索引文件由于比较小，直接用了三副本存储来保证可靠性，可以省去编解码带来的额外复杂度。数据文件用 n&#x3D;10, k &#x3D; 4 的里所码进行编码。具体来说，将每个数据文件切分为 n 个连续的数据块（block），每个具有固定尺寸 b（最后一个块不满，而又写不进去一个新 BLOB 的情况下，在结尾补零，<em><strong>类似这种打 padding 也是数据对齐常用的手法</strong></em>）；对于每 n 个这样的块，生成 k 个同样尺寸的<em>奇偶校验块</em>（parity block），这样 n+k 个数据块构成一个逻辑上的 <em>条带</em>（stripe）。同一条带上的任意两个块互称为<strong>兄弟块</strong>（companion block）。正常读取时，可以直接从数据块中读（我猜是那n个块，不用额外进行计算还原，有待考证，还得看里所码原理以及具体实现）。如果某些块不可用了，就会在同一条带上任取 n 块，解码后还原；此外还有个性质，就是读取 n 个 block 上对应的 n 截数据（比如某个 BLOB），也可以进行解码（这两个性质都是编码决定的，类似于 n 元线性方程组，有 k 个冗余方程）。</p>
@@ -378,22 +378,22 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/04/30/map-reduce/" rel="bookmark">MapReduce —— 历久而弥新</a></div>
+      <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/04/06/ray/" rel="bookmark">继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray</a></div>
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/01/18/raft-implement-points/" rel="bookmark">MIT 6.824 2020 Raft 实现细节备忘</a></div>
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/02/16/not-cp-or-ap/" rel="bookmark">（译）请不要再称数据库为 CP 和 AP</a></div>
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2021/07/03/distributed-system-1-master-workers/" rel="bookmark">分布式系统架构（一）—— Master-Workers 架构</a></div>
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2021/10/10/what-is-distributed-system/" rel="bookmark">分布式系统是什么</a></div>
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
     </li>
   </ul>
 

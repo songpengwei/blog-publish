@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="早对 LevelDB 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和  Jeff Dean 呢。 看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路，从架构概览说起，以模块分析做合。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="漫谈 LevelDB 数据结构（一）：跳表（Skip List）">
+<meta property="og:url" content="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="早对 LevelDB 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和  Jeff Dean 呢。 看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路，从架构概览说起，以模块分析做合。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/07/07/OeJRfVhHMEpxiNz.png">
+<meta property="og:image" content="https://i.loli.net/2020/07/07/N3iSsOqDBvdRCfg.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
+<meta property="article:published_time" content="2020-07-03T22:21:23.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.283Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="存储">
+<meta property="article:tag" content="leveldb">
+<meta property="article:tag" content="skiplist">
+<meta property="article:tag" content="跳表">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/07/07/OeJRfVhHMEpxiNz.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>漫谈 LevelDB 数据结构（一）：跳表（Skip List） | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          漫谈 LevelDB 数据结构（一）：跳表（Skip List）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-07-03 23:21:23" itemprop="dateCreated datePublished" datetime="2020-07-03T23:21:23+01:00">2020-07-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/leveldb/" itemprop="url" rel="index"><span itemprop="name">leveldb</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>早对 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2dvb2dsZS9sZXZlbGRi">LevelDB<i class="fa fa-external-link-alt"></i></span> 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和  Jeff Dean 呢。</p>
+<p>看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路，从架构概览说起，以模块分析做合。读代码的这些天，一直在盘算从哪下笔比较好。在将将读完之时，印象最深的反而是 LevelDB 的各种精妙的数据结构：贴合场景、从头构建、剪裁得当、代码精到。不妨， LevelDB 系列就从这些边边角角的小构件开始吧。</p>
+<p>本系列主要想分享 LevelDB 中用到的三个工程中常用的经典数据结构，分别是用以快速读写 memtable 的 <strong>Skip List</strong>、用以快速筛选 sstable 的 <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter"><strong>Bloom Filter</strong></a> 和用以部分缓存 sstable 的 <strong>LRUCache</strong> 。这是第一篇，Skip List。</p>
+</blockquote>
+<h2 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h2><p>LevelDB 是一个单机的 KV 存储引擎。KV 引擎在本质上可认为只提供对数据条目（key，val） <code>Put(key, val), Get(key) val, Delete(key)</code> 操作的三个接口。而在实现上，LevelDB 在收到删除请求时不会真正删除数据，而是为该 Key 写一个特殊标记，以备读取时发现该 Key 不存在，从而将  <code>Delete</code> 转为 <code>Put</code> ，进而将三个接口简化为两个。砍完这一刀后，剩下的就是在 <code>Put</code> 和 <code>Get</code> 间进行性能取舍，LevelDB 的选择是：**牺牲部分 <code>Get</code> 性能，换取强悍 <code>Put</code> 性能，再极力优化 <code>Get</code>**。</p>
+<p>我们知道，在存储层次体系（<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvTWVtb3J5X2hpZXJhcmNoeQ==">Memory hierarchy<i class="fa fa-external-link-alt"></i></span>）中，内存访问远快于磁盘，因此 LevelDB 为了达到目标做了以下设计：</p>
+<ol>
+<li><em>写入（Put）</em>：让所有写入都发生在<strong>内存</strong>中，然后达到一定尺寸后将其批量刷<strong>磁盘</strong>。</li>
+<li><em>读取（Get）</em>：随着时间推移，数据不断写入，内存中会有一小部分数据，磁盘中有剩余大部分数据。读取时，如果在内存中没命中，就需要去磁盘查找。</li>
+</ol>
+<p>为了保证写入性能，同时优化读取性能，需要内存中的存储结构能够同时支持高效的<strong>插入</strong>和<strong>查找</strong>。</p>
+<p>之前听说 LevelDB 时，最自然的想法，以为该内存结构（memtable）为是<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvU2VsZi1iYWxhbmNpbmdfYmluYXJ5X3NlYXJjaF90cmVl">平衡树<i class="fa fa-external-link-alt"></i></span>，比如<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvUmVkJUUyJTgwJTkzYmxhY2tfdHJlZQ==">红黑树<i class="fa fa-external-link-alt"></i></span>、<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQVZMX3RyZWU=">AVL 树<i class="fa fa-external-link-alt"></i></span>等，可以保证插入和查找的时间复杂度都是 lg(n)，看源码才知道用了跳表。相比平衡树，跳表优势在于，在保证读写性能的同时，大大简化了实现。</p>
+<p>此外，为了将数据定期 dump 到磁盘，还需要该数据结构支持高效的顺序遍历。总结一下 LevelDB  内存数据结构（memtable）需求点：</p>
+<ol>
+<li>高效查找</li>
+<li>高效插入</li>
+<li>高效顺序遍历</li>
+</ol>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/">https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/</a>, 转载请注明出处</em></p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>跳表由 William Pugh 在 1990 年提出，相关论文为：<span class="exturl" data-url="aHR0cHM6Ly8xNTcyMS5jb3Vyc2VzLmNzLmNtdS5lZHUvc3ByaW5nMjAxOC9wYXBlcnMvMDgtb2x0cGluZGV4ZXMxL3B1Z2gtc2tpcGxpc3RzLWNhY20xOTkwLnBkZg==">Skip Lists: A Probabilistic Alternative to Balanced Trees<i class="fa fa-external-link-alt"></i></span>。从题目可以看出，作者旨在设计一种能够替换平衡树的数据结构，正如他在开篇提到：</p>
+<blockquote>
+<p>Skip lists are a data structure that can be used in place of balanced trees. </p>
+<p>Skip lists use probabilistic balancing rather than strictly enforced balancing and as a result the algorithms for insertion and deletion in skip lists are much simpler and significantly faster than equivalent algorithms for balanced trees.</p>
+</blockquote>
+<blockquote>
+<p>跳表是一种可以取代平衡树的数据结构。</p>
+<p>跳表使用概率均衡而非严格均衡策略，从而相对于平衡树，大大简化和加速了元素的插入和删除。</p>
+</blockquote>
+<p>这段话中有个关键词：<strong>概率均衡</strong>（probabilistic balancing），先卖个关子，按下不表。</p>
+<p>接下来我们从两个角度来解读跳表：链表和跳表，跳表和平衡树。</p>
+<h3 id="链表到跳表"><a href="#链表到跳表" class="headerlink" title="链表到跳表"></a>链表到跳表</h3><p>简言之，<strong>跳表就是带有额外指针的链表</strong>。为了理解这个关系，我们来思考一下优化有序链表查找性能的过程。</p>
+<p>假设我们有个有序链表，可知其查询和插入复杂度都为 O(n)。相比数组，链表不能进行二分查找的原因在于，不能用下标索引进行常数复杂度数据访问，从而不能每次每次快速的筛掉现有规模的一半。那么如何改造一下链表使之可以进行二分？</p>
+<p>利用 map 构造一个下标到节点的映射？这样虽然可以进行二分查询了，但是每次插入都会引起后面所有元素的下标变动，从而需要在 map 中进行 O(n) 的更新。</p>
+<p>增加指针使得从任何一个节点都能直接跳到其他节点？那得构造一个全连接图，指针耗费太多空间不说，每次插入指针的更新仍是 O(n) 的。</p>
+<p>跳表给出了一种思路，<strong>跳步采样，构建索引，逐层递减</strong>。下面利用论文中的一张图来详细解释下。</p>
+<p><img src="https://i.loli.net/2020/07/07/OeJRfVhHMEpxiNz.png" alt="skiplist-linked-lists-with-additional-pointers.png"></p>
+<p>如上图，初始我们有个带头结点的有序链表 a，其查找复杂度为 O(n)。然后，我们进行跳步采样，将采样出的节点按用指针依次串联上，得到表 b，此时的查找复杂度为 O(<em>n</em>&#x2F;2 + 1)  <em>[注1]<em>。其后，我们在上次采样出的节点，再次进行跳步采样，并利用指针依次串联上，得到表 c，此时的查找复杂为 O(</em>n</em>&#x2F;4 + 2)。此后，我们重复这个跳步采样、依次串联的过程，直到采样出的节点只剩一个，如图 e，此时的查找复杂度，可以看出为 O(log2n) *[注2]*。</p>
+<p>代价是我们增加了一堆指针，增加了多少呢？我们来逐次考虑这个问题。从图中可以看出，每次采样出多少节点，便会增加多少个指针；我们的采样策略是，每次在上一次的节点集中间隔采样，初始节点数为 n，最后采到只剩一个节点为止。将其加和则为：(n&#x2F;2 + n&#x2F;4 + … + 1) &#x3D; n。这和一个节点为 n 的二叉树的指针数是相同的。</p>
+<p>这里我们回避了一个问题：该结构的插入时间复杂度是多少？这其实进一步了引出本质问题，我们该如何进行插入。</p>
+<h3 id="跳表和平衡树"><a href="#跳表和平衡树" class="headerlink" title="跳表和平衡树"></a>跳表和平衡树</h3><p>在实践中，我们常用搜索二叉树作为字典表或者顺序表。在插入过程中，如果数据在 key 空间具有很好地随机性，那么二叉搜索树每次顺序插入就可以维持很好的查询性能。但如果我们顺序的插入数据，则会使得二叉搜索树严重失衡，从而使读写性能都大幅度退化。</p>
+<p>为了保证性能，需要在发现不平衡时进行调整，于是有了 AVL 树和红黑树。众所周知，AVL 的旋转策略和红黑树的标色策略都稍显复杂，反正我粗看了两次都没记住，面试手撸更是不可能。</p>
+<p>而跳表在保证同样查询效率的情况下，使用了一种很巧妙的转化，大大简化了插入的实现。我们不能保证所有的插入请求在 key 空间具有很好地随机性，或者说均衡性；但我们可以控制每个节点其他维度的均衡性。比如，跳表中每个节点的指针数分布的概率均衡。</p>
+<h3 id="概率均衡"><a href="#概率均衡" class="headerlink" title="概率均衡"></a>概率均衡</h3><p>为了更好地讲清楚这个问题，我们梳理一下跳表的结构和所涉及到概念。跳表每个节点都会有1 ~ MaxLevel 个指针，有 k 个指针的节点称为 <em>k 层节点</em>（level k node）；所有节点的层次数的最大值为跳表的<em>最大层数</em>（MaxLevel）。跳表带有一个空的头结点，头结点有 MaxLevel 个指针。</p>
+<p>按前面从有序链表构建跳表的思路，每次插入新节点就变成了难题，比如插入的节点需要有多少个指针？插入后如何才能保证查找性能不下降（即维持采样的均衡）？</p>
+<p>为了解决这个问题， Pugh 进行了一个巧妙的转化：将<em>全局、静态</em>的构建索引拆解为<em>独立、动态</em>的构建索引。其中的关键在于<strong>通过对跳表全局节点指针数概率分布的维持，达到对查询效率的保持</strong>。分析上面见索引逐层采样的过程我们可以发现，建成的跳表中有 50% 的节点为 1 层节点，25% 的节点为 2 层节点，12.5% 的节点为三层节点，依次类推。若能维持我们构造的跳表中的节点具有同样的概率分布，就能保证差不多查询性能。这在直觉上似乎没问题，这里不去深入探讨背后的数学原理，感兴趣的同学可以去读一读论文。</p>
+<p>经过这样的转化，就解决了上面提出的两个问题：</p>
+<ol>
+<li>插入新节点的指针数通过独立的计算一个概率值决定，使全局节点的指针数满足几何分布即可。</li>
+<li>插入时不需要做额外的节点调整，只需要先找到其需要放的位置，然后修改他和前驱的指向即可。</li>
+</ol>
+<p>这样插入节点的时间复杂度为查找的时间复杂度 <code>O(log2n)</code>，与修改指针的复杂度 <code>O(1)</code>  <em>[注3]</em> 之和，即也为 <code>O(log2n)</code>，删除过程和插入类似，也可以转化为查找和修改指针值，因此复杂度也为 <code>O(log2n)</code>。</p>
+<h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><p>千呼万唤始出来，让我们进入正题。LevelDB 中对 SkipList 的实现增加了多线程并发访问方面的优化的代码，提供以下保证：</p>
+<ol>
+<li>Write：在修改跳表时，需要在用户代码侧加锁。</li>
+<li>Read：在访问跳表（查找、遍历）时，只需保证跳表不被其他线程销毁即可，不必额外加锁。</li>
+</ol>
+<p>也就是说，用户侧只需要处理写写冲突，LevelDB 跳表保证没有读写冲突。</p>
+<p>这是因为在实现时，LevelDB 做了以下假设（Invariants）：</p>
+<ol>
+<li>除非跳表被销毁，跳表节点只会增加而不会被删除，因为跳表对外根本不提供删除接口。</li>
+<li>被插入到跳表中的节点，除了 next 指针其他域都是不可变的，并且只有插入操作会改变跳表。</li>
+</ol>
+<h3 id="接口"><a href="#接口" class="headerlink" title="接口"></a>接口</h3><p>LevelDB 的 Skip List 对外提供的接口主要有三个，分别是插入、查询和遍历。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 插入 key 到跳表中.</span></span><br><span class="line"><span class="comment">// 要求: 不能够插入和跳表中的节点判等的 key.</span></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="type">void</span> SkipList&lt;Key, Comparator&gt;::<span class="built_in">Insert</span>(<span class="type">const</span> Key&amp; key)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 当且仅当跳表中有和给定 key 判等的节点才返回真.</span></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="type">bool</span> SkipList&lt;Key, Comparator&gt;::<span class="built_in">Contains</span>(<span class="type">const</span> Key&amp; key) <span class="type">const</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 返回给定跳表的迭代器</span></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Iterator</span>(<span class="type">const</span> SkipList* list)</span><br></pre></td></tr></table></figure>
+
+<p>为了灵活适配，LevelDB 的 SkipList 使用了类模板（<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvVGVtcGxhdGVfKEMlMkIlMkIp">template class<i class="fa fa-external-link-alt"></i></span>），使得调用方可以自定义 Key 的类型，并且基于该 Key 定制比较类 Comparator。</p>
+<p>在详细分析这几个接口之前，首先看下跳表的基本构成元素 <code>SkipList::Node</code> 的数据结构，代码里有一些多线程读写共享变量时进行同步的代码。这里主要涉及到指令重排的一些内容，下面稍微展开说一下。</p>
+<p>我们知道，编译器&#x2F;CPU 在保在达到相同效果的情况下会按需（加快速度、内存优化等）对指令进行重排，这对单线程来说的确没什么。但是对于多线程，指令重排会使得多线程间代码执行顺序变的各种反直觉。用 go 代码<span class="exturl" data-url="aHR0cHM6Ly9nb2xhbmcub3JnL3JlZi9tZW0=">举个例子<i class="fa fa-external-link-alt"></i></span>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> a, b <span class="type">int</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">f</span><span class="params">()</span></span> &#123;</span><br><span class="line">  a = <span class="number">1</span></span><br><span class="line">  b = <span class="number">2</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">g</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="built_in">print</span>(b)</span><br><span class="line">  <span class="built_in">print</span>(a)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">go</span> f()</span><br><span class="line">  g()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该代码片段可能会打印出 <code>2 0</code>！</p>
+<p>原因在于编译器&#x2F;CPU 将 <code>f()</code>  赋值顺序重排了或者将 <code>g()</code> 中打印顺序重排了。这就意味着你跟随直觉写出的多线程代码，可能会出问题。因为你无形中默认了单个线程中执行顺序是代码序，多线程中虽然代码执行会产生交错，但仍然保持各自线程内的代码序。实则不然，由于编译器&#x2F;CPU 的指令重排，如果不做显式同步，你不能对多线程间代码执行顺序有任何假设。</p>
+<p>回到 LevelDB 跳表代码上，主要涉及 C++11 中 atomic 标准库中新支持的几种 memory order，规定了一些指令重排方面的限制，仅说明下用到的三种：</p>
+<ol>
+<li><code>std::memory_order_relaxed</code>：不对重排做限制，只保证相关共享内存访问的原子性。</li>
+<li><code>std::memory_order_acquire</code>:  用在 load 时，保证同线程中该 load 之后的对相关内存读写语句不会被重排到 load 之前，并且其他线程中对同样内存用了 store release 都对其可见。</li>
+<li><code>std::memory_order_release</code>：用在 store 时，保证同线程中该 store 之后的对相关内存的读写语句不会被重排到 store 之前，并且该线程的所有修改对用了 load acquire 的其他线程都可见。</li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">SkipList</span>&lt;Key, Comparator&gt;::Node &#123;</span><br><span class="line">  <span class="function"><span class="keyword">explicit</span> <span class="title">Node</span><span class="params">(<span class="type">const</span> Key&amp; k)</span> : key(k) &#123;</span>&#125;</span><br><span class="line"></span><br><span class="line">  Key <span class="type">const</span> key;</span><br><span class="line"></span><br><span class="line">  <span class="function">Node* <span class="title">Next</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(n &gt;= <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">return</span> next_[n].<span class="built_in">load</span>(std::memory_order_acquire);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">SetNext</span><span class="params">(<span class="type">int</span> n, Node* x)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(n &gt;= <span class="number">0</span>);</span><br><span class="line">    next_[n].<span class="built_in">store</span>(x, std::memory_order_release);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 不带内存屏障版本的访问器。内存屏障（Barrier）是个形象的说法，也即加一块挡板，阻止重排/进行同步</span></span><br><span class="line">  <span class="function">Node* <span class="title">NoBarrier_Next</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(n &gt;= <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">return</span> next_[n].<span class="built_in">load</span>(std::memory_order_relaxed);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">NoBarrier_SetNext</span><span class="params">(<span class="type">int</span> n, Node* x)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(n &gt;= <span class="number">0</span>);</span><br><span class="line">    next_[n].<span class="built_in">store</span>(x, std::memory_order_relaxed);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">// 指针数组的长度即为该节点的 level，next_[0] 是最低层指针.</span></span><br><span class="line">  std::atomic&lt;Node*&gt; next_[<span class="number">1</span>]; <span class="comment">// 指向指针数组的指针</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h3 id="查找"><a href="#查找" class="headerlink" title="查找"></a>查找</h3><p>查找是插入的基础，每个节点要先找到合适位置，才能进行插入。因此 LevelDB 抽象出了一个公用函数： <code>FindGreaterOrEqual</code> ：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="type">bool</span> SkipList&lt;Key, Comparator&gt;::<span class="built_in">Contains</span>(<span class="type">const</span> Key&amp; key) <span class="type">const</span> &#123;</span><br><span class="line">  Node* x = <span class="built_in">FindGreaterOrEqual</span>(key, <span class="literal">nullptr</span>);</span><br><span class="line">  <span class="keyword">if</span> (x != <span class="literal">nullptr</span> &amp;&amp; <span class="built_in">Equal</span>(key, x-&gt;key)) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该函数的含义为：在跳表中查找不小于给 Key 的第一个值，如果没有找到，则返回 nullptr。如果参数 <code>prev</code> 不为空，在查找过程中，记下待查找节点在各层中的前驱节点。显然，如果查找操作，则指定 <code>prev = nullptr</code> 即可；若要插入数据，则需传入一个合适尺寸的 <code>prev</code> 参数。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">typename</span> SkipList&lt;Key, Comparator&gt;::Node*</span><br><span class="line">SkipList&lt;Key, Comparator&gt;::<span class="built_in">FindGreaterOrEqual</span>(<span class="type">const</span> Key&amp; key, Node** prev) <span class="type">const</span> &#123;</span><br><span class="line">  Node* x = head_;                <span class="comment">// 从头结点开始查找</span></span><br><span class="line">  <span class="type">int</span> level = <span class="built_in">GetMaxHeight</span>() - <span class="number">1</span>; <span class="comment">// 从最高层开始查找</span></span><br><span class="line">  <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">    Node* next = x-&gt;<span class="built_in">Next</span>(level);  <span class="comment">// 该层中下一个节点</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">KeyIsAfterNode</span>(key, next)) &#123;</span><br><span class="line">      x = next;                   <span class="comment">// 待查找 key 比 next 大，则在该层继续查找</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (prev != <span class="literal">nullptr</span>) prev[level] = x;</span><br><span class="line">      </span><br><span class="line">      <span class="keyword">if</span> (level == <span class="number">0</span>) &#123;           <span class="comment">// 待查找 key 不大于 next，则到底返回</span></span><br><span class="line">        <span class="keyword">return</span> next;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;                    <span class="comment">// 待查找 key 不大于 next，且没到底，则往下查找</span></span><br><span class="line">        level--;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>该过程借用论文中图示如下：</p>
+<p><img src="https://i.loli.net/2020/07/07/N3iSsOqDBvdRCfg.png" alt="skiplist-search-insert.png"></p>
+<h3 id="插入"><a href="#插入" class="headerlink" title="插入"></a>插入</h3><p>在 <code>FindGreaterOrEqual</code> 基础上，记下待插入节点的各层次前驱节点，比如上图中，调用 <code>FindGreaterOrEqual(17, prev)</code> 后 <code>prev = [12, 9, 6, 6]</code>。插入代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="type">void</span> SkipList&lt;Key, Comparator&gt;::<span class="built_in">Insert</span>(<span class="type">const</span> Key&amp; key) &#123;</span><br><span class="line">  <span class="comment">// 待做(opt): 由于插入要求外部加锁，因此可以使用 NoBarrier_Next 的 FindGreaterOrEqual 以提高性能</span></span><br><span class="line">  Node* prev[kMaxHeight]; <span class="comment">// 长度设定简单粗暴，直接取最大值（kMaxHeight = 12）肯定没错。</span></span><br><span class="line">  Node* x = <span class="built_in">FindGreaterOrEqual</span>(key, prev);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// LevelDB 跳表要求不能插入重复数据</span></span><br><span class="line">  <span class="built_in">assert</span>(x == <span class="literal">nullptr</span> || !<span class="built_in">Equal</span>(key, x-&gt;key));</span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> height = <span class="built_in">RandomHeight</span>(); <span class="comment">// 随机获取一个 level 值</span></span><br><span class="line">  <span class="keyword">if</span> (height &gt; <span class="built_in">GetMaxHeight</span>()) &#123; <span class="comment">// GetMaxHeight() 为获取跳表当前层数</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="built_in">GetMaxHeight</span>(); i &lt; height; i++) &#123;</span><br><span class="line">      prev[i] = head_;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 此处不用为并发读加锁。因为并发读在（在另外线程中通过 FindGreaterOrEqual 中的 GetMaxHeight）</span></span><br><span class="line">    <span class="comment">// 读取到更新后跳表层数，但该节点尚未插入时也无妨。因为这意味着它会读到 nullptr，而在 LevelDB</span></span><br><span class="line">    <span class="comment">// 的 Comparator 设定中，nullptr 比所有 key 都大。因此，FindGreaterOrEqual 会继续往下找，</span></span><br><span class="line">    <span class="comment">// 符合预期。</span></span><br><span class="line">    max_height_.<span class="built_in">store</span>(height, std::memory_order_relaxed);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  x = <span class="built_in">NewNode</span>(key, height);</span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; height; i++) &#123;</span><br><span class="line">    <span class="comment">// 此句 NoBarrier_SetNext() 版本就够用了，因为后续 prev[i]-&gt;SetNext(i, x) 语句会进行强制同步。</span></span><br><span class="line">    <span class="comment">// 并且为了保证并发读的正确性，一定要先设置本节点指针，再设置原条表中节点（prev）指针</span></span><br><span class="line">    x-&gt;<span class="built_in">NoBarrier_SetNext</span>(i, prev[i]-&gt;<span class="built_in">NoBarrier_Next</span>(i));</span><br><span class="line">    prev[i]-&gt;<span class="built_in">SetNext</span>(i, x);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>LevelDB 跳表实现的<strong>复杂点</strong>在于提供不加锁的并发读的正确性保证。但算法的<strong>关键点</strong>在于每个节点插入时，如何确定新插入节点的层数，以使跳表满足概率均衡，进而提供高效的查询性能。即 <code>RandomHeight</code> 的实现：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="type">int</span> SkipList&lt;Key, Comparator&gt;::<span class="built_in">RandomHeight</span>() &#123;</span><br><span class="line">  <span class="comment">// 每次以 1/4 的概率增加层数</span></span><br><span class="line">  <span class="type">static</span> <span class="type">const</span> <span class="type">unsigned</span> <span class="type">int</span> kBranching = <span class="number">4</span>;</span><br><span class="line">  <span class="type">int</span> height = <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">while</span> (height &lt; kMaxHeight &amp;&amp; ((rnd_.<span class="built_in">Next</span>() % kBranching) == <span class="number">0</span>)) &#123;</span><br><span class="line">    height++;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">assert</span>(height &gt; <span class="number">0</span>);</span><br><span class="line">  <span class="built_in">assert</span>(height &lt;= kMaxHeight);</span><br><span class="line">  <span class="keyword">return</span> height;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>LevelDB 的采样较为稀疏，每四个采一个，且层数上限为 kMaxHeight &#x3D; 12。具体实现过程即为构造 P &#x3D; 3&#x2F;4 的几何分布的过程。结果为所有节点中：3&#x2F;4 的节点为 1 层节点，3&#x2F;16 的节点为 2 层节点，3&#x2F;64 的节点为 3 层节点，依次类推。这样平均每个节点含指针数 1&#x2F;P &#x3D; 4&#x2F;3 &#x3D; 1.33 个。当然，在论文中的 p 的含义为相邻两层间采样的比例，和我提到的 P 的关系为：p &#x3D; 1-P。</p>
+<p>选 p &#x3D; 1&#x2F;4 相比 p &#x3D; 1&#x2F;2 是用时间换空间，即只牺牲了一些常数的查询效率，换取平均指针数的减少，从而减小内存使用。论文中也推荐 p &#x3D; 1&#x2F;4 ，除非读速度要求特别严格。在此情况下，可以最多支持 n &#x3D; (1&#x2F;p)^kMaxHeight 个节点的情况，查询时间复杂度不退化。如果选 kMaxHeight &#x3D; 12，则跳表最多可以支持 n &#x3D; 4 ^ 12 &#x3D; 16M 个值。</p>
+<h3 id="遍历"><a href="#遍历" class="headerlink" title="遍历"></a>遍历</h3><p>LevelDB 为跳表构造了一个内部类 Iterator，以 SkipList 作为构造函数参数，实现了 LevelDB 导出的 Iterator 接口的大部分函数，如 Next，Prev，Seek，SeekToFirst，SeekToLast 等等。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Iterator</span>(<span class="type">const</span> SkipList* list) &#123;</span><br><span class="line">  list_ = list;</span><br><span class="line">  node_ = <span class="literal">nullptr</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">bool</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Valid</span>() <span class="type">const</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> node_ != <span class="literal">nullptr</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">const</span> Key&amp; SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">key</span>() <span class="type">const</span> &#123;</span><br><span class="line">  <span class="built_in">assert</span>(<span class="built_in">Valid</span>());</span><br><span class="line">  <span class="keyword">return</span> node_-&gt;key;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">void</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Next</span>() &#123;</span><br><span class="line">  <span class="built_in">assert</span>(<span class="built_in">Valid</span>());</span><br><span class="line">  node_ = node_-&gt;<span class="built_in">Next</span>(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">void</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Prev</span>() &#123;</span><br><span class="line">  <span class="comment">// 相比在节点中额外增加一个 prev 指针，我们使用从头开始的查找定位其 prev 节点</span></span><br><span class="line">  <span class="built_in">assert</span>(<span class="built_in">Valid</span>());</span><br><span class="line">  node_ = list_-&gt;<span class="built_in">FindLessThan</span>(node_-&gt;key);</span><br><span class="line">  <span class="keyword">if</span> (node_ == list_-&gt;head_) &#123;</span><br><span class="line">    node_ = <span class="literal">nullptr</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">void</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Seek</span>(<span class="type">const</span> Key&amp; target) &#123;</span><br><span class="line">  node_ = list_-&gt;<span class="built_in">FindGreaterOrEqual</span>(target, <span class="literal">nullptr</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">void</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">SeekToFirst</span>() &#123;</span><br><span class="line">  node_ = list_-&gt;head_-&gt;<span class="built_in">Next</span>(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">void</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">SeekToLast</span>() &#123;</span><br><span class="line">  node_ = list_-&gt;<span class="built_in">FindLast</span>();</span><br><span class="line">  <span class="keyword">if</span> (node_ == list_-&gt;head_) &#123;</span><br><span class="line">    node_ = <span class="literal">nullptr</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看出该迭代器没有为每个节点增加一个额外的 prev 指针以进行反向迭代，而是用了选择从 head 开始查找。这也是一种用时间换空间的取舍。当然，其假设是前向遍历情况相对较少。</p>
+<p>其中 <code>FindLessThan</code> 和 <code>FindLast</code> 的实现与 <code>FindGreaterOrEqual</code> 思路较为相似，不再赘述。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Return the latest node with a key &lt; key.</span></span><br><span class="line"><span class="comment">// Return head_ if there is no such node.</span></span><br><span class="line"><span class="function">Node* <span class="title">FindLessThan</span><span class="params">(<span class="type">const</span> Key&amp; key)</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Return the last node in the list.</span></span><br><span class="line"><span class="comment">// Return head_ if list is empty.</span></span><br><span class="line"><span class="function">Node* <span class="title">FindLast</span><span class="params">()</span> <span class="type">const</span></span>;</span><br></pre></td></tr></table></figure>
+
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>跳表本质上是对链表的一种优化，通过逐层跳步采样的方式构建索引，以加快查找速度。使用概率均衡的思路，确定新插入节点的层数，使其满足集合分布，在保证相似的查找效率简化了插入实现。</p>
+<p>LevelDB 的跳表实现还专门对多线程读做了优化，但写仍需外部加锁。在实现思路上，整体采用时间换空间的策略，优化内存使用。</p>
+<p>下一篇中，将继续剖析 LevelDB 中用到的另一个经典的数据结构：<a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter">布隆过滤器</a>（Bloom Filter）。</p>
+<h2 id="注解"><a href="#注解" class="headerlink" title="注解"></a>注解</h2><p>[1] 先在上层查找，然后缩小到某个范围后去下层查找。</p>
+<p>[2] 可以证明，也可以简单的找规律： O(<em>n</em>&#x2F;2 + 1) -&gt; O(<em>n</em>&#x2F;4 + 2) -&gt; … -&gt; O(1 + log2n)，即 O(log2n) 。</p>
+<p>[3] 通过采样过程可知所有节点的概率满足 p &#x3D; 0.5 的<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvR2VvbWV0cmljX2Rpc3RyaWJ1dGlvbg==">几何分布<i class="fa fa-external-link-alt"></i></span>，则每个节点的期望指针个数为 1&#x2F;p &#x3D; 2，则每次插入平均需要修改 2 * 2 个指针，即为常数级别。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li>LevelDB handbook：<span class="exturl" data-url="aHR0cHM6Ly9sZXZlbGRiLWhhbmRib29rLnJlYWR0aGVkb2NzLmlvL3poL2xhdGVzdC9pbmRleC5odG1s">https://leveldb-handbook.readthedocs.io/zh/latest/index.html<i class="fa fa-external-link-alt"></i></span></li>
+<li>庖丁解 LevelDB 之数据存储：<span class="exturl" data-url="aHR0cHM6Ly9jYXRrYW5nLmdpdGh1Yi5pby8yMDE3LzAxLzE3L2xldmVsZGItZGF0YS5odG1s">https://catkang.github.io/2017/01/17/leveldb-data.html<i class="fa fa-external-link-alt"></i></span></li>
+<li>C++ atomic memory order：<span class="exturl" data-url="aHR0cHM6Ly9lbi5jcHByZWZlcmVuY2UuY29tL3cvY3BwL2F0b21pYy9tZW1vcnlfb3JkZXI=">https://en.cppreference.com/w/cpp/atomic/memory_order<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+<h2 id="The-last-thing"><a href="#The-last-thing" class="headerlink" title="The last thing"></a>The last thing</h2><p>Leetcode 上有跳表简化版的题目，看完了本文可以趁热打铁去实现一下：<span class="exturl" data-url="aHR0cHM6Ly9sZWV0Y29kZS5jb20vcHJvYmxlbXMvZGVzaWduLXNraXBsaXN0Lw==">https://leetcode.com/problems/design-skiplist/<i class="fa fa-external-link-alt"></i></span></p>
+<p>这是我的实现版本：<span class="exturl" data-url="aHR0cHM6Ly9sZWV0Y29kZS5jb20vcHJvYmxlbXMvZGVzaWduLXNraXBsaXN0L2Rpc2N1c3MvNzQwODgxL0MlMkIlMkItY2xlYW4tYW5kLXNpbXBsZS1zb2x1dGlvbi1mcm9tLWxldmVsZGI=">https://leetcode.com/problems/design-skiplist/discuss/740881/C%2B%2B-clean-and-simple-solution-from-leveldb<i class="fa fa-external-link-alt"></i></span></p>
+<hr>
+<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/11/18/leveldb-data-structures-bloom-filter/" rel="bookmark">漫谈 LevelDB 数据结构（二）：布隆过滤器（Bloom Filter）</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/05/09/levedb-data-structures-lru-cache/" rel="bookmark">漫谈 LevelDB 数据结构（三）：LRU 缓存（ LRUCache）</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/03/19/wisckey/" rel="bookmark">WiscKey —— SSD 介质下的 LSM-Tree 优化</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
+              <a href="/tags/leveldb/" rel="tag"># leveldb</a>
+              <a href="/tags/skiplist/" rel="tag"># skiplist</a>
+              <a href="/tags/%E8%B7%B3%E8%A1%A8/" rel="tag"># 跳表</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/13/dynamo/" rel="prev" title="Amazon 针对小对象的分布式键值存储——Dynamo">
+      <i class="fa fa-chevron-left"></i> Amazon 针对小对象的分布式键值存储——Dynamo
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/07/12/go-context/" rel="next" title="Golang 笔记（二）：Context 源码剖析">
+      Golang 笔记（二）：Context 源码剖析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9C%80%E6%B1%82"><span class="nav-number">1.</span> <span class="nav-text">需求</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E8%A1%A8%E5%88%B0%E8%B7%B3%E8%A1%A8"><span class="nav-number">2.1.</span> <span class="nav-text">链表到跳表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B7%B3%E8%A1%A8%E5%92%8C%E5%B9%B3%E8%A1%A1%E6%A0%91"><span class="nav-number">2.2.</span> <span class="nav-text">跳表和平衡树</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E7%8E%87%E5%9D%87%E8%A1%A1"><span class="nav-number">2.3.</span> <span class="nav-text">概率均衡</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">3.</span> <span class="nav-text">源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3"><span class="nav-number">3.1.</span> <span class="nav-text">接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E6%89%BE"><span class="nav-number">3.2.</span> <span class="nav-text">查找</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%92%E5%85%A5"><span class="nav-number">3.3.</span> <span class="nav-text">插入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%81%8D%E5%8E%86"><span class="nav-number">3.4.</span> <span class="nav-text">遍历</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%A8%E8%A7%A3"><span class="nav-number">5.</span> <span class="nav-text">注解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#The-last-thing"><span class="nav-number">7.</span> <span class="nav-text">The last thing</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">100</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">167</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'ac76957883265157b69ca75da02b5563',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

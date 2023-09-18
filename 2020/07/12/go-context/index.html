@@ -36,7 +36,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/07/25/9s6qG8RUkCQWLlc.png">
 <meta property="og:image" content="https://i.loli.net/2020/07/25/Yjbq6ZSkEHQ3X1u.png">
 <meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
-<meta property="article:published_time" content="2020-07-12T09:25:16.000Z">
+<meta property="article:published_time" content="2020-07-12T16:25:16.000Z">
 <meta property="article:modified_time" content="2023-07-31T06:26:06.283Z">
 <meta property="article:author" content="木鸟杂记">
 <meta property="article:tag" content="golang">
@@ -227,7 +227,7 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-07-12 10:25:16" itemprop="dateCreated datePublished" datetime="2020-07-12T10:25:16+01:00">2020-07-12</time>
+              <time title="创建时间：2020-07-12 17:25:16" itemprop="dateCreated datePublished" datetime="2020-07-12T17:25:16+01:00">2020-07-12</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -279,7 +279,7 @@
 <h2 id="Context-接口"><a href="#Context-接口" class="headerlink" title="Context 接口"></a>Context 接口</h2><p>Context 接口如下：</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Context 用以在多 API 间传递 deadline、cancelation 信号和请求的键值对。</span></span><br><span class="line"><span class="comment">// Context 中的方法能够安全的被多个 goroutine 并发调用。</span></span><br><span class="line"><span class="keyword">type</span> Context <span class="keyword">interface</span> &#123;</span><br><span class="line">    <span class="comment">// Done 返回一个只读 channel，该 channel 在 Context 被取消或者超时时关闭</span></span><br><span class="line">    Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Err 返回 Context 结束时的出错信息</span></span><br><span class="line">    Err() <span class="type">error</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果 Context 被设置了超时，Deadline 将会返回超时时限。</span></span><br><span class="line">    Deadline() (deadline time.Time, ok <span class="type">bool</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Value 返回关联到相关 Key 上的值，或者 nil.</span></span><br><span class="line">    Value(key <span class="keyword">interface</span>&#123;&#125;) <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-<p>上面是简略注释，接口详细信息可以访问 Context 的 <a target="_blank" rel="noopener" href="https://golang.org/pkg/context/">godoc</a>。</p>
+<p>上面是简略注释，接口详细信息可以访问 Context 的 <span class="exturl" data-url="aHR0cHM6Ly9nb2xhbmcub3JnL3BrZy9jb250ZXh0Lw==">godoc<i class="fa fa-external-link-alt"></i></span>。</p>
 <ul>
 <li><p><code>Done()</code> 方法返回一个只读的 channel，当 Context 被主动取消或者超时自动取消时，该 Context 所有派生 Context 的 done channel 都被 close 。所有子过程通过该字段收到 close 信号后，应该立即中断执行、释放资源然后返回。</p>
 </li>
@@ -312,7 +312,7 @@
 
 <h2 id="Context-源码解析"><a href="#Context-源码解析" class="headerlink" title="Context 源码解析"></a>Context 源码解析</h2><p>Go context 使用嵌入类，以类似继承的方式组织几个 Context 类：<code>emptyCtx</code>、<code>valueCtx</code>、 <code>cancelCtx</code>、<code>timerCtx</code>。</p>
 <p><img src="https://i.loli.net/2020/07/25/9s6qG8RUkCQWLlc.png" alt="go-context-implementation.png"></p>
-<p>形象的来说，通过嵌入的方式，Go 对树形组织的 Context 体系中的每个 Context 节点都构造了一个指向父亲实例”指针”。从另一个角度来说，这是一种经典代码组织模式——<a target="_blank" rel="noopener" href="https://sourcemaking.com/design_patterns/composite">组合模式</a>，每一层只增量 or 覆盖实现自己所关注的功能，然后通过路由调用来复用已有的实现。</p>
+<p>形象的来说，通过嵌入的方式，Go 对树形组织的 Context 体系中的每个 Context 节点都构造了一个指向父亲实例”指针”。从另一个角度来说，这是一种经典代码组织模式——<span class="exturl" data-url="aHR0cHM6Ly9zb3VyY2VtYWtpbmcuY29tL2Rlc2lnbl9wYXR0ZXJucy9jb21wb3NpdGU=">组合模式<i class="fa fa-external-link-alt"></i></span>，每一层只增量 or 覆盖实现自己所关注的功能，然后通过路由调用来复用已有的实现。</p>
 <h3 id="空实现-emptyCtx"><a href="#空实现-emptyCtx" class="headerlink" title="空实现 emptyCtx"></a>空实现 emptyCtx</h3><p><code>emptyCtx</code> 实现了一个空的 <code>Context</code>，所有接口函数都是空实现。</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> emptyCtx <span class="type">int</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(*emptyCtx)</span></span> Deadline() (deadline time.Time, ok <span class="type">bool</span>) &#123;</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(*emptyCtx)</span></span> Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125; &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span> <span class="comment">// 返回 nil，从语法上说是空实现，从语义上说是该 Context 永远不会被关闭。</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//... 其他的省略，类似都是满足语法要求的空函数体</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e *emptyCtx)</span></span> String() <span class="type">string</span> &#123;</span><br><span class="line">  <span class="keyword">switch</span> e &#123;</span><br><span class="line">  <span class="keyword">case</span> background:</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;context.Background&quot;</span></span><br><span class="line">  <span class="keyword">case</span> todo:</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;context.TODO&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="string">&quot;unknown empty Context&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
@@ -387,11 +387,11 @@
 <h2 id="注"><a href="#注" class="headerlink" title="注"></a>注</h2><p>[1] 文中的过程，指的是计算密集型或者 IO 密集型的耗时函数，或者 goroutine。</p>
 <p>[2] Context 的 Done Channel，指的是 <code>context.Done()</code> 返回的 channel。它是 Context 内的关键数据结构，作为沟通不同过程的的渠道。需要结束时，父过程向该 channel 发送信号，子过程读取该 channel 信号后做扫尾工作并且退出。</p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
-<li>go doc context：<a target="_blank" rel="noopener" href="https://golang.org/pkg/context/">https://golang.org/pkg/context/</a></li>
-<li>code review conmments: <a target="_blank" rel="noopener" href="https://github.com/golang/go/wiki/CodeReviewComments#contexts">https://github.com/golang/go/wiki/CodeReviewComments#contexts</a></li>
-<li>go blog context：<a target="_blank" rel="noopener" href="https://blog.golang.org/context">https://blog.golang.org/context</a></li>
-<li>go context 源码：<a target="_blank" rel="noopener" href="https://golang.org/src/context/context.go?s=8419:8483#L222">https://golang.org/src/context/context.go?s=8419:8483#L222</a></li>
-<li>go 语言设计与实现： <a target="_blank" rel="noopener" href="https://draveness.me/golang/docs/part3-runtime/ch06-concurrency/golang-context/">https://draveness.me/golang/docs/part3-runtime/ch06-concurrency/golang-context/</a></li>
+<li>go doc context：<span class="exturl" data-url="aHR0cHM6Ly9nb2xhbmcub3JnL3BrZy9jb250ZXh0Lw==">https://golang.org/pkg/context/<i class="fa fa-external-link-alt"></i></span></li>
+<li>code review conmments: <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2dvbGFuZy9nby93aWtpL0NvZGVSZXZpZXdDb21tZW50cyNjb250ZXh0cw==">https://github.com/golang/go/wiki/CodeReviewComments#contexts<i class="fa fa-external-link-alt"></i></span></li>
+<li>go blog context：<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmdvbGFuZy5vcmcvY29udGV4dA==">https://blog.golang.org/context<i class="fa fa-external-link-alt"></i></span></li>
+<li>go context 源码：<span class="exturl" data-url="aHR0cHM6Ly9nb2xhbmcub3JnL3NyYy9jb250ZXh0L2NvbnRleHQuZ28/cz04NDE5Ojg0ODMjTDIyMg==">https://golang.org/src/context/context.go?s=8419:8483#L222<i class="fa fa-external-link-alt"></i></span></li>
+<li>go 语言设计与实现： <span class="exturl" data-url="aHR0cHM6Ly9kcmF2ZW5lc3MubWUvZ29sYW5nL2RvY3MvcGFydDMtcnVudGltZS9jaDA2LWNvbmN1cnJlbmN5L2dvbGFuZy1jb250ZXh0Lw==">https://draveness.me/golang/docs/part3-runtime/ch06-concurrency/golang-context/<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
 <hr>
 <p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
@@ -422,13 +422,13 @@
       <div class="popular-posts-title"><a href="/2020/01/06/go-value-pointer-method/" rel="bookmark">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/12/14/bolt-index-design/" rel="bookmark">Boltdb 源码导读（二）：Boltdb 索引设计</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2021/01/09/go-slice/" rel="bookmark">Golang 笔记（三）：一种理解 Slice 的模型</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2021/04/02/bolt-transaction/" rel="bookmark">Boltdb 源码导读（三）：Boltdb 事务实现</a></div>

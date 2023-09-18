@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="概述Facebook TAO[1] ，即 The Associations and Objects 的缩写，点（对象，Object）和边（联结，Associations）是”图“中最基本的抽象，用来做 Facebook 图存储名字倒是恰如其分。 概括来说，TAO 是 Facebook 为了解决社交场景下，超大数据的更新与关联读取问题，其核心特点如下：  提供面向 Facebook 社交信息流场景特">
+<meta property="og:type" content="article">
+<meta property="og:title" content="社交网络场景下大规模图存储实践——Facebook TAO">
+<meta property="og:url" content="https://www.qtmuniao.com/2021/10/07/facebook-tao/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="概述Facebook TAO[1] ，即 The Associations and Objects 的缩写，点（对象，Object）和边（联结，Associations）是”图“中最基本的抽象，用来做 Facebook 图存储名字倒是恰如其分。 概括来说，TAO 是 Facebook 为了解决社交场景下，超大数据的更新与关联读取问题，其核心特点如下：  提供面向 Facebook 社交信息流场景特">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2021/10/07/7pSWBqb4Vm2IPUO.png">
+<meta property="og:image" content="https://i.loli.net/2021/10/07/HohFUZujB7J28ig.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
+<meta property="article:published_time" content="2021-10-07T14:04:05.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.286Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="存储">
+<meta property="article:tag" content="facebook">
+<meta property="article:tag" content="TAO">
+<meta property="article:tag" content="图存储">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/10/07/7pSWBqb4Vm2IPUO.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2021/10/07/facebook-tao/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>社交网络场景下大规模图存储实践——Facebook TAO | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/10/07/facebook-tao/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          社交网络场景下大规模图存储实践——Facebook TAO
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-10-07 15:04:05" itemprop="dateCreated datePublished" datetime="2021-10-07T15:04:05+01:00">2021-10-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>Facebook TAO[1] ，即 The Associations and Objects 的缩写，点（对象，Object）和边（联结，Associations）是”图“中最基本的抽象，用来做 Facebook 图存储名字倒是恰如其分。</p>
+<p>概括来说，TAO 是 Facebook 为了解决社交场景下，超大数据的更新与关联读取问题，其核心特点如下：</p>
+<ol>
+<li>提供面向 Facebook 社交信息流场景特化的图 API ，比如点查、一度关联查询、按时间的范围查询。</li>
+<li>两层架构，MySQL 做存储层，MemeCache 做缓存层；缓存层又可细分为主从两层。</li>
+<li>可多机房扩展，高度面向读性能优化，只提供最终一致性保证。</li>
+</ol>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2021/10/07/facebook-tao/">https://www.qtmuniao.com/2021/10/07/facebook-tao/</a>, 转载请注明出处</em></p>
+<h2 id="历史沿革"><a href="#历史沿革" class="headerlink" title="历史沿革"></a>历史沿革</h2><p>Facebook 早期沉淀的数据就在 MySQL 上[2]，MySQL 扛不住后，在 2005 年时，扎克伯格便引入了 MemCache 做缓存层，应对更高频的读请求。自此之后，MySQL 和 MemCache 便成为了 Facebook 存储层技术栈的一部分。</p>
+<p>Facebook 数据请求负载通常符合时间局部性（即最近更新的数据最容易被访问），而非空间局部性。但 MySQL 中的数据通常不是按照时间有序存储的，因此 MySQL InnoDB 引擎自带的 block cache 并不匹配这一特点。另外，MemCache 本身只提供基于内存的 KV 访问模型，为了更高效的利用这些内存，Facebook 需要针对社交场景自己定制缓存策略，以尽可能多的让读请求命中。</p>
+<p>将这些工程细节，包括两层存储集群，包括自行组织缓存，都暴露给应用层工程师，带来了很大的工程复杂度，引发了更多的 bug，降低了产品迭代速率。为了解决这个问题，Facebook 在 2007 年使用 PHP 在服务端做了一个抽象层，基于图存储模型，围绕点（对象）和边（联结）提供 API。由于社交场景中的喜欢、事件、页面等都可以通过图模型来方便表达，这一抽象层极大的降低了应用层工程师的心智负担。</p>
+<p>但随着所需 API 越来越多，将图模型层（在 webserver 上）和数据层（在 MySQL和MemCache 集群）分离实现的缺点逐渐暴露了出来：</p>
+<ol>
+<li>从边集合的微小更新，会导致整个边集合失效，从而降低缓存命中率。</li>
+<li>请求边列表的一个微小子集也需要将整个边列表从存储端拉倒服务端。</li>
+<li>缓存一致性很难维持。</li>
+<li>当时的 MemCache 集群很难协同支持实现一个纯客户端侧的惊群避免策略。</li>
+</ol>
+<p>所有这些问题，都可以通过重新设计统一的、基于图模型的存储层来实现。从 2009 年开始，TAO 便在 Facebook 内部的一个团队开始酝酿。再之后，TAO 逐渐发展成了支撑每秒数十亿次读取、数百万次写入，部署于跨地区海量机器上的分布式服务。</p>
+<h2 id="图模型-amp-API"><a href="#图模型-amp-API" class="headerlink" title="图模型 &amp; API"></a>图模型 &amp; API</h2><p>图的最基本组成就是点和边，对应到 TAO 里就是，<strong>对象</strong>（Objects）和<strong>联结</strong>（Associations）。对象和联结都可以包含一系列由键值对表示的属性。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Object: (id) → (otype, (key  value)*)</span><br><span class="line">Assoc.: (id1, atype, id2) → (time, (key  value)*)</span><br></pre></td></tr></table></figure>
+
+<p><strong>注</strong>：TAO 中的边都是有向边。</p>
+<p>以社交网络为例，对象可以是用户、打卡、地点、评论，联结可以是朋友关系、发表评论、进行打卡、打卡于某地等等。</p>
+<p>如下图 a)，假设在 Facebook 上有这么一事件：<em>Alice 和 Bob 在金门大桥打了个卡，Cathy 评论：真希望我也在那。David 喜欢了这条评论</em>。</p>
+<p>用图模型表示后，如下图 b)：</p>
+<p><img src="https://i.loli.net/2021/10/07/7pSWBqb4Vm2IPUO.png" alt="一个栗子"></p>
+<p>可以看到，所有的数据条目如用户、地点、打卡、评论都被表示成了<strong>带类型的对象</strong>（typed objec），而对象间的关系如被谁喜欢（LIKED_BY）、是谁的朋友（FRIEND）、被谁评论（COMMENT），则被表示成了<strong>带类型的联结</strong>（typed associations）。</p>
+<p>另外，尽管 TAO 中联结都是单向的，但实际中大部分关系是双向的。这时，可以增加一个反向边（inverse edges）来表示此种双向关系。</p>
+<p>最后，由于联结是三元组，因此两个对象间可以有多条不同类型的边，但是同一类型的边，只能有一条。但在有些非社交场景中，可能需要相同类型的边也有多条。</p>
+<h3 id="Object-API"><a href="#Object-API" class="headerlink" title="Object API"></a>Object API</h3><p>围绕 Object 的操作，是常见的增删改查（<code>create / delete / set-fields / get</code>  ）。</p>
+<p>同一<strong>对象类型</strong>（object type）的对象具有同样的<strong>属性集</strong>（fields，即上面提到的 <code>(key value)*</code>），也就是说，一个对象类型对应固定的属性集。可以通过修改对象类型的 Schema 来对其所含属性进行增删。</p>
+<h3 id="Association-API"><a href="#Association-API" class="headerlink" title="Association API"></a>Association API</h3><p>围绕 Association 的基本操作，也是增删改查。其中增删改如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">assoc_add(id1, atype, id2, time, (k→v)*) – 新增或者覆盖</span><br><span class="line">assoc_delete(id1, atype, id2) – 删除</span><br><span class="line">assoc_change_type(id1, atype, id2, newtype) - 修改</span><br></pre></td></tr></table></figure>
+
+<p>值得一说的是，如果其反向边（<code>(id1, inv(atype), id2)</code>）存在，则上述 API 会同时作用于其反向边。由于多数场景下的联结是双向的，因此 Facebook 将其边的 API 默认行为同时作用于两条边。</p>
+<p>另外，每个 Association 都会自动打上一个重要的特殊属性：<strong>联结时间</strong>（association time）。由于 Facebook 负载具有时间局部性，利用此时间戳可以对缓存数据集进行优化，以提高缓存命中率。</p>
+<h3 id="Association-Query-API"><a href="#Association-Query-API" class="headerlink" title="Association Query API"></a>Association Query API</h3><p>围绕 Association 的查询 API，是 TAO 的核心 API，流量最大。这负载类型包括：</p>
+<ol>
+<li>指定 <code>(id1, type, id2)</code> 的点查，通常用来确定两个对象间是否存在对应联结，或者获取对应联结的属性。</li>
+<li>指定 <code>(id1, type)</code> 的范围查询，要求结果集按时间降序排列。比如一个常见场景：<em>该条内容最新的 50 条评论是什么？</em>。此外，最好能提供迭代器形式的访问。</li>
+<li>指定 <code>(id1, type)</code> 出边数查询。比如查询<em>某条评论的喜欢数是多少？</em>此种查询很常见，因此最好将其直接存下来，以能够在常数时间内返回结果。</li>
+</ol>
+<p>尽管联结千千万，但最近的范围是重点查询对象（时间局部性），因此联结的查询 API 主要围绕时间的范围查询展开。</p>
+<p>为此，TAO 将最基本的<strong>联结集</strong>定义为 Association List。一个 Association List 是以 <code>id1</code> 为起点，出边类型为 <code>atype</code> 的所有联结的集合，按<strong>时间降序</strong>排列。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Association List: (id1, atyle) -&gt; [a_new, ..., a_old]</span><br></pre></td></tr></table></figure>
+
+<p>基于此，定义更细粒度的几个接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 返回以 id1 为起点，以 id2set 集合所包含点为终点</span></span><br><span class="line"><span class="comment">// 创建时间 time 满足 low &lt;= time &lt;= high</span></span><br><span class="line"><span class="comment">// 的联结集合。</span></span><br><span class="line">assoc_get(id1, atype, id2set, high?, low?) </span><br><span class="line"></span><br><span class="line"><span class="comment">// 返回联结集合的数量</span></span><br><span class="line">assoc_count(id1, atype)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 返回下标满足 [pos, pos+limit) 的联结集合子集</span></span><br><span class="line"><span class="comment">// pos 即 Association List 中的下标</span></span><br><span class="line">assoc_range(id1, atype, pos, limit) </span><br><span class="line"></span><br><span class="line"><span class="comment">// 返回创建时间 time 满足，从 time &lt;= high **倒序**起始，</span></span><br><span class="line"><span class="comment">// 到 time &gt;= low 终止，不超过 limit 条联结</span></span><br><span class="line">assoc_time_range(id1, atype, high, low, limit)</span><br></pre></td></tr></table></figure>
+
+<p>为什么结果集按时间降序排列呢？因为在 Facebook 页面信息流展示时，总是先展示最新的，然后随着不断下拉，依次加载较旧的数据。</p>
+<p>举个栗子：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">• “<span class="number">50</span> most recent comments on Alice’s checkin” ⇒ assoc_range(<span class="number">632</span>, COMMENT, <span class="number">0</span>, <span class="number">50</span>)</span><br><span class="line">• “How many checkins at the GG Bridge?” ⇒ assoc_count(<span class="number">534</span>, CHECKIN)</span><br></pre></td></tr></table></figure>
+
+<h2 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h2><p><img src="https://i.loli.net/2021/10/07/HohFUZujB7J28ig.png" alt="TAO 架构"></p>
+<p>TAO 架构整体分两层，缓存层（caching layer）和存储层（storage layer）。</p>
+<h3 id="存储层"><a href="#存储层" class="headerlink" title="存储层"></a>存储层</h3><p>由于前面所说的历史原因，TAO 使用 MySQL 作为存储层。</p>
+<p>因此，TAO 对外的 API 最终会被转化成 MySQL 语句作用于存储层，但对 MySQL 的查询语句都相对简单。当然，存储层也可以使用 LevelDB 这种 NoSQL 存储引擎，这样查询语句就会对应翻译为前缀遍历。当然，选择存储引擎不止要看 API 翻译方便与否，还要看数据备份、批量导入导出、多副本同步等非 API 因素。</p>
+<p>单个 MySQL 服务肯定存不下所有 TAO 数据，因此 TAO 使用了 MySQL 集群支撑存储层。为了将数据均匀的分到多个 MySQL 机器上，TAO 使用一致性哈希算法将数据在逻辑上进行了切片（shard）。每个切片存到一个 MySQL db 中。每个 Object 在创建时会关联一个 shard，并将 shard_id 做到 object_id 中，因此在 Object 整个生命周期中其 shard 都不会再改变。</p>
+<p>具体来说，MySQL 中所存数据主要包括两张表，一个点表，一个是边表。其中，点和其出边会存在同一个 MySQL db 中，以最小化关联查询代价。所有的点属性在保存时，会被序列化到一个叫做 data 的列。如此，可以将具有不同类型的 Object 保存到一张表中。边和点保存时类似，但是会额外在 <code>id1,atype,andtime</code>  字段上做索引，以方便基于某个点的出边的范围查询。此外，为了避免对边的数量的查询所带来的高昂开销，会额外用一张表来保存 associations 的数量。</p>
+<h3 id="缓存层"><a href="#缓存层" class="headerlink" title="缓存层"></a>缓存层</h3><p><strong>读写穿透。</strong>TAO 的存储层实现了所有对外 API，对客户端（ Client ）完全屏蔽了存储层。即，Clients 只和缓存层进行交互，缓存层负责将数据同步到存储层。缓存层也是由多个缓存服务器构成，能够 Serve 任意 TAO 请求的一组缓存服务器称为一个 Tier。单个请求会路由到单个缓存服务器，不会跨多个服务器。</p>
+<p><strong>缓存策略</strong>使用经典的 LRU。值得一提的是，由于 TAO 的边默认是双向的，在 Client 写入边时，由缓存层变成负责将其变为写去边和回边的两个有向边，但 TAO 并不保证其原子性。失败了会通过垃圾回收来删除中间结果。</p>
+<p><strong>两层架构</strong>。TAO 中的每个逻辑分片（Shard）基本是同构的。每个逻辑分片的缓存层包括一组缓存服务器，由单个 Leader 缓存服务器和一组 Follower 缓存服务器构成。</p>
+<p>其中，Followers 缓存服务器是外层，Leader 服务器是内层。所有客户端只和 Followers 打交道，Followers 缓存服务器本身只负责读请求，如果发现读未命中或者有写请求，就将其转发给所对应  Leader 缓存服务器。</p>
+<p>如果读请求负载持续增加，对 Follower 缓存服务器扩容即可。</p>
+<p>如果对某些 object 访问显著高于其他，TAO 会通过记录访问频次对其识别，然后进行客户端侧的缓存，并通过版本号来维持一致性。</p>
+<p><strong>一致性。</strong>Leader 收到多个 Follower 的并行写请求后会将其进行定序，序列化后到存储层进行同步读写后返回；对于写请求来说，还会<strong>异步</strong>的通知其他 Follower 服务进行对应数据的更新，因此 TAO 最终只能提供最终一致性保证。这样做的好处是换来了读请求的高吞吐。</p>
+<p><strong>多地扩展</strong>。由于 TAO 的读请求频次约为写频次的 25 倍，而单地数据中心（datacenter）又不能满足 Facebook 全球场景。因此 TAO 整体上使用了主从架构，两个 datacenter 都部署一套存储层+缓存层作为主从（Primary-Secondary），所有写请求都要由从数据中心的 Leader Cache 路由到主数据中心（见上图），然后由主数据中心存储层<strong>异步</strong>传回从数据中心。但从数据中心的 Leader Cache 并不等本地存储层同步回数据，即进行更新，并通知 Followers 到自己这 Refill。TAO 的这种设计，能够最大化的保证一个读取请求在一个 DataCenter 内被满足，代价是客户端可能会读到过时数据。即牺牲一致性，来降请求低延迟，提高吞吐。</p>
+<h2 id="一致性"><a href="#一致性" class="headerlink" title="一致性"></a>一致性</h2><p>TAO 在一致性和可用性取舍方面时，选择了后者。为了高可用性和极致的性能，选择了弱化的一致性模型——最终一致性。因为在 Facebook 的大部分场景下，不可用要比不正确更加糟糕。在大部分常见场景下，TAO 能做到更强的写后读一致性（read after write consistency）。</p>
+<p>TAO 中同一份数据，首先，会进行 Master-Slave Region 进行主从备份；其次，在同一 Region 中，会使用 Leader-Follower Cache 做两层缓存。更新时，不同位置的数据不同步，便会造成数据的不一致。在 TAO 中，在更新后给足够时间间隔，所有的数据副本都会趋向一致，并且体现最新更新。而通常，这个时间间隔不会超过 1s 。这在 Facebook 中大多数场景是没有问题的。</p>
+<p>对于那些对一致性有特殊要求的场景，应用层可以将请求标记为 critical。TAO 在接到有此标记的请求时，会将其转发到 Master Region 进行处理，进而获取强一致性。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>[1] TAO 论文：<span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9zeXN0ZW0vZmlsZXMvY29uZmVyZW5jZS9hdGMxMy9hdGMxMy1icm9uc29uLnBkZg==">https://www.usenix.org/system/files/conference/atc13/atc13-bronson.pdf<i class="fa fa-external-link-alt"></i></span></p>
+<p>[2] Facebook 技术博客，TAO——图的威力：<span class="exturl" data-url="aHR0cHM6Ly9lbmdpbmVlcmluZy5mYi5jb20vMjAxMy8wNi8yNS9jb3JlLWRhdGEvdGFvLXRoZS1wb3dlci1vZi10aGUtZ3JhcGgv">https://engineering.fb.com/2013/06/25/core-data/tao-the-power-of-the-graph/<i class="fa fa-external-link-alt"></i></span></p>
+<p>[3] meetup TAO：<span class="exturl" data-url="aHR0cHM6Ly93d3cubm90aW9uLnNvL01lZXR1cC0xLUZhY2Vib29rLVRBTy0yOGU4ODgzNmEzZjY0OWJhOWIzZTNlYTgzODU4YzU5Mw==">https://www.notion.so/Meetup-1-Facebook-TAO-28e88836a3f649ba9b3e3ea83858c593<i class="fa fa-external-link-alt"></i></span></p>
+<p>[4] stanford 6.S897 课件： <span class="exturl" data-url="aHR0cHM6Ly9jcy5zdGFuZm9yZC5lZHUvfm1hdGVpL2NvdXJzZXMvMjAxNS82LlM4OTcvc2xpZGVzL3Rhby5wZGY=">https://cs.stanford.edu/~matei/courses/2015/6.S897/slides/tao.pdf<i class="fa fa-external-link-alt"></i></span></p>
+<hr>
+<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
+<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/03/19/wisckey/" rel="bookmark">WiscKey —— SSD 介质下的 LSM-Tree 优化</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/06/13/dynamo/" rel="bookmark">Amazon 针对小对象的分布式键值存储——Dynamo</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/04/17/storage-interview/" rel="bookmark">分布式存储面试经验</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
+              <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
+              <a href="/tags/facebook/" rel="tag"># facebook</a>
+              <a href="/tags/TAO/" rel="tag"># TAO</a>
+              <a href="/tags/%E5%9B%BE%E5%AD%98%E5%82%A8/" rel="tag"># 图存储</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/07/10/memory-photos/" rel="prev" title="忆影流年">
+      <i class="fa fa-chevron-left"></i> 忆影流年
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/10/10/what-is-distributed-system/" rel="next" title="分布式系统是什么">
+      分布式系统是什么 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%86%E5%8F%B2%E6%B2%BF%E9%9D%A9"><span class="nav-number">2.</span> <span class="nav-text">历史沿革</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%BE%E6%A8%A1%E5%9E%8B-amp-API"><span class="nav-number">3.</span> <span class="nav-text">图模型 &amp; API</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Object-API"><span class="nav-number">3.1.</span> <span class="nav-text">Object API</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Association-API"><span class="nav-number">3.2.</span> <span class="nav-text">Association API</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Association-Query-API"><span class="nav-number">3.3.</span> <span class="nav-text">Association Query API</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84"><span class="nav-number">4.</span> <span class="nav-text">架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E5%B1%82"><span class="nav-number">4.1.</span> <span class="nav-text">存储层</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E5%B1%82"><span class="nav-number">4.2.</span> <span class="nav-text">缓存层</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7"><span class="nav-number">5.</span> <span class="nav-text">一致性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">100</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">167</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2021/10/07/facebook-tao/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '471293444fd4bf29b1226d799d86fd03',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

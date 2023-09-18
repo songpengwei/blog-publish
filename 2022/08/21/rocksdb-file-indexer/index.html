@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Google LevelDB 是一个 LSM-Tree 的实现典范。但在开源出来后，为了保持轻量、简洁的风格，除了修修 Bug 之外，一直没有做太大的更新迭代。为了让其能够满足工业环境中多样性的负载， Facebook（Meta） 在 Fork 了 LevelDB 之后，做了多方面的优化。硬件方面，可以更有效地利用现代硬件，如闪存和快速磁盘、多核 CPU等；软件方面，针对读写路径、Compact">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocksDB 优化小解（一）：Indexing SST">
+<meta property="og:url" content="https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Google LevelDB 是一个 LSM-Tree 的实现典范。但在开源出来后，为了保持轻量、简洁的风格，除了修修 Bug 之外，一直没有做太大的更新迭代。为了让其能够满足工业环境中多样性的负载， Facebook（Meta） 在 Fork 了 LevelDB 之后，做了多方面的优化。硬件方面，可以更有效地利用现代硬件，如闪存和快速磁盘、多核 CPU等；软件方面，针对读写路径、Compact">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png">
+<meta property="og:image" content="https://s2.loli.net/2022/08/21/XLU7IvQnJDFfOgS.png">
+<meta property="og:image" content="https://s2.loli.net/2022/08/21/d2tDES7jAaofwP5.png">
+<meta property="og:image" content="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg">
+<meta property="article:published_time" content="2022-08-21T09:44:43.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.289Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="存储">
+<meta property="article:tag" content="RocksDB">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>RocksDB 优化小解（一）：Indexing SST | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RocksDB 优化小解（一）：Indexing SST
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-21 10:44:43" itemprop="dateCreated datePublished" datetime="2022-08-21T10:44:43+01:00">2022-08-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/RocksDB/" itemprop="url" rel="index"><span itemprop="name">RocksDB</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>Google LevelDB 是一个 LSM-Tree 的实现典范。但在开源出来后，为了保持轻量、简洁的风格，除了修修 Bug 之外，一直没有做太大的更新迭代。为了让其能够满足工业环境中<strong>多样性的负载</strong>， Facebook（Meta） 在 Fork 了 LevelDB 之后，做了多方面的优化。硬件方面，可以更有效地利用现代硬件，如闪存和快速磁盘、多核 CPU等；软件方面，针对读写路径、Compaction 也做了大量优化，如 SST 索引、索引分片、前缀 Bloom Filter、列族等。</p>
+<p>本系列文章，依据 <span class="exturl" data-url="aHR0cHM6Ly9yb2Nrc2RiLm9yZy9ibG9nLw==">RocksDB 系列博客<i class="fa fa-external-link-alt"></i></span>，结合源码和一些使用经验，分享一些有趣的优化点，希望能对大家有所启发。水平所限，不当之处，欢迎留言讨论。</p>
+</blockquote>
+<p>本篇是 RocksDB 优化系列第一篇，为了优化深层查询性能，将不同层级的 SST 通过一定方式索引起来。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer">https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer</a> 转载请注明出处</em></p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>首先，上个<a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/">之前文章中</a>画的 LevelDB 架构图。</p>
+<p><img src="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png" alt="leveldb.png"></p>
+<p>其中，LevelDB 中一个 <code>Get()</code> 的请求路径，会先后经过：</p>
+<ol>
+<li>一个可变的 memtable</li>
+<li>一系列不可变的 memtable</li>
+<li>层级组织的一系列 SST 文件</li>
+</ol>
+<p>其中，0 层中的 SST 文件是由不可变的 memtable 直接刷盘而来的，其键范围（key range，由<code>FileMetaData.smallest</code> and <code>FileMetaData.largest</code> 界定）大部分都互相交叠。因此，在 0 层中要对所有 SST 文件逐个查找。</p>
+<p>其他层的 SST 则由上层 SST 不断<strong>压实</strong>（ Compaction） 而来，由此将数据从上层到下层不断沉降。Compaction 过程会将多个 SST 合并在一块，挤出“水分”（重复的 key），然后分裂成多个 SST 文件，因此在 1 层之下，所有的 SST 文件键范围各不相交，且有序。这种组织方式，可以让我们在层内查找时，进行二分查找（<code>O(log(N))</code> 复杂度），而非线性查找（<code>O(N)</code> 复杂度）。</p>
+<p>具体查找方法为，以待查找值 x 为目标，以每个文件的 <code>FileMetaData.largest</code> 组成的数组作为二分对象，不断缩小查找范围，确定目标 SST 文件。如果没有找到包含 x 的 key range 对应的 SST 文件或者对应 SST 文件中没有 x，则向下层继续搜索。</p>
+<p>但在大数据量情况下，下层的文件数仍然非常多，对于高频的 Get 操作，即使是二分查找，每层的比较次数，也会线性增长。比如对于 10 的<strong>扇出因子</strong>（fan-out ration），即下层 SST 文件数量是紧邻上层的十倍，则第 3 层会有将近 1000 的文件数量，最坏情况下需要进行 10 次左右的比较。乍看起来不多，但在百万级别的 QPS 下，这是相当可观的开销。</p>
+<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><p>可以观察到，在 LevelDB 的版本机制下，每个版本（VersionSet，由 Manifest 文件保存）内的 SST 文件数量是定死的、位置也是定死的，则不同层 SST 文件的相对位置也是确定的。</p>
+<p>则，我们在每一层进行查找时，其实<strong>不用从头开始二分，上层已经二分出的一些位置信息可以进行复用</strong>。因此，可以在增加一些类似查找树（如 B+ 树）的层级间的索引结构，以减小底层的二分范围。这种思想称为 <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRnJhY3Rpb25hbF9jYXNjYWRpbmc=">Fractional cascading<i class="fa fa-external-link-alt"></i></span>。</p>
+<p><img src="https://s2.loli.net/2022/08/21/XLU7IvQnJDFfOgS.png" alt="indexing-sst.png"></p>
+<p>举个例子，如上图，1 层有 2 个 SST 文件，2 层有 8 个 SST 文件。假设现在我们想要查找 80，首先在第一层中所有文件的 <code>FileMetaData.largest</code> 中搜索，可以得到候选文件 file 1，但通过与其上下界比较发现小于其下界。于是继续向 2 层搜索，如果 SST 上没有索引，我们需要对所有八个候选文件进行二分，但如果有索引，如上图，我们只需要对前三个文件进行二分。由此，每层搜索的比较次数可以做到常数级别 N（扇出因子，即 RocksDB 中 <code>max_bytes_for_level_multiplier</code> 配置项），不会随着层次的加深而线性增加（ <code>log(N^L) = N*L</code>）。</p>
+<h3 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h3><p>RocksDB 中的版本是在每次 compaction 后确定的，只有 compaction 才会改变 SST。因此可以在 compaction 构建 SST 时构建相邻层间的 SST 索引。构建时，每个 SST 文件上下界各对应一个指针。那么如何确定每个指针的指向位置呢？与查找过程类似，拿着上界或者下界对应的 key，在下层所有 SST 文件的 <code>FileMetaData.largest</code> 构成的数组中进行搜索，将其指向下层文件该值对应的<strong>右界文件</strong>。这么选择原因在于，<strong>可以通过该指针（如 100 的指针），将下一层中指向的文件（如 file3）右边的文件（file4，file5，…）全部砍掉</strong>，从而减小搜索范围。</p>
+<p>举个例子，如上图中的 1 层中 file1 的上下界分别为 100 和 200 。对于 100，搜索后落到 2 层中的 file 3 中，则其指向 file 3；对于 200 ，搜索后落到 210 左边，则指向 file 4。</p>
+<h3 id="代码"><a href="#代码" class="headerlink" title="代码"></a>代码</h3><p>但在 RocksDB 实际<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2ZhY2Vib29rL3JvY2tzZGIvYmxvYi8zLjAuZmIuYnJhbmNoL2RiL2ZpbGVfaW5kZXhlci5jYw==">代码中<i class="fa fa-external-link-alt"></i></span>（该功能自 3.0 引入），对于任意一个上层文件，实际上是记下了四个索引。通过细分界定范围，可以进一步减小搜索范围。其基本思想是构建 <code>FileIndexer</code> 的时候多花一倍时间、多算一倍的边界，在查找时，就可以更进一步缩小查找范围。鉴于 SST 都是一次构建，多次查询，这种 tradeoff 是值得的。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">IndexUnit</span> &#123;</span><br><span class="line">    <span class="built_in">IndexUnit</span>()</span><br><span class="line">      : <span class="built_in">smallest_lb</span>(<span class="number">0</span>), <span class="built_in">largest_lb</span>(<span class="number">0</span>), <span class="built_in">smallest_rb</span>(<span class="number">-1</span>), <span class="built_in">largest_rb</span>(<span class="number">-1</span>) &#123;&#125;</span><br><span class="line">    <span class="comment">// Point to a left most file in a lower level that may contain a key,</span></span><br><span class="line">    <span class="comment">// which compares greater than smallest of a FileMetaData (upper level)</span></span><br><span class="line">    <span class="comment">// 下层文件中比 FileMetaData.smallest 大的第一个文件下标。 </span></span><br><span class="line">    <span class="comment">// target &gt; FileMetaData.smallest 时搜索用。</span></span><br><span class="line">    <span class="type">int32_t</span> smallest_lb;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Point to a left most file in a lower level that may contain a key,</span></span><br><span class="line">    <span class="comment">// which compares greater than largest of a FileMetaData (upper level)</span></span><br><span class="line">    <span class="comment">// 下层文件中比 FileMetaData.largest 大的第一个文件下标。 </span></span><br><span class="line">    <span class="comment">// target &gt; FileMetaData.largest 时搜索用。</span></span><br><span class="line">    <span class="type">int32_t</span> largest_lb;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Point to a right most file in a lower level that may contain a key,</span></span><br><span class="line">    <span class="comment">// which compares smaller than smallest of a FileMetaData (upper level)</span></span><br><span class="line">    <span class="comment">// 下层文件中比 FileMetaData.smallest 小的最后一个文件下标。 </span></span><br><span class="line">    <span class="comment">// target &lt; FileMetaData.smallest 时搜索用。</span></span><br><span class="line">    <span class="type">int32_t</span> smallest_rb;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Point to a right most file in a lower level that may contain a key,</span></span><br><span class="line">    <span class="comment">// which compares smaller than largest of a FileMetaData (upper level)</span></span><br><span class="line">    <span class="comment">// 下层文件中比 FileMetaData.largest 小的最后一个文件下标。 </span></span><br><span class="line">    <span class="comment">// target &lt; FileMetaData.largest 时搜索用。</span></span><br><span class="line">    <span class="type">int32_t</span> largest_rb;</span><br><span class="line">  &#125;;</span><br></pre></td></tr></table></figure>
+
+<p>上面注释看起来比较拗口，但是从如何<strong>对其使用</strong>入手，就能比较容易的理解了。假设我们现在要查找的值为 <code>x</code>，待比较的某个上层文件上下界为<code>[smallest, largest]</code> ，则该上下界将键空间切分为五个区间：<code>(-∞, smallest), smallest, (smallest, largest), largest, (largest, +∞)</code>。仅考虑该文件搜索结束就要去下层搜索的情况，则有：</p>
+<ol>
+<li>如果 x &lt; smallest，则需要在下层中比 smallest 小的最右边那个文件（<code>smallest_rb</code>）找。</li>
+<li>如果 x &#x3D;&#x3D; smallest，即 smallest ≤ x ≤ smallest，则需要在下层比 smallest 大的最左边的文件（<code>smallest_lb</code>）开始找，到比 smallest 小的最右边的文件（<code>smallest_rb</code>）停止。</li>
+<li>如果 smallest &lt; x &lt; largest，则需要在下层比 smallest 大的最左边的文件（<code>smallest_lb</code>）开始找，到比 largest 小的最右边的文件（<code>largest_rb</code>）停止。</li>
+<li>如果 x &#x3D;&#x3D; largest，即 largest ≤ x ≤ largest，则需要在下层比 largest 大的最左边的文件（<code>largest_lb</code>）开始找，到比 largest 小的最右边的文件（<code>largest_rb</code>）停止。</li>
+<li>如果 x &gt; largest，则需要在下层比 largest 大的最左边那个文件（<code>largest_lb</code>）开始找。</li>
+</ol>
+<p>对应代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (cmp_smallest &lt; <span class="number">0</span>) &#123; <span class="comment">// target &lt; smallest，使用 smallest_rb 作为右界</span></span><br><span class="line">  *left_bound = (level &gt; <span class="number">0</span> &amp;&amp; file_index &gt; <span class="number">0</span>)</span><br><span class="line">                    ? index_units[file_index - <span class="number">1</span>].largest_lb</span><br><span class="line">                    : <span class="number">0</span>;</span><br><span class="line">  *right_bound = index.smallest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_smallest == <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.smallest_lb;</span><br><span class="line">  *right_bound = index.smallest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_smallest &gt; <span class="number">0</span> &amp;&amp; cmp_largest &lt; <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.smallest_lb;</span><br><span class="line">  *right_bound = index.largest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_largest == <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.largest_lb;</span><br><span class="line">  *right_bound = index.largest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_largest &gt; <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.largest_lb;</span><br><span class="line">  *right_bound = level_rb_[level + <span class="number">1</span>];</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="built_in">assert</span>(<span class="literal">false</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>注：</strong>当 x &#x3D;&#x3D; smallest 或者 x &#x3D;&#x3D; largest 时，对于 RocksDB 使用场景来说，上层已经找到了，无须再往查找下层。但该 <code>FileIndexer</code> 的应用场景更泛化一些，比如你可以使用其往下层寻找所有等于给定值的结果。</p>
+<p>下面，仍以之前例子，来使用图解释下：</p>
+<p><img src="https://s2.loli.net/2022/08/21/d2tDES7jAaofwP5.png" alt="create-indexing-sst.png"></p>
+<p>可以看出，当上层文件边界（如 100）落到下层文件内（如 file 3 [95, 110]）时，该边界 lb 和 rb 指针指向相同，蜕化为单指针；当文件边界（如 400）落到下层文件<strong>空隙内</strong>（如 file 7 和 file 8 之间），lb 和 rb 才指向不同，从而在搜索时，相对单指针，总体上减少一个待扫描文件。</p>
+<p>另一方面，注意到，当上层文件边界值（如 400）落在下层文件空隙内时（即该值在下层肯定不存在），有 <code>largest_rb &lt; largest_lb</code> ，如果搜索值是 400，则利用此指针直接导致 <code>left_bound &gt; right_bound</code>，搜索结束。</p>
+<p>在具体实现时， RocksDB 使用了<strong>双指针比较法</strong>，一个指针迭代上层，一个指针迭代下层，一次迭代即可为所有文件建立一种索引。为减少代码中的<strong>分支判断</strong>，使逻辑清晰，RocksDB 将建立过程拆为了四趟，分别构建上述四种指针，逻辑封装在了两个函数中：<code>CalculateLB</code> 和 <code>CalculateRB</code>。</p>
+<p>下面以 <code>CalculateLB</code> 代码为例，简单注释分析：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 计算 lower_files 中比某值大的最左（从左到右第一个）文件下标</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">FileIndexer::CalculateLB</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">const</span> std::vector&lt;FileMetaData*&gt;&amp; upper_files, <span class="comment">// 上层 SST 文件</span></span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">const</span> std::vector&lt;FileMetaData*&gt;&amp; lower_files, <span class="comment">// 下层 SST 文件</span></span></span></span><br><span class="line"><span class="params"><span class="function">    IndexLevel* index_level,</span></span></span><br><span class="line"><span class="params"><span class="function">    std::function&lt;<span class="type">int</span>(<span class="type">const</span> FileMetaData*, <span class="type">const</span> FileMetaData*)&gt; cmp_op,</span></span></span><br><span class="line"><span class="params"><span class="function">    std::function&lt;<span class="type">void</span>(IndexUnit*, <span class="type">int32_t</span>)&gt; set_index)</span> </span>&#123;</span><br><span class="line">  <span class="type">const</span> <span class="type">int32_t</span> upper_size = <span class="built_in">static_cast</span>&lt;<span class="type">int32_t</span>&gt;(upper_files.<span class="built_in">size</span>());</span><br><span class="line">  <span class="type">const</span> <span class="type">int32_t</span> lower_size = <span class="built_in">static_cast</span>&lt;<span class="type">int32_t</span>&gt;(lower_files.<span class="built_in">size</span>());</span><br><span class="line">  <span class="type">int32_t</span> upper_idx = <span class="number">0</span>;</span><br><span class="line">  <span class="type">int32_t</span> lower_idx = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  IndexUnit* index = index_level-&gt;index_units;</span><br><span class="line">  <span class="keyword">while</span> (upper_idx &lt; upper_size &amp;&amp; lower_idx &lt; lower_size) &#123; <span class="comment">// 双指针比较法</span></span><br><span class="line">    <span class="comment">// 总是跟 lower_files[lower_idx].largest 比较</span></span><br><span class="line">    <span class="type">int</span> cmp = <span class="built_in">cmp_op</span>(upper_files[upper_idx], lower_files[lower_idx]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (cmp == <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="built_in">set_index</span>(&amp;index[upper_idx], lower_idx);</span><br><span class="line">      ++upper_idx;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp &gt; <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="comment">// 下层 lower_idx 处文件的最大值比给定值小，则不满足条件</span></span><br><span class="line">      ++lower_idx;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// 下层 lower_idx 处文件的最大值相对给定值第一次变大，满足条件，设置索引</span></span><br><span class="line">      <span class="built_in">set_index</span>(&amp;index[upper_idx], lower_idx);</span><br><span class="line">      ++upper_idx;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (upper_idx &lt; upper_size) &#123;</span><br><span class="line">    <span class="comment">// 下层文件用完了，表示现在所有余下的上层文件比所有下层文件都大</span></span><br><span class="line">    <span class="comment">// 于是让他们都指向 lower_size，即不存在（下层文件下标为 0~lower_size-1）。</span></span><br><span class="line">    <span class="built_in">set_index</span>(&amp;index[upper_idx], lower_size);</span><br><span class="line">    ++upper_idx;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 如果是上层文件用完了，不做额外处理。因为函数作用是为上层文件设置索引，</span></span><br><span class="line">  <span class="comment">// 上层文件用完了，说明已经为所有上层文件设置了索引。</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>四趟调用，分别为上层每一个文件索引项 <code>IndexUnit</code> 的四个字段赋值。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">CalculateLB</span>(</span><br><span class="line">    upper_files, lower_files, &amp;index_level,</span><br><span class="line">    [<span class="keyword">this</span>](<span class="type">const</span> FileMetaData* a, <span class="type">const</span> FileMetaData* b) -&gt; <span class="type">int</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> ucmp_-&gt;<span class="built_in">CompareWithoutTimestamp</span>(a-&gt;smallest.<span class="built_in">user_key</span>(),</span><br><span class="line">                                            b-&gt;largest.<span class="built_in">user_key</span>());</span><br><span class="line">    &#125;,</span><br><span class="line">    [](IndexUnit* index, <span class="type">int32_t</span> f_idx) &#123; index-&gt;smallest_lb = f_idx; &#125;);</span><br><span class="line"><span class="built_in">CalculateLB</span>(</span><br><span class="line">    upper_files, lower_files, &amp;index_level,</span><br><span class="line">    [<span class="keyword">this</span>](<span class="type">const</span> FileMetaData* a, <span class="type">const</span> FileMetaData* b) -&gt; <span class="type">int</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> ucmp_-&gt;<span class="built_in">CompareWithoutTimestamp</span>(a-&gt;largest.<span class="built_in">user_key</span>(),</span><br><span class="line">                                            b-&gt;largest.<span class="built_in">user_key</span>());</span><br><span class="line">    &#125;,</span><br><span class="line">    [](IndexUnit* index, <span class="type">int32_t</span> f_idx) &#123; index-&gt;largest_lb = f_idx; &#125;);</span><br><span class="line"><span class="built_in">CalculateRB</span>(</span><br><span class="line">    upper_files, lower_files, &amp;index_level,</span><br><span class="line">    [<span class="keyword">this</span>](<span class="type">const</span> FileMetaData* a, <span class="type">const</span> FileMetaData* b) -&gt; <span class="type">int</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> ucmp_-&gt;<span class="built_in">CompareWithoutTimestamp</span>(a-&gt;smallest.<span class="built_in">user_key</span>(),</span><br><span class="line">                                            b-&gt;smallest.<span class="built_in">user_key</span>());</span><br><span class="line">    &#125;,</span><br><span class="line">    [](IndexUnit* index, <span class="type">int32_t</span> f_idx) &#123; index-&gt;smallest_rb = f_idx; &#125;);</span><br><span class="line"><span class="built_in">CalculateRB</span>(</span><br><span class="line">    upper_files, lower_files, &amp;index_level,</span><br><span class="line">    [<span class="keyword">this</span>](<span class="type">const</span> FileMetaData* a, <span class="type">const</span> FileMetaData* b) -&gt; <span class="type">int</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> ucmp_-&gt;<span class="built_in">CompareWithoutTimestamp</span>(a-&gt;largest.<span class="built_in">user_key</span>(),</span><br><span class="line">                                            b-&gt;smallest.<span class="built_in">user_key</span>());</span><br><span class="line">    &#125;,</span><br><span class="line">    [](IndexUnit* index, <span class="type">int32_t</span> f_idx) &#123; index-&gt;largest_rb = f_idx; &#125;);</span><br></pre></td></tr></table></figure>
+
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>对 SST 建立索引的方法比较直观（可以类比 B+ 树），容易理解。但对应到代码实现上，有诸多细节和边界情况需要处理，很容易出错。就像二分查找，能写出花来一样，无他，唯多练耳。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li>RocksDB 博客，<strong><strong>Indexing SST Files for Better Lookup Performance，</strong></strong> <span class="exturl" data-url="aHR0cDovL3JvY2tzZGIub3JnL2Jsb2cvMjAxNC8wNC8yMS9pbmRleGluZy1zc3QtZmlsZXMtZm9yLWJldHRlci1sb29rdXAtcGVyZm9ybWFuY2UuaHRtbA==">http://rocksdb.org/blog/2014/04/21/indexing-sst-files-for-better-lookup-performance.html<i class="fa fa-external-link-alt"></i></span></li>
+<li>维基百科，分散级联， <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRnJhY3Rpb25hbF9jYXNjYWRpbmc=">Fractional cascading<i class="fa fa-external-link-alt"></i></span>，<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRnJhY3Rpb25hbF9jYXNjYWRpbmc=">https://en.wikipedia.org/wiki/Fractional_cascading<i class="fa fa-external-link-alt"></i></span></li>
+<li>RocksDB github FileIndexer：<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2ZhY2Vib29rL3JvY2tzZGIvYmxvYi8zLjAuZmIuYnJhbmNoL2RiL2ZpbGVfaW5kZXhlci5jYw==">https://github.com/facebook/rocksdb/blob/3.0.fb.branch/db/file_indexer.cc<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+<hr>
+<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心~<br><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/03/19/wisckey/" rel="bookmark">WiscKey —— SSD 介质下的 LSM-Tree 优化</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/06/13/dynamo/" rel="bookmark">Amazon 针对小对象的分布式键值存储——Dynamo</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/12/14/bolt-index-design/" rel="bookmark">Boltdb 源码导读（二）：Boltdb 索引设计</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
+              <a href="/tags/RocksDB/" rel="tag"># RocksDB</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/07/07/db-isolation/" rel="prev" title="步步为营 剖析事务中最难的——隔离性">
+      <i class="fa fa-chevron-left"></i> 步步为营 剖析事务中最难的——隔离性
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/09/24/dynamo-db-flow-control/" rel="next" title="DynamoDB 的云原生之路 —— 流控策略的演进">
+      DynamoDB 的云原生之路 —— 流控策略的演进 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96"><span class="nav-number">2.</span> <span class="nav-text">优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%9E%90"><span class="nav-number">2.1.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.2.</span> <span class="nav-text">实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81"><span class="nav-number">2.3.</span> <span class="nav-text">代码</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">100</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">167</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '6208867142ed200d5b24ebdb755f150a',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

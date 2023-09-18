@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第六节课笔记，是 Raft 论文讲解">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MIT 6.824 2020 视频笔记六：Fault Tolerate Raft 1">
+<meta property="og:url" content="https://www.qtmuniao.com/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第六节课笔记，是 Raft 论文讲解">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png">
+<meta property="og:image" content="https://i.loli.net/2020/05/15/2HrYAaSULhckRDT.png">
+<meta property="og:image" content="https://i.loli.net/2020/05/14/WQUBHvNSe6O72zF.png">
+<meta property="og:image" content="https://i.loli.net/2020/05/14/krIQ9gYb5So8fD6.png">
+<meta property="og:image" content="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg">
+<meta property="article:published_time" content="2020-05-09T22:12:20.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.283Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="6.824">
+<meta property="article:tag" content="笔记">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MIT 6.824 2020 视频笔记六：Fault Tolerate Raft 1 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MIT 6.824 2020 视频笔记六：Fault Tolerate Raft 1
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-05-09 23:12:20" itemprop="dateCreated datePublished" datetime="2020-05-09T23:12:20+01:00">2020-05-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 07:26:06" itemprop="dateModified" datetime="2023-07-31T07:26:06+01:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E5%85%AC%E5%BC%80%E8%AF%BE/" itemprop="url" rel="index"><span itemprop="name">公开课</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
+<p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vY2hhbm5lbC9VQ183V3JiWlRDT0R1MW9fa2ZVTXE4OGcvdmlkZW9z">Youtube<i class="fa fa-external-link-alt"></i></span>，<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL2F2OTA5MTU1MjY=">B站<i class="fa fa-external-link-alt"></i></span>。课程资料：<span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvc2NoZWR1bGUuaHRtbA==">6.824主页<i class="fa fa-external-link-alt"></i></span>。本篇是第六节课笔记，是 Raft 论文讲解的第一部分，主要总结了容错的几种类型以及 Raft 中的 Leader 选举相关内容。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/">https://www.qtmuniao.com/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/</a>, 转载请注明出处</em></p>
+<h2 id="容错"><a href="#容错" class="headerlink" title="容错"></a>容错</h2><p>状态机备份：State machine replication</p>
+<h3 id="容错模式"><a href="#容错模式" class="headerlink" title="容错模式"></a>容错模式</h3><p>我们已经学习了以下几种容错模式（fault-tolerance pattern）：</p>
+<ul>
+<li>计算冗余：MapReduce，但是所有计算由单点 Master 进行调度。</li>
+<li>数据冗余：GFS，也是依赖单点 Master 来对多个副本进行选主。</li>
+<li>服务冗余：VMware-FT 依赖单个 TestAndSet 操作</li>
+</ul>
+<p>可以看出他们都依赖单个组件来做一些关键决策。这样做的好处在于，单个组件不需要共识算法，不会产生不一致；不好的地方在于，该组件成为系统中的一个单点。当然，上述系统已经将单点问题压缩到了一个很小的部分，那么接下来，我们将进一步用一种共识算法——Raft，来将最后这个硬骨头啃下来。</p>
+<h3 id="Split-Brain"><a href="#Split-Brain" class="headerlink" title="Split Brain"></a>Split Brain</h3><p>共识算法中最大的问题在于——如何避免 <strong>Split Brain</strong>。</p>
+<p>那么 Split Brain 是如何产生的，其危害性为什么很大？</p>
+<p>假设我们要对 test-and-set 服务进行备份。test-and-set，简而言之，就是一个锁服务。当多个 Client 同时请求服务时，只有其中一个能通过 Test（测试是否为0），获取锁，并设置 Server 状态为 1，则其他 Client 测试不能通过，从而不能获取锁。</p>
+<p>考虑有以下四个系统角色：[C1, C2, S1, S2]，S1 和 S2 组成一个双备份的、可容错的系统，C1 和 C2 是使用此系统的客户端。假设 C1 可以和 S1 通信，但是与 S2 失联。那在只有 S1 的情况下，系统能够给 C1 正常提供服务么？</p>
+<ol>
+<li>如果 S2 真的宕机了，系统应当在 S2 缺席的情况下正常工作，否则系统就不能称之为是容错的（fault-tolerance）。</li>
+<li>如果 S2 没有宕机，但是和 C1 失联了。则系统不能够给 C1 提供服务，因为 S2 可能正在给 C2 提供服务，如果让 S1 同时给 C1 服务，则会造成系统状态不一致，从而使服务出错：C1 和 C2 同时获取到锁。</li>
+</ol>
+<p><img src="https://i.loli.net/2020/05/15/2HrYAaSULhckRDT.png" alt="split-brain"></p>
+<p>在此种情况下，我们面临一种选择的困境：</p>
+<ol>
+<li>要么不提供容错保证，尽管我们使用了双备份服务器。</li>
+<li>要么仍然回复客户端请求，但由于 Split Brain 可能会发生，不保证一致性。</li>
+</ol>
+<p>但问题在于，服务器 S1 无法区分 S2 是失联了（”server crashed”）还是网络故障了（network broken）。因为在这两种情况下，S1 看到的现象是一样的：向 S2 的请求得不到回复。S1 能够和 C1 通信，S2 能够和 C2 通信；但是 S1+C1 收不到 S2+C2 的回复，我们称这种情况为出现了<strong>网络分区</strong>（network partitionn）。</p>
+<p>网络分区可能会持续很久，可能需要引入一个外力（比如说运维人员），来判断何时网络可信、何时服务器可信，才能打破僵局。那我们如何可以将容错做到自动化？答曰：<strong>多数票原则</strong>（majority vote）。</p>
+<h3 id="多数票原则"><a href="#多数票原则" class="headerlink" title="多数票原则"></a>多数票原则</h3><p>多数票原则，要求系统集群包含奇数个服务器，以此来避免出现<strong>同票困境</strong>（symmetry）。如上面只有两个服务的情况，两方各执一词，就很难决定以谁为准。</p>
+<p>在有奇数个服务器的系统中，我们只要获取多数票就可以保持系统正常运转，而不会陷入同票僵局（如 Raft 中的主选举、提交日志条目等）。多数票原则能够打破僵局，其原理也很简单：<em>不可能出现一个以上同时包含多数服务器的分区</em>。需要注意的是，这里的多数指的是构成系统所有的服务器的多数，而非存活服务器的多数。</p>
+<p>如果集群由 2f + 1 个服务器构成，最多能够承受 f 个服务器宕机，而仍能对外提供服务。</p>
+<p>多数票原则还有一个重要的性质就是，<em>任何两个投出多数票的集群必定相交</em>。如在 raft 中，前后相继的两次 Leader 选举所涉及到的投票集群肯定有交集，因此下一轮能够通过相交部分获取上一个 term 的决策信息（包括上一轮的 term 和上一轮的 commit 信息）。</p>
+<p>上世纪九十年代左右，出现了两个算法 Paxos 和 View-Stamped Replication （VSR，MIT提出的），使用多数票原则来解决 Split-brain 问题。虽然现在前者更广为人知，但是后者在思想上与 Raft 更为接近。</p>
+<h2 id="Raft-概览"><a href="#Raft-概览" class="headerlink" title="Raft 概览"></a>Raft 概览</h2><p>Raft 一般表现为库的形式，运行在在每个副本（replica）服务器上，对<strong>多副本状态机</strong> （replicated state machine） 进行管理，主要负责对操作日志的同步。基于此，我们可以进一步构建可靠的 KV 存储层，主要负责状态的存储。</p>
+<p><img src="https://i.loli.net/2020/05/14/WQUBHvNSe6O72zF.png" alt="raft-replicated-kv-service"></p>
+<p>上图表现了一个典型的客户端与键值对服务的交互流程：</p>
+<ol>
+<li>客户端发送 “Put&#x2F;Get” 请求到 Leader 的 k&#x2F;v 层</li>
+<li>Leader 将该请求转换为 Command（包括动作和参数），追加到本机日志文件中</li>
+<li>Leader 通过 AppendEntries RPC 将该 Command 同步给 Followers</li>
+<li>Followers 将该 Command 追加到本机日志文件中</li>
+<li>Leader 等待包含自己内的多数 Server 回复</li>
+<li>获取多数Server 回复后，Leader 就会提交 Command 对应日志条目。提交意味着该 Command 条目不会被删除，即使部分服务器宕机后，仍然能够被下一轮次 Leader 所继承</li>
+<li>Leader 执行该 Command，将其应用到状态机，然后回复给客户端</li>
+<li>在下一次执行 AppendEntries RPC 时，Leader 将捎带 commit 信息（即 commit 到的操作日志中的 offset）同步给各个 Followers</li>
+<li>Followers 在收到 commit 信息后，将对应 Command 应用到状态机</li>
+</ol>
+<h3 id="操作日志"><a href="#操作日志" class="headerlink" title="操作日志"></a>操作日志</h3><p>那么为什么要使用操作日志这种形式对用户的请求操作（Command）进行记录呢？</p>
+<ol>
+<li>Leader 使用日志来决定 Command 的顺序。使得所有副本就请求（尤其是大量几乎同时到达的请求）顺序达成一致、并且保有同样顺序的日志条目。在这种情况下，日志充当一个带锁的队列</li>
+<li>暂存 Command 以备稍后 commit 之后进行提交</li>
+<li>保存 Command 以备由于网络&#x2F;服务器异常导致 Leader 需要再次发送给 Follower</li>
+<li>服务器重启后进行状态重建</li>
+</ol>
+<p>Q&amp;A：</p>
+<ol>
+<li><p>如果请求过快，但是日志 append 速度不够怎么办？</p>
+<p>因此一般不用 raft 做高并发中间件。基于这种假设，如果真遇到这种情况，可以限制 Leader 的请求处理速度。</p>
+</li>
+<li><p>每个服务器在重启时，并不<em>立即</em>执行日志中的 Command，因为他并不知道哪些已经被提交了（提交点没有被持久化），需要后面 Leader 告诉他。</p>
+</li>
+</ol>
+<h3 id="Raft-接口"><a href="#Raft-接口" class="headerlink" title="Raft 接口"></a>Raft 接口</h3><p>Raft 对 KV 层提供的接口主要有两个：<code>Start(command)</code>，<code>ApplyMsg-&gt;ApplyCh</code>。</p>
+<p><code>Start(command) (index, term, isleader)</code></p>
+<p>Start 只在 Leader 上调用才有效，其含义在于让多数服务器在一个新的日志条目（Log Entry，其中包含 Command ）上达成一致。主要有以下几步：</p>
+<ol>
+<li>Leader 将 Command 追加到本地日志中</li>
+<li>向各 Follower 发送 AppendEntries RPC</li>
+<li>Start() 立即返回（给 k&#x2F;v 层）而不等待各个 Follower 的回复（<strong>异步</strong>）</li>
+<li>k&#x2F;v 层需要监听 applyCh 以确定该 Command 是否被提交 （commit）</li>
+</ol>
+<p>返回值有三个：</p>
+<ol>
+<li>index：Command 将会被提交到的日志位置</li>
+<li>term：Leader 的当前任期</li>
+<li>isleader：如果其值为 false，则客户端需要尝试其他服务器直到试到 Leader。</li>
+</ol>
+<p><code>ApplyMsg-&gt;ApplyCh</code></p>
+<p><strong>ApplyMsg</strong>，包含 Command 和 Index 两个字段；<strong>applyCh</strong>，k&#x2F;v 监听 raft commit 后发来的 ApplyMsg 的 channel</p>
+<ol>
+<li>系统中每个服务器对于每个<em>提交了的</em>日志条目都要发送一个 ApplyMsg 给 applyCh</li>
+<li>系统中每个服务器，获取到 ApplyMsg 后，将其中的 Command 更新到本地状态机</li>
+<li>Leader 负责回复请求给客户端（在对应日志条目 commit 之后）</li>
+</ol>
+<p>在某个时刻，系统中的每个服务器的日志条目并不一定完全一致，比如说在 Leader 同步日志条目的过程中宕机了，那么 Leader 包括部分 Followers 已经追加了该日志条目，而另外的 Followers 没有收到该日志条目，此时系统中的每个服务器的的日志条目产生了分叉。</p>
+<p>但好消息是，所有服务器的日志条目最终会被新的 Leader 统一。</p>
+<h2 id="Leader-选举"><a href="#Leader-选举" class="headerlink" title="Leader 选举"></a>Leader 选举</h2><p>说到 Leader 选举，首先需要思考的一个问题是：Leader 是必须的吗？我们必须得有一个 Leader 才能够完成所有服务器上的日志同步么？答案是否定的，比如 Paxos。</p>
+<p>那为什么 Raft 会采取 Leader 做法呢？原因有很多，其中一个是，在系统和网络正常工作的情况下，有 Leader 做决策能够使得系统更为高效；客户端每次请求至多两次（第一次得到 Leader 位置，第二次向 Leader 发送请求）。</p>
+<h3 id="任期（term）"><a href="#任期（term）" class="headerlink" title="任期（term）"></a>任期（term）</h3><p>Raft 对 Leader 的序列进行了标号，即<strong>任期</strong>（term）：</p>
+<ol>
+<li>新 Leader 意味着新任期</li>
+<li>一个任期最多有一个 Leader，也可能没有 Leader</li>
+<li>任期帮助 Followers 追随最新的 Leader，而不是已经下台的 Leader</li>
+</ol>
+<h3 id="选举（election-）"><a href="#选举（election-）" class="headerlink" title="选举（election ）"></a>选举（election ）</h3><p>当 Follower 在一定时间间隔（Raft 称之为选举<strong>选举超时</strong>，election timeout，具体实现时，我们会使用一个 election timer）内没有收到当前 Leader 的心跳信息，就会将将自己的 term 加一（因为一个 term 内不允许出现两个 Leader，因此只有先增加任期计数，才有可能在新的任期当选为新的 Leader），并且自封候选人，向自己投一票，然后向其他服务器进行要票。</p>
+<p>需要注意的是：</p>
+<ol>
+<li>这个过程可能会引起不必要的选举，比如说某个服务器暂时与 Leader 失联，超过 election timeout 之后，发起选举，此时又连上了 Leader，则其会将整个集群带入新的任期，使得原来 Leader 失效。这种做法虽然有时候效率不高，但是很安全</li>
+<li>老的 Leader 可能还活着，并且认为自己是 Leader。比如发生了网络分区，Leader 被分到了少数服务器分区中，而多数服务器分区选出了新的 Leader。则老的 Leader 仍然会认为自己是 Leader，并且尝试行使 Leader 职能，比如接收客户端请求，并且尝试同步日志条目，但由于不可能获取多数回应，因此不可能 commit 进而回复客户端</li>
+</ol>
+<p>Q&amp;A：</p>
+<p>如果网络发生了某种神奇的故障，只能单向通信，即 Leader 能够发送心跳给 Followers，抑制他们发起选举；但是却不能收到 Client 的请求。这种情况下 Raft 还能正常工作吗？</p>
+<p>的确不能了，但是可以通过一些小手段来解决这个问题。比如说双向心跳，来及时排除这种”半连接”的服务器。</p>
+<h3 id="Leader-和任期"><a href="#Leader-和任期" class="headerlink" title="Leader 和任期"></a>Leader 和任期</h3><p>那么如何保证在某个任期最多选出一个 Leader 呢？</p>
+<ol>
+<li>必须得到集群服务器的半数票以上才能成为 Leader</li>
+<li>每个服务器在每个 term 内，最多投出一票<ul>
+<li>如果是 Candidate，无脑投自己</li>
+<li>如果不是 Candidate，投给第一个要票（且符合一定条件，下一节会提到）的 Candidate</li>
+</ul>
+</li>
+</ol>
+<p>并且，当发生网络分区时，仍然能保证最多有一个 Leader；即使有少量的服务器宕机，仍然能够正常选出 Leader。</p>
+<h3 id="Leader-心跳"><a href="#Leader-心跳" class="headerlink" title="Leader 心跳"></a>Leader 心跳</h3><p>Candidate 通过获取多数票后当选为 Leader，但此时只有 Leader 自己知道自己是 Leader，而其他服务器无从得知。因此需要通过心跳，将此选举结果广播给其他服务器。收到心跳的服务器如果发现心跳 term 比自己的大，从而就认可该 Leader 为此 term 的 Leader，并且将自己所处 term 更新为 Leader term，然后变为 Follower。</p>
+<p>此后，Leader 通过不断的心跳来抑制 Followers 转变为 Candidate，即抑制其他服务器发起选举。这也就要求 Leader 的心跳周期要比 election timeout 要小。</p>
+<h3 id="平票"><a href="#平票" class="headerlink" title="平票"></a>平票</h3><p>在某个 term 内，有两种情况会导致选不出 Leader：</p>
+<ol>
+<li>没有任何多于半数的服务器互相可达</li>
+<li>多个 Candidate 同时发起选举，并且都没有获得多数票</li>
+</ol>
+<p>为了避免多个 Candidate 不断的同时发起选举，同时超时而进入下一个 term，然后再次同时选举的死循环，Raft 引入随机值，即每个服务器的每次 election timeout 不是一个固定值，而是某个范围内的一个随机值。这样在某次选举撞车后，由于 election timeout 选择的不同，下一次发起选举就必然会错开。当然光错开还不行，必须错开的足够多，保证某个 Candidate 在其他服务器超时前，就开始对其发起投票，从而避免再次选举撞车。</p>
+<h3 id="选举超时"><a href="#选举超时" class="headerlink" title="选举超时"></a>选举超时</h3><p>那么如何挑选 election timeout 呢？</p>
+<ol>
+<li>其最小值最好要大于几倍的（两个以上）心跳间隔；因为网络偶尔会丢包，从而导致丢掉某些心跳，进而引起不必要的选举</li>
+<li>随机区间尽可能的大，以使最快超时变成 Candidate 的服务器能及时向其他服务器发起选举，并成为 Leader</li>
+<li>但又不能过长，以防止系统失去 Leader 时，长时间陷入停顿</li>
+<li>在我们的实验中，过长会使得测试过不了（测试程序对选出 Leader 的过程是与时限要求的）</li>
+</ol>
+<h3 id="老的-Leader"><a href="#老的-Leader" class="headerlink" title="老的 Leader"></a>老的 Leader</h3><p>当发生了网络隔离，Leader 和少数服务器被隔离到了一个分区，那么剩下的多数节点就会选出新的 Leader。如果老的 Leader 不能感受到新的 Leader 的产生，会出现什么问题吗？</p>
+<ol>
+<li>老的 Leader 不会提交任何日志条目，因为他不能让多数 Follower 同步日志条目</li>
+<li>虽然不会提交，但是部分服务器会接收老的 Leader 的日志条目，由此造成集群中服务器间的日志分歧</li>
+</ol>
+<h3 id="日志分歧"><a href="#日志分歧" class="headerlink" title="日志分歧"></a>日志分歧</h3><p>当系统一切运作正常时，情况很简单，Followers 只需要单方面的接受 Leader 同步给他的日志条目即可。但是当出现了异常，比如 Leader 只给集群中的部分机器同步了日志，然后宕机了，此时系统该如何往下进行？</p>
+<p><img src="https://i.loli.net/2020/05/14/krIQ9gYb5So8fD6.png" alt="log-and-crash"></p>
+<p>当然，在上图 a 中，第 11 条日志可能被老 Leader 提交了，也可能没有。但是新的 Leader 如果无从得知，就只等根据多数票原则（有半数以上的服务器有该日志条目）当做其提交了。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li><span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbm90ZXMvbC1yYWZ0LnR4dA==">英文板书<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL0JWMWI3NDExYzdmMz9wPTY=">视频<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+<hr>
+<p>欢迎关注公众号<strong>木鸟杂记</strong>，获取更多分布式系统文章。</p>
+<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/02/29/6-824-video-notes-1/" rel="bookmark">MIT 6.824 2020 视频笔记一：绪论</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/03/06/6-824-video-notes-2/" rel="bookmark">MIT 6.824 2020 视频笔记二：RPC和线程</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/03/14/6-824-vidoe-notes-3-gfs/" rel="bookmark">MIT 6.824 2020 视频笔记三：GFS</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/04/01/6-824-video-notes-4-vm-ft/" rel="bookmark">MIT 6.824 2020 视频笔记四：VM-FT</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="bookmark">MIT 6.824 2020 视频笔记五：Go Concurrency</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
+              <a href="/tags/6-824/" rel="tag"># 6.824</a>
+              <a href="/tags/%E7%AC%94%E8%AE%B0/" rel="tag"># 笔记</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="prev" title="MIT 6.824 2020 视频笔记五：Go Concurrency">
+      <i class="fa fa-chevron-left"></i> MIT 6.824 2020 视频笔记五：Go Concurrency
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/06/07/an-old-song/" rel="next" title="让我们荡起双桨">
+      让我们荡起双桨 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%B9%E9%94%99"><span class="nav-number">1.</span> <span class="nav-text">容错</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%B9%E9%94%99%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.1.</span> <span class="nav-text">容错模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Split-Brain"><span class="nav-number">1.2.</span> <span class="nav-text">Split Brain</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E6%95%B0%E7%A5%A8%E5%8E%9F%E5%88%99"><span class="nav-number">1.3.</span> <span class="nav-text">多数票原则</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Raft-%E6%A6%82%E8%A7%88"><span class="nav-number">2.</span> <span class="nav-text">Raft 概览</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E6%97%A5%E5%BF%97"><span class="nav-number">2.1.</span> <span class="nav-text">操作日志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Raft-%E6%8E%A5%E5%8F%A3"><span class="nav-number">2.2.</span> <span class="nav-text">Raft 接口</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Leader-%E9%80%89%E4%B8%BE"><span class="nav-number">3.</span> <span class="nav-text">Leader 选举</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E6%9C%9F%EF%BC%88term%EF%BC%89"><span class="nav-number">3.1.</span> <span class="nav-text">任期（term）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%89%E4%B8%BE%EF%BC%88election-%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">选举（election ）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Leader-%E5%92%8C%E4%BB%BB%E6%9C%9F"><span class="nav-number">3.3.</span> <span class="nav-text">Leader 和任期</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Leader-%E5%BF%83%E8%B7%B3"><span class="nav-number">3.4.</span> <span class="nav-text">Leader 心跳</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B9%B3%E7%A5%A8"><span class="nav-number">3.5.</span> <span class="nav-text">平票</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%89%E4%B8%BE%E8%B6%85%E6%97%B6"><span class="nav-number">3.6.</span> <span class="nav-text">选举超时</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%80%81%E7%9A%84-Leader"><span class="nav-number">3.7.</span> <span class="nav-text">老的 Leader</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E5%88%86%E6%AD%A7"><span class="nav-number">3.8.</span> <span class="nav-text">日志分歧</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">100</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">167</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '31f882e616e9b6dd4a8347a7924a4948',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

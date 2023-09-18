@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="概述记录下在实现6.824 lab2 raft 的一些想法和经验，聊以备忘。 实验概述6.824是MIT的一门分布式课程，我跟的是2018 spring 。在第二个实验中要求简单实现一个分布式一致性协议–raft。 这是一个专为方便教学和工程实现所设计的协议，它将协议拆解为几个相对独立的模块–leader选举，log复制，安全保证。论文里图二基本给出了Raft的所有实现细节，可谓字字珠玑。但也因为">
+<meta property="og:type" content="article">
+<meta property="og:title" content="6.824 - Raft 实现（一）：Leader选举">
+<meta property="og:url" content="https://www.qtmuniao.com/2018/07/11/raft-leader-election/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="概述记录下在实现6.824 lab2 raft 的一些想法和经验，聊以备忘。 实验概述6.824是MIT的一门分布式课程，我跟的是2018 spring 。在第二个实验中要求简单实现一个分布式一致性协议–raft。 这是一个专为方便教学和工程实现所设计的协议，它将协议拆解为几个相对独立的模块–leader选举，log复制，安全保证。论文里图二基本给出了Raft的所有实现细节，可谓字字珠玑。但也因为">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-07-10T23:00:00.000Z">
+<meta property="article:modified_time" content="2018-07-11T21:13:00.000Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="distributed system">
+<meta property="article:tag" content="raft">
+<meta property="article:tag" content="6.824">
+<meta property="article:tag" content="courses">
+<meta property="article:tag" content="公开课">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2018/07/11/raft-leader-election/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>6.824 - Raft 实现（一）：Leader选举 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2018/07/11/raft-leader-election/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          6.824 - Raft 实现（一）：Leader选举
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2018-07-11 00:00:00 / 修改时间：22:13:00" itemprop="dateCreated datePublished" datetime="2018-07-11T00:00:00+01:00">2018-07-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/Raft/" itemprop="url" rel="index"><span itemprop="name">Raft</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>记录下在实现6.824 lab2 raft 的一些想法和经验，聊以备忘。</p>
+<h2 id="实验概述"><a href="#实验概述" class="headerlink" title="实验概述"></a>实验概述</h2><p>6.824是MIT的一门分布式课程，我跟的是<span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbGFicy9sYWItcmFmdC5odG1s">2018 spring<i class="fa fa-external-link-alt"></i></span> 。在第二个实验中要求简单实现一个分布式一致性协议–<span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvcGFwZXJzL3JhZnQtZXh0ZW5kZWQucGRm">raft<i class="fa fa-external-link-alt"></i></span>。</p>
+<p>这是一个专为方便教学和工程实现所设计的协议，它将协议拆解为几个相对独立的模块–leader选举，log复制，安全保证。论文里图二基本给出了Raft的所有实现细节，可谓字字珠玑。但也因为太微言大义了，导致有些状态转换分散在不同描述中，假如你真只照着这幅图实现，很容易遗漏些细节。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
+<h2 id="leader选举"><a href="#leader选举" class="headerlink" title="leader选举"></a>leader选举</h2><p>这是lab2A的内容，说来惭愧，从开始构思到测试用例pass，前前后后拖了两个多月。虽然只是晚上和周末写写，但是也的确进展缓慢，不过收获颇多。暗想要是本科实验也这么来，可能就真如知乎所说，一学期顶多学两门课，回想大三时候四门四学分的课，从课程设计上来说就是注定要我们划水的。</p>
+<p>吐槽完毕，说说踩过的坑。</p>
+<h3 id="定时器"><a href="#定时器" class="headerlink" title="定时器"></a>定时器</h3><p>raft主要有两个event loop，一个是（Follower，Candidate）超时发起选举，一个是（Leader）定期心跳（有时捎带日志同步）。最容易想到的就是本科写大作业无脑用的loop+sleep，即外层一个while true，内层用一个稍小（但比electionTimeout和heartbeatInterval至少小一个数量级才够用）的时间间隔（比如说t）sleep，来周期性检测时间节点（needElection，heartbeat）的到来。</p>
+<p>但是我老强迫症的觉得，这么着不准确，误差至少是那个检测时间间隔t。这要是好多线程搞来搞去，面对这么复杂的状态变化，会不会由误差而导致错误，但是用go的timer好像很复杂的样子，每每想到这就想不清了，这么着也耽搁了一阵子。</p>
+<p>直到后来，在另一个也在做raft的孩子提醒下才注意到，其实课程很贴心的给出了<span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbGFicy9yYWZ0LXN0cnVjdHVyZS50eHQ=">建议<i class="fa fa-external-link-alt"></i></span>–还就是利用loop+sleep来周期性检测超时。这时候我茅塞顿开，悟出了上面括弧中我的注释–只要保证检测间隔小于超时间隔一两个数量级，基本上就没啥问题。这种实现的优点是简单，粗暴，直接，可控。</p>
+<p>我在实现的时候又突然觉得好玩，弄成了两种稍有不同的实现，下附代码，为了看着清楚，都做了些简略化处理。<br>一种是只有一个loop：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">for</span> &#123;</span><br><span class="line">    now := time.Now()</span><br><span class="line">    <span class="keyword">if</span> now.Sub(last) &lt; electionTimeout &#123;</span><br><span class="line">      time.Sleep(checkGapInMs)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// 起初我还纠结此两句顺序，后来想通了</span></span><br><span class="line">      <span class="comment">// 只要startElection没有啥IO等阻塞型操作，顺序就无所谓</span></span><br><span class="line">      startElection()</span><br><span class="line">      last = time.Now()</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;()</span><br></pre></td></tr></table></figure>
+
+<p>另一种是两个嵌套loop，内层loop专门用来等待（或许是联想到了CPU的忙等待）。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> &#123;</span><br><span class="line">  <span class="comment">// ping all the peers</span></span><br><span class="line">  <span class="keyword">for</span> s := <span class="number">0</span>; s &lt; <span class="built_in">len</span>(rf.peers); s++ &#123;</span><br><span class="line">     <span class="comment">// append entry rpc</span></span><br><span class="line">  &#125;(s, args)</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// wait until time comes</span></span><br><span class="line">  <span class="keyword">for</span> &#123;</span><br><span class="line">    now := time.Now()</span><br><span class="line">    <span class="keyword">if</span> now.Sub(lastPingTime) &lt; pingGapInMs &#123;</span><br><span class="line">      <span class="keyword">continue</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      lastPingTime = time.Now()</span><br><span class="line">      <span class="keyword">break</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>虽然前者更简洁，但是后者逻辑更明白；有时候简洁的代码是复用了不同的逻辑，导致语义上可能稍微有点不清楚。考虑到代码的第一要义是给人看的（啥？你说是给机器看的？咳咳，我觉得这是代码之所以为代码的前提，不然编译器不给你过啊），我觉得还是第后者好一些。</p>
+<h3 id="加锁"><a href="#加锁" class="headerlink" title="加锁"></a>加锁</h3><p>课程也很贴心的给出了<span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbGFicy9yYWZ0LWxvY2tpbmcudHh0">提示<i class="fa fa-external-link-alt"></i></span>，但作为一个从大一电梯大作业开始就开始‘玩锁’的人，我直接将其略过，不管三七二十一，昂首挺胸，赤膊上阵，狂撸代码。然而，记忆是会骗人的，教训是很惨痛的，竟然一直死锁而我却不知道是哪的问题。后来只得乖乖将提示看了好几遍，发现写的真是好啊。。。</p>
+<p>其要点总结起来，就是将有全局变量读写的地方先全部给加上锁，然后再将有阻塞（rpc call等等）的地方去掉锁。</p>
+<p>它这原则先按下不表，来说说我跳坑的两个地方：</p>
+<h4 id="函数调用外持有了锁，在函数调用里面又重新申请："><a href="#函数调用外持有了锁，在函数调用里面又重新申请：" class="headerlink" title="函数调用外持有了锁，在函数调用里面又重新申请："></a>函数调用外持有了锁，在函数调用里面又重新申请：</h4><p>犯这个错误的原因是咱看着那么长的代码，凭着经验，总得给他包一下吧，包的时候发现我擦全是全局变量，赶紧申请锁啊。但是后来在调用该函数的时候，忘了放在临界区了；也就是说吃着碗里的，又想盛锅里的。死锁成就1 get，废话不多讲，上代码：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">a.</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> startElection() &#123;</span><br><span class="line">  rf.mu.Lock()</span><br><span class="line">  <span class="comment">// balalala</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">b.</span><br><span class="line">rf.mu.Lock()</span><br><span class="line"><span class="comment">// balala</span></span><br><span class="line">rf.startElection()</span><br></pre></td></tr></table></figure>
+
+<h4 id="分支break-x2F-return忘记释放锁"><a href="#分支break-x2F-return忘记释放锁" class="headerlink" title="分支break&#x2F;return忘记释放锁"></a>分支break&#x2F;return忘记释放锁</h4><p><code>break，continue，return</code>这种偷偷摸摸的提前结束分支的行为，虽然我们平时干的很开心，但是它不符合人的既定对称认知啊，就导致有时候忘了处理它，什么叫不对称呢？上代码：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> !check(arg) &#123;</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> condition &#123;</span><br><span class="line">  <span class="keyword">if</span> need &#123;</span><br><span class="line">    <span class="keyword">break</span></span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// because here are so many balalala</span></span><br><span class="line">  <span class="comment">// then break can be used to reduce indent</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>v.s.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> !check(arg) &#123;</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="keyword">for</span> condition &#123;</span><br><span class="line">    <span class="keyword">if</span> !need &#123;</span><br><span class="line">      <span class="comment">// because here are so many balalala</span></span><br><span class="line">      <span class="comment">// then break can be used to reduce indent</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果是后者，对着<code>if else</code>扫一眼对齐，函数有几个出口，一目了然。然而对于前者来说，如果分支语句淹没在巨量代码中，就很容易忘记某个猥琐角落还藏着一个出口，自然就不会上锁。</p>
+<p>具体到我的情况，就是在candidate要票的时候，如果得到多数票，就直接变为leader；如果后面仍有人给票，我会判断当前身份是否已经是leader，如果是就直接返回，不在意这些票了，的确好邪恶。。于是，你懂得，返回前忘还回锁了。代码如下，有删节。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(server <span class="type">int</span>, args RequestVoteArgs)</span></span> &#123;</span><br><span class="line">  <span class="comment">// use args to request vote</span></span><br><span class="line">  reply := RequestVoteReply&#123;&#125;</span><br><span class="line">  ok := rf.sendRequestVote(server, &amp;args, &amp;reply)</span><br><span class="line"></span><br><span class="line">  isBecomeLeader := <span class="literal">false</span></span><br><span class="line">  rf.mu.Lock()</span><br><span class="line">  <span class="keyword">if</span> rf.state != Candidate || rf.currentTerm != args.Term&#123;</span><br><span class="line">    rf.mu.Unlock() <span class="comment">//&lt;---就是这个邪恶的地方</span></span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// check the votes</span></span><br><span class="line">  <span class="keyword">if</span> reply.VotedGranted &#123;</span><br><span class="line">    votes++</span><br><span class="line">    DPrintf(<span class="string">&quot;%d get vote from %d, now votes are %d, total members are:%d&quot;</span>,</span><br><span class="line">      rf.me, server, votes, peersCount)</span><br><span class="line">    <span class="keyword">if</span> votes &gt; peersCount/<span class="number">2</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> rf.state == Candidate &#123;</span><br><span class="line">        isBecomeLeader = <span class="literal">true</span></span><br><span class="line">        DPrintf(<span class="string">&quot;%d become leader&quot;</span>, rf.me)</span><br><span class="line">      &#125;</span><br><span class="line">      rf.state = Leader</span><br><span class="line">    &#125;</span><br><span class="line">   &#125; <span class="keyword">else</span> <span class="keyword">if</span> reply.Term &gt; rf.currentTerm &#123;</span><br><span class="line">    rf.currentTerm = reply.Term</span><br><span class="line">    rf.state = Follower</span><br><span class="line">    rf.votedFor = <span class="number">-1</span></span><br><span class="line">   &#125;</span><br><span class="line">  rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> isBecomeLeader &#123;</span><br><span class="line">    rf.startHeartbeat()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;(s, args)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Gap之后，注意自检"><a href="#Gap之后，注意自检" class="headerlink" title="Gap之后，注意自检"></a>Gap之后，注意自检</h4><p>由于状态是在多个loop（好吧，也就两个，但是为啥觉得很多呢）中来回改变的，因此在异步&#x2F;阻塞调用前后，可能身份角色（自身）和选举周期（外界）早已天翻地覆，因此需要进行自检。<br>说来惭愧，这个也是在多方查看资料后才意识到的。</p>
+<ol>
+<li>异步调用，即goroutine内外。</li>
+<li>阻塞调用，即rpc前后。</li>
+</ol>
+<p>Leader进行心跳检测时候，由于是异步调用，所以需要先检测自己还是不是leader，以及是否还在自己任期（由args保存了当时的任期）；当rpc返回后，再一次进行该检查，无误，才能按照自己是leader来进行下一步动作。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(server <span class="type">int</span>, args *AppendEntriesArgs)</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> rf.currentTerm != args.Term || rf.state != Leader &#123;</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  reply := &amp;AppendEntriesReply&#123;&#125;</span><br><span class="line">  rf.sendAppendEntries(server, args, reply)</span><br><span class="line"></span><br><span class="line">  rf.mu.Lock()</span><br><span class="line">  <span class="keyword">defer</span> rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> rf.currentTerm != args.Term || rf.state != Leader &#123;</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// need handle the reply</span></span><br><span class="line">  <span class="keyword">if</span> reply.Term &gt; rf.currentTerm &#123;</span><br><span class="line">    rf.currentTerm = reply.Term</span><br><span class="line">    rf.state = Follower</span><br><span class="line">    rf.votedFor = <span class="number">-1</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/08/29/raft-log-replication/" rel="bookmark">6.824 - Raft 实现（二）：日志同步（Log Replication）</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/distributed-system/" rel="tag"># distributed system</a>
+              <a href="/tags/raft/" rel="tag"># raft</a>
+              <a href="/tags/6-824/" rel="tag"># 6.824</a>
+              <a href="/tags/courses/" rel="tag"># courses</a>
+              <a href="/tags/%E5%85%AC%E5%BC%80%E8%AF%BE/" rel="tag"># 公开课</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2018/03/11/binary-search/" rel="prev" title="数据结构与算法（二）：二分搜索">
+      <i class="fa fa-chevron-left"></i> 数据结构与算法（二）：二分搜索
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2018/08/29/raft-log-replication/" rel="next" title="6.824 - Raft 实现（二）：日志同步（Log Replication）">
+      6.824 - Raft 实现（二）：日志同步（Log Replication） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E6%A6%82%E8%BF%B0"><span class="nav-number">2.</span> <span class="nav-text">实验概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#leader%E9%80%89%E4%B8%BE"><span class="nav-number">3.</span> <span class="nav-text">leader选举</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9A%E6%97%B6%E5%99%A8"><span class="nav-number">3.1.</span> <span class="nav-text">定时器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E9%94%81"><span class="nav-number">3.2.</span> <span class="nav-text">加锁</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E5%A4%96%E6%8C%81%E6%9C%89%E4%BA%86%E9%94%81%EF%BC%8C%E5%9C%A8%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E9%87%8C%E9%9D%A2%E5%8F%88%E9%87%8D%E6%96%B0%E7%94%B3%E8%AF%B7%EF%BC%9A"><span class="nav-number">3.2.1.</span> <span class="nav-text">函数调用外持有了锁，在函数调用里面又重新申请：</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E6%94%AFbreak-x2F-return%E5%BF%98%E8%AE%B0%E9%87%8A%E6%94%BE%E9%94%81"><span class="nav-number">3.2.2.</span> <span class="nav-text">分支break&#x2F;return忘记释放锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Gap%E4%B9%8B%E5%90%8E%EF%BC%8C%E6%B3%A8%E6%84%8F%E8%87%AA%E6%A3%80"><span class="nav-number">3.2.3.</span> <span class="nav-text">Gap之后，注意自检</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">100</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">34</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">167</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2018/07/11/raft-leader-election/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '55de7982c3cbf68da3c0811470c0ecc1',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
