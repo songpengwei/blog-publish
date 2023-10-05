@@ -10435,4 +10435,113 @@
         <tag>algorithm</tag>
       </tags>
   </entry>
+  <entry>
+    <title>Firebolt：如何在十八个月内组装一个商业数据库</title>
+    <url>/2023/10/05/firebolt-paper/</url>
+    <content><![CDATA[<p>假如你是一个初创公司的 CTO，想迅速推出一款面向 AP 市场可用的数据库产品，还得有差异化的功能（不然谁会用一个新产品），你会怎么做呢？</p>
+<p><span class="exturl" data-url="aHR0cHM6Ly93d3cuZmlyZWJvbHQuaW8v">Firebolt<i class="fa fa-external-link-alt"></i></span> 在 2022 年专门发了一篇论文：<span class="exturl" data-url="aHR0cHM6Ly93d3cuZmlyZWJvbHQuaW8vY29udGVudC9maXJlYm9sdC12bGRiLWNkbXMtMjAyMg==">Assembling a Query Engine From Spare Parts<i class="fa fa-external-link-alt"></i></span> 来讲这个事情。核心思想就是，<strong>利用开源组件，像攒台式机一样攒出一个数据库</strong>。</p>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2023/10/05/firebolt-paper">https://www.qtmuniao.com/2023/10/05/firebolt-paper</a> 转载请注明出处</em></p>
+<p>让我们看下“装机清单”：</p>
+<p><img src="https://s2.loli.net/2023/10/06/BbUWk8Q7oFrVi5h.png" alt="firebolt.png"></p>
+<p>了解数据库内核开发的同学都知道，一个数据库包含非常多的组件。就我所做的存储层来说，就可以列一个长长的清单，可以参考我之前写的<a href="https://www.qtmuniao.com/2022/05/04/distributed-database-storage-components/">这篇文章</a>。更遑论数据库的大头——查询引擎了。就算化简再化简，也需要解析器——Parser，计划生成——Planner，计划执行——Runtime。</p>
+<p>当然，对于一个数据库来说，最重要的还有对外提供的接口—— SQL 。虽然有 ANSI SQL 这个标准在，但工业上真正使用的却是一个个的“方言”（dialect）。虽然说接口需要独立于实现，但不同的实现总会不可避免的冒出头来，影响到接口。而且，分布式数据库不可避免的会进行站队，选择某个方言。比如 TiDB 选择兼容 MySQL，而 Firebolt 选择兼容 Posgres。</p>
+<h2 id="组件选择"><a href="#组件选择" class="headerlink" title="组件选择"></a>组件选择</h2><p>选定了兼容的 SQL 方言，下一步就是上面提到的几个重要组件的选择：Parser，Plannner，Runtime。让我们一块来看看 Firebolt 是怎么选的。</p>
+<h3 id="Parser-amp-Planner"><a href="#Parser-amp-Planner" class="headerlink" title="Parser &amp; Planner"></a>Parser &amp; Planner</h3><p>Parser 就是进行语法解析，将 SQL 语句进行分词，组织成语法树——AST。Planner 就是将 AST 基于规则和代价等进行优化成一个可以执行的算子树。</p>
+<p>由于 Parser 和 Planner 的接口是 AST，而 AST 通常来说没有一个统一的标准——也即很难将从属于不同项目的 Parser 和 Planner 组合到一块。因此 Firebolt 倾向于寻找一个同时包括两个模块的项目。</p>
+<p>Firebolt 对这两个模块的需求是：</p>
+<ol>
+<li>Parser 需要支持大部分 Postgres SQL 方言，包括 DDL、DML、DCL 和 DQL</li>
+<li>LogicPlanner 需要支持现代数仓的重要规则，如谓词下推、子查询去关联</li>
+<li>LogicPlanner 需要支持对规则变换（rule-based transformation）的扩展</li>
+<li>PhysicalPlanner 需要支持对基于代价的连接调序（cost-based join reordering）</li>
+<li>PhysicalPlanner 需要支持自定义的统计信息收集和代价模型</li>
+<li>Planner 需要支持复合数据类型，如数组、结构体</li>
+</ol>
+<p>市面上当时针对这两个模块的开源项目还是挺多的，下面来逐一列举下其优劣：</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>简介</th>
+<th>优点</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Postgres Parser</td>
+<td></td>
+<td>1. 天然兼容 Postgres SQL 方言</td>
+<td></td>
+</tr>
+<tr>
+<td><br>2. libpg_query 已经将 Parser 和 Postgres 其他模块隔离了开来</td>
+<td>1. 将  Planner 从 Postgres 项目中剥离出来工作量很大。</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>Google ZetaSQL</td>
+<td>谷歌出品的一个 C++ 项目，包含 Parser 和 Analyzer</td>
+<td>1. 在谷歌诸多产品 BigQuery、Spanner、Dataflow、Dremel、F1 和 Procella 中被验证过<br>2. 项目简洁、充分测试、工业可用</td>
+<td>1. 不支持 Postgres SQL 的很多功能<br>2. 只支持简单的算子树变换<br>3. Planner 功能也很简单</td>
+</tr>
+<tr>
+<td>Apache Calcite</td>
+<td>一个开源供数据处理领域使用的查询处理和优化的 Java 项目</td>
+<td>1. 支持多种 SQL 方言<br>2. 模块化良好，Planner 支持自定义 rule<br>3. 代码良好、测试充分、使用广泛（Hive，Storm，Flink，Druid 和 MapD）</td>
+<td>1. 不是用 C++ 写的，很难和其他组件进行代码集成</td>
+</tr>
+<tr>
+<td>CWI Duckdb</td>
+<td>基于内存的、嵌入型的分析型数据库，C++ 编写</td>
+<td>1. 测试充分，在交互式数据分析场景广泛使用<br>2. 同时支持基于规则和基于代价的计划改写<br>3. 使用 libpg_query 作为 Parser 的基准，因此对 Postgres SQL 方言兼容的很好</td>
+<td>1. Firebolt 选型时还很不成熟</td>
+</tr>
+<tr>
+<td>Hyrise</td>
+<td>HPI 开发的一个内存型数据库</td>
+<td>1. 简单的代码库<br>2. 同时支持基于规则和基于代价的计划改写</td>
+<td>1. 是一个学术型项目<br>2. 测试不够充分、SQL 语法覆盖也不够</td>
+</tr>
+</tbody></table>
+<p>最后 Firebolt 基于种种考虑，选择了 Hyrise ：</p>
+<ol>
+<li>使用 C++ 开发</li>
+<li>同时支持基于规则和基于代价的计划改写</li>
+<li>代码库简单易于重构</li>
+</ol>
+<p>Firebolt 参考 Calcite 的设计和概念体系对 Firebolt 做了深度改写，比如增加了复合类型支持、修改了逻辑执行计划的表示等等。</p>
+<h3 id="Runtime"><a href="#Runtime" class="headerlink" title="Runtime"></a>Runtime</h3><p>Runtime 是对优化过后的查询计划进行执行的组件，对数据库的性能有至关重要的影响。当时作为一个小创，Firebolt 依然选择了使用开源项目。</p>
+<p>Runtime 有两种实现流派——<strong>向量化</strong>（vectorization）和<strong>代码生成</strong>（code generation），后者效率可能会高一些，但实现复杂度较高，需要投入的研发资源太多。</p>
+<p>总结下，Firebolt 对 Runtime 项目的要求有：</p>
+<ol>
+<li>支持向量化执行</li>
+<li>有一定的扩展性，可进行分布式的数据处理改造</li>
+<li>由于 Runtime 和存储引擎耦合性较高，因此项目最好同时实现了高效的<strong>列存</strong>引擎</li>
+</ol>
+<p>相对 Parser 和 Planner 的多样性选择，Runtime 可供选择的项目相对较少（当时 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2ZhY2Vib29raW5jdWJhdG9yL3ZlbG94">Facebook Velox<i class="fa fa-external-link-alt"></i></span> 也没有开源）。最终 Firebolt 选择了 ClickHouse：</p>
+<ol>
+<li>是一个向量化的执行引擎</li>
+<li>经过充分的测试</li>
+<li>有自己的列存格式——MergeTree，支持高效的数据裁剪</li>
+</ol>
+<h3 id="缝合-Planner-和-Runtime"><a href="#缝合-Planner-和-Runtime" class="headerlink" title="缝合 Planner 和 Runtime"></a>缝合 Planner 和 Runtime</h3><p>由于 ClickHouse 的执行引擎要求的格式和 Hyrise 的产出格式并不一致，即后者生成的执行计划树（LQP）并不能被前者直接执行。为此，Firebolt 做了一个骚操作——将 LQP 逆向翻译（backtranslate）回 ClickHouse SQL。</p>
+<p>这种方式可以 work，但并不高效，且会丢失一些优化信息。后来，Firebolt 将其进行了替换，将 LQP 直接翻译成了<strong>多阶段的分布式执行计划</strong>（类似 Spark 执行时的多阶段划分），并借助 protobuf 进行序列化和反序列化，传到每个执行节点上进行执行。当然，也要求对 ClickHouse 进行一定的改造。</p>
+<h3 id="分布式执行"><a href="#分布式执行" class="headerlink" title="分布式执行"></a>分布式执行</h3><p>尽管 ClickHouse 自己支持对某些 Query 的分布式执行，比如选择性的 table scan，分布式聚合、基于广播的 Join 等等。但数仓中更为普遍的一些 SQL 模式，ClickHouse 并不能对其进行很好的分布式执行。比如两个大表 Join、高基数分组聚合、分布式排序等等。</p>
+<p>为此，Firebolt 实现了自己的分布式执行框架，将执行计划按 shuffle 算子切开划分成不同阶段。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>以上就是 Firebolt 初期作为一个人很少的小创，如何用十八个月迅速攒出一个商业可用的数仓项目，从而为后来<span class="exturl" data-url="aHR0cHM6Ly93d3cuc29odS5jb20vYS81MTk0MTUxODhfMTIxMTE4NzEw">获得大量融资<i class="fa fa-external-link-alt"></i></span>打下了基础。这也从另一个侧面反映了当前数据库开源生态的繁荣。</p>
+<p>当然，为了商业可用，还有很多方面的需要打磨，其中最重要的就是对测试用例的覆盖，这里就不展开了，感兴趣的可以去读读<span class="exturl" data-url="aHR0cHM6Ly93d3cuZmlyZWJvbHQuaW8vY29udGVudC9maXJlYm9sdC12bGRiLWNkbXMtMjAyMg==">论文原文<i class="fa fa-external-link-alt"></i></span>。</p>
+<hr>
+<p>本文出自我的小报童付费专栏《系统日知录》，专注互联网最基础的方向——<strong>大规模数据系统</strong>，有图数据库、代码解读、优质英文播客翻译、数据库学习、论文解读等等系列，欢迎喜欢我文章的朋友订阅👉<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">专栏<i class="fa fa-external-link-alt"></i></span>支持，你的支持对我持续创作优质文章非常重要。</p>
+]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>论文解读</category>
+      </categories>
+      <tags>
+        <tag>firebolt</tag>
+        <tag>paper</tag>
+      </tags>
+  </entry>
 </search>
