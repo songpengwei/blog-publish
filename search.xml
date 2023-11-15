@@ -10544,4 +10544,96 @@
         <tag>paper</tag>
       </tags>
   </entry>
+  <entry>
+    <title>使用“隐喻”的方式帮你建立对 Raft 的直觉</title>
+    <url>/2023/11/15/raft-explain/</url>
+    <content><![CDATA[<p>相比 Paxos，Raft 的一大特色就是算法拆成了相对正交的几个部分——领导者选举、日志同步、状态持久化、日志压缩和配置变更。你如果对课程照目录看下就能看出来，除却最后一部分，这些模块就是我们课程 PartA ~ PartD 要分别实现的内容。将算法正交化拆分的好处是，让每个模块相对内聚，使得整体更易理解和实现——这也是 Raft 算法设计的初衷。</p>
+<p>下面我不打算采用<strong>精确</strong>的方式来讲解每个模块——那是<strong>论文正文</strong>和<strong>代码实现</strong>要做的事情。相反，本章我将带领大家在<strong>感性</strong>上建立一个对 Raft 基本概念（任期、选举）和两大流程（领导选举、日志同步）的认识。带着这个感性认识，大家可以再去仔细研读<span class="exturl" data-url="aHR0cHM6Ly9yYWZ0LmdpdGh1Yi5pby9yYWZ0LnBkZg==">论文<i class="fa fa-external-link-alt"></i></span>，想必能事半功倍地梳理出 Raft 算法中海量的细节。</p>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2023/11/15/raft-explain">https://www.qtmuniao.com/2023/11/15/raft-explain</a> 转载请注明出处</em></p>
+<h1 id="任期"><a href="#任期" class="headerlink" title="任期"></a>任期</h1><p><strong>任期</strong>（term）在任何共识协议中都很重要。Raft 中所有关键事件的展开，都是基于任期的，任期最直观的理解就是领导者任期，如“总统任期”。</p>
+<p>但其本质上是一种关于时间隐喻，可以理解为“纪元”——如桃花源中的村民“不知有汉，无论魏晋”的那种朝代纪元。与桃花源村民相似，在 Raft 中，如果出现网络分区，某些 Peer 被隔绝，也很容易不知道其他 Peer 到了哪个 Term。一段时间后，被隔绝分区中的 Peer 与其他 Peer 重新建立通信（武陵人发现了他们）时，首先要做的就是对齐 Term，这是之后一切沟通展开的基础。</p>
+<p>从另外一个角度讲，任期还是一种<strong>优先级</strong>或者<strong>权力</strong>的隐喻：</p>
+<ol>
+<li>低任期的 Peer 收到高任期的 Peer 任何信息后，会自动“跟上”（Follow）任期变成<strong>跟随者</strong>（Follower）。</li>
+<li>高任期的 Peer 收到低任期 Peer 的任何<strong>请求</strong>时，会直接拒绝。</li>
+</ol>
+<p>在所有 Peer 进行“交流”（RPC 通信）时，任期都是第一优先级的，只有对齐了任期，才有谈其他的基础。</p>
+<h1 id="领导选举"><a href="#领导选举" class="headerlink" title="领导选举"></a>领导选举</h1><p>Raft 使用的是“强人模式”，即只要 Leader 当选，他就对其任期内日志长啥样有说一不二的权力。Raft 中也采取“一山不容二虎”策略——一个任期内最多有一个 Leader（也可以没有选出）。但在同一时刻，可能会存在多个 Leader，但，他们一定处于不同任期中。</p>
+<p>由于采用强人策略，则在选举时就要慎之又慎——以期能选出能“顾全大局”的人（具备所有已提交日志的候选者）。为此，每个 Peer 在投票时，都要比比谁的日志“更新更全”。一旦跟随者投出其票，就表示对该候选者心悦诚服——“承诺”一段时间内不会再发起选举（重置选举时钟）。</p>
+<p>Leader 在当选后，要做的第一件事就是“昭告天下”（心跳）以“压制”其他“试图挑战权威”的人——“迫使”每个 Follower 承诺一段时间内不得再发起选举。Follower 在收到心跳后，只要任期不比人家大，就要乖乖给出“承诺”（重置选举时钟）。</p>
+<p>之后，Leader 便会周期性的发送“政令”，直到收到来自高“任期”的消息，便要乖乖“交权”，让出领导权。从这里也可以看出，任期是第一优先级，这是“时间法则”的攻击，Leader 也不能免疫。当然，还有一种优化，就是 Leader 发现自己成为“孤家寡人”（发现大部分人不应答“政令”了，通常出现在 Leader 与多数 Follower 发生了网络隔离时）后，也自动交权。</p>
+<h1 id="日志同步"><a href="#日志同步" class="headerlink" title="日志同步"></a>日志同步</h1><p>Leader 在接收到“甲方”（客户端）的“请求”后，会将其包装为“政令”（日志），然后“附带”到周期性的广播（心跳）上，将“政令灌输”给每个 Follower。最简单粗暴的方式，就是将本地所有日志一股脑的附带到心跳上，Follower 收到后，直接替换本地日志即可。但如果 Leader 日志量很大，通信代价将会非常高。因此 Leader 采用一种“乐观+回撤”的方式进行同步：</p>
+<ol>
+<li><strong>乐观</strong>：一开始心跳不附带任何日志，只带一些“暗号”过去。假如 Follower 的通过“暗号”发现自己日志跟 Leader 完全一致，就直接回：一致，之后的心跳不需附加任何日志。</li>
+<li><strong>回撤</strong>：如果 Follower 通过“暗号”发现自己和 Leader 日志并不一致，也会告诉 Leader——下次得附带日志。则 Leader 就附加一些末尾的日志，如果发现还是不一致，就要继续回撤，多向前附加一些日志，同时更新“暗号”，直到收到 Follower 肯定回复，则继续恢复不附加任何日志的心跳。</li>
+</ol>
+<p>这个“暗号”，就是 Leader 所附带日志的的前一条日志信息的二元组：<code>&lt;下标，任期&gt;</code>。如果心跳没有附加任何日志，则暗号就是 Leader 最后一条日志的相关信息。为了保证 Leader 附带日志总有前一条日志，我们在对日志进行初始化的时候，会在开头放一条“空日志”，从而避免一些边界判断（这个做法类似带头结点的链表）。</p>
+<p>那为什么只要“暗号”对的上，就能保证两方日志前缀一致呢？</p>
+<p>简单来说，对“暗号”的过程，就是一个<strong>递推</strong>的过程。根据<strong>数学归纳法</strong>，每次附加新日志，都要对齐前序日志。而由任期单调递增、单任期最多一个 Leader，则同任期的日志前缀一定对得上。这样一来，同任期前缀对的上，跨任期同步前都会对齐前任日志，则“政令畅通”的情况下，所有日志最终都会收敛为 Leader 日志。</p>
+<p>在“政令”（日志）同步到大多数节点后，Leader 就会宣布该政令“生效”（提交）。但论文特别强调了，Leader 不能直接宣布前任的“政令”生效，而要在本任期内发布“政令”后，通过“生效”本任期“政令”来间接“追认”前序任期的相关“政令”。这是为什么呢？（下图是 Raft 中大名鼎鼎的一张图“Figure 8”，很多实现 Raft 的同学应该都被该图虐过。）</p>
+<p><img src="https://s2.loli.net/2023/11/16/5ct82NClLY6UBsO.png" alt="raft-fig8.png"></p>
+<p>这是由于我们选举时会通过比最后一条日志的“大小”来决定是否 Leader 当选，因此前任的日志，如果没有通过本任期“盖棺定论”，是有可能被其他在相同下标具有更新日志的 Peer 当选 Leader 后“冲掉的”，也就是上图 c、d、e 的情况——没有 4 日志的“压一道”， S5 是可以当选 Leader 的，之后 S1~S3 的 2 日志是有可能被 S5 的 3 的日志冲掉。</p>
+<hr>
+<blockquote>
+<p>本文来自我和 roseduan 合作的《<span class="exturl" data-url="aHR0cHM6Ly9hdjZodWYyZTFrLmZlaXNodS5jbi9kb2N4L0pDc3NkbGdGNG9SQURjeHhMcW5jUHBSQ241Yg==">从零实现分布式 KV<i class="fa fa-external-link-alt"></i></span>》的课程。该课程会手把手教你如何弄懂一个共识协议，以及基于共识协议的分布式 KV 的方方面面、各种细节；也会教你如何组织和写出漂亮的工程代码。分布式系统是当今主流互联网系统的基础架构，而共识协议又是其中的典型代表和基石中的基石。学习本课程，能让你对分布式系统所面临的问题、所使用的技能有一个全面和深入的认识。<br>感兴趣的同学，欢迎戳《<span class="exturl" data-url="aHR0cHM6Ly9hdjZodWYyZTFrLmZlaXNodS5jbi9kb2N4L0pDc3NkbGdGNG9SQURjeHhMcW5jUHBSQ241Yg==">从零实现分布式 KV<i class="fa fa-external-link-alt"></i></span>》了解详情。</p>
+</blockquote>
+<p><img src="https://s2.loli.net/2023/11/14/RcyutnXh35ZovBT.jpg" alt="cover1.jpeg"></p>
+]]></content>
+      <categories>
+        <category>分布式系统</category>
+        <category>论文解读</category>
+      </categories>
+      <tags>
+        <tag>raft</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>构建和维护星球最强对象存储系统的一点微小经验</title>
+    <url>/2023/11/15/s3-experience/</url>
+    <content><![CDATA[<blockquote>
+<p>本文来自 Amazon S3 VP  <span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL2luL2FuZHl3YXJmaWVsZA==">Andy Warfield<i class="fa fa-external-link-alt"></i></span> 在 FAST 23 上的主旨演讲的<span class="exturl" data-url="aHR0cHM6Ly93d3cuYWxsdGhpbmdzZGlzdHJpYnV0ZWQuY29tLzIwMjMvMDcvYnVpbGRpbmctYW5kLW9wZXJhdGluZy1hLXByZXR0eS1iaWctc3RvcmFnZS1zeXN0ZW0uaHRtbA==">文字稿<i class="fa fa-external-link-alt"></i></span>，总结了他们在构架和维护如此量级的对象存储 —— S3 的一些经验。我们知道，Amazon S3 是云时代最重要的存储基础设施之一，现在各家云厂商的对象存储基本都兼容 S3 接口，所有云原生的基础设施，比如云原生数据库，其最终存储都要落到对象存储上。</p>
+</blockquote>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2023/11/15/s3-experience">https://www.qtmuniao.com/2023/11/15/s3-experience</a> 转载请注明出处</em></p>
+<p>截至 2023 年，Amazon S3 自 2006 年上线以来，已经 17 岁了。在开始之前，我们首先看下Andy Warfield 给出的一组数据，来感受下星球最强的对象存储已经到了什么量级：</p>
+<p><img src="https://s2.loli.net/2023/11/16/rgiQNFkLyhPqpZJ.png" alt="S3-metrics.png"></p>
+<p>即，</p>
+<ul>
+<li><strong>容量和吞吐</strong>：超过 280 万亿个对象，QPS 平均超过 1 亿 &#x2F; s</li>
+<li><strong>事件</strong>：<strong>每天</strong> S3 会向 serverless 应用发送超过 <strong>1250 亿个事件</strong></li>
+<li><strong>冗余</strong>：<strong>每周</strong>超过 <strong>100 PB</strong> 的数据冗余</li>
+<li><strong>冷存储检索</strong>：<strong>每天</strong>都要至少从 S3 归档存储中回复 <strong>1 PB 数据</strong></li>
+<li><strong>数据完整性校验</strong>：<strong>每秒</strong>进行 <strong>40 亿次</strong>完整性校验计算</li>
+</ul>
+<p>对这个量级有了直观的感受之后，我们来看看 Andy Warfield 分享的经验。为了方便叙述，下面都用第一人称——我们，意指 S3 团队。</p>
+<h1 id="HDD-对-S3-设计的影响"><a href="#HDD-对-S3-设计的影响" class="headerlink" title="HDD 对 S3 设计的影响"></a>HDD 对 S3 设计的影响</h1><p>虽然 SSD 在价格上已经越来越便宜，但对于 S3 如此量级的存储来说，仍然大量采用 HDD。其中一个重要原因仍然是成本优势（存储密度和寿命都很棒）。相对其最初诞生时期，HDD 体积缩小了 5k+ 倍、单字节成本更是便宜了 60亿倍！然而，受制于机械特性，其随机访问延迟只降低了 150+ 倍左右。</p>
+<p>S3 刚上线时，HDD 的满载 IOPS 大概是 120，这个数值在这么多年间基本没有变过。HDD 这种存储密度越来越高，但访问延迟却一直停滞的特点，给 S3 的设计带来了很大影响—— 必须想方设法将流量均摊到不同硬盘上去，避免单块盘的 IO 过载。</p>
+<h1 id="热度管控：数据放置和性能"><a href="#热度管控：数据放置和性能" class="headerlink" title="热度管控：数据放置和性能"></a>热度管控：数据放置和性能</h1><p>基于上述原因，S3 在不断 scale 的同时，所面临的最主要和有意思的问题之一就是：<strong>如何在如此多的 HDD 上管理和均衡 IO 流量</strong>。我们称该问题为——<strong>热度管控</strong>（heat management）。</p>
+<p>所谓<strong>热度</strong>（heat）：就是任意时间点，某个磁盘承受的 IO 请求。如果管控不当，造成不同磁盘间流量的严重倾斜，就会造成数据局部访问<strong>热点</strong>（hotspot），从而造成<strong>长尾效应</strong>（“stragglers”）。这些长尾请求通过 S3 的<strong>存储软件栈</strong>（software storage stack）层层放大之后，可能大范围影响请求性能。为了解决这个问题，我们需要仔细考虑<strong>数据放置</strong>策略（data placement）。</p>
+<p>通常来说，由于无法在数据<strong>写入时</strong>（即进行放置决策时）预知其之后的访问模式，我们很难用一个策略消除所有用户的访问热点。但由于 S3 的量级以及多租户机制，我们可以进行完全不同的设计。</p>
+<p>我们发现一个特点：在 S3 上运行的工作负载越多，不同对象请求间的<strong>去相关性</strong>（decorrelated）就越强。对于用户的单个存储单元来说（比如一组 Object，或者一个 Bucket），其通常的访问模式是：长时间沉寂后，突然一个远高于平均值访问高峰。但是当我们<strong>聚合了百万计</strong>的请求之后，非常有趣的事情发生了：聚合请求总量的变化曲线变的非常平缓，且出现了某种内在可预测的规律。可以看<span class="exturl" data-url="aHR0cHM6Ly93d3cuYWxsdGhpbmdzZGlzdHJpYnV0ZWQuY29tL3ZpZGVvcy9mYXN0LWFnZy1ncmFwaC1jb21wcmVzc2VkLXNtYWxsLm1wNA==">这个视频<i class="fa fa-external-link-alt"></i></span>直观感受下。</p>
+<p><img src="https://s2.loli.net/2023/11/16/brs62GiUCyt5acA.png" alt="S3-aggreate.png"></p>
+<p>这其实也符合直觉，在成千上万的<strong>不相干</strong>访问流汇聚成海后，单个流的突发很难影响整体趋势。因此我们的问题就变成了：<strong>如何将这种聚合后总体上相对平坦的请求速率均摊到所有磁盘上，变成每个磁盘上相对平滑的 IO 访问速率</strong>。</p>
+<h1 id="数据复制：数据放置和持久性"><a href="#数据复制：数据放置和持久性" class="headerlink" title="数据复制：数据放置和持久性"></a>数据复制：数据放置和持久性</h1><p>在存储系统里，总是会用数据冗余来保护数据免于硬件故障。但冗余，同样可以用来管控热度。在多机上有多个副本，给了我们在流量过来时选择机器的自由度。从存储容量（capacity）的视角来看，数据冗余推高了成本；但从 IO （至少是读取）的角度来看，数据冗余提升了性能。</p>
+<p>除了多副本冗余外，S3 自然也是用了 EC （erasure coding）方式来降低冗余。其具体原理我们在 <a href="https://www.qtmuniao.com/2019/03/30/f4/">Facebook F4</a> 中介绍过，这里不再赘述。</p>
+<h1 id="数据尺度对放置策略的影响"><a href="#数据尺度对放置策略的影响" class="headerlink" title="数据尺度对放置策略的影响"></a>数据尺度对放置策略的影响</h1><p>除了使用数据冗余来均摊流量外，我们下一步可做的是：<strong>将新写入的对象数据尽可能大范围地摊到硬盘池中</strong>。将同一个桶的对象摊到不同的硬盘后，同一个用户的访问流量便也随之打到了不同硬盘集合。这样做有两个好处：</p>
+<ol>
+<li><strong>负载隔离</strong>：如果每个用户的数据在单块磁盘上都只会占一小块地方，因此很难靠单个用户的访问来“掀起波浪”，造成该盘的访问热点。</li>
+<li><strong>热点摊平</strong>：对于任意的突发流量，我们可以利用超常规尺度的磁盘池来将其摊平。这对于小存储集群来说是非常昂贵且难以想象的。</li>
+</ol>
+<p><img src="https://s2.loli.net/2023/11/16/6yuNbMjU4IZXzcP.png" alt="S3-flow-avg.png"></p>
+<p>如上图，可能是基因研究用户在使用 lambda 函数计算进行大规模的并行数据分析，IOPS 一度达到 2.3M IOPS，但我们使用数百万张磁盘可以轻松满足这种需求（上面计算可以看出 2w 张盘满载可以满足，那么有百万张盘，每个只用百分之一就可以满足）。</p>
+<p>这种尺度的请求处理在 S3 中并不算夸张，当下 S3 集群至少有<strong>上万用户</strong>的存储桶的数据横跨超过<strong>百万张盘</strong>。正是 S3 如此体量的用户和用户数据，让这种构建方式成为可能。</p>
+<h1 id="人的因素对-S3-的影响"><a href="#人的因素对-S3-的影响" class="headerlink" title="人的因素对 S3 的影响"></a>人的因素对 S3 的影响</h1><p>本文来自我的专栏《<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">系统日知录 2023<i class="fa fa-external-link-alt"></i></span>》，还有一部分在专栏文章中。你的订阅是我持续创作优质文章的最大动力，目前专栏有 82 篇文章，涵盖数据库、存储、系统等主题，如果你对大规模数据系统内容感兴趣，目前处于完结前的打折期，不容错过。</p>
+<hr>
+<p>最后欢迎关注我的公众号：木鸟杂记，专注分布式系统、数据库和存储等大规模数据系统，关注后可回复“资料”领取一份我总结的分布式系统和数据库的入门资料大全。</p>
+]]></content>
+      <categories>
+        <category>分布式系统</category>
+      </categories>
+      <tags>
+        <tag>s3</tag>
+      </tags>
+  </entry>
 </search>
