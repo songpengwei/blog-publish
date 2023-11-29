@@ -2784,7 +2784,7 @@
 <h3 id="prevLogIndex-和-prevLogTerm"><a href="#prevLogIndex-和-prevLogTerm" class="headerlink" title="prevLogIndex 和 prevLogTerm"></a>prevLogIndex 和 prevLogTerm</h3><p>每次心跳会带上试探信息：<code>prevLogIndex</code> 和 <code>prevLogTerm</code>。Follower 在收到该 RPC时，会看自己是否有这这条日志。如果没有，则其 <code>prevLogIndex</code> 以及之后的日志必然也不匹配，可以删掉。如果有，那 RPC 参数中携带的日志条目就有用了，将其追加到匹配点之后，同时根据 Leader 要求更新 commit 信息 。</p>
 <figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> args.PrevLogIndex &gt;= <span class="built_in">len</span>(rf.log) || rf.log[args.PrevLogIndex].Term != args.PrevLogTerm &#123;</span><br><span class="line">  <span class="keyword">if</span> args.PrevLogIndex &lt; <span class="built_in">len</span>(rf.log) &#123; </span><br><span class="line">    rf.log = rf.log[<span class="number">0</span>:args.PrevLogIndex] <span class="comment">// delete the log in prevLogIndex and after it</span></span><br><span class="line">    rf.persist()</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">rf.log = <span class="built_in">append</span>(rf.log[<span class="number">0</span>:args.PrevLogIndex+<span class="number">1</span>], args.Entries...)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> args.LeaderCommit &gt; rf.commitIndex &#123;</span><br><span class="line">  prevIndex := rf.commitIndex</span><br><span class="line">  rf.commitIndex = minInt(args.LeaderCommit, <span class="built_in">len</span>(rf.log)<span class="number">-1</span>)</span><br><span class="line">&#125;</span><br><span class="line">reply.Success = <span class="literal">true</span></span><br></pre></td></tr></table></figure>
 
-<h3 id="Leader-处理回应"><a href="#Leader-处理回应" class="headerlink" title="Leader 处理回应"></a>Leader 处理回应</h3><p>当 Leader 收到该 Follower 的回复时，如果发现匹配上了，则更新 matchIndex 和 nextIndex；否则，继续试探前一条，当然，为了加快匹配速度，我们采用了大跨步向前策略，每次跳过一个 term 而非一个 index[4]。不这么优化，有个测试就跑不过去。</p>
+<h3 id="Leader-处理回应"><a href="#Leader-处理回应" class="headerlink" title="Leader 处理回应"></a>Leader 处理回应</h3><p>当 Leader 收到该 Follower 的回复时，如果发现匹配上了，则更新 matchIndex 和 nextIndex；否则，继续试探前一条，当然，为了加快匹配速度，我们采用了大跨步向前策略，每次跳过一个 term 而非一个 index[4]。不这么优化，有个测试就跑不过去。<br>当然，有可能这样也过不了，还得给 Follower 的回复增加一些字段，提示 Leader 快速向前。</p>
 <figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> reply.Success &#123;</span><br><span class="line">  rf.matchIndex[id] = args.PrevLogIndex + <span class="built_in">len</span>(args.Entries) <span class="comment">// do not depend on len(rf.log)</span></span><br><span class="line">  rf.nextIndex[id] = rf.matchIndex[id] + <span class="number">1</span></span><br><span class="line"></span><br><span class="line">  majorityIndex := getMajoritySameIndex(rf.matchIndex)</span><br><span class="line">  <span class="keyword">if</span> rf.log[majorityIndex].Term == rf.currentTerm &amp;&amp; majorityIndex &gt; rf.commitIndex &#123;</span><br><span class="line">    rf.commitIndex = majorityIndex</span><br><span class="line">    DPrintf(<span class="string">&quot;%v advance commit index to %v&quot;</span>, rf, rf.commitIndex)</span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  prevIndex := args.PrevLogIndex</span><br><span class="line">  <span class="keyword">for</span> prevIndex &gt; <span class="number">0</span> &amp;&amp; rf.log[prevIndex].Term == args.PrevLogTerm &#123;</span><br><span class="line">    prevIndex--</span><br><span class="line">  &#125;</span><br><span class="line">  rf.nextIndex[id] = prevIndex + <span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <h3 id="一些点"><a href="#一些点" class="headerlink" title="一些点"></a>一些点</h3><p>照例，列出我实现中遇到的一些问题 or Bug：</p>
@@ -9764,18 +9764,7 @@
   <entry>
     <title>影响我写代码的三个 “Code”</title>
     <url>/2023/03/25/how-to-read-and-write-code/</url>
-    <content><![CDATA[<blockquote>
-<p>本篇文章来自我的小报童专栏，初步规划有以下几个系列：</p>
-<ul>
-<li>图数据库101系列</li>
-<li>每天学点数据库系列</li>
-<li>系统好文推荐系列</li>
-<li>读书笔记系列</li>
-<li>数据密集型论文导读系列</li>
-</ul>
-<p>会保证每周不低于两篇更新，订阅方式见<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">专栏介绍<i class="fa fa-external-link-alt"></i></span>，欢迎喜欢我文章的朋友们的订阅支持，激励我产出更多优质文章。</p>
-</blockquote>
-<p>国内很多大学的计算机专业，比较偏重基础和理论的“灌输”（就我当年上学的体验，现在可能会好一些），对于代码能力，虽然也有一些课程实验，但往往不太够用。于是，在进入正式工作前，很多同学就会对自己代码水平不太自信。下面我就根据我自身的写代码经历提供一些建议。</p>
+    <content><![CDATA[<p>国内很多大学的计算机专业，比较偏重基础和理论的“灌输”（就我当年上学的体验，现在可能会好一些），对于代码能力，虽然也有一些课程实验，但往往不太够用。于是，在进入正式工作前，很多同学就会对自己代码水平不太自信。下面我就根据我自身的写代码经历提供一些建议。</p>
 <span id="more"></span>
 
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2023/03/25/how-to-read-and-write-code">https://www.qtmuniao.com/2023/03/25/how-to-read-and-write-code</a> 转载请注明出处</em></p>
@@ -9826,6 +9815,17 @@
 <p>在审美之外，还要说说<strong>建模</strong>（在某种程度上和<strong>隐喻</strong>是相通的）。毕竟，我们在说<strong>构建</strong>时，本身就是借助的建筑学中的隐喻。软件工程中，类似的隐喻随处可见。</p>
 <p><strong>我们大脑在认知新事物时，多建立在基于旧的模型推演上</strong>。因此，如果在处理模块时，如果能从经典的模型库中，找到一个相对合适的抽象，往往能够极大降低用户理解门槛。比如经典的生产者消费者模型、树形组织模型、路由器模型、线程调度模型、内存模型等等。此外，也可以使用某种常见意像、隐喻来命名项目，往往也能在易理解性上收获奇效。比如监控系统，可以叫“鹰眼”；比如各种流水线管控，可以叫“富士康”（手动斜眼）；再比如更常见一些的数据采集，我们都知道他叫——“爬虫”。</p>
 <h2 id="The-last-Thing"><a href="#The-last-Thing" class="headerlink" title="The last Thing"></a>The last Thing</h2><p>世间的事情往往是多方印证、互相补足的——<strong>如果你想写好代码，就不能只是低头写代码</strong>，你得去读读历史、学学美术、写写文字、见见河山，建立一套你自己的审美偏好，然后将其理念平移到写代码里来，才能写出符合直觉、具有美感的好代码。</p>
+<blockquote>
+<p>本篇文章来自我的小报童专栏，初步规划有以下几个系列：</p>
+<ul>
+<li>图数据库101系列</li>
+<li>每天学点数据库系列</li>
+<li>系统好文推荐系列</li>
+<li>读书笔记系列</li>
+<li>数据密集型论文导读系列</li>
+</ul>
+<p>订阅方式见<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">专栏介绍<i class="fa fa-external-link-alt"></i></span>，欢迎喜欢我文章的朋友们的订阅支持，激励我产出更多优质文章。</p>
+</blockquote>
 ]]></content>
       <categories>
         <category>技术</category>
