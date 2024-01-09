@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="很久没有发文了，搞了一个月事务相关的资料和分享，今天用这篇文章做个小节。希望能给大家一些启发。 说起数据库的事务，大家第一反应多是 ACID，但这几个属性的重要性和复杂度并不等同。其中，最难理解的当属隔离性（I，Isolation）。造成这种理解困局的一个重要原因是，历史上对几种隔离级别的定义和实现耦合在了一块、不同厂商的的叫法和实现又常常挂羊头卖狗肉。本文试着从锁的角度来梳理下几种常见的隔离级">
+<meta property="og:type" content="article">
+<meta property="og:title" content="步步为营 剖析事务中最难的——隔离性">
+<meta property="og:url" content="https://www.qtmuniao.com/2022/07/07/db-isolation/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="很久没有发文了，搞了一个月事务相关的资料和分享，今天用这篇文章做个小节。希望能给大家一些启发。 说起数据库的事务，大家第一反应多是 ACID，但这几个属性的重要性和复杂度并不等同。其中，最难理解的当属隔离性（I，Isolation）。造成这种理解困局的一个重要原因是，历史上对几种隔离级别的定义和实现耦合在了一块、不同厂商的的叫法和实现又常常挂羊头卖狗肉。本文试着从锁的角度来梳理下几种常见的隔离级">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-07-07T15:42:56.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.289Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="数据库">
+<meta property="article:tag" content="事务">
+<meta property="article:tag" content="隔离性">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2022/07/07/db-isolation/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>步步为营 剖析事务中最难的——隔离性 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/07/07/db-isolation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          步步为营 剖析事务中最难的——隔离性
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-07 23:42:56" itemprop="dateCreated datePublished" datetime="2022-07-07T23:42:56+08:00">2022-07-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>很久没有发文了，搞了一个月事务相关的资料和分享，今天用这篇文章做个小节。希望能给大家一些启发。</p>
+<p>说起数据库的事务，大家第一反应多是 ACID，但这几个属性的重要性和复杂度并不等同。其中，最难理解的当属<strong>隔离性</strong>（I，Isolation）。造成这种理解困局的一个重要原因是，历史上对几种隔离级别的定义和实现耦合在了一块、不同厂商的的叫法和实现又常常挂羊头卖狗肉。本文试着从锁的角度来梳理下几种常见的隔离级别，用相对<strong>不精确</strong>的叙述给大家建立一个直观感性的认识。</p>
+</blockquote>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/07/07/db-isolation">https://www.qtmuniao.com/2022/07/07/db-isolation</a> 转载请注明出处</em></p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>数据库试图通过事务隔离（transaction isolation）来给用户提供一种隔离保证，从而降低应用侧的编程复杂度。最强的隔离性，可串行化（Serializability），可以对用户提供一种保证：任意时刻，可以认为只有一个事务在运行。</p>
+<p>初学时对几种隔离级别的递进关系通常难以理解，是因为没有找到一个合适的角度（再次表明观点：没有理解不了的问题，只有不对的打开方式）。我的经验是，从实现的角度对几种隔离级别进行梳理，会建立一个一致性的认识。</p>
+<p>ANSI SQL 定义的四种隔离级别，由弱到强分别是：<strong>读未提交</strong>（Read Uncommited）、<strong>读已提交</strong>（Read Commited）、<strong>可重复读</strong>（Repeatable Read）和<strong>可串行化</strong>（Serializability），可以从使用锁实现事务的角度来理解其递进关系。</p>
+<h2 id="以锁为媒"><a href="#以锁为媒" class="headerlink" title="以锁为媒"></a>以锁为媒</h2><p>最强的隔离性——<strong>可串行化</strong>，可以理解为全局一把大互斥锁，每个事务在启动时获取锁，在结束（提交或者回滚）时释放锁。但这种隔离级别性能无疑最差。而其他几种弱隔离级别，可以理解为是为了提高性能，缩小了加锁的粒度（谓词锁-&gt;对象锁）、减短了加锁的时间（事务结束后释放-&gt;用完即释放）、降低了加锁的强度（互斥锁-&gt;共享锁），从而牺牲一致性换取性能。</p>
+<p>换个角度来说，从上锁的强弱考虑，我们有<strong>互斥锁</strong>（Mutex Lock，又称写锁、独占锁、排它锁）和<strong>共享锁</strong>（Shared Lock，又称读锁）；从上锁的长短来考虑，我们有长时锁（Long Period Lock，事务开始获取锁，到事务结束时释放）和短时锁（Short Period Lock，访问数据时获取，用完旋即释放）；从上锁的粗细来考虑，我们有对象锁（关系型数据中的 Row Lock，锁一行）和<strong>谓词锁</strong>（Predicate Lock，锁一个数据集合）。</p>
+<h2 id="KV-模型"><a href="#KV-模型" class="headerlink" title="KV 模型"></a>KV 模型</h2><p>说到数据集合，由于数据库在存储层实现时都是基于 KV 模型，如 B+ 树中 Page 和 LSM-Tree 中的 Block 都是一组 KV 条目。对应到关系型数据库中，如果按行存储，则单条 KV 的 Key 通常是主键， Value 通常是一行数据。因此，之后行文，事务修改数据都可以理解为：</p>
+<ol>
+<li><strong>单个对象</strong>。可以理解为一个 KV 条目。</li>
+<li><strong>一组对象</strong>。如 <code>where x &gt; 5 and y &lt; 6</code> 表达式，会确定一个 KV 条目子集。</li>
+</ol>
+<p>因此，下面讨论数据的粒度，都是基于 KV 模型。</p>
+<h2 id="弱隔离级别和相应问题"><a href="#弱隔离级别和相应问题" class="headerlink" title="弱隔离级别和相应问题"></a>弱隔离级别和相应问题</h2><p>性能最好的隔离级别就是不上任何锁。但会存在<strong>脏读</strong>（Dirty Read，一个事务读到另一个事务未提交的更改）和<strong>脏写</strong>（Dirty Write，一个事务覆盖了另外一个事务未提交的更改）的问题。这两种现象会造成什么后果呢？举个例子：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">脏读：</span><br><span class="line">初始 x=4</span><br><span class="line">事务1：--W(x=5)---&gt;rollback</span><br><span class="line">事务2：-----&gt;R(x=5)---&gt;commit</span><br><span class="line"></span><br><span class="line">事务2 错误的读出了 x=5，但这个值不应该存在过。原因在于事务2读到了事务1未提交的值。</span><br><span class="line"></span><br><span class="line">脏写：</span><br><span class="line">初始 x=4, y=4</span><br><span class="line">事务1：--W(x=5)--------W(y=5)---&gt;commit</span><br><span class="line">事务2：----W(x=6)--W(y=6)-&gt;commit</span><br><span class="line">最后结果是 x=6, y=5。但如果两个事务先后执行的正确结果应该是 x 和 y 要么都为 5，要么都为 6。造成这种不一致的原因在于，事务1未提交的更改 x=5 被覆盖了，事务2未提交的更改 y=6 也被覆盖了。</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>为了避免脏写，可以给要更改的对象加长时写锁，但读数据时并不加锁，此时的隔离级别称为<strong>读未提交</strong>（RU，Read Uncommitted）。<br>但此时仍然会有脏读：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">脏读：</span><br><span class="line">初始 x = 4</span><br><span class="line">事务1：----WL(x),W(x=5)--&gt;rollback, UL(x)</span><br><span class="line">事务2：----------------&gt;R(x=5)---&gt;commit</span><br><span class="line"></span><br><span class="line">注：RL:ReadLock; WL:WriteLock；UL:Unlock</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>为了避免脏读，可以对要读取的对象加短时读锁，此时的隔离级别是<strong>读已提交</strong>（RC，Read Committed）。<br>但由于加的是短时读锁，一个事务先后两次读 x，而在中间空挡，另一个修改 x 的事务提交，则会出现两次读取不一致的问题，此种问题称为<strong>不可重复读</strong>（non Repeatable Read）。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">初始 x = 4</span><br><span class="line">事务1: -RL(x),R(x=4),UL(x)--------------------------&gt;RL(x),R(x=5),UL(x)---&gt;commit</span><br><span class="line">事务2：-------------------WL(x),W(x=5)--&gt;commit,UL(x)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>为了解决此问题，需要在读取数据的时候也加长时读锁。解决了不可重复读的隔离级别称为<strong>可重复读</strong>（RR，Repeatable Read）。</p>
+<p>到可重复读级别，都是针对单条数据上锁。在此隔离级别下，如果一个事务两次进行范围查询，比如说执行两次 <code>select count(x) where x &gt; 5</code>；另一个事务在两次查询中间插入了一条 <code>x = 6</code>，这两次读到的结果并不一样，这种现象称为<strong>幻读</strong>（Phantom Read）。为了解决幻读问题，需要针对范围查询语句加长时谓词读锁。解决了幻读的隔离级别，我们称为<strong>可串行化</strong>（Serializability）。</p>
+<p>可以看出，在可串行隔离级别，不管读锁还是写锁，都要拿到事务结束。这种用锁方式，我们称为<strong>两阶段锁</strong>（2PL，two Phase Lock）。</p>
+<blockquote>
+<p>两阶段锁，即分为两个阶段，在第一个阶段（事务执行时）只允许上锁，在第二个阶段（事务提交时）只允许释放锁。当然，这其实是严格两阶段锁，SS2PL，感兴趣同学可以自行去查阅下其与 2PL 区别。</p>
+</blockquote>
+<h2 id="泛化一下"><a href="#泛化一下" class="headerlink" title="泛化一下"></a>泛化一下</h2><p>从更抽象角度来说，每个事务在执行过程中都要去<strong>摸</strong>（touch）一个数据对象子集，针对该数据子集可能会读，可能会写；如果两个并发的事务，摸到的数据子集并不相交，则不用做任何处理，可以放心并发执行。</p>
+<p>如果数据子集有相交之处，就会形成事务之间的依赖关系。将事务抽象成一个点，依赖关系根据时间先后抽象成一条有向边，则可构造出一个<strong>有向无环图</strong>。</p>
+<p>事务对外提供的最理想抽象是：所有的事务在时间线上可以坍缩为一个点（瞬时完成，即 ACID 中的 A，<strong>原子性</strong>）。这样所有的事务即可在时间轴上将 DAG 进行拓扑排序，即可串行化。</p>
+<p>但在实际执行过程中，事务都是要持续一段时间，即一个时间线段，执行时间有交叠的事务便有了各种并发问题和隔离性（或者说可见性）问题。那如何让物理上并发的事务，逻辑上看起来像顺序地、原子地执行呢？答曰：只需在事务执行前后维持某些不变性即可。</p>
+<p>这些不变性，即为 ACID 中的 C，<strong>一致性</strong>。在应用层看来，也可以称为<strong>因果性</strong>。也即，前面所说的有数据交集的事务的依赖性能够被正确的处理。举个例子，事务一依赖某个读取内容进行决策后修改，其依赖的内容不能为并发的事务二所修改，不然做出的决策就有问题。更实际的例子可以参考 DDIA 第七章医生值班问题。</p>
+<p>我们通常使用两种思想，来维护这种不变性：</p>
+<ol>
+<li><strong>悲观的方式</strong>。加锁，使通一个数据子集不能同时为多个事务所访问。</li>
+<li><strong>乐观的方式</strong>。MVCC，每个数据对象存多个版本，每个版本都是不可变的，修改对象即追加一个新的版本。每个事务可以放心的读写，在提交时检测到冲突后进行重试即可。</li>
+</ol>
+<p>这部分隐去了很多细节，感兴趣的可以去看看我录的<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL0JWMVFyNHkxTTdabQ==">视频<i class="fa fa-external-link-alt"></i></span>。</p>
+<h2 id="The-Last-Thing"><a href="#The-Last-Thing" class="headerlink" title="The Last Thing"></a>The Last Thing</h2><p>上面说的四种隔离级别没有覆盖到另一个常见的隔离级别——<strong>快照隔离</strong>（Snapshot Isolation）。因为它引出了另上面提到的乐观派实现族——MVCC。由于属于不同的实现思想，快照隔离和可重复读在隔离级别强弱的光谱上属于一个偏序关系，不能说谁强于谁，有机会再展开讲。</p>
+<p>本文源于本月分享 DDIA 第七章事务的一个小结。篇幅所限，很多概念没有太展开，感兴趣的可以看看我的<span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8jL2NoMDc=">读书笔记<i class="fa fa-external-link-alt"></i></span>，也可以叫翻译，因为实在太长了，毕竟一共录了三期视频（阅读原文可达）。</p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/04/distributed-database-storage-components/" rel="bookmark">层层剥开数据库存储层</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/12/11/how-to-build-a-database/" rel="bookmark">实现一个数据库需要如何入手？</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"># 数据库</a>
+              <a href="/tags/%E4%BA%8B%E5%8A%A1/" rel="tag"># 事务</a>
+              <a href="/tags/%E9%9A%94%E7%A6%BB%E6%80%A7/" rel="tag"># 隔离性</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/05/15/google-alloydb-storage/" rel="prev" title="解析谷歌兼容 PostgreSQL 的云原生数据库——AlloyDB 的存储层">
+      <i class="fa fa-chevron-left"></i> 解析谷歌兼容 PostgreSQL 的云原生数据库——AlloyDB 的存储层
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/08/21/rocksdb-file-indexer/" rel="next" title="RocksDB 优化小解（一）：Indexing SST">
+      RocksDB 优化小解（一）：Indexing SST <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E9%94%81%E4%B8%BA%E5%AA%92"><span class="nav-number">2.</span> <span class="nav-text">以锁为媒</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#KV-%E6%A8%A1%E5%9E%8B"><span class="nav-number">3.</span> <span class="nav-text">KV 模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%B1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E5%92%8C%E7%9B%B8%E5%BA%94%E9%97%AE%E9%A2%98"><span class="nav-number">4.</span> <span class="nav-text">弱隔离级别和相应问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B3%9B%E5%8C%96%E4%B8%80%E4%B8%8B"><span class="nav-number">5.</span> <span class="nav-text">泛化一下</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#The-Last-Thing"><span class="nav-number">6.</span> <span class="nav-text">The Last Thing</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">36</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">174</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2022/07/07/db-isolation/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '2f14bd040355e0d50f4c4f2a64981995',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

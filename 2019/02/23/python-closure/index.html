@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="小引以前学 js 的时候第一次见到闭包，当时不甚了了，还为了应付面试强行记住了一个模棱两可的“定义”：在函数中嵌套定义函数，并且在外层将内层函数返回，一同返回了外层函数的环境。当时从字面意思以及当时一个经典例子试图去理解闭包，加之”闭包”这个翻译也很不容易让人味出其中的道理，导致对其总感觉懵懵懂懂。最近工作需要，用起 python，又遇到闭包，这次看到了一些新奇有趣的资料，这才算大致把一些字面">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Python 闭包">
+<meta property="og:url" content="https://www.qtmuniao.com/2019/02/23/python-closure/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="小引以前学 js 的时候第一次见到闭包，当时不甚了了，还为了应付面试强行记住了一个模棱两可的“定义”：在函数中嵌套定义函数，并且在外层将内层函数返回，一同返回了外层函数的环境。当时从字面意思以及当时一个经典例子试图去理解闭包，加之”闭包”这个翻译也很不容易让人味出其中的道理，导致对其总感觉懵懵懂懂。最近工作需要，用起 python，又遇到闭包，这次看到了一些新奇有趣的资料，这才算大致把一些字面">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/zMtSnoRFshGc6dl.png">
+<meta property="article:published_time" content="2019-02-23T06:04:41.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.279Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="closure">
+<meta property="article:tag" content="闭包">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/zMtSnoRFshGc6dl.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2019/02/23/python-closure/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Python 闭包 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/02/23/python-closure/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Python 闭包
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-02-23 14:04:41" itemprop="dateCreated datePublished" datetime="2019-02-23T14:04:41+08:00">2019-02-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p> <img src="https://i.loli.net/2020/02/09/zMtSnoRFshGc6dl.png" alt="python-learn.png"></p>
+<h2 id="小引"><a href="#小引" class="headerlink" title="小引"></a>小引</h2><p>以前学 js 的时候第一次见到闭包，当时不甚了了，还为了应付面试强行记住了一个模棱两可的“定义”：在函数中嵌套定义函数，并且在外层将内层函数返回，一同返回了外层函数的环境。当时从字面意思以及当时一个经典例子试图去理解闭包，加之”闭包”这个翻译也很不容易让人味出其中的道理，导致对其总感觉懵懵懂懂。最近工作需要，用起 python，又遇到闭包，这次看到了一些新奇有趣的资料，这才算大致把一些字面上的概念（first-class functions，bind，scope等等）贯通在一起，反过来对闭包有了更深的理解。</p>
+<p>引用资料列在最后，十分推荐大家去读读。</p>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
+<h2 id="概要"><a href="#概要" class="headerlink" title="概要"></a>概要</h2><p>计算机中有些英文专业词汇，字面直译，难免因缺少上下文而显得苍白拗口，须得多方铺垫，方能味得古怪下面的原理。<strong>闭包</strong>（closure）便是一个这样牵扯了许多上下文的概念，包括编程语言最基本的<strong>绑定</strong>（binding），<strong>环境</strong>（environments），变量<strong>作用域</strong>（scope）以及<strong>函数是第一等公民</strong>（function as the first-class）等等。</p>
+<h2 id="Binding（绑定）"><a href="#Binding（绑定）" class="headerlink" title="Binding（绑定）"></a>Binding（绑定）</h2><p>在Python中，binding 是编程语言最基本的抽象手法，它将一个值绑定到一个变量上，并且稍后可以引用或者修改该变量。下面是几种不同层次的绑定，每组语句在运行时将一个名字与对应值绑定到其定义所在的环境中。</p>
+<p>包括将名字绑定到一块内存，通过赋值语句实现，当然函数调用时，形参和实参结合也是绑定：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">1</span>]: square = <span class="number">4</span></span><br></pre></td></tr></table></figure>
+
+<p>将名字绑定到一组复合运算，即<strong>函数定义</strong>，利用 <strong>def</strong> 关键字实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">1</span>]: <span class="keyword">def</span> <span class="title function_">square</span>(<span class="params">x</span>):</span><br><span class="line">        <span class="keyword">return</span> x*x</span><br></pre></td></tr></table></figure>
+
+<p>将名字绑定到一个数据集合，即<strong>类定义</strong>，使用 <strong>class</strong> 实现：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">1</span>]: <span class="keyword">class</span> <span class="title class_">square</span>:</span><br><span class="line">            <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, x</span>):</span><br><span class="line">                self.x = x</span><br><span class="line"></span><br><span class="line">            <span class="keyword">def</span> <span class="title function_">value</span>(<span class="params">self</span>):</span><br><span class="line">                <span class="keyword">return</span> self.x * self.x</span><br></pre></td></tr></table></figure>
+
+<p><strong>依照执行顺序，多次同名绑定，后面会覆盖前面</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">1</span>]: square = <span class="number">3</span></span><br><span class="line"></span><br><span class="line">In [<span class="number">2</span>]: square</span><br><span class="line">Out[<span class="number">2</span>]: <span class="number">3</span></span><br><span class="line"></span><br><span class="line">In [<span class="number">3</span>]: <span class="keyword">def</span> <span class="title function_">square</span>(<span class="params">x</span>):</span><br><span class="line">   ...:     <span class="keyword">return</span> x * x</span><br><span class="line">   ...:</span><br><span class="line">   ...:</span><br><span class="line"></span><br><span class="line">In [<span class="number">4</span>]: square</span><br><span class="line">Out[<span class="number">4</span>]: &lt;function __main__.square(x)&gt;</span><br><span class="line"></span><br><span class="line">In [<span class="number">5</span>]: <span class="keyword">class</span> <span class="title class_">square</span>:</span><br><span class="line">   ...:     <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, x</span>):</span><br><span class="line">   ...:         self.x = x</span><br><span class="line">   ...:</span><br><span class="line"></span><br><span class="line">In [<span class="number">6</span>]: square</span><br><span class="line">Out[<span class="number">6</span>]: __main__.square</span><br></pre></td></tr></table></figure>
+
+<p>说这些都是抽象，是因为它们提供了对数据，复合操作或数据集合的封装手段，即将一个名称与复杂的数据或逻辑进行捆绑，使调用者不用关心其实现细节，并且以此来作为构建更复杂的工程的基本元素。可以说绑定是编程的基石。</p>
+<p>回到本文的主题上来，闭包首先是函数，只不过是一种特殊的函数，至于这个特殊性在哪，等稍后引入更多概念后再进行阐述。</p>
+<h2 id="Scope-（作用域）"><a href="#Scope-（作用域）" class="headerlink" title="Scope （作用域）"></a>Scope （作用域）</h2><p>scope（作用域），顾名思义，也就是某个binding 能罩多大的范围，或者说你可以在多大范围内访问一个变量。每个函数定义会构造一个局部定义域。</p>
+<p>python，和大多数编程语言一样，使用的是<strong>静态作用域</strong>（static scoping，有时也称 lexical scoping）规则。在函数嵌套定义的时候，内层函数内可以访问外层函数的变量值。因此你可以把作用域想象成一个容器，即它是可以嵌套的，并且内层作用域会扩展外层作用域，而最外层作用域即全局作用域。</p>
+<p>上一小节提到了，<strong>多次同名绑定，后面会覆盖前面</strong>，其实有隐含前提：<strong>在同一作用域内</strong>。如果是嵌套作用域，其实是隐藏的关系，内层函数的变量定义会遮蔽外层函数同一名字定义，但是在外层作用域中，该变量仍是原值：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">16</span>]: a = <span class="number">4</span></span><br><span class="line"></span><br><span class="line">In [<span class="number">17</span>]: <span class="keyword">def</span> <span class="title function_">outer</span>(): </span><br><span class="line">    ...:     a = <span class="number">5</span></span><br><span class="line">    ...:     <span class="built_in">print</span>(a)</span><br><span class="line">    ...:     <span class="keyword">def</span> <span class="title function_">inner</span>():</span><br><span class="line">    ...:         a = <span class="number">6</span></span><br><span class="line">    ...:         <span class="built_in">print</span>(a)</span><br><span class="line">    ...:     inner()</span><br><span class="line">    ...:     <span class="built_in">print</span>(a)</span><br><span class="line">    ...:</span><br><span class="line"></span><br><span class="line">In [<span class="number">18</span>]: outer()</span><br><span class="line"><span class="number">5</span></span><br><span class="line"><span class="number">6</span></span><br><span class="line"><span class="number">5</span></span><br><span class="line"></span><br><span class="line">In [<span class="number">19</span>]: <span class="built_in">print</span>(a)</span><br><span class="line"><span class="number">4</span></span><br></pre></td></tr></table></figure>
+
+<p>可以看出，<strong>作用域</strong>其实也可以从另一个角度理解，即我们在某个环境（environment）中，在确定一个name binding 值的时候，会从最内层作用域顺着往外找，找到的第一个该名字 binding 的对应的值即为该 name 引用到的值。</p>
+<p>需要强调的时候，函数的嵌套定义会引起定义域的嵌套，或者说环境扩展（内层扩展外层）关系。类的定义又稍有不同，class 定义会引入新的 namespace，namespace 和 scope 是常拿来对比的概念，但这里按下不表，感兴趣的可以自己去查查资料。</p>
+<p>说到这里，要提一下，一个常被说起的例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">50</span>]: a = <span class="number">4</span></span><br><span class="line"></span><br><span class="line">In [<span class="number">51</span>]: <span class="keyword">def</span> <span class="title function_">test</span>():</span><br><span class="line">    ...:     <span class="built_in">print</span>(a) <span class="comment"># 这里应该输出什么？</span></span><br><span class="line">    ...:     a = <span class="number">5</span></span><br><span class="line">    ...:</span><br><span class="line"></span><br><span class="line">In [<span class="number">52</span>]: test()</span><br><span class="line">---------------------------------------------------------------------------</span><br><span class="line">UnboundLocalError                         </span><br><span class="line">Traceback (most recent call last)</span><br><span class="line">&lt;ipython-<span class="built_in">input</span>-<span class="number">52</span>-fbd55f77ab7c&gt; <span class="keyword">in</span> &lt;module&gt;()</span><br><span class="line">----&gt; <span class="number">1</span> test()</span><br><span class="line"></span><br><span class="line">&lt;ipython-<span class="built_in">input</span>-<span class="number">51</span>-200f78e91a1b&gt; <span class="keyword">in</span> test()</span><br><span class="line">      <span class="number">1</span> <span class="keyword">def</span> <span class="title function_">test</span>():</span><br><span class="line">----&gt; <span class="number">2</span>     <span class="built_in">print</span>(a)</span><br><span class="line">      <span class="number">3</span>     a = <span class="number">5</span></span><br><span class="line">      <span class="number">4</span></span><br><span class="line"></span><br><span class="line">UnboundLocalError: local variable <span class="string">&#x27;a&#x27;</span> referenced before assignment</span><br></pre></td></tr></table></figure>
+
+<p>想象中，上面 <code>print</code> 处应该输出 4 或者 5 才对，为什么会报错呢？这是因为 <code>test</code> 函数在定义时候，分词器会扫一遍 test 函数定义中的所有 token，看到赋值语句 <code>a=5</code> 的存在，就会明确 <code>a</code> 是一个局部变量，因此不会输出4。 而在执行到 <code>print(a)</code> 的时候，在局部环境中，<code>a</code> 还未被binding，因此会报 <code>UnboundLocalError</code>。</p>
+<p>稍微探究一下，虽然 python 是解释执行的，即输入一句，解释一句，执行一句。但是对于<strong>代码块</strong>（即头部语句，冒号与其关联的缩进块所构成的<strong>复合语句</strong>（compound sentences），常见的有函数定义，类定义，循环语句等等）来说，还是会整体先扫一遍的。</p>
+<h2 id="First-Class-Function（函数是第一等公民）"><a href="#First-Class-Function（函数是第一等公民）" class="headerlink" title="First-Class Function（函数是第一等公民）"></a>First-Class Function（函数是第一等公民）</h2><p>一般来说，组成编程语言的元素，如变量，函数和类，会被设定不同的限制，而具有最少限制的元素，被我们成为该编程语言中的<strong>一等公民</strong>。而一等公民最常见的特权有：</p>
+<ol>
+<li>可以被binding到名字上</li>
+<li>可以作为参数在函数中传递</li>
+<li>可以作为返回值被函数作为结果返回</li>
+<li>可以被包含在其他数据结构中</li>
+</ol>
+<p>套用到python中的函数来说来说，即一个函数可以被赋值给某个变量，可以被函数接收和返回，可以定义在其他函数中（即嵌套定义）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">32</span>]: <span class="keyword">def</span> <span class="title function_">test</span>():</span><br><span class="line">    ...:     <span class="built_in">print</span>(<span class="string">&#x27;hello world&#x27;</span>)</span><br><span class="line">    ...:</span><br><span class="line"></span><br><span class="line">In [<span class="number">33</span>]: t = test <span class="comment"># 赋值给变量</span></span><br><span class="line"></span><br><span class="line">In [<span class="number">34</span>]: t()</span><br><span class="line">hello world</span><br><span class="line"></span><br><span class="line">In [<span class="number">35</span>]: <span class="keyword">def</span> <span class="title function_">wrapper</span>(<span class="params">func</span>):</span><br><span class="line">    ...:     <span class="built_in">print</span>(<span class="string">&#x27;wrapper&#x27;</span>)</span><br><span class="line">    ...:     func()</span><br><span class="line">    ...:</span><br><span class="line"></span><br><span class="line">In [<span class="number">36</span>]: wrapper(t) <span class="comment"># 作为参数传递</span></span><br><span class="line">wrapper</span><br><span class="line">hello world</span><br><span class="line"></span><br><span class="line">In [<span class="number">37</span>]: <span class="keyword">def</span> <span class="title function_">add_num</span>(<span class="params">a</span>): </span><br><span class="line">    ...:     <span class="keyword">def</span> <span class="title function_">add</span>(<span class="params">b</span>): <span class="comment"># 嵌套定义</span></span><br><span class="line">    ...:         <span class="keyword">return</span> a + b</span><br><span class="line">    ...:     <span class="keyword">return</span> add <span class="comment"># 作为函数的返回值</span></span><br><span class="line">    ...:</span><br><span class="line">    ...:</span><br><span class="line"></span><br><span class="line">In [<span class="number">38</span>]: add5 = add_num(<span class="number">5</span>)</span><br><span class="line"></span><br><span class="line">In [<span class="number">39</span>]: add5(<span class="number">4</span>)</span><br><span class="line">Out[<span class="number">39</span>]: <span class="number">9</span></span><br></pre></td></tr></table></figure>
+
+<p>并不是在所有语言中，函数都是一等公民，比如 Java，上面四项权利 Java 中的函数全都没有。</p>
+<p>在这里，能够操作其他函数的函数（即以其他函数作为参数或者返回值的函数），叫做<strong>高阶函数</strong>。高阶函数使得语言的表达能力大大增强，但同时，也不容易用好。</p>
+<h2 id="Stack-Call（栈式调用）"><a href="#Stack-Call（栈式调用）" class="headerlink" title="Stack Call（栈式调用）"></a>Stack Call（栈式调用）</h2><p>每个函数调用，会在环境中产生一个<strong>栈帧</strong>（frame），并且在栈帧中会进行一些绑定，然后压入函数调用栈中。在函数调用结束时，栈帧会被弹出，其中所进行的绑定也被解除，即垃圾回收，局部作用域也随之消亡。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">47</span>]: <span class="keyword">def</span> <span class="title function_">test</span>():</span><br><span class="line">    ...:     x = <span class="number">4</span></span><br><span class="line">    ...:     <span class="built_in">print</span>(x)</span><br><span class="line">    ...:</span><br><span class="line"></span><br><span class="line">In [<span class="number">48</span>]: test()</span><br><span class="line"><span class="number">4</span></span><br><span class="line"></span><br><span class="line">In [<span class="number">49</span>]: x</span><br><span class="line">---------------------------------------------------------------------------</span><br><span class="line">NameError                                 </span><br><span class="line">Traceback (most recent call last)</span><br><span class="line">&lt;ipython-<span class="built_in">input</span>-<span class="number">49</span>-6fcf9dfbd479&gt; <span class="keyword">in</span> &lt;module&gt;()</span><br><span class="line">----&gt; <span class="number">1</span> x</span><br><span class="line"></span><br><span class="line">NameError: name <span class="string">&#x27;x&#x27;</span> <span class="keyword">is</span> <span class="keyword">not</span> defined</span><br></pre></td></tr></table></figure>
+
+<p>即在调用结束后，局部定义的变量  <code>x</code> 在外边是访问不到的。但是如之前例子 中，返回的 <code>add  </code>函数却引用了已经调用结束的 <code>add_num</code> 中的变量 <code>a</code>，怎么解释这种现象呢？可以记住一条，也是之前提到过的：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">函数嵌套定义时，内部定义的函数所在的环境会自动扩展其定义所在环境</span><br></pre></td></tr></table></figure>
+
+<p>因此在外部函数返回后，返回的内部函数依然维持了其定义时的扩展环境，也可以理解为由于内部函数引用的存在，外部函数的环境中所有的 bindings 并没有被回收。</p>
+<h2 id="Closure（闭包）"><a href="#Closure（闭包）" class="headerlink" title="Closure（闭包）"></a>Closure（闭包）</h2><p>千呼万唤始出来，以为高潮其实已结束。</p>
+<p>闭包就是建立在前面的这些概念上的，上面提到的某个例子：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">37</span>]: <span class="keyword">def</span> <span class="title function_">add_num</span>(<span class="params">a</span>): </span><br><span class="line">    ...:     <span class="keyword">def</span> <span class="title function_">add</span>(<span class="params">b</span>): <span class="comment"># 嵌套定义</span></span><br><span class="line">    ...:         <span class="keyword">return</span> a + b</span><br><span class="line">    ...:     <span class="keyword">return</span> add <span class="comment"># 作为函数的返回值</span></span><br><span class="line">    ...:</span><br><span class="line">    ...:</span><br><span class="line"></span><br><span class="line">In [<span class="number">38</span>]: add5 = add_num(<span class="number">5</span>)</span><br><span class="line"></span><br><span class="line">In [<span class="number">39</span>]: add5(<span class="number">4</span>)</span><br><span class="line">Out[<span class="number">39</span>]: <span class="number">9</span></span><br></pre></td></tr></table></figure>
+
+<p>其实就是<strong>闭包</strong>。捡起之前伏笔，给出我对闭包的一个理解：它是一种<strong>高阶函数</strong>，并且外层函数（例子中的*<code>add_num</code><em>）将其内部定义的函数（</em><code>add</code><em>）作为返回值返回，同时由于返回的内层函数扩展了外层函数的<strong>环境</strong>（environment），也就是对其产生了一个引用，那么在调用返回的内部函数（</em><code>add5</code>*）的时候，能够引用到其（<code>add</code>）定义时的外部环境（在例子中，即 <code>a</code> 的值）。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>说了这么多，其实只是在逻辑层面或者说抽象层面去解释<strong>闭包</strong>是什么，跟哪些概念纠缠在一起。但这些其实都不本质，或者说依然是空中楼阁，如果想要真正理解<strong>闭包</strong>，可以去详细了解下 python 的解释执行机制，当然，那就是编译原理范畴的东西了。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li><span class="exturl" data-url="aHR0cHM6Ly9jczYxYS5vcmcv">cs61a<i class="fa fa-external-link-alt"></i></span> 课程资料： <span class="exturl" data-url="aHR0cDovL2NvbXBvc2luZ3Byb2dyYW1zLmNvbS8=">composing programs<i class="fa fa-external-link-alt"></i></span>，也是 <span class="exturl" data-url="aHR0cHM6Ly93ZWIubWl0LmVkdS9hbGV4bXYvNi4wMzcvc2ljcC5wZGY=">SICP<i class="fa fa-external-link-alt"></i></span> 一书的配套课程，书是神书，课程是好课程，资料更是有趣，不妨一读。</li>
+<li>谷歌到的不错的文章： <span class="exturl" data-url="aHR0cHM6Ly9tZWRpdW0uY29tL0BkYW5ueW1jd2F2ZXMvYS1weXRob24tdHV0b3JpYWwtdG8tdW5kZXJzdGFuZGluZy1zY29wZXMtYW5kLWNsb3N1cmVzLWM2YTNkM2JhMDkzNw==">A Python Tutorial To Understanding Scopes and Closures<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/06/python-mixins/" rel="bookmark">Python 混入类 Mix-Ins</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/16/python-logger/" rel="bookmark">Python Logging 库分析</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/04/05/python-default-parameter-values/" rel="bookmark">Python函数的默认参数的那些"坑"</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Python/" rel="tag"># Python</a>
+              <a href="/tags/closure/" rel="tag"># closure</a>
+              <a href="/tags/%E9%97%AD%E5%8C%85/" rel="tag"># 闭包</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/02/17/hexo-blog/" rel="prev" title="使用Hexo引擎配置静态博客">
+      <i class="fa fa-chevron-left"></i> 使用Hexo引擎配置静态博客
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/03/06/python-mixins/" rel="next" title="Python 混入类 Mix-Ins">
+      Python 混入类 Mix-Ins <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E5%BC%95"><span class="nav-number">1.</span> <span class="nav-text">小引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%A6%81"><span class="nav-number">2.</span> <span class="nav-text">概要</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Binding%EF%BC%88%E7%BB%91%E5%AE%9A%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">Binding（绑定）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Scope-%EF%BC%88%E4%BD%9C%E7%94%A8%E5%9F%9F%EF%BC%89"><span class="nav-number">4.</span> <span class="nav-text">Scope （作用域）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#First-Class-Function%EF%BC%88%E5%87%BD%E6%95%B0%E6%98%AF%E7%AC%AC%E4%B8%80%E7%AD%89%E5%85%AC%E6%B0%91%EF%BC%89"><span class="nav-number">5.</span> <span class="nav-text">First-Class Function（函数是第一等公民）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Stack-Call%EF%BC%88%E6%A0%88%E5%BC%8F%E8%B0%83%E7%94%A8%EF%BC%89"><span class="nav-number">6.</span> <span class="nav-text">Stack Call（栈式调用）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Closure%EF%BC%88%E9%97%AD%E5%8C%85%EF%BC%89"><span class="nav-number">7.</span> <span class="nav-text">Closure（闭包）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">8.</span> <span class="nav-text">结语</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83"><span class="nav-number">9.</span> <span class="nav-text">参考</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">36</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">174</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2019/02/23/python-closure/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'd07a8403fb84c740745e1d6a0c981aa2',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

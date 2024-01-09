@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。  事务型还是分析型术语 OL（Online）主要是指交互式的查询。 术语事务（">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DDIA 读书笔记（三）： TP AP 和列存">
+<meta property="og:url" content="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。  事务型还是分析型术语 OL（Online）主要是指交互式的查询。 术语事务（">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/HAq8ekcmz65xGlO.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/VbBLmqt9grZYiPl.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/P7OJ9fHMVXvW8uD.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/WaqlOFXnHUI9RGw.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/e2m8uLaoDnMrfSC.png">
+<meta property="og:image" content="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg">
+<meta property="article:published_time" content="2022-04-16T01:52:32.000Z">
+<meta property="article:modified_time" content="2023-07-31T06:26:06.288Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="读书笔记">
+<meta property="article:tag" content="DDIA">
+<meta property="article:tag" content="设计数据密集型应用">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2022/04/16/HAq8ekcmz65xGlO.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>DDIA 读书笔记（三）： TP AP 和列存 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DDIA 读书笔记（三）： TP AP 和列存
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-04-16 09:52:32" itemprop="dateCreated datePublished" datetime="2022-04-16T09:52:32+08:00">2022-04-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">这里<i class="fa fa-external-link-alt"></i></span>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。</p>
+</blockquote>
+<h1 id="事务型还是分析型"><a href="#事务型还是分析型" class="headerlink" title="事务型还是分析型"></a>事务型还是分析型</h1><p>术语 <strong>OL</strong>（Online）主要是指交互式的查询。</p>
+<p>术语<strong>事务</strong>（ transaction ）由来有一些历史原因。早期的数据库使用方多为商业交易（commercial ），比如买卖、发工资等等。但是随着数据库应用不断扩大，交易\事务作为名词保留了下来。</p>
+<blockquote>
+<p>事务不一定具有 ACID 特性，事务型处理多是随机的以较低的延迟进行读写，与之相反，分析型处理多为定期的批处理，延迟较高。</p>
+</blockquote>
+<span id="more"></span>
+
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2">https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2</a> 转载请注明出处</em></p>
+<p>下表是一个对比：</p>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>OLTP</th>
+<th>OLAP</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>主要读取模式</td>
+<td>小数据量的随机读，通过 key 查询</td>
+<td>大数据量的聚合（max,min,sum, avg）查询</td>
+</tr>
+<tr>
+<td>主要写入模式</td>
+<td>随机访问，低延迟写入</td>
+<td>批量导入（ETL）或者流式写入</td>
+</tr>
+<tr>
+<td>主要应用场景</td>
+<td>通过 web 方式使用的最终用户</td>
+<td>互联网分析，为了辅助决策</td>
+</tr>
+<tr>
+<td>如何看待数据</td>
+<td>当前时间点的最新状态</td>
+<td>随着时间推移的</td>
+</tr>
+<tr>
+<td>数据尺寸</td>
+<td>通常 GB 到 TB</td>
+<td>通常 TB 到 PB</td>
+</tr>
+</tbody></table>
+<p>一开始对于 AP 场景，仍然使用的传统数据库。在模型层面来说，SQL 足够灵活，能够基本满足 AP 查询需求。但在实现层面，传统数据库在 AP 负载中的表现（大数据量吞吐较低）不尽如人意，因此大家开始转向在专门设计的数据库中进行 AP 查询，我们称之为<strong>数据仓库</strong>（Data Warehouse）。</p>
+<h2 id="数据仓库"><a href="#数据仓库" class="headerlink" title="数据仓库"></a>数据仓库</h2><p>对于一个企业来说，一般都会有很多偏交易型的系统，如用户网站、收银系统、仓库管理、供应链管理、员工管理等等。通常要求<strong>高可用</strong>与<strong>低延迟</strong>，因此直接在原库进行业务分析，会极大影响正常负载。因此需要一种手段将数据从原库导入到专门的<strong>数仓</strong>。</p>
+<p>我们称之为 <strong>ETL：extract-transform-load</strong>。</p>
+<p><img src="https://s2.loli.net/2022/04/16/HAq8ekcmz65xGlO.png" alt="ddia-3-8-etl.png"></p>
+<p>一般企业的数据量达到一定的量级才会需要进行 AP 分析，毕竟在小数据量尺度下，用 Excel 进行聚合查询都够了。当然，现在一个趋势是，随着移动互联网、物联网的普及，接入终端的类型和数量越来越多，产生的数据增量也越来越大，哪怕初创不久的公司可能也会积存大量数据，进而也需要 AP 支持。</p>
+<p>AP 场景下的<strong>聚合查询</strong>分析和传统 TP 型有所不同。因此，需要构建索引的方式也多有不同。</p>
+<h3 id="同样接口后的不同"><a href="#同样接口后的不同" class="headerlink" title="同样接口后的不同"></a>同样接口后的不同</h3><p>TP 和 AP 都可以使用 SQL 模型进行查询分析。但是由于其负载类型完全不同，在查询引擎实现和存储格式优化时，做出的设计决策也就大相径庭。因此，在同一套 SQL 接口的表面下，两者对应的数据库实现结构差别很大。</p>
+<p>虽然有的数据库系统号称两者都支持，比如之前的 Microsoft SQL Server 和 SAP HANA，但是也正日益发展成两种独立的查询引擎。近年来提的较多的 HTAP 系统也是类似，其为了 serve 不同类型负载底层其实有两套不同的存储，只不过系统内部会自动的做数据的冗余和重新组织，对用户透明。</p>
+<h2 id="AP-建模：星状型和雪花型"><a href="#AP-建模：星状型和雪花型" class="headerlink" title="AP 建模：星状型和雪花型"></a>AP 建模：星状型和雪花型</h2><p>AP 中的处理模型相对较少，比较常用的有<strong>星状模型</strong>，也称为<strong>维度模型</strong>。</p>
+<p><img src="https://s2.loli.net/2022/04/16/VbBLmqt9grZYiPl.png" alt="ddia3-9-star-schema.png"></p>
+<p>如上图所示，星状模型通常包含一张<strong>事件表（<em>fact table</em>）</strong>和多张<strong>维度表（<em>dimension tables</em></strong><strong>）</strong>。事件表以事件流的方式将数据组织起来，然后通过外键指向不同的维度。</p>
+<p>星状模型的一个变种是雪花模型，可以类比雪花（❄️）图案，其特点是在维度表中会进一步进行二次细分，讲一个维度分解为几个子维度。比如品牌和产品类别可能有单独的表格。星状模型更简单，雪花模型更精细，具体应用中会做不同取舍。</p>
+<p>在典型的数仓中，事件表可能会非常宽，即有很多的列：一百到数百列。</p>
+<h1 id="列存"><a href="#列存" class="headerlink" title="列存"></a>列存</h1><p>前一小节提到的<strong>分维度表</strong>和<strong>事实表</strong>，对于后者来说，有可能达到数十亿行和数 PB 大。虽然事实表可能通常有几十上百列，但是单次查询通常只关注其中几个维度（列）。</p>
+<p>如查询<strong>人们是否更倾向于在一周的某一天购买新鲜水果或糖果</strong>：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">  dim_date.weekday,</span><br><span class="line">  dim_product.category,</span><br><span class="line">  <span class="built_in">SUM</span>(fact_sales.quantity) <span class="keyword">AS</span> quantity_sold</span><br><span class="line"><span class="keyword">FROM</span> fact_sales</span><br><span class="line">  <span class="keyword">JOIN</span> dim_date <span class="keyword">ON</span> fact_sales.date_key <span class="operator">=</span> dim_date.date_key</span><br><span class="line">  <span class="keyword">JOIN</span> dim_product <span class="keyword">ON</span> fact_sales.product_sk <span class="operator">=</span> dim_product.product_sk</span><br><span class="line"><span class="keyword">WHERE</span></span><br><span class="line">  dim_date.year <span class="operator">=</span> <span class="number">2013</span> <span class="keyword">AND</span></span><br><span class="line">  dim_product.category <span class="keyword">IN</span> (<span class="string">&#x27;Fresh fruit&#x27;</span>, <span class="string">&#x27;Candy&#x27;</span>)</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span></span><br><span class="line">  dim_date.weekday, dim_product.category;</span><br></pre></td></tr></table></figure>
+
+<p>由于传统数据库通常是按行存储的，这意味着对于属性（列）很多的表，哪怕只查询一个属性，也必须从磁盘上取出很多属性，无疑浪费了 IO 带宽、增大了读放大。</p>
+<p>于是一个很自然的想法呼之欲出：每一个列分开存储好不好？</p>
+<p><img src="https://s2.loli.net/2022/04/16/P7OJ9fHMVXvW8uD.png" alt="ddia-3-10-store-by-column.png"></p>
+<p>不同列之间同一个行的字段可以通过下标来对应。当然也可以内嵌主键来对应，但那样存储成本就太高了。</p>
+<h2 id="列压缩"><a href="#列压缩" class="headerlink" title="列压缩"></a>列压缩</h2><p>将所有数据分列存储在一块，带来了一个意外的好处，由于同一属性的数据相似度高，因此更易压缩。</p>
+<p>如果每一列中值阈相比行数要小的多，可以用<strong>位图编码（ <em><span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQml0bWFwX2luZGV4">bitmap encoding<i class="fa fa-external-link-alt"></i></span></em> ）</strong>。举个例子，零售商可能有数十亿的销售交易，但只有 100,000 个不同的产品。</p>
+<p><img src="https://s2.loli.net/2022/04/16/WaqlOFXnHUI9RGw.png" alt="ddia-3-11-compress.png"></p>
+<p>上图中，是一个列分片中的数据，可以看出只有 {29, 30, 31, 68, 69, 74} 六个离散值。针对每个值出现的位置，我们使用一个 bit array 来表示：</p>
+<ol>
+<li>bit map 下标对应列的下标</li>
+<li>值为 0 则表示该下标没有出现该值</li>
+<li>值为 1 则表示该下标出现了该值</li>
+</ol>
+<p>如果 bit array 是稀疏的，即大量的都是 0，只要少量的 1。其实还可以使用 <strong><span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3poLyVFNiVCOCVCOCVFNyVBOCU4QiVFNyVCQyU5NiVFNyVBMCU4MQ==">游程编码<i class="fa fa-external-link-alt"></i></span>（RLE， Run-length encoding）</strong> 进一步压缩：</p>
+<ol>
+<li>将连续的 0 和 1，改写成 <code>数量+值</code>，比如 <code>product_sk = 29</code> 是 <code>9 个 0，1 个 1，8 个 0</code>。</li>
+<li>使用一个小技巧，将信息进一步压缩。比如将同值项合并后，肯定是 0 1 交错出现，固定第一个值为 0，则交错出现的 0 和 1 的值也不用写了。则 <code>product_sk = 29</code>  编码变成 <code>9，1，8</code></li>
+<li>由于我们知道 bit array 长度，则最后一个数字也可以省掉，因为它可以通过 <code>array len - sum(other lens)</code> 得到，则 <code>product_sk = 29</code>  的编码最后变成：<code>9，1</code></li>
+</ol>
+<p>位图索引很适合应对查询中的逻辑运算条件，比如：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">WHERE</span> product_sk <span class="keyword">IN</span>（<span class="number">30</span>，<span class="number">68</span>，<span class="number">69</span>）</span><br></pre></td></tr></table></figure>
+
+<p>可以转换为 <code>product_sk = 30</code>、<code>product_sk = 68</code>和 <code>product_sk = 69</code>这三个 bit array 按位或（OR）。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">WHERE</span> product_sk <span class="operator">=</span> <span class="number">31</span> <span class="keyword">AND</span> store_sk <span class="operator">=</span> <span class="number">3</span></span><br></pre></td></tr></table></figure>
+
+<p>可以转换为 <code>product_sk = 31</code>和 <code>store_sk = 3</code>的 bit array 的按位与，就可以得到所有需要的位置。</p>
+<h3 id="列族"><a href="#列族" class="headerlink" title="列族"></a>列族</h3><p>书中特别提到<strong>列族（column families）</strong>。它是 Cassandra 和 HBase 中的的概念，他们都起源于自谷歌的 <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQmlndGFibGU=">BigTable<i class="fa fa-external-link-alt"></i></span> 。注意到他们和<strong>列式（column-oriented）存储</strong>有相似之处，但绝不完全相同：</p>
+<ol>
+<li>同一个列族中多个列是一块存储的，并且内嵌行键（row key）。</li>
+<li>并且列不压缩（存疑？）</li>
+</ol>
+<p>因此 BigTable 在用的时候主要还是面向行的，可以理解为每一个列族都是一个子表。</p>
+<h3 id="内存带宽和向量化处理"><a href="#内存带宽和向量化处理" class="headerlink" title="内存带宽和向量化处理"></a>内存带宽和向量化处理</h3><p>数仓的超大规模数据量带来了以下瓶颈：</p>
+<ol>
+<li>内存处理带宽</li>
+<li>CPU 分支预测错误和<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU2JUI1JTgxJUU2JUIwJUI0JUU3JUJBJUJGJUU1JTgxJTlDJUU5JUExJUJG">流水线停顿<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+<p>关于内存的瓶颈可已通过前述的数据压缩来缓解。对于 CPU 的瓶颈可以使用：</p>
+<ol>
+<li>列式存储和压缩可以让数据尽可能多地缓存在 L1 中，结合位图存储进行快速处理。</li>
+<li>使用 SIMD 用更少的时钟周期处理更多的数据。</li>
+</ol>
+<h2 id="列式存储的排序"><a href="#列式存储的排序" class="headerlink" title="列式存储的排序"></a>列式存储的排序</h2><p>由于数仓查询多集中于聚合算子（比如 sum，avg，min，max），列式存储中的存储顺序相对不重要。但也免不了需要对某些列利用条件进行筛选，为此我们可以如 LSM-Tree 一样，对所有行按某一列进行排序后存储。</p>
+<blockquote>
+<p>注意，不可能同时对多列进行排序。因为我们需要维护多列间的下标间的对应关系，才可能按行取数据。</p>
+</blockquote>
+<p>同时，排序后的那一列，压缩效果会更好。</p>
+<h3 id="不同副本，不同排序"><a href="#不同副本，不同排序" class="headerlink" title="不同副本，不同排序"></a>不同副本，不同排序</h3><p>在分布式数据库（数仓这么大，通常是分布式的）中，同一份数据我们会存储多份。对于每一份数据，我们可以按不同列有序存储。这样，针对不同的查询需求，便可以路由到不同的副本上做处理。当然，这样也最多只能建立副本数（通常是 3 个左右）列索引。</p>
+<p>这一想法由 C-Store 引入，并且为商业数据仓库 Vertica 采用。</p>
+<h2 id="列式存储的写入"><a href="#列式存储的写入" class="headerlink" title="列式存储的写入"></a>列式存储的写入</h2><p>上述针对数仓的优化（列式存储、数据压缩和按列排序）都是为了解决数仓中常见的读写负载，读多写少，且读取都是超大规模的数据。</p>
+<blockquote>
+<p>我们针对读做了优化，就让写入变得相对困难。</p>
+</blockquote>
+<p>比如 B 树的<strong>原地更新流</strong>是不太行的。举个例子，要在中间某行插入一个数据，<strong>纵向</strong>来说，会影响所有的列文件（如果不做 segment 的话）；为了保证多列间按下标对应，<strong>横向</strong>来说，又得更新该行不同列的所有列文件。</p>
+<p>所幸我们有 LSM-Tree 的追加流。</p>
+<ol>
+<li>将新写入的数据在<strong>内存</strong>中 Batch 好，按行按列，选什么数据结构可以看需求。</li>
+<li>然后达到一定阈值后，批量刷到<strong>外存</strong>，并与老数据合并。</li>
+</ol>
+<p>数仓 Vertica 就是这么做的。</p>
+<h2 id="聚合：数据立方和物化视图"><a href="#聚合：数据立方和物化视图" class="headerlink" title="聚合：数据立方和物化视图"></a>聚合：数据立方和物化视图</h2><p>不一定所有的数仓都是列式存储，但列式存储的种种好处让其变得流行了起来。</p>
+<p>其中一个值得一提的是<strong>物化聚合（materialized aggregates，或者物化汇总）</strong>。</p>
+<blockquote>
+<p>物化，可以简单理解为持久化。本质上是一种空间换时间的 tradeoff。</p>
+</blockquote>
+<p>数据仓库查询通常涉及聚合函数，如 SQL 中的 COUNT、SUM、AVG、MIN 或 MAX。如果这些函数被多次用到，每次都即时计算显然存在巨大浪费。因此一个想法就是，能不能将其缓存起来。</p>
+<p>其与关系数据库中的<strong>视图</strong>（View）区别在于，视图是<strong>虚拟的、逻辑存在</strong>的，只是对用户提供的一种抽象，是一个查询的中间结果，并没有进行持久化（有没有缓存就不知道了）。</p>
+<p>物化视图本质上是对数据的一个摘要存储，如果原数据发生了变动，该视图要被重新生成。因此，如果<strong>写多读少</strong>，则维持物化视图的代价很大。但在数仓中往往反过来，因此物化视图才能较好的起作用。</p>
+<p>物化视图一个特化的例子，是<strong>数据立方</strong>（data cube，或者 OLAP cube）：按不同维度对量化数据进行聚合。</p>
+<p><img src="https://s2.loli.net/2022/04/16/e2m8uLaoDnMrfSC.png" alt="ddia-3-12-data-cube.png"></p>
+<p>上图是一个按<strong>日期和产品分类</strong>两个维度进行加和的数据立方，当针对日期和产品进行汇总查询时，由于该表的存在，就会变得非常快。</p>
+<p>当然，现实中，一个表中常常有多个维度，比如 3-9 中有日期、产品、商店、促销和客户五个维度。但构建数据立方的意义和方法都是相似的。</p>
+<p>但这种构建出来的视图只能针对固定的查询进行优化，如果有的查询不在此列，则这些优化就不再起作用。</p>
+<blockquote>
+<p>在实际中，需要针对性的识别（或者预估）每个场景查询分布，针对性的构建物化视图。</p>
+</blockquote>
+<hr>
+<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心~<br><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter2/" rel="bookmark">DDIA 读书笔记（二）：数据模型和查询语言</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA 读书笔记（五）：冗余</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/10/18/influence-notes/" rel="bookmark">查理芒格推荐——《影响力》读书笔记+精要分析</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/" rel="tag"># 读书笔记</a>
+              <a href="/tags/DDIA/" rel="tag"># DDIA</a>
+              <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%95%B0%E6%8D%AE%E5%AF%86%E9%9B%86%E5%9E%8B%E5%BA%94%E7%94%A8/" rel="tag"># 设计数据密集型应用</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="prev" title="DDIA 读书笔记（三）：B-Tree 和 LSM-Tree">
+      <i class="fa fa-chevron-left"></i> DDIA 读书笔记（三）：B-Tree 和 LSM-Tree
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/04/16/ddia-reading-chapter4/" rel="next" title="DDIA 读书笔记（四）：编码和演进">
+      DDIA 读书笔记（四）：编码和演进 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8B%E5%8A%A1%E5%9E%8B%E8%BF%98%E6%98%AF%E5%88%86%E6%9E%90%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">事务型还是分析型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E4%BB%93%E5%BA%93"><span class="nav-number">1.1.</span> <span class="nav-text">数据仓库</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8C%E6%A0%B7%E6%8E%A5%E5%8F%A3%E5%90%8E%E7%9A%84%E4%B8%8D%E5%90%8C"><span class="nav-number">1.1.1.</span> <span class="nav-text">同样接口后的不同</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AP-%E5%BB%BA%E6%A8%A1%EF%BC%9A%E6%98%9F%E7%8A%B6%E5%9E%8B%E5%92%8C%E9%9B%AA%E8%8A%B1%E5%9E%8B"><span class="nav-number">1.2.</span> <span class="nav-text">AP 建模：星状型和雪花型</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%97%E5%AD%98"><span class="nav-number">2.</span> <span class="nav-text">列存</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%97%E5%8E%8B%E7%BC%A9"><span class="nav-number">2.1.</span> <span class="nav-text">列压缩</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E6%97%8F"><span class="nav-number">2.1.1.</span> <span class="nav-text">列族</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B8%A6%E5%AE%BD%E5%92%8C%E5%90%91%E9%87%8F%E5%8C%96%E5%A4%84%E7%90%86"><span class="nav-number">2.1.2.</span> <span class="nav-text">内存带宽和向量化处理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%97%E5%BC%8F%E5%AD%98%E5%82%A8%E7%9A%84%E6%8E%92%E5%BA%8F"><span class="nav-number">2.2.</span> <span class="nav-text">列式存储的排序</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E5%90%8C%E5%89%AF%E6%9C%AC%EF%BC%8C%E4%B8%8D%E5%90%8C%E6%8E%92%E5%BA%8F"><span class="nav-number">2.2.1.</span> <span class="nav-text">不同副本，不同排序</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%97%E5%BC%8F%E5%AD%98%E5%82%A8%E7%9A%84%E5%86%99%E5%85%A5"><span class="nav-number">2.3.</span> <span class="nav-text">列式存储的写入</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%81%9A%E5%90%88%EF%BC%9A%E6%95%B0%E6%8D%AE%E7%AB%8B%E6%96%B9%E5%92%8C%E7%89%A9%E5%8C%96%E8%A7%86%E5%9B%BE"><span class="nav-number">2.4.</span> <span class="nav-text">聚合：数据立方和物化视图</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">105</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">36</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">174</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '22259c45e3f331f4977b7a3099f3faee',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
