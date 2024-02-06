@@ -10626,8 +10626,7 @@
         <category>生活</category>
       </categories>
       <tags>
-        <tag>总结</tag>
-        <tag>2023</tag>
+        <tag>年终总结</tag>
       </tags>
   </entry>
   <entry>
@@ -10795,6 +10794,101 @@
       </categories>
       <tags>
         <tag>s3</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>MemGraph 背后论文《基于内存和MVCC 的高速可串行化》详细解析（一）</title>
+    <url>/2024/02/06/memory-mvcc-serial/</url>
+    <content><![CDATA[<blockquote>
+<p><span class="exturl" data-url="aHR0cHM6Ly9tZW1ncmFwaC5jb20v">Memgraph<i class="fa fa-external-link-alt"></i></span> 是一个内存型图数据库，使用 OpenCypher 作为查询语言，主打小数据量、低延迟的图场景。由于 Memgraph 是开源的（repo 在<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL21lbWdyYXBoL21lbWdyYXBo">这<i class="fa fa-external-link-alt"></i></span>，使用 C++ 实现）我们可以一窥其实现。根据<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL21lbWdyYXBoL21lbWdyYXBoL2Jsb2IvbWFzdGVyL3NyYy9zdG9yYWdlL3YyL3N0b3JhZ2UuaHBwI0w1Nw==">这行注释<i class="fa fa-external-link-alt"></i></span>，我们可以看出，其内存结构实现灵感主要来自论文：<span class="exturl" data-url="aHR0cHM6Ly9kYi5pbi50dW0uZGUvfm11ZWhsYmF1L3BhcGVycy9tdmNjLnBkZg==">Fast Serializable Multi-Version Concurrency Control for Main-Memory Database Systems<i class="fa fa-external-link-alt"></i></span>。</p>
+<p>本系列主要分为两大部分，<strong>论文解读</strong>和<strong>代码串讲</strong>，每一部分会根据情况拆成几篇。本篇，是论文解读（一），主要讲论文概述以及如何使用链表巧妙的存储了多版本、控制了可见性。论文解析（二）和（三），会讲如何实现可串行化以及回收多版本数据。</p>
+</blockquote>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>从论文题目可以看出，本论文旨在实现一种针对<strong>内存型</strong>数据库的、基于<strong>多版本</strong>（MVCC）实现的、支持可<strong>串行化</strong>隔离级别的高性能数据结构。其基本思想是：</p>
+<ol>
+<li>使用列存</li>
+<li>复用 Undo Buffer 数据结构</li>
+<li>使用双向链表来串起数据的多版本</li>
+<li>巧妙设计时间戳来实现数据的可见性</li>
+<li>通过谓词树（PT）来判事务读集合（Read Set）是否被更改</li>
+</ol>
+<p>与一般的多版本不同的是，本论文会在<strong>原地更新</strong>数据，然后将旧版本数据“压”到链表中去，使用 “压”是因为链表采用头插法：表头一侧数据较新、表尾一侧数据较旧。所有数据的链表头由一个叫 <code>VersionVector</code> 的数据结构维护，如果某一行没有旧数据，对应的位置就是 <code>null</code>。</p>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2024/02/06/memory-mvcc-serial">https://www.qtmuniao.com/2024/02/06/memory-mvcc-serial</a> 转载请注明出处</em></p>
+<p><img src="https://s2.loli.net/2024/02/06/SdeBuqCJnvPTt6m.png" alt="MVCC-memory.png"></p>
+<p>之后，我们之后会一直使用上图例子来辅助理解原理。这是一个 Sally 持续向别人转账的例子。开局时（T0）每人十块钱，然后 Sally 每次转给别人 1 块钱，一共转了三笔，当前时刻前两笔已经完成：</p>
+<ol>
+<li>Sally → Wendy，提交时间戳为 T3</li>
+<li>Sally → Henry，提交时间戳为 T5</li>
+</ol>
+<p>正在进行第三笔：</p>
+<ol>
+<li>Sally → Mike，事务 ID 是 Ty，起始时间戳为 T6</li>
+</ol>
+<p>中间穿插着两次全表扫描（求所有账户总额）事务 Tx 和 Tz，起始时间戳分别为 T4 和 T7 ，都已经开始，但还没结束。</p>
+<h2 id="版本管理"><a href="#版本管理" class="headerlink" title="版本管理"></a>版本管理</h2><p>每个事务在进入系统时会获取两个时间戳（uint64）：</p>
+<ol>
+<li><strong>transactionID</strong>：事务 ID 也是一个时间戳（从 2^63 开始自增），上图中的 Tx, Ty, Tz。</li>
+<li><strong>startTime-stamp</strong>：一个自增的时间戳（从 0 开始自增），上图中的 T4, T6, T7。</li>
+</ol>
+<p>如前所述，所有的更新是原地的（in-place），但会在 undo buffer 中保存旧值。旧版本的数据有两个作用：</p>
+<ol>
+<li>before-image value，作为事务 undo log 的一部分。</li>
+<li>作为该字段多版本的一个旧值。</li>
+</ol>
+<p>对于快照隔离和可串行化隔离级别来说，原地更新的值，是不为其他事务所见的，下一小节我们会讲如何控制可见性。</p>
+<p>在事务提交时，会获取另外一个时间戳：<strong>commitTime-stamp</strong>，该时间戳和 startTime-stamp 共用一个自增计数器。</p>
+<p><strong>在事务进行中</strong>，所有的 Undo Buffer 中的旧值会被打上 transactionID 的时间戳（图中第三笔转账：Ty）；<strong>在事务提交时</strong>，会统一替换为 commitTime-stamp （图中前两笔转账： T3 和 T5）。</p>
+<h2 id="版本可见性"><a href="#版本可见性" class="headerlink" title="版本可见性"></a>版本可见性</h2><p>某个事务在访问一个字段的值时，会首先进行原地访问，然后沿着该值对应的 VersionVector 指向链表进行访问，直到满足以下条件后停止：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="comment">// pred 表示下一个链节</span></span><br><span class="line"><span class="comment">// TS 表示对应链节的关联时间戳</span></span><br><span class="line"><span class="comment">// T 表示当前事务以及当前事务 ID</span></span><br><span class="line">v.pred == null || v.pred.TS == T || v.pred.TS &lt; T.startTime</span><br></pre></td></tr></table></figure>
+
+<p>下面我们逐一看下三个子条件各自适用情况：</p>
+<ol>
+<li><code>v.pred == null</code> ：当该值没有多版本，或者链表到头时成立。</li>
+<li><code>v.pred.TS == T</code>：正在进行的事务访问自己更新的数据。</li>
+<li><code>v.pred.TS &lt; T.startTime</code>：通过事务起始时间戳，访问已经提交的老版本数据。</li>
+</ol>
+<p>上述条件比较抽象，我们结合例子来看。Sally 的多次转账会形成以下链表：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="number">7</span>(in-place) -pred-&gt; (Ty, Bal, <span class="number">8</span>) -pred-&gt; (T5, Bal, <span class="number">9</span>) </span><br><span class="line">            -pred-&gt; (T3, Bal, <span class="number">10</span>) -pred-&gt; null</span><br></pre></td></tr></table></figure>
+
+<p>然后来看不同事务访问 Sally 的 Bal（Balance）数据的可见性：</p>
+<ol>
+<li><strong>事务 Ty</strong>：（Ty 是一个 &gt; 2^63 的值），所以会在后继节点满足： <code>pred == (Ty, Bal, 8)</code> （条件2，Ty &#x3D;&#x3D; Ty）时停住，此时访问到的值为 7 ，也即事务 Ty 更新到的值。</li>
+<li><strong>事务 Tx</strong>：起始时间戳为 T4，所以会在后继节点满足 <code>pred == (T3, Bal, 10)</code> （条件3，T3 &lt; T4）时停住，此时访问到的 Sally 账户的值为 9，也即此时刚转过一次账，即提交时间戳为 T3 的那次转账。</li>
+<li><strong>事务 Tz</strong>：起始时间戳为 T7，所以会在后继节点满足 <code>pred == (T5, Bal, 9)</code> （条件 3，T5 &lt; T7）时停住，此时访问到 Sally 的账户值为 8，也即此时完成了两次转账，第三次转账尚未完成，对 Tz 不可见。</li>
+</ol>
+<p>可以看出，上述链表把时间轴分成了四段：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line">临时值（<span class="number">7</span>）----Ty--(<span class="number">8</span>)---T5---(<span class="number">9</span>)---T3---(<span class="number">10</span>)---T0</span><br></pre></td></tr></table></figure>
+
+<p>比较事务起始时间戳和后继链节时间戳，是为条件 1：</p>
+<ol>
+<li>T0 ~ T3：见到的值是 10</li>
+<li>T3 ~ T5：见到的值是 9</li>
+<li>T5 ~ ∞：见到的值是 8</li>
+</ol>
+<p>其中，Ty （事务 ID）<strong>相对起始时间戳来说就是无穷大</strong>，这就是我们在前一小节提到的将 uint64 对半劈开的妙用之处：</p>
+<ol>
+<li>起始和提交时间戳：0 ~ 2^63 -1 </li>
+<li>事务ID：2^63 ~ 2^64 - 1</li>
+</ol>
+<p>另外，null 就相当于 T0 ，是为条件 1 。</p>
+<p>最后，为了让事务能够看到自己的更新，于是额外加了条件 2 。</p>
+<p>下篇，我们会详细讲如何基于上述数据结构来实现可串行化隔离级别的。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li>开源项目：<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL21lbWdyYXBoL21lbWdyYXBo">https://github.com/memgraph/memgraph<i class="fa fa-external-link-alt"></i></span></li>
+<li>相关论文：<span class="exturl" data-url="aHR0cHM6Ly9kYi5pbi50dW0uZGUvfm11ZWhsYmF1L3BhcGVycy9tdmNjLnBkZg==">https://db.in.tum.de/~muehlbau/papers/mvcc.pdf<i class="fa fa-external-link-alt"></i></span></li>
+<li>解析博文：<span class="exturl" data-url="aHR0cHM6Ly93YW5nemlxaTIwMTMuZ2l0aHViLmlvL3BhcGVyLzIwMTgvMDcvMTAvRmFzdC1TZXJpYWxpemFibGUtTXVsdGktVmVyc2lvbi1Db25jdXJyZW5jeS1Db250cm9sLWZvci1NYWluLU1lbW9yeS1EYXRhYmFzZS1TeXN0ZW1zLmh0bWw=">https://wangziqi2013.github.io/paper/2018/07/10/Fast-Serializable-Multi-Version-Concurrency-Control-for-Main-Memory-Database-Systems.html<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+<blockquote>
+<p>本篇文章来自我的小报童专栏，<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzY1NmQ4ZDczLWY4ZWQtNDYwNC05ZjE0LWY3Nzc5N2U4NzdiMA==">第二篇解读<i class="fa fa-external-link-alt"></i></span>也已经在专栏更新，欢迎喜欢我文章的朋友订阅支持，激励我产出更多优质文章。订阅方式见<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">这里<i class="fa fa-external-link-alt"></i></span>。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>论文解读</category>
+      </categories>
+      <tags>
+        <tag>memgraph</tag>
+        <tag>mvcc</tag>
       </tags>
   </entry>
 </search>

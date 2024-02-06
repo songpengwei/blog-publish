@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Memgraph 是一个内存型图数据库，使用 OpenCypher 作为查询语言，主打小数据量、低延迟的图场景。由于 Memgraph 是开源的（repo 在这，使用 C++ 实现）我们可以一窥其实现。根据这行注释，我们可以看出，其内存结构实现灵感主要来自论文：Fast Serializable Multi-Version Concurrency Control for Main-Memory">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MemGraph 背后论文《基于内存和MVCC 的高速可串行化》详细解析（一）">
+<meta property="og:url" content="https://www.qtmuniao.com/2024/02/06/memory-mvcc-serial/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Memgraph 是一个内存型图数据库，使用 OpenCypher 作为查询语言，主打小数据量、低延迟的图场景。由于 Memgraph 是开源的（repo 在这，使用 C++ 实现）我们可以一窥其实现。根据这行注释，我们可以看出，其内存结构实现灵感主要来自论文：Fast Serializable Multi-Version Concurrency Control for Main-Memory">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://s2.loli.net/2024/02/06/SdeBuqCJnvPTt6m.png">
+<meta property="article:published_time" content="2024-02-06T12:21:12.000Z">
+<meta property="article:modified_time" content="2024-02-06T12:28:56.304Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="memgraph">
+<meta property="article:tag" content="mvcc">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2024/02/06/SdeBuqCJnvPTt6m.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2024/02/06/memory-mvcc-serial/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MemGraph 背后论文《基于内存和MVCC 的高速可串行化》详细解析（一） | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/02/06/memory-mvcc-serial/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MemGraph 背后论文《基于内存和MVCC 的高速可串行化》详细解析（一）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-02-06 20:21:12 / 修改时间：20:28:56" itemprop="dateCreated datePublished" datetime="2024-02-06T20:21:12+08:00">2024-02-06</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p><span class="exturl" data-url="aHR0cHM6Ly9tZW1ncmFwaC5jb20v">Memgraph<i class="fa fa-external-link-alt"></i></span> 是一个内存型图数据库，使用 OpenCypher 作为查询语言，主打小数据量、低延迟的图场景。由于 Memgraph 是开源的（repo 在<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL21lbWdyYXBoL21lbWdyYXBo">这<i class="fa fa-external-link-alt"></i></span>，使用 C++ 实现）我们可以一窥其实现。根据<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL21lbWdyYXBoL21lbWdyYXBoL2Jsb2IvbWFzdGVyL3NyYy9zdG9yYWdlL3YyL3N0b3JhZ2UuaHBwI0w1Nw==">这行注释<i class="fa fa-external-link-alt"></i></span>，我们可以看出，其内存结构实现灵感主要来自论文：<span class="exturl" data-url="aHR0cHM6Ly9kYi5pbi50dW0uZGUvfm11ZWhsYmF1L3BhcGVycy9tdmNjLnBkZg==">Fast Serializable Multi-Version Concurrency Control for Main-Memory Database Systems<i class="fa fa-external-link-alt"></i></span>。</p>
+<p>本系列主要分为两大部分，<strong>论文解读</strong>和<strong>代码串讲</strong>，每一部分会根据情况拆成几篇。本篇，是论文解读（一），主要讲论文概述以及如何使用链表巧妙的存储了多版本、控制了可见性。论文解析（二）和（三），会讲如何实现可串行化以及回收多版本数据。</p>
+</blockquote>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>从论文题目可以看出，本论文旨在实现一种针对<strong>内存型</strong>数据库的、基于<strong>多版本</strong>（MVCC）实现的、支持可<strong>串行化</strong>隔离级别的高性能数据结构。其基本思想是：</p>
+<ol>
+<li>使用列存</li>
+<li>复用 Undo Buffer 数据结构</li>
+<li>使用双向链表来串起数据的多版本</li>
+<li>巧妙设计时间戳来实现数据的可见性</li>
+<li>通过谓词树（PT）来判事务读集合（Read Set）是否被更改</li>
+</ol>
+<p>与一般的多版本不同的是，本论文会在<strong>原地更新</strong>数据，然后将旧版本数据“压”到链表中去，使用 “压”是因为链表采用头插法：表头一侧数据较新、表尾一侧数据较旧。所有数据的链表头由一个叫 <code>VersionVector</code> 的数据结构维护，如果某一行没有旧数据，对应的位置就是 <code>null</code>。</p>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2024/02/06/memory-mvcc-serial">https://www.qtmuniao.com/2024/02/06/memory-mvcc-serial</a> 转载请注明出处</em></p>
+<p><img src="https://s2.loli.net/2024/02/06/SdeBuqCJnvPTt6m.png" alt="MVCC-memory.png"></p>
+<p>之后，我们之后会一直使用上图例子来辅助理解原理。这是一个 Sally 持续向别人转账的例子。开局时（T0）每人十块钱，然后 Sally 每次转给别人 1 块钱，一共转了三笔，当前时刻前两笔已经完成：</p>
+<ol>
+<li>Sally → Wendy，提交时间戳为 T3</li>
+<li>Sally → Henry，提交时间戳为 T5</li>
+</ol>
+<p>正在进行第三笔：</p>
+<ol>
+<li>Sally → Mike，事务 ID 是 Ty，起始时间戳为 T6</li>
+</ol>
+<p>中间穿插着两次全表扫描（求所有账户总额）事务 Tx 和 Tz，起始时间戳分别为 T4 和 T7 ，都已经开始，但还没结束。</p>
+<h2 id="版本管理"><a href="#版本管理" class="headerlink" title="版本管理"></a>版本管理</h2><p>每个事务在进入系统时会获取两个时间戳（uint64）：</p>
+<ol>
+<li><strong>transactionID</strong>：事务 ID 也是一个时间戳（从 2^63 开始自增），上图中的 Tx, Ty, Tz。</li>
+<li><strong>startTime-stamp</strong>：一个自增的时间戳（从 0 开始自增），上图中的 T4, T6, T7。</li>
+</ol>
+<p>如前所述，所有的更新是原地的（in-place），但会在 undo buffer 中保存旧值。旧版本的数据有两个作用：</p>
+<ol>
+<li>before-image value，作为事务 undo log 的一部分。</li>
+<li>作为该字段多版本的一个旧值。</li>
+</ol>
+<p>对于快照隔离和可串行化隔离级别来说，原地更新的值，是不为其他事务所见的，下一小节我们会讲如何控制可见性。</p>
+<p>在事务提交时，会获取另外一个时间戳：<strong>commitTime-stamp</strong>，该时间戳和 startTime-stamp 共用一个自增计数器。</p>
+<p><strong>在事务进行中</strong>，所有的 Undo Buffer 中的旧值会被打上 transactionID 的时间戳（图中第三笔转账：Ty）；<strong>在事务提交时</strong>，会统一替换为 commitTime-stamp （图中前两笔转账： T3 和 T5）。</p>
+<h2 id="版本可见性"><a href="#版本可见性" class="headerlink" title="版本可见性"></a>版本可见性</h2><p>某个事务在访问一个字段的值时，会首先进行原地访问，然后沿着该值对应的 VersionVector 指向链表进行访问，直到满足以下条件后停止：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// pred 表示下一个链节</span></span><br><span class="line"><span class="comment">// TS 表示对应链节的关联时间戳</span></span><br><span class="line"><span class="comment">// T 表示当前事务以及当前事务 ID</span></span><br><span class="line">v.pred == null || v.pred.TS == T || v.pred.TS &lt; T.startTime</span><br></pre></td></tr></table></figure>
+
+<p>下面我们逐一看下三个子条件各自适用情况：</p>
+<ol>
+<li><code>v.pred == null</code> ：当该值没有多版本，或者链表到头时成立。</li>
+<li><code>v.pred.TS == T</code>：正在进行的事务访问自己更新的数据。</li>
+<li><code>v.pred.TS &lt; T.startTime</code>：通过事务起始时间戳，访问已经提交的老版本数据。</li>
+</ol>
+<p>上述条件比较抽象，我们结合例子来看。Sally 的多次转账会形成以下链表：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">7</span>(in-place) -pred-&gt; (Ty, Bal, <span class="number">8</span>) -pred-&gt; (T5, Bal, <span class="number">9</span>) </span><br><span class="line">            -pred-&gt; (T3, Bal, <span class="number">10</span>) -pred-&gt; null</span><br></pre></td></tr></table></figure>
+
+<p>然后来看不同事务访问 Sally 的 Bal（Balance）数据的可见性：</p>
+<ol>
+<li><strong>事务 Ty</strong>：（Ty 是一个 &gt; 2^63 的值），所以会在后继节点满足： <code>pred == (Ty, Bal, 8)</code> （条件2，Ty &#x3D;&#x3D; Ty）时停住，此时访问到的值为 7 ，也即事务 Ty 更新到的值。</li>
+<li><strong>事务 Tx</strong>：起始时间戳为 T4，所以会在后继节点满足 <code>pred == (T3, Bal, 10)</code> （条件3，T3 &lt; T4）时停住，此时访问到的 Sally 账户的值为 9，也即此时刚转过一次账，即提交时间戳为 T3 的那次转账。</li>
+<li><strong>事务 Tz</strong>：起始时间戳为 T7，所以会在后继节点满足 <code>pred == (T5, Bal, 9)</code> （条件 3，T5 &lt; T7）时停住，此时访问到 Sally 的账户值为 8，也即此时完成了两次转账，第三次转账尚未完成，对 Tz 不可见。</li>
+</ol>
+<p>可以看出，上述链表把时间轴分成了四段：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">临时值（<span class="number">7</span>）----Ty--(<span class="number">8</span>)---T5---(<span class="number">9</span>)---T3---(<span class="number">10</span>)---T0</span><br></pre></td></tr></table></figure>
+
+<p>比较事务起始时间戳和后继链节时间戳，是为条件 1：</p>
+<ol>
+<li>T0 ~ T3：见到的值是 10</li>
+<li>T3 ~ T5：见到的值是 9</li>
+<li>T5 ~ ∞：见到的值是 8</li>
+</ol>
+<p>其中，Ty （事务 ID）<strong>相对起始时间戳来说就是无穷大</strong>，这就是我们在前一小节提到的将 uint64 对半劈开的妙用之处：</p>
+<ol>
+<li>起始和提交时间戳：0 ~ 2^63 -1 </li>
+<li>事务ID：2^63 ~ 2^64 - 1</li>
+</ol>
+<p>另外，null 就相当于 T0 ，是为条件 1 。</p>
+<p>最后，为了让事务能够看到自己的更新，于是额外加了条件 2 。</p>
+<p>下篇，我们会详细讲如何基于上述数据结构来实现可串行化隔离级别的。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li>开源项目：<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL21lbWdyYXBoL21lbWdyYXBo">https://github.com/memgraph/memgraph<i class="fa fa-external-link-alt"></i></span></li>
+<li>相关论文：<span class="exturl" data-url="aHR0cHM6Ly9kYi5pbi50dW0uZGUvfm11ZWhsYmF1L3BhcGVycy9tdmNjLnBkZg==">https://db.in.tum.de/~muehlbau/papers/mvcc.pdf<i class="fa fa-external-link-alt"></i></span></li>
+<li>解析博文：<span class="exturl" data-url="aHR0cHM6Ly93YW5nemlxaTIwMTMuZ2l0aHViLmlvL3BhcGVyLzIwMTgvMDcvMTAvRmFzdC1TZXJpYWxpemFibGUtTXVsdGktVmVyc2lvbi1Db25jdXJyZW5jeS1Db250cm9sLWZvci1NYWluLU1lbW9yeS1EYXRhYmFzZS1TeXN0ZW1zLmh0bWw=">https://wangziqi2013.github.io/paper/2018/07/10/Fast-Serializable-Multi-Version-Concurrency-Control-for-Main-Memory-Database-Systems.html<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+<blockquote>
+<p>本篇文章来自我的小报童专栏，<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzY1NmQ4ZDczLWY4ZWQtNDYwNC05ZjE0LWY3Nzc5N2U4NzdiMA==">第二篇解读<i class="fa fa-external-link-alt"></i></span>也已经在专栏更新，欢迎喜欢我文章的朋友订阅支持，激励我产出更多优质文章。订阅方式见<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">这里<i class="fa fa-external-link-alt"></i></span>。</p>
+</blockquote>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/memgraph/" rel="tag"># memgraph</a>
+              <a href="/tags/mvcc/" rel="tag"># mvcc</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/01/04/2023-summary/" rel="prev" title="2023 年终总结——穷则思变">
+      <i class="fa fa-chevron-left"></i> 2023 年终总结——穷则思变
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E7%AE%A1%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">版本管理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E5%8F%AF%E8%A7%81%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">版本可见性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">4.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">106</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">36</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">174</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2024/02/06/memory-mvcc-serial/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '3d50e2a604ee75990d7cf4b5e24d1ee5',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
