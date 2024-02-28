@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="本文主要“编译”自书籍《Operating Systems: Three Easy Pieces》第 40 章，这是一本非常深入浅出的书，推荐给所有对操作系统感到迷茫的同学。本文件系统基于一个非常小的硬盘空间，以数据结构和读写流程为主线，从零到一的推导出各个基本环节，可以帮你快速建立起对文件系统的直觉。  文件系统基本都是构建于块存储之上的。但当然，现在的一些分布式文件系统，如 JuiceFS，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="螺蛳壳里做道场：实现一个64KB的迷你文件系统">
+<meta property="og:url" content="https://www.qtmuniao.com/2024/02/28/mini-filesystem/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="本文主要“编译”自书籍《Operating Systems: Three Easy Pieces》第 40 章，这是一本非常深入浅出的书，推荐给所有对操作系统感到迷茫的同学。本文件系统基于一个非常小的硬盘空间，以数据结构和读写流程为主线，从零到一的推导出各个基本环节，可以帮你快速建立起对文件系统的直觉。  文件系统基本都是构建于块存储之上的。但当然，现在的一些分布式文件系统，如 JuiceFS，">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/GrZPSV15EXOAhbQ.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/bywIskmS9r4aAgt.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/jSclXgo3GHEnPb4.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/D4N1Jh8qSVlb5yz.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/Nea5XHfkJdBcqCh.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/tnqOKpyTjroDfMG.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/lMaDRH9oNuj8wFr.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/l83ZrTzLtAOXcD5.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/MDqE2O5X3FaKwRs.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/7wE8cDb4BUkPYOX.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/1lmRPWpMtF8qaeC.png">
+<meta property="article:published_time" content="2024-02-28T02:22:16.000Z">
+<meta property="article:modified_time" content="2024-02-28T03:54:06.561Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="文件系统">
+<meta property="article:tag" content="文件">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2024/02/28/GrZPSV15EXOAhbQ.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2024/02/28/mini-filesystem/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>螺蛳壳里做道场：实现一个64KB的迷你文件系统 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/02/28/mini-filesystem/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          螺蛳壳里做道场：实现一个64KB的迷你文件系统
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-02-28 10:22:16 / 修改时间：11:54:06" itemprop="dateCreated datePublished" datetime="2024-02-28T10:22:16+08:00">2024-02-28</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">计算机基础</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>本文主要“编译”自书籍《<span class="exturl" data-url="aHR0cHM6Ly9wYWdlcy5jcy53aXNjLmVkdS9+cmVtemkvT1NURVAv">Operating Systems: Three Easy Pieces<i class="fa fa-external-link-alt"></i></span>》第 40 章，这是一本非常深入浅出的书，推荐给所有对操作系统感到迷茫的同学。本文件系统基于一个非常小的硬盘空间，以<strong>数据结构</strong>和<strong>读写流程</strong>为主线，从零到一的推导出各个基本环节，可以帮你快速建立起对文件系统的直觉。</p>
+</blockquote>
+<p>文件系统基本都是构建于块存储之上的。但当然，现在的一些分布式文件系统，如 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2p1aWNlZGF0YS9qdWljZWZz">JuiceFS<i class="fa fa-external-link-alt"></i></span>，底层是基于对象存储的。但无论块存储还是对象存储，其本质都是按 “数据块” 进行<strong>寻址</strong>和<strong>数据交换</strong>的。</p>
+<p>我们首先会探讨一个完整的文件系统在硬盘上的数据结构，也即布局；然后再通过打开关闭、读写流程将各个子模块串起来，从而完成对一个文件系统要点的覆盖。</p>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2024/02/28/mini-filesystem">https://www.qtmuniao.com/2024/02/28/mini-filesystem</a> 转载请注明出处</em></p>
+<blockquote>
+<p>本文来自我的大规模数据系统专栏《<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">系统日知录<i class="fa fa-external-link-alt"></i></span>》，专注存储、数据库、分布式系统、AI Infra 和计算机基础知识。欢迎订阅支持，解锁更多文章。你的支持，是我前行的最大动力。<br><img src="https://s2.loli.net/2024/02/28/GrZPSV15EXOAhbQ.png" alt="海报.png"></p>
+</blockquote>
+<h1 id="总体布局"><a href="#总体布局" class="headerlink" title="总体布局"></a>总体布局</h1><p>假设我们的块大小是 4KB，然后有一块非常小的硬盘，只有 64 个块（则总大小为 64 * 4KB &#x3D; 256KB），且该硬盘只给文件系统用。由于硬盘是按块进行寻址的，则地址空间为 0~63 。</p>
+<p><img src="https://s2.loli.net/2024/02/28/bywIskmS9r4aAgt.png" alt="filesystem-empty.png"></p>
+<p>基于此迷你硬盘，我们一起来逐步推导下这个极简文件系统。</p>
+<p>文件系统的首要目的肯定是存储用户数据，为此我们在磁盘留出一块<strong>数据区</strong>（Data Region）。假设我们使用后面 56 个块作为数据区。为什么是 56 个呢？从后面就可以知道，其实是可以算出来的——我们可以大致算出元信息和真正数据的比例，进而可以确定两部分大小。</p>
+<p><img src="https://s2.loli.net/2024/02/28/jSclXgo3GHEnPb4.png" alt="filesystem-data-region.png"></p>
+<p>接下来，我们需要为系统中的<strong>每个文件</strong>保存一些元信息，比如：</p>
+<ol>
+<li>文件名</li>
+<li>文件大小</li>
+<li>文件归属者</li>
+<li>访问权限</li>
+<li>创建、修改时间</li>
+</ol>
+<p>等等。保存这些元信息的数据块，我们通常称为 <strong>inode</strong> （index node）。如下，我们给 inode 分配 5 个 block。</p>
+<p><img src="https://s2.loli.net/2024/02/28/D4N1Jh8qSVlb5yz.png" alt="filesystem-inodes.png"></p>
+<p>元信息所占空间相对较小，比如 128B 或者 256B，我们这里假设每个 inode 占用 256B。则每个 4KB 块能容纳 16 个 inode，则我们的文件系统最多可以支持 5 * 16 &#x3D; 80 个 inode，也即我们的迷你文件系统最多可以支持 80 个文件，但由于目录也要占 inode，所以实际可用文件数要少于 80。</p>
+<p>现在我们有了数据区，有了文件元信息区，但在一个正常使用的文件系统中，还需要追踪哪些数据块被用了，哪些还没有被使用。这种数据结构我们称之为<strong>分配结构</strong>（allocation structures）。业界常用的方法有<strong>空闲链表</strong>（free list），即把所有空闲块按链表的方式串起来。但为了简单，这里使用一种更简单的数据结构：<strong>位图</strong>（bitmap），数据区用一个，称<strong>数据位图</strong>（data bitmap）；inode 表用一个，称 <strong>inode 位图</strong>（inode bitmap）。</p>
+<p>位图的思想很简单，即为每一个 inode 或者数据块使用一个数据位，来标记是否空闲：0 表示空闲，1 表示有数据。一个 4KB 的 bitmap 最多能追踪 32K 的对象。为了方便，我们给 inode 表和数据池各分配一个完整的块（虽然用不完），于是便有了下图。</p>
+<p><img src="https://s2.loli.net/2024/02/28/Nea5XHfkJdBcqCh.png" alt="filesystem-bitmap.png"></p>
+<p>可以看出，我们的基本思路是从后往前进行数据布局，最后还剩一个块。该块我们是故意留的，用以充当文件系统的<strong>超级块</strong>（superblock）。超级块作为一个文件系统的<strong>入口</strong>，通常会保存一些文件系统级别的元信息，比如本文件系统中有多少个 inode 和数据块（80 和 56），inode 表的起始块偏移量（3），等等。</p>
+<p><img src="https://s2.loli.net/2024/02/28/tnqOKpyTjroDfMG.png" alt="filesystem-superblock.png"></p>
+<p>则当文件系统被<strong>装载</strong>（ mount ）时，操作系统会首先读取超级块（所以放最前面），并据此初始化一系列参数，并将其作为数据卷挂载到文件系统树中。有了这些基本信息，当该卷中的文件被访问到时，就能逐步找出其位置，也就是我们之后要讲的读写流程。</p>
+<p>但在讲读写流程之前，需要先放大一些关键数据结构看看其内在布局。</p>
+<h2 id="索引节点（Inode）"><a href="#索引节点（Inode）" class="headerlink" title="索引节点（Inode）"></a>索引节点（Inode）</h2><p>inode 是<strong>索引节点</strong>（index node）的简称，是对文件和文件夹的索引节点。为了简单，我们使用<strong>数组</strong>来组织索引节点，每个 inode 会关联一个<strong>编号</strong>（inumber），也即其在数组中的<strong>下标</strong>（偏移量）。</p>
+<p><img src="https://s2.loli.net/2024/02/28/lMaDRH9oNuj8wFr.png" alt="filesystem-inode-table.png"></p>
+<p>上面提到过一嘴，每个 inode 占 256B。则给定一个 inumber，我们就可以计算出其在硬盘中的偏移量（<code>12KB + inumber * 256</code>），但由于内外存交换是按块来的，我们可以据此进而计算出其所在磁盘块。</p>
+<p>inode 主要保存文件名、一些元信息（权限控制、各种事件、一些标记位）和<strong>数据块索引</strong>。数据块索引其实也是元信息，单拎出来说是因为它很重要。</p>
+<p>我们使用一种比较简单的索引方式：<strong>间接指针</strong>（<strong>indirect pointer</strong>）。即 inode 中保存的不是直接指向数据块的指针，而是指向一个指针块（也在数据区分配，但保存的都是二级指针）。如果文件足够大，可能还会引出三级指针（至于我们这个小系统是否用的着，大家可以估算下）。</p>
+<p>但我们统计发现，在大多数文件系统中，小文件占多数。小到什么地步呢？一个数据块就可以存下。</p>
+<p><img src="https://s2.loli.net/2024/02/28/l83ZrTzLtAOXcD5.png" alt="filesystem-statistic.png"></p>
+<p>因此实践中，我们在 inode 中使用一种<strong>直接指针</strong>和<strong>间接指针</strong>混合的方式进行表示。在我们的文件系统中，就是使用 12 个直接指针和 1 个间接指针。所以只要文件尺寸不超过 12 个数据块，就可以直接用直接指针。只有过大时，才使用间接指针，并且在数据区新分配数据块，来存间接指针。</p>
+<p>我们的数据区很小，只有 56 个 block，假设使用 4byte 进行索引。则二级指针最多可支持 (12 + 1024) · 4K ，也就是 4144KB 大小的文件。</p>
+<blockquote>
+<p>另一种实践中常用的方式是<strong>数据段</strong>（extents）。即将每个<strong>连续数据区</strong>用起始指针和大小来表示，然后将一个文件的所有数据段串起来。但多段数据时，如果想访问最后一个数据段或者随机访问，性能会很差（下一个数据段的指针都保存在上一个数据段中）。为了优化访问速度，常将该数据段的索引链表存在内存中。Windows 的早期文件系统 FAT 就是这么干的。</p>
+</blockquote>
+<h2 id="目录组织"><a href="#目录组织" class="headerlink" title="目录组织"></a>目录组织</h2><p>在我们的文件系统中，目录组织得很简单——即和文件一样，每个目录也占用一个 inode，但在 inode 指向的数据块不是存文件内容，而是存储该目录中所包含的所有文件和文件夹的信息，通常是用 <code>List&lt;entry name, inode number&gt;</code>  表示。当然要转为实际编码，还要存文件名长度等信息（因为文件名是变长的）。</p>
+<p>看一个简单例子，设我们有一个文件夹 dir （inode 编号是 5），里面有三个文件（foor，bar 和 foobar），其对应的 inode 编号分别是 12，13 和 24 。则在该文件夹的数据块中存储的信息如下：</p>
+<p><img src="https://s2.loli.net/2024/02/28/MDqE2O5X3FaKwRs.png" alt="filesystem-dir-content.png"></p>
+<p>其中 <code>reclen</code> （record length）是文件名所占空间大小，<code>strlen</code> 是实际长度。点和点点是指向本文件夹和上级文件夹的两个指针。记录<code>reclen</code> 看着有点多此一举，但要考虑到文件删除问题（可以用特殊的 inum，比如 0 来标记删除）。如果文件夹下的某个文件或者目录被删除，存储就会出现空洞。<code>reclen</code> 的存在，可以让删除留下的空洞为之后新增的文件复用。</p>
+<p>需要说明的是，线性的组织一个目录中的文件是最简单的方式。实践中，还有其他方式。比如说在 XFS 中，如果目录中文件或者子文件夹特别多，会使用 B+ 树进行组织。从而在插入时，可以很快地知道是否有同名文件。</p>
+<h2 id="空闲空间管理"><a href="#空闲空间管理" class="headerlink" title="空闲空间管理"></a>空闲空间管理</h2><p>当我们需要新建文件或者目录项时，就需要从文件系统中获取一块可用空间。因此，如何高效的管理空闲空间，是个很重要的问题。我们使用两个 bitmap 进行管理，优点是简单，缺点是每次都得线性的扫描查找所有空闲 bit 位，且只能做到块粒度，块内如果有剩余空间，就管不到了。</p>
+<h1 id="读写路径"><a href="#读写路径" class="headerlink" title="读写路径"></a>读写路径</h1><p>有了对磁盘上的数据结构的把握之后，我们再来通过读写流程将不同的数据结构串一下。我们假设文件系统已经被挂载：即<strong>超级块</strong>（superblock）已经在内存中。</p>
+<h2 id="读取文件"><a href="#读取文件" class="headerlink" title="读取文件"></a>读取文件</h2><p>我们的操作很简单，就是打开一个文件（如 <code>/foo/bar</code>），进行读取，然后关闭。简化起见，假设我们文件大小占一个 block，即 4k。</p>
+<p>当发起一个系统调用 <code>open(&quot;/foo/bar&quot;, O RDONLY)</code>时，文件系统需要首先找到文件 bar 对应的 inode，以获取其元信息和数据位置信息。但现在我们只有文件路径，那怎么办呢？</p>
+<p>答曰：<strong>从根目录往下遍历</strong>。根目录的 inode 编号，我们要么保存在超级块中，要么就写死（比如 2，大部分 Unix 文件系统都是从 2 开始的）。也即，必须能事先知道（well known）。</p>
+<p>于是文件系统将该根目录的 inode 从硬盘调入内存，进而再通过 inode 中的指针找到其指向数据块，进而从其包含所有子目录和文件夹中找到 <code>foo</code> 文件夹和其对应 inode。递归的重复上述过程，open 系统调用的最后一步是将 bar 的 inode 载入内存，进行权限检查（比对进程用户权限和 inode 访问权限控制），分配<strong>文件描述符</strong>放到进程打开文件表中，并将其返回给用户。</p>
+<p>一旦文件被打开后，就可以继而发起 <code>read()</code> 的系统调用 ，真正的去读取数据。读取时，首先会根据文件的 inode 信息，找到第一个 block（除非读前实现用 <code>lseek()</code> 修改过偏移量），然后读取。同时，可能会更改 inode 的一些元信息，比如说访问时间。继而，更新进程中该文件描述符的偏移量，继续往下读，直到某个时刻，调用 <code>close()</code> 关闭该文件描述符。</p>
+<p>进程关闭文件时，所需工作要少得多，只需要释放文件描述符即可，并不会有真正的磁盘 IO。</p>
+<p>最后，我们再捋一下这个读文件过程。从根目录的 inode 编号开始，我们交替的读取 inode 和相应数据块，直到最终找到待查找文件。然后要进行数据读取，还要更新其 inode 的访问时间等元信息，进行写回。下表简单地总结了下这个过程，可以看出，读取路径全程不会涉及分配结构—— data bitmap 和 inode bitmap。</p>
+<p><img src="https://s2.loli.net/2024/02/28/7wE8cDb4BUkPYOX.png" alt="filesystem-read-timeline.png"></p>
+<p>从<strong>深度上</strong>来说，如果我们的待查找路径层级非常多，这个过程会线性增长；从<strong>广度上</strong>来说，如果中间查找时涉及到的文件夹，其包含的目录子项特别多，即文件树“很宽”，则每次在目录中进行查找时，可能需要读取不止一个数据块。</p>
+<h2 id="写入硬盘"><a href="#写入硬盘" class="headerlink" title="写入硬盘"></a>写入硬盘</h2><p>写文件和读取文件的流程很类似，也是打开文件（从根目录一路找到对应文件）；然后开始写入，最后关闭。但与读取文件不同的是，写入需要分配新的数据块，这就需要涉及我们之前的 bitmap 了，通常来说，一次写入至少需要五次 IO：</p>
+<ol>
+<li>读取 data bitmap（以找到空闲块，并在内存中标记使用）</li>
+<li>写回 data bitmap（以对其他进程可见）</li>
+<li>读取 inode（增加新的数据位置指针）</li>
+<li>写回 inode</li>
+<li>在找到的空闲块中写入数据</li>
+</ol>
+<p>这还只是对已经存在的文件进行写入。如果是尚未存在的文件进行创建并写入，那流程还要更为复杂：还要创建 inode，这就会引入一系列新的 IO：</p>
+<ol>
+<li>一次对 inode bitmap 的读取（找到空闲 inode）</li>
+<li>一次对 inode bitmap 的写回（标记某个 inode 被占用）</li>
+<li>一次对 inode 本身的写入（初始化）</li>
+<li>一次对父文件夹所对应目录子项数据块的读写（增加新建的文件和 inode 对）</li>
+<li>一次对父文件夹 inode 的读写（更新修改日期）</li>
+</ol>
+<p>如果父文件夹的数据块不够用，还得需要新分配空间，就又得读 data bitmap，和 data block。下图是创建 <code>/foo/bar</code> 文件的时间线上涉及到的 IO：</p>
+<p><img src="https://s2.loli.net/2024/02/28/1lmRPWpMtF8qaeC.png" alt="filesystem-write-timeline.png"></p>
+<h2 id="缓存和缓冲"><a href="#缓存和缓冲" class="headerlink" title="缓存和缓冲"></a>缓存和缓冲</h2><p>从上面对读写流程的分析可以看出，即便如此简单的读写操作，都会涉及大量 IO，这在实践中是不可接受的。为了解决这个问题，大部分工业上的文件系统，会充分利用内存，将重要的（也就是频繁访问的）数据块缓存（cache）在内存中；与此同时，为了避免频繁刷盘，会将修改先应用到内存缓冲区（buffer）里，然后积攒后一块落盘。</p>
+<p>早期的文件系统引入了<strong>固定尺寸缓存</strong>（fixed-size cache），如果满了，会利用 LRU 等替换算法进行页面淘汰。其缺点在于当缓存不满的时候浪费空间，满了又可能频繁换页。我们称这种风格为<strong>静态分区</strong>（static partitioning）。大部分现代文件系统，都是用<strong>动态分区</strong>（dynamic partitioning）技术。比如，将虚拟内存页和文件系统页放到一个池子中，称为<strong>统一页面缓存</strong>（unified page cache），从而上两者分配和更加弹性。上了缓存之后，对于同一个目录中多个文件的读取，后面的读取就可以省下很多 IO。</p>
+<p>写流程由于前半程根据路径查找数据块时牵扯到读，所以也会从缓存中受益。但对于写的部分，我们可以通过缓冲区（writing buffering），来延迟刷盘。延迟刷盘有很多好处，比如说可以多次修改 bitmap 可能只需要刷一次；积攒一批更改，可以提高 IO 带宽利用率；如果文件先增后删，可能就直接省了刷盘。</p>
+<p>但这些性能的提升是有代价的——意外宕机可能会造成数据丢失。所以，虽然现代文件系统大部分开启了读写缓冲，但也通过 direct I&#x2F;O 的方式，来允许用户绕过缓存，直接写磁盘。对丢失数据很敏感的应用，可以利用其对应的系统调用 <code>fsync()</code> 来即时刷盘。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>至此，我们完成了一个至简的文件系统的实现。其“麻雀虽小，五脏俱全”，我们从中可以看出文件系统设计一些基本的理念：</p>
+<ol>
+<li>使用 inode 存储文件粒度的元信息；使用数据块存真正的文件数据</li>
+<li>目录是一种特殊的文件，只不过存的不是文件内容，而是文件夹子目录项</li>
+<li>除了 inode 和数据块外，还需要一些其他的数据结构，比如 bitmap 来追踪空闲块</li>
+</ol>
+<p>从这个基本的文件系统出发，我们其实可以看到特别多的可以取舍和优化的点，如果感兴趣，大家可以在本文基础上，去看看一些工业上的文件系统的设计。</p>
+
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" rel="tag"># 文件系统</a>
+              <a href="/tags/%E6%96%87%E4%BB%B6/" rel="tag"># 文件</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/02/06/memory-mvcc-serial/" rel="prev" title="MemGraph 背后论文《基于内存和MVCC 的高速可串行化》详细解析（一）">
+      <i class="fa fa-chevron-left"></i> MemGraph 背后论文《基于内存和MVCC 的高速可串行化》详细解析（一）
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E4%BD%93%E5%B8%83%E5%B1%80"><span class="nav-number">1.</span> <span class="nav-text">总体布局</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B4%A2%E5%BC%95%E8%8A%82%E7%82%B9%EF%BC%88Inode%EF%BC%89"><span class="nav-number">1.1.</span> <span class="nav-text">索引节点（Inode）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E7%BB%84%E7%BB%87"><span class="nav-number">1.2.</span> <span class="nav-text">目录组织</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A9%BA%E9%97%B2%E7%A9%BA%E9%97%B4%E7%AE%A1%E7%90%86"><span class="nav-number">1.3.</span> <span class="nav-text">空闲空间管理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%BB%E5%86%99%E8%B7%AF%E5%BE%84"><span class="nav-number">2.</span> <span class="nav-text">读写路径</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%BB%E5%8F%96%E6%96%87%E4%BB%B6"><span class="nav-number">2.1.</span> <span class="nav-text">读取文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E7%A1%AC%E7%9B%98"><span class="nav-number">2.2.</span> <span class="nav-text">写入硬盘</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%93%E5%AD%98%E5%92%8C%E7%BC%93%E5%86%B2"><span class="nav-number">2.3.</span> <span class="nav-text">缓存和缓冲</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">107</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">36</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">176</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2024/02/28/mini-filesystem/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '8de974f207f47d7f2e2f87530646b221',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
