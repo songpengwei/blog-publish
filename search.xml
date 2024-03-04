@@ -128,9 +128,6 @@
 </ol>
 <h4 id="读操作（OP-READ-BLOCK-OP-READSKIP-BLOCK）"><a href="#读操作（OP-READ-BLOCK-OP-READSKIP-BLOCK）" class="headerlink" title="读操作（OP_READ_BLOCK || OP_READSKIP_BLOCK）"></a>读操作（<code>OP_READ_BLOCK</code> || <code>OP_READSKIP_BLOCK</code>）</h4><p>首先读入待读取的Block信息，然后，如果是<code>OP_READSKIP_BLOCK</code>类型，则读取需要跳过的字节数（<code>toSkip</code>–&gt;long）；<br>然后通过<code>data</code> –&gt; FSDataSet 定位block本地存储文件位置，根据类型决定是否跳过特定字节（toSkip），然后逐字节读取该文件。</p>
 <h2 id="Aside-info"><a href="#Aside-info" class="headerlink" title="Aside info"></a>Aside info</h2><p>如果类需要作为Key，比如<code>TreeMap</code>，则需要实现<code>Comparable</code>接口，只有可以比较才能进行排序和Hash；如果需要进行序列化和反序列化，则需要实现<code>Writable</code>接口。</p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2020/02/25/PtuSABpH2DbRlFi.jpg" alt="distributed-system.jpg"></p>
 <p>​	</p>
 ]]></content>
       <categories>
@@ -240,9 +237,6 @@
 <h2 id="文件读写相关"><a href="#文件读写相关" class="headerlink" title="文件读写相关"></a>文件读写相关</h2><p><code>RecordReader</code>：从输入文件中读入键值对，这里是指的map的输入，还是reduce的输入？接口有三个函数<code>next(Writable key, Writable value)</code>，<code>getPos()</code>和<code>close()</code>，由此看来，该接口类似于一个抽象的迭代器。<code>InputFormat</code>实现了该接口。</p>
 <p><code>RecordWriter</code>：将键值对写到输出文件，<code>OutputFormat</code>实现了该接口。包含函数：<code>write(WritableComparable key, Writable value)</code>和<code>close(Reporter reporter)</code>。</p>
 <p><code>OutputCollector</code>：作为参数传送给<code>Mapper</code>和<code>Reducer</code>来输出结果数据。该接口只有一个函数<code>collect(key, val)</code>。</p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2020/02/25/PtuSABpH2DbRlFi.jpg" alt="distributed-system.jpg"></p>
 ]]></content>
       <categories>
         <category>源码阅读</category>
@@ -954,9 +948,6 @@
 <p><strong>精简内存</strong>，由于现在用 flag 只做是否删除的标志，太浪费了。可以改成将内存中所有删除了的文件对应的元信息的 offset 设置为0。并且不再内存中保存图片的 cookie，改为从硬盘读取，如此一来，省了百分之二十左右的内存。</p>
 <p><strong>批量上传</strong>，硬盘在进行大批量写的时相对随机写平均性能会好一些，因此我们尽可能的追求批量上传。幸运的是，用户更倾向于同时上传一批图片而非一张图片。</p>
 <p>下面还有一些进行性能评估的段落，就先不翻了。</p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -1056,9 +1047,6 @@
 <p><strong>数据卷（volume）</strong>：分逻辑卷和物理卷，包含多个数据条带。</p>
 <p><strong>数据条带（stripe）</strong>：原始n个数据块和生成的k个奇偶校验块所组成的集合，称为条带。</p>
 <p><strong>数据块（block）</strong>：一般是1G左右，被分散在不同容错单元中。</p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -1325,9 +1313,6 @@
 <li>GFS 论文：<span class="exturl" data-url="aHR0cHM6Ly9zdGF0aWMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL21lZGlhL3Jlc2VhcmNoLmdvb2dsZS5jb20vemgtQ04vL2FyY2hpdmUvZ2ZzLXNvc3AyMDAzLnBkZg==">https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf<i class="fa fa-external-link-alt"></i></span></li>
 <li><span class="exturl" data-url="aHR0cHM6Ly9tZS5jc2RuLm5ldC9xaWFvamlhbGlu">铁头乔<i class="fa fa-external-link-alt"></i></span> GFS一致性总结： <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FpYW9qaWFsaW4vYXJ0aWNsZS9kZXRhaWxzLzcxNTc0MjAz">https://blog.csdn.net/qiaojialin/article/details/71574203<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -1469,9 +1454,6 @@
 <p><strong>Object Store</strong>：基于内存的不可变对象存储，是分散在各个节点的<strong>节点内、进程间</strong>的共享存储。</p>
 <p><strong>Node，Machine</strong>：指的是组成集群的每个机器。如果非要区分的话，Node可能更偏重逻辑上的节点，Machine 更偏重逻辑节点所在的物理机。但是在 Ray 中他们是一一对应的，即一个机器只有一个节点。</p>
 <p>本篇就先到这里，下一篇计划写写调度策略或者资源定义。</p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>源码阅读</category>
@@ -1791,9 +1773,6 @@
 <h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p>[1] Jeffrey Dean and Sanjay Ghemawat， <span class="exturl" data-url="aHR0cHM6Ly9zdGF0aWMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL21lZGlhL3Jlc2VhcmNoLmdvb2dsZS5jb20vemgtQ04vL2FyY2hpdmUvbWFwcmVkdWNlLW9zZGkwNC5wZGY=">MapReduce: Simplified Data Processing on Large Clusters<i class="fa fa-external-link-alt"></i></span></p>
 <p>[2] Alexey Grishchenko， <span class="exturl" data-url="aHR0cHM6Ly8weDBmZmYuY29tL3NwYXJrLWFyY2hpdGVjdHVyZS1zaHVmZmxlLw==">Spark Architecture: Shuffle<i class="fa fa-external-link-alt"></i></span></p>
 <p>[3] <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL0plcnJ5TGVhZA==">JerryLead<i class="fa fa-external-link-alt"></i></span>， <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL0plcnJ5TGVhZC9TcGFya0ludGVybmFscy9ibG9iL21hc3Rlci9tYXJrZG93bi80LXNodWZmbGVEZXRhaWxzLm1k">Spark internals<i class="fa fa-external-link-alt"></i></span></p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -1915,9 +1894,6 @@
 <li>ResourceId: 资源标号，给所有资源按照 0, 1, … , n-1 打上标记，以对某个资源进行索引。典型的如 GPU0, GPU1 ..</li>
 <li>静态和动态资源：这是针对节点资源总量来说的，如果一个节点在启动时通过配置加载其拥有的资源总量，此后维持不变，是为<strong>静态</strong>；如果在运行时资源总量仍然可设置，则为<strong>动态</strong></li>
 </ol>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>源码阅读</category>
@@ -2321,9 +2297,6 @@
 <p><strong>[5]</strong> 输入格式，input format，是 Haddop MapReduce 适配不同数据源的一个接口，相当于一个转换层。</p>
 <p><strong>[6]</strong> 可以依赖 Zookeeper，也可以依赖 Hadoop 对 offset 进行持久化，结合上下文感觉这里说的是后者。</p>
 <p><strong>[7]</strong> 这种序列化方式在当时应该是个用户侧的选择而非 Kafka 框架所提供的功能。</p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -2473,9 +2446,6 @@
 <p>最后，由于 RDD 的只读特性，我们在做检查点时不用像通用共享内存模型那样过分考虑一致性的问题，因此可以用后台线程默默地干这些事情而不用影响主要工作流，也不用使用复杂的分布式的快照算法来解决一致性问题。</p>
 <h2 id="注解"><a href="#注解" class="headerlink" title="注解"></a>注解</h2><p>[1] <strong>隐式与显示显式</strong>：在这里可以理解为，显式是把数据集这个概念完整的构造出来，定义他的内涵和边界，并基于其上做一些外延拓展。而隐式只是事实上复用了数据，但并没有定义被复用的数据格式。</p>
 <p>[2] <strong>声明式（Declarative）语言与命令式（Imperative）语言</strong>：前者例子有 SQL，HTML；后者例子最常见的有 Shell，其他的常见编程语言 C，Java，Python 也属于此列。前者的好处在于将”干什么”和”怎么干”这两件事解耦，这样一来就可以开发不同的执行引擎，针对不同场景来优化”怎么干”这件事。而后者会告诉机器以特定的顺序执行特定的操作，与直觉一致，是一般编程语言的路子。</p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -2744,9 +2714,6 @@
 <h2 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h2><p>[1] 官方文档：<span class="exturl" data-url="aHR0cHM6Ly9yYXkucmVhZHRoZWRvY3MuaW8vZW4vbGF0ZXN0Lw==">https://ray.readthedocs.io/en/latest/<i class="fa fa-external-link-alt"></i></span></p>
 <p>[2] 系统论文：<span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9zeXN0ZW0vZmlsZXMvb3NkaTE4LW1vcml0ei5wZGY=">https://www.usenix.org/system/files/osdi18-moritz.pdf<i class="fa fa-external-link-alt"></i></span></p>
 <p>[3] 系统源码：<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3JheS1wcm9qZWN0L3JheQ==">https://github.com/ray-project/ray<i class="fa fa-external-link-alt"></i></span></p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -2924,9 +2891,6 @@
 <p>[3] 0 其实表示 nil，因为<code>rf.log[0]</code> 是一个无意义的空日志条目，起到<strong>哨兵</strong>的作用，可以减少一些判断，类似于链表中的 dummy Head node。</p>
 <p>[4] <span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvcGFwZXJzL3JhZnQtZXh0ZW5kZWQucGRm">raft 论文<i class="fa fa-external-link-alt"></i></span> 7~8 页的引用文字有提到该策略。</p>
 <p>[5] 我在实现时， votedFor 用的 int 类型，并且用的 -1 代表 null。</p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -3041,9 +3005,6 @@
 <li><span class="exturl" data-url="aHR0cHM6Ly9jb2RhaGFsZS5jb20veW91LWNhbnQtc2FjcmlmaWNlLXBhcnRpdGlvbi10b2xlcmFuY2Uv">https://codahale.com/you-cant-sacrifice-partition-tolerance/<i class="fa fa-external-link-alt"></i></span></li>
 <li>左耳朵耗子推荐，分布式系统架构经典资料： <span class="exturl" data-url="aHR0cHM6Ly93d3cuaW5mb3EuY24vYXJ0aWNsZS8yMDE4LzA1L2Rpc3RyaWJ1dGVkLXN5c3RlbS1hcmNoaXRlY3R1cmU=">https://www.infoq.cn/article/2018/05/distributed-system-architecture<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -3161,9 +3122,6 @@
 <p>GFS 可以简单理解为，一个将大文件拆为一个个小的 64M 的块分散到不同机器上网络文件系统。</p>
 <h3 id="网络开销"><a href="#网络开销" class="headerlink" title="网络开销"></a>网络开销</h3><p>为了尽量绕开当时的主要瓶颈（网络传输），Google 做了一系列优化，包括 GFS 和 MR 跑在一个集群上，以减少读取和写入数据的网络传输。具体做法是让 Map 任务（Map Task）去找数据（Block）—— 将 Task 调度到其输入所在的机器上。但对于 Reduce 任务，无论如何都会存在大量网络开销：GFS 对数据都进行了冗余备份，意味着每个结果都要写多次。</p>
 <p>不过，时下的数据中心可以通过很多手段使得网络传输的速度大大提高，比如使用多个根路由器进行分摊流量，意味着在设计时可以有更多灵活性，不用太为网络传输而优化。</p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -3265,9 +3223,6 @@
 <p>[3] <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvUXVvcnVtXyhkaXN0cmlidXRlZF9jb21wdXRpbmcp">Quorum机制<i class="fa fa-external-link-alt"></i></span>。是一种分布式系统中常用的，用来进行数据备份和保证最终一致性的投票算法，其主要数学思想来源于鸽巢原理，该算法可以保证同一份数据对象的多个副本不会被超过两个访问对象读写。每个使用此算法的系统，都有两个关键参数：最小读票数 R 和最小写票数 W。其关系需满足：1.R + W &gt; N  2. W &gt; N&#x2F;2，其中 N 是集群备份数。理解时可以类比读写锁，即系统不能同时有多个写写、读写，但是 R 设置的小一些可以同时有多个读。</p>
 <p>[4] 因果一致性。<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQ2F1c2FsX2NvbnNpc3RlbmN5">causal consistency<i class="fa fa-external-link-alt"></i></span>，是一种主要的内存一致性模型，它会保证存在因果关系的操作顺序发生，没有明显因果关系事件的执行顺序则不作保证。</p>
 <p>[5] replicate。可以翻译为副本、冗余、备份等等。</p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -3404,9 +3359,6 @@
 <li><em>channel 不需要最后 close 吗</em>？我们用 n 追踪了所有执行中的任务数，因此当 n 为0退出时，channel 中不存在任何任务&#x2F;结果，因此 master&#x2F;worker 都不会对 channel 存在引用，稍后 gc collector 会将其回收。</li>
 <li><em>为什么在 ConcurrentChannel 需要用 goroutine 往 channel 中写一个 url</em>？否则 master 在读取的时候会一直阻塞。并且 channel 是一个非缓冲 channel，如果不用 goroutine，将会永远阻塞在写的时候。</li>
 </ol>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -3525,9 +3477,6 @@
 <h3 id="一些问题"><a href="#一些问题" class="headerlink" title="一些问题"></a>一些问题</h3><p>为了实现一致性，可能需要类似两阶段提交的协议，但无疑会降低性能。</p>
 <p>随着数据量的增大，元信息变多，Master 的内存可能会装不下，也就是 GFS 的单点瓶颈问题。</p>
 <p>Master 恢复需要人工接入，导致系统宕机恢复可能需要数十分钟。</p>
-<hr>
-<p>欢迎关注公众号<em>木鸟杂记</em>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -3588,9 +3537,6 @@
 <p>因此，WiscKey 使用一个 Buffer 来缓存写入的 Value，仅在用户要求或者达到设定尺寸阈值时才真正的追加到 vLog 中。在查询时也需要相应做一些修改，每次查询首先要到 buffer 中查找，然后再去 vLog 中查找。但这么做的代价是，如前所述，在系统崩溃时会丢失 buffer 中的这部分未刷盘的数据。</p>
 <h3 id="优化2：省去-WAL"><a href="#优化2：省去-WAL" class="headerlink" title="优化2：省去 WAL"></a>优化2：省去 WAL</h3><p>WAL，Write Ahead Log，预写日志，是数据库系统中常用的数据恢复机制。在传统 LSM-tree 中，由于数据直接写入内存中，为了进行宕机恢复，会在每次操作前记一条日志；在宕机恢复时，逐条读取日志，恢复内存中数据结构。但这样一来，每次写请求都增加了磁盘 IO，从而降低了系统写入性能。</p>
 <p>由于 vLog 中的数据条目按顺序记录了所有插入的 Key，因此可以复用 vLog 作为 WiscKey 中 LSM-tree 的 WAL。作为一个优化，可以将每次未持久化的 Key 的点  <code>&lt;‘‘head’’, head-vLog-offset&gt;</code> 也保存在 LSM-tree 中，每次宕机恢复时，先获取该点，然后从该点之后逐条读取 vLog 中的 Key，恢复 LSM-tree。</p>
-<hr>
-<p>欢迎关注公众号<strong>木鸟杂记</strong>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -3667,9 +3613,6 @@
 <p>在 Primary 宕机后，Backup 接管时，可能会产生重复的结果。但是由于P&#x2F;B 共用 TCP channel，SEQ 也会被重用，会在 Client 端作为重复TCP 帧被忽略，从而不会暴露到用户层面。</p>
 <h3 id="吞吐"><a href="#吞吐" class="headerlink" title="吞吐"></a>吞吐</h3><p>如果 Primary 和 Backup 不在一个城市，每次通信都需要几ms，那么久很难构建高吞吐系统。</p>
 <h3 id="网络分区"><a href="#网络分区" class="headerlink" title="网络分区"></a>网络分区</h3><p>如果 P&#x2F;B 之前的网络断了，但是同时都可以和 client 通信，就发生了 split-brain。解决办法是引入一个第三方仲裁，来保存谁可以进行应答：比如使用一个 TAS（Test-and-Set Server） 或者一个共享外存。</p>
-<hr>
-<p>欢迎关注公众号<strong>木鸟杂记</strong>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -3920,9 +3863,6 @@
 <li><span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbm90ZXMvbC1yYWZ0LnR4dA==">英文板书<i class="fa fa-external-link-alt"></i></span></li>
 <li><span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL0JWMWI3NDExYzdmMz9wPTY=">视频<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
-<hr>
-<p>欢迎关注公众号<strong>木鸟杂记</strong>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -4086,9 +4026,6 @@
 <p>对于写请求，将会由首选 N 个节点中的一个作为协调者进行协调，通常是第一个。但为了提高吞吐，均衡负载，通常这 N 个节点都可以作为协调者。尤其是，大部分数据在读取之后，通常会紧跟着写入（读取获取版本，然后使用对应版本进行写入），因此常将写入调度到上次读取中回复最快的节点，该节点保存了读取时的上下文信息，从而能更快响应，提高吞吐。</p>
 <h2 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h2><p>s3和 Dynamo 对比：<span class="exturl" data-url="aHR0cHM6Ly9zZXJ2ZXJsZXNzLnB1Yi9zMy1vci1keW5hbW9kYi8=">https://serverless.pub/s3-or-dynamodb/<i class="fa fa-external-link-alt"></i></span></p>
 <p>乐观复制：<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvT3B0aW1pc3RpY19yZXBsaWNhdGlvbg==">https://en.wikipedia.org/wiki/Optimistic_replication<i class="fa fa-external-link-alt"></i></span></p>
-<hr>
-<p>欢迎关注公众号<strong>木鸟杂记</strong>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -4196,9 +4133,6 @@
 <li>相关英文<span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbm90ZXMvbC1nby1jb25jdXJyZW5jeS50eHQ=">板书<i class="fa fa-external-link-alt"></i></span>。</li>
 <li>提到的相关<span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbm90ZXMvZ28tY29uY3VycmVuY3kudGFyLmd6">代码<i class="fa fa-external-link-alt"></i></span>。</li>
 </ol>
-<hr>
-<p>欢迎关注公众号<strong>木鸟杂记</strong>，获取更多分布式系统文章。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -4518,8 +4452,6 @@
 <li>The Go Blog：  <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmdvbGFuZy5vcmcvc2xpY2VzLWludHJv">Go slices：usage and internals<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的存储工程师，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>编程语言</category>
@@ -4609,9 +4541,6 @@
 <p>贴一个 project1 autograder 的实验结果：</p>
 <p><img src="https://i.loli.net/2021/02/19/FyefbnZIJUKYMjc.png" alt="autograder-result"></p>
 <h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>这是 cmu15445 第一个实验，实现了在磁盘和内存间按需搬运页（page）的 buffer pool manager。本实验的关键之处在于把握基本概念，梳理出核心数据流，在此基础上注意一些实现的细节即可。</p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的存储工程师，欢迎关注我的公众号：“木鸟杂记”。<br>另外，我的《<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">系统日知录<i class="fa fa-external-link-alt"></i></span>》专栏中有更多 cmu 15&#x2F;445 的学习笔记，欢迎订阅。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>数据库</category>
@@ -4720,8 +4649,6 @@
 </li>
 </ol>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的存储工程师，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -5031,8 +4958,6 @@
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
 <li>boltdb repo：<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2JvbHRkYi9ib2x0">https://github.com/boltdb/bolt<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
-<p>我是青藤木鸟，一个喜欢摄影的存储工程师，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>源码阅读</category>
@@ -5062,7 +4987,6 @@
 <p>冬雪方化，下山泥泞，只能收起相机。和老婆互道小心，攀援缓缓而下。经过一段漫长的林中小径，膝盖下侧痛感愈加强烈，后悔没听老婆劝买护膝。到了下半程，前面看到不人、后面听不到声，甚为惶恐。再三比对 APP上的“寻迹”，确认无误，心下稍安，但转而开始怀疑我们是最后两人。</p>
 <p>后来走到了村民开辟出的较宽的土路，再后来有了新铺的沥青路，脚下渐轻，景色渐无，最后找到大巴，发现竟然还算靠前。但此时腿脚酸痛肿胀，无力欣喜，还得强忍着拉伸一通。</p>
 <p>无尽的上山时、连绵的下山间，身体的疲累不断冲击着你，让你无暇去想平时的烦心事。适度品味身体的苦涩，反而能让人释怀心里的纠结。</p>
-<p>我是青藤木鸟，一个喜欢摄影的程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
 ]]></content>
       <categories>
         <category>生活</category>
@@ -5194,9 +5118,6 @@
 <li>github，<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2JvbHRkYi9ib2x0">boltdb repo<i class="fa fa-external-link-alt"></i></span></li>
 <li>我叫尤加利，<span class="exturl" data-url="aHR0cHM6Ly95b3VqaWFsaTE5OTUuZ2l0aHViLmlvL3N0b3JhZ2UvYm9sdGRiLw==">boltdb 源码分析<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的存储工程师，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>源码阅读</category>
@@ -5266,10 +5187,6 @@
 <li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzFkM2U5OGE4LTBkZWUtNGI3OS05M2Q0LWE5NjQwOTQxMzI1Mw==">【每天学点数据库】Lecture #01：关系模型<i class="fa fa-external-link-alt"></i></span></li>
 <li><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2M0NDE2OGNmLTljM2ItNGM1My1iNDllLWEzZTUxZTg1NzZhZA==">【每天学点数据库】Lecture #01：数据模型<i class="fa fa-external-link-alt"></i></span></li>
 </ul>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的存储工程师，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p>另外，我的《<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">系统日知录<i class="fa fa-external-link-alt"></i></span>》专栏中有更多 cmu 15&#x2F;445 的学习笔记，欢迎订阅。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>数据库</category>
@@ -5378,8 +5295,6 @@
 <li>LevelDB 缓存代码：<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2dvb2dsZS9sZXZlbGRiL2Jsb2IvbWFzdGVyL3V0aWwvY2FjaGUuY2M=">https://github.com/google/leveldb/blob/master/util/cache.cc<i class="fa fa-external-link-alt"></i></span></li>
 <li>LevelDB handbook 缓存系统： <span class="exturl" data-url="aHR0cHM6Ly9sZXZlbGRiLWhhbmRib29rLnJlYWR0aGVkb2NzLmlvL3poL2xhdGVzdC9jYWNoZS5odG1sI2R5bmFtaWMtc2l6ZWQtbm9uYmxvY2tpbmctaGFzaC10YWJsZQ==">https://leveldb-handbook.readthedocs.io/zh/latest/cache.html#dynamic-sized-nonblocking-hash-table<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
-<p>我是青藤木鸟，一个喜欢摄影的程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>源码阅读</category>
@@ -5465,8 +5380,6 @@
 <li>苹果官方文档，关于 Apple ProRAW：<span class="exturl" data-url="aHR0cHM6Ly9zdXBwb3J0LmFwcGxlLmNvbS96aC1jbi9IVDIxMTk2NQ==">https://support.apple.com/zh-cn/HT211965<i class="fa fa-external-link-alt"></i></span></li>
 <li>Thomas 看看世界入门文章，里面有文中提到的曲线、直方图的知识详细讲解：<span class="exturl" data-url="aHR0cHM6Ly9tcC53ZWl4aW4ucXEuY29tL3MvQUpaWU5JdDdIM0FDNmFLTElER192Zw==">https://mp.weixin.qq.com/s/AJZYNIt7H3AC6aKLIDG_vg<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
-<p>我是青藤木鸟，一个喜欢摄影的程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>生活</category>
@@ -5546,8 +5459,6 @@
 <p><strong>会话过期</strong>。会话在 Zookeeper 中本质上标识一个 Client 到 Server 的连接。会话有超时时间，如果 Client 长时间（大于超时间隔）不发<strong>请求</strong>或者<strong>心跳</strong>，Server 便会删除该会话。</p>
 <h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>Zookeeper 使用目录树组织数据、使用 Zab 协议同步数据、使用非阻塞方式提供接口，构建了一个表达能力强大的分布式协调性内核。可以用于分布式系统的控制面以进行协调、调度和控制。近年来基于 Raft 的 Etcd 也是类似地位。</p>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -5642,8 +5553,6 @@
 <li>知行学社——paxos和分布式系统：<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL0JWMUx0NDExbTdjVw==">https://www.bilibili.com/video/BV1Lt411m7cW<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -5762,8 +5671,6 @@
 <li>golang：为什么 goroutine 更为轻量？</li>
 <li>golang：channel 如何实现？</li>
 </ol>
-<p>我是青藤木鸟，一个喜欢摄影的程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -5856,8 +5763,6 @@
 </ol>
 <p>读写事务的变动都在内存中，而只读事务通过 mmap 直接读取的磁盘上的内容，因此读写事务的改动不会为只读事务所见。多个读写事务是串行的，也不会互相影响。而每个只读事务期间所看到的状态，就是该只读事务开始执行时的状态。</p>
 <h2 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h2><p>[^2]: “Transactions: myths, surprises and opportunities” by Martin Kleppmann：<span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj01WmpoTlRNOFhVOA==">https://www.youtube.com/watch?v=5ZjhNTM8XU8<i class="fa fa-external-link-alt"></i></span><br>[^3]: 维基百科ACID：<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvQUNJRA==">https://zh.wikipedia.org/wiki/ACID<i class="fa fa-external-link-alt"></i></span></p>
-<p>我是青藤木鸟，一个喜欢摄影的程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>源码阅读</category>
@@ -5951,9 +5856,6 @@
 <p>[2] Facebook 技术博客，TAO——图的威力：<span class="exturl" data-url="aHR0cHM6Ly9lbmdpbmVlcmluZy5mYi5jb20vMjAxMy8wNi8yNS9jb3JlLWRhdGEvdGFvLXRoZS1wb3dlci1vZi10aGUtZ3JhcGgv">https://engineering.fb.com/2013/06/25/core-data/tao-the-power-of-the-graph/<i class="fa fa-external-link-alt"></i></span></p>
 <p>[3] meetup TAO：<span class="exturl" data-url="aHR0cHM6Ly93d3cubm90aW9uLnNvL01lZXR1cC0xLUZhY2Vib29rLVRBTy0yOGU4ODgzNmEzZjY0OWJhOWIzZTNlYTgzODU4YzU5Mw==">https://www.notion.so/Meetup-1-Facebook-TAO-28e88836a3f649ba9b3e3ea83858c593<i class="fa fa-external-link-alt"></i></span></p>
 <p>[4] stanford 6.S897 课件： <span class="exturl" data-url="aHR0cHM6Ly9jcy5zdGFuZm9yZC5lZHUvfm1hdGVpL2NvdXJzZXMvMjAxNS82LlM4OTcvc2xpZGVzL3Rhby5wZGY=">https://cs.stanford.edu/~matei/courses/2015/6.S897/slides/tao.pdf<i class="fa fa-external-link-alt"></i></span></p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -6119,9 +6021,6 @@
 <li><strong>数据的冗余化</strong>。机器故障后数据不能丢，因此每份数据要多副本存放、使用 EC 算法做冗余。</li>
 </ol>
 <h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>Master-Workers 架构是分布式系统中最常用的一种组织方式。该架构类似于人类社群的组织方式，将系统的职责进行拆解，Master 收集元信息，并据此进行任务调度；Workers 负责实际工作负载，需要设计高效的单机引擎，并配合全局做冗余。该架构简单直接，但威力强大。</p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的程序员，欢迎关注我的公众号：“木鸟杂记”，关注后回复“资料”可以获得我总结的一份分布式系统和数据库入门的 PDF 总结。<br>我们还有相关的分布式系统和数据库的论坛和群，欢迎添加我的微信号：qtmuniao，我拉你入群。</p>
-<p><img src="https://s2.loli.net/2023/11/14/RcyutnXh35ZovBT.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -6262,8 +6161,6 @@
 <h3 id="计算机系统学习小组"><a href="#计算机系统学习小组" class="headerlink" title="计算机系统学习小组"></a><strong>计算机系统学习小组</strong></h3><p>@<span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9odS1qaW4tbWluZy0zMQ==">胡津铭<i class="fa fa-external-link-alt"></i></span> 组织的系统学习小组：<span class="exturl" data-url="aHR0cHM6Ly9sZWFybi1zeXMuZ2l0aHViLmlvL2NuLw==">https://learn-sys.github.io/cn/<i class="fa fa-external-link-alt"></i></span></p>
 <h3 id="The-Last-Thing"><a href="#The-Last-Thing" class="headerlink" title="The Last Thing"></a>The Last Thing</h3><p>最后，附赠一个 github 上经典的 awesome 系列中，分布式系统的 repo：<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3RoZWFuYWx5c3QvYXdlc29tZS1kaXN0cmlidXRlZC1zeXN0ZW1z">https://github.com/theanalyst/awesome-distributed-systems<i class="fa fa-external-link-alt"></i></span></p>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -6329,8 +6226,6 @@
 <p>在有竞争者时会增加我们对一样事物的想要程度。比如面对举棋不定的顾客，一个捏造的新买家就能促成这桩交易，比如特卖会或拍卖会，只要氛围使得人们变得焦躁不安，就会阻碍人们的思考能力，使之忘了自己想要的是什么，只是盲目的跟其他人争夺。</p>
 <p>如何避免呢？一个是识别情绪高涨的信号，一旦意识到自己情绪高涨要及时让自己平静下来。另一个是，问自己到底想获得什么？一件稀缺物品，如果我们在乎它的附加价值，比如社会上的、心理上的，那大可以去占有它。但如果我们只是在乎它的实用价值，那就要记住，一件物品并不因为它的稀缺而变得更好吃、更好看、更好用了。</p>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，更多有意思的文章，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>读书</category>
@@ -6409,8 +6304,6 @@
 <h3 id="2018"><a href="#2018" class="headerlink" title="2018"></a>2018</h3><p>总结和前瞻</p>
 <p>继往和开来</p>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，更多有意思的文章，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>读书</category>
@@ -6491,8 +6384,6 @@
 <h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>古人写文章，讲究反复推敲，方能有佳作。代码命名，也需要仔细锤炼，才能不断延长生命周期，免于过快腐烂。如果仅仅追求写代码快，第一反应是什么，就用什么做名字，代码便难逃运行一次就被重构甚至遗弃的命运。</p>
 <p>见识所囿，必有诸多遗漏。关于代码命名，大家还有什么心得或吐槽，欢迎留言讨论。</p>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，更多有意思的文章，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>技术</category>
@@ -6563,9 +6454,6 @@
 <li>confluent 分布式系统完全指南：<span class="exturl" data-url="aHR0cHM6Ly93d3cuY29uZmx1ZW50LmlvL2xlYXJuL2Rpc3RyaWJ1dGVkLXN5c3RlbXMv">https://www.confluent.io/learn/distributed-systems/<i class="fa fa-external-link-alt"></i></span></li>
 <li>splunk 什么是分布式系统：<span class="exturl" data-url="aHR0cHM6Ly93d3cuc3BsdW5rLmNvbS9lbl91cy9kYXRhLWluc2lkZXIvd2hhdC1hcmUtZGlzdHJpYnV0ZWQtc3lzdGVtcy5odG1s">https://www.splunk.com/en_us/data-insider/what-are-distributed-systems.html<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -6831,8 +6719,6 @@
 <li><span class="exturl" data-url="aHR0cDovL2RkaWEudm9ubmcuY29tLyMvY2gx">http://ddia.vonng.com/#/ch1<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，更多有意思的文章，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -6912,8 +6798,6 @@
 <li>布谷鸟过滤器实现：[<span class="exturl" data-url="aHR0cHM6Ly9jb29sc2hlbGwuY24vYXJ0aWNsZXMvMTcyMjUuaHRtbF0=">https://coolshell.cn/articles/17225.html]<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，更多有意思的文章，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -7053,9 +6937,6 @@
 <li>微软 2013 bwtree 论文： <span class="exturl" data-url="aHR0cHM6Ly8xNTcyMS5jb3Vyc2VzLmNzLmNtdS5lZHUvc3ByaW5nMjAxNy9wYXBlcnMvMDgtb2x0cGluZGV4ZXMyL2J3dHJlZS1pY2RlMjAxMy5wZGY=">https://15721.courses.cs.cmu.edu/spring2017/papers/08-oltpindexes2/bwtree-icde2013.pdf<i class="fa fa-external-link-alt"></i></span></li>
 <li>淘宝数据库内核月报 2018&#x2F;11 期：<span class="exturl" data-url="aHR0cDovL215c3FsLnRhb2Jhby5vcmcvbW9udGhseS8yMDE4LzExLzAxLw==">http://mysql.taobao.org/monthly/2018/11/01<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，更多有意思的文章，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://i.loli.net/2021/03/30/utbeLDk2UTxdc8R.jpg" alt="wx-distributed-system-muniao-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -7624,8 +7505,6 @@
 <li><strong><span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9zaW1tZXJjaGFu">SimmerChan<i class="fa fa-external-link-alt"></i></span></strong> 知乎专栏，知识图谱，语义网，RDF：<span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL2NvbHVtbi9rbm93bGVkZ2VncmFwaA==">https://www.zhihu.com/column/knowledgegraph<i class="fa fa-external-link-alt"></i></span></li>
 <li>MySQL 为什么叫“关系”模型：<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82NDczMTIwNg==">https://zhuanlan.zhihu.com/p/64731206<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心~<br><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -7779,8 +7658,6 @@
 <blockquote>
 <p>在实际中，需要针对性的识别（或者预估）每个场景查询分布，针对性的构建物化视图。</p>
 </blockquote>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心~<br><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -8084,8 +7961,6 @@
 </ol>
 <p>由于  Actor 和外界交互都是通过消息，因此本身可以并行的，且不需要加锁。</p>
 <p>分布式的 Actor 框架，本质上是将消息队列和 actor 编程模型集成到一块。自然，在 Actor 滚动升级是，也需要考虑前后向兼容问题。</p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心~<br><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -8154,8 +8029,6 @@
 </ul>
 <p>解释下最后一条：即能修复先修复，只有坏到不能再坏（超过一半）才从池子中拨出一个副本给他，从而保证池子里有充足备用弹药。</p>
 <p>文中还提到了全球地理复制和与用归档服务进行冷备。并提到 Delta 下一步是想充当 Meta 中所有需要数据备份和恢复的服务的存储后端。</p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心~<br><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -8232,8 +8105,6 @@
 <li><strong>数据导出</strong>。将数据导出为多种通用的数据格式，如 csv、json、sql 语句 等等。</li>
 </ol>
 <p>仓促成文，遗漏之处，欢迎在评论区补充。如果觉得写的还不错，欢迎分享给更多的同学。</p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，欢迎关注我的公众号：“木鸟杂记”，获取更多分布式系统文章和资料。</p>
 ]]></content>
       <categories>
         <category>数据库</category>
@@ -8319,8 +8190,6 @@
 </blockquote>
 <p>AlloyDB 的存储层基于日志服务进行实现，分为两层存储 log storage、block storage 和一层计算 LFS。基于 LSN 来控制并发，动态伸缩 LFS 以应对负载。</p>
 <p>你对这种设计有什么看法？欢迎留言讨论。</p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心~<br><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -8690,8 +8559,6 @@
 </ol>
 <p>此外，内存数据库还可以通过类似操作系统 swap 的方式，提供比物理机内存更大的存储空间，但由于其有更多数据库相关信息，可以将换入换出的粒度做的更细、性能做的更好。</p>
 <p>基于<strong>非易失性存储器</strong>（non-volatile memory，NVM） 的存储引擎也是这些年研究的一个热点。</p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心~<br><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -8764,8 +8631,6 @@
 <li>维基百科，分散级联， <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRnJhY3Rpb25hbF9jYXNjYWRpbmc=">Fractional cascading<i class="fa fa-external-link-alt"></i></span>，<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRnJhY3Rpb25hbF9jYXNjYWRpbmc=">https://en.wikipedia.org/wiki/Fractional_cascading<i class="fa fa-external-link-alt"></i></span></li>
 <li>RocksDB github FileIndexer：<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2ZhY2Vib29rL3JvY2tzZGIvYmxvYi8zLjAuZmIuYnJhbmNoL2RiL2ZpbGVfaW5kZXhlci5jYw==">https://github.com/facebook/rocksdb/blob/3.0.fb.branch/db/file_indexer.cc<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心~<br><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>源码阅读</category>
@@ -8844,8 +8709,6 @@
 <p>在进行自动配额时，首先要准确追踪读写流量。在检测到流量突发且要触发限流时，会对配额进行指数扩充（二倍）。如果应用持续流量大于之前尖峰的二倍，则会通过按流量拆分分区等方法进一步提高整体配额。</p>
 <h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>云上一个重要特征就是<strong>资源池化、按需分配</strong>和<strong>精准计费</strong>，从而在整体上实现资源的充分利用，通过规模化优势抵消通用性带来的成本。</p>
 <p>具体到云原生数据库中，便是多租户流量的自动配给。DynamoDB 通过论文披露了其从配额静态划分、打补丁演进，到全局动态划分的一个演进过程。对于国内各路号称要做云原生数据库的厂商来说，想要在保证用户体验（资源隔离）的前提下真正赚钱（资源共享），DynamoDB 的经验想必有诸多可借鉴之处。</p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心~</p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -9325,8 +9188,6 @@
 <figure class="highlight c"><table><tr><td class="code"><pre><span class="line">    key1 </span><br><span class="line">A   Va</span><br><span class="line">B   Vb</span><br><span class="line">C   Vc</span><br><span class="line"></span><br><span class="line">key1: [Va, Vb, Vc]</span><br><span class="line"></span><br><span class="line">[Va-x, Vb-y, Vc-z] &lt;= [Va-x1, Vb-y1, Vc-z1]  &lt;==&gt; </span><br><span class="line">x &lt;= x1 &amp;&amp; y &lt;= y1 &amp;&amp; z &lt;= z1</span><br></pre></td></tr></table></figure>
 
 <p>每个副本在遇到写入时，会增加对应键的版本号，同时跟踪从其他副本中看到的版本号，通过比较版本号大小，来决定哪些值要覆盖哪些值要保留。</p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心。如果想讨论数据库和分布式系统，欢迎来论坛：<span class="exturl" data-url="aHR0cHM6Ly9kaXN0ZGIub3JnLw==">https://distdb.org/<i class="fa fa-external-link-alt"></i></span></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -9402,8 +9263,6 @@
 </ul>
 <p>然而，上述只考虑了数据在单机中的组织。如果单机无法提供目标<strong>存储容量</strong>和<strong>吞吐量</strong>，就需要考虑分布式系统——将多个机器通过网络连接在一起，作为一个整体对外提供服务。</p>
 <p>于是我们又引入了很不靠谱（相比单机总线）的网络和难以严格同步的时钟，如何对齐进行处理，又是另外一个长长的故事了。虽然当代数据库无一不需要多机协同，但限于篇幅问题，就此打住了。对此感兴趣的可以看看我们的 DDIA 读书会的分享：<span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">https://ddia.qtmuniao.com/<i class="fa fa-external-link-alt"></i></span></p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心。如果想讨论数据库和分布式系统，欢迎来论坛：<span class="exturl" data-url="aHR0cHM6Ly9kaXN0ZGIub3JnLw==">https://distdb.org/<i class="fa fa-external-link-alt"></i></span></p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
 <li>数据库权威排名 DB-Engines <span class="exturl" data-url="aHR0cHM6Ly9kYi1lbmdpbmVzLmNvbS9lbi9yYW5raW5n">https://db-engines.com/en/ranking<i class="fa fa-external-link-alt"></i></span></li>
 <li>计算机存储体系 <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvTWVtb3J5X2hpZXJhcmNoeQ==">https://en.wikipedia.org/wiki/Memory_hierarchy<i class="fa fa-external-link-alt"></i></span></li>
@@ -9498,8 +9357,6 @@
 </ol>
 <p>粗浅理解，有写的不对或需要补充之处，欢迎留言。</p>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，更多有意思的文章，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
@@ -9533,8 +9390,6 @@
 <p><strong>21 年入职了一家数据库创业公司，做存储层开发</strong>。相比以前纯存储架构，数据库的存储层侧重有诸多不同。比如对象存储更关注大数据量、高可用，但模型简单、一致性要求弱；而数据库的存储层，需要关心 schema，就要考虑编码、演化和兼容，需要考虑 DDL 和 DML 的并发，需要考虑分布式事务，需要考虑下推来的计算执行等等，复杂度上升了很多。此外，我们是做图数据库领域，又需要关注图数据模型的特殊性。需要考虑图查询中最常见的模式匹配和图遍历，需要考虑如何进行优化多跳查询，需要考虑如何进行异构数据的支持。传统关系型数据库的知识能拿来解决很多问题，但有一些痛点不进行创新难以高效解决，比如多跳查询。此外，图的引领者们，如 Neo4j、TigerGraph，已经开始在图计算和机器学习上发力，我们又怎么切入等等诸多问题。但总体来说，非常有意思，这一年算是慢慢切入了图数据库这个领域，也做的很开心。但国内数据库的商业化普遍很艰难，不独技术因素，还有市场因素、合规因素等等。而且就算开始商业化，也大概率会像旷视那样，能活下去，但很难维持像前些年互联网企业那样的市盈比。因为现在的商业化路子，人效比普遍不高，很难撑得起互联网逻辑的估值。</p>
 <p>虽然喜欢这个领域，但日复一日上班的日子，总会感觉缺了点什么。时不时的还会生出黑客帝国中对 Matrix 产生排斥反应的一些人所具有不真实感——我是谁、我在哪里、我在干什么。中国人讲究三十而立，虽未必是三十，但总会自觉不自觉的对比，到了哪个阶段，该有什么成就。眼睛盯着优秀的同龄人，便总会生出难以名状的焦虑。当然，更多的迫切感是内生的，总感觉难以找到能够投入百分之百热情的东西，也难以生出古贤人“为万世开太平”的使命感，即，总是很难以预期的烈度来燃尽每日时光。倘若我满足现状，或许能更为豁达；倘若我在奔赴理想，或许能感觉十分充实；懂一点，又似懂非懂；踮起脚，打开窗户一角，透进来一点光，但总觉开的不够大；想开大，却又力不从心的迷茫。可能很多事情，只能再积累再发展再探索，才能事后串珠成链。</p>
 <p>路漫漫其修远兮，吾将上下而求索。</p>
-<hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员。如果你觉得文章还不错，欢迎关注我的公众号：“木鸟杂记”，比心。如果想讨论数据库和分布式系统，欢迎来论坛：<span class="exturl" data-url="aHR0cHM6Ly9kaXN0ZGIub3JnLw==">https://distdb.org/<i class="fa fa-external-link-alt"></i></span></p>
 ]]></content>
       <categories>
         <category>生活</category>
@@ -9630,8 +9485,6 @@
 <p>但需要声明，不同的活对讲究程度要求是不一样的，那如何抉择呢？这里我想引入一个参考度量：<strong>生命周期</strong>。生命周期越长的代码，一定要写的越干净；临时使用代码，比如小脚本，就可以不讲究一些。反过来，也正是干净的代码才能成就超长的生命周期。</p>
 <p>大家看别人和自己过去的代码时，有哪些想吐槽的呢？欢迎在留言区讨论。</p>
 <hr>
-<p>我是青藤木鸟，一个喜欢摄影的分布式系统程序员，更多有意思的文章，欢迎关注我的公众号：“木鸟杂记”。</p>
-<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg"></p>
 ]]></content>
       <categories>
         <category>技术</category>
@@ -10786,8 +10639,6 @@
 <p>如上图，可能是基因研究用户在使用 lambda 函数计算进行大规模的并行数据分析，IOPS 一度达到 2.3M IOPS，但我们使用数百万张磁盘可以轻松满足这种需求（上面计算可以看出 2w 张盘满载可以满足，那么有百万张盘，每个只用百分之一就可以满足）。</p>
 <p>这种尺度的请求处理在 S3 中并不算夸张，当下 S3 集群至少有<strong>上万用户</strong>的存储桶的数据横跨超过<strong>百万张盘</strong>。正是 S3 如此体量的用户和用户数据，让这种构建方式成为可能。</p>
 <h1 id="人的因素对-S3-的影响"><a href="#人的因素对-S3-的影响" class="headerlink" title="人的因素对 S3 的影响"></a>人的因素对 S3 的影响</h1><p>本文来自我的专栏《<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">系统日知录 2023<i class="fa fa-external-link-alt"></i></span>》，还有一部分在专栏文章中。你的订阅是我持续创作优质文章的最大动力，目前专栏有 82 篇文章，涵盖数据库、存储、系统等主题，如果你对大规模数据系统内容感兴趣，目前处于完结前的打折期，不容错过。</p>
-<hr>
-<p>最后欢迎关注我的公众号：木鸟杂记，专注分布式系统、数据库和存储等大规模数据系统，关注后可回复“资料”领取一份我总结的分布式系统和数据库的入门资料大全。</p>
 ]]></content>
       <categories>
         <category>分布式系统</category>
