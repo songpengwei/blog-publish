@@ -193,6 +193,111 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/07/03/leveldb-data-structures-skip-list/" class="post-title-link" itemprop="url">漫谈 LevelDB 数据结构（一）：跳表（Skip List）</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-07-03 23:21:23" itemprop="dateCreated datePublished" datetime="2020-07-03T23:21:23+08:00">2020-07-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-03-17 09:54:00" itemprop="dateModified" datetime="2024-03-17T09:54:00+08:00">2024-03-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/leveldb/" itemprop="url" rel="index"><span itemprop="name">leveldb</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>早对 <a target="_blank" rel="noopener" href="https://github.com/google/leveldb">LevelDB</a> 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和  Jeff Dean 呢。</p>
+<p>看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路，从架构概览说起，以模块分析做合。读代码的这些天，一直在盘算从哪下笔比较好。在将将读完之时，印象最深的反而是 LevelDB 的各种精妙的数据结构：贴合场景、从头构建、剪裁得当、代码精到。不妨， LevelDB 系列就从这些边边角角的小构件开始吧。</p>
+<p>本系列主要想分享 LevelDB 中用到的三个工程中常用的经典数据结构，分别是用以快速读写 memtable 的 <strong>Skip List</strong>、用以快速筛选 sstable 的 <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter"><strong>Bloom Filter</strong></a> 和用以部分缓存 sstable 的 <strong>LRUCache</strong> 。这是第一篇，Skip List。</p>
+</blockquote>
+<h2 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h2><p>LevelDB 是一个单机的 KV 存储引擎。KV 引擎在本质上可认为只提供对数据条目（key，val） <code>Put(key, val), Get(key) val, Delete(key)</code> 操作的三个接口。而在实现上，LevelDB 在收到删除请求时不会真正删除数据，而是为该 Key 写一个特殊标记，以备读取时发现该 Key 不存在，从而将  <code>Delete</code> 转为 <code>Put</code> ，进而将三个接口简化为两个。砍完这一刀后，剩下的就是在 <code>Put</code> 和 <code>Get</code> 间进行性能取舍，LevelDB 的选择是：**牺牲部分 <code>Get</code> 性能，换取强悍 <code>Put</code> 性能，再极力优化 <code>Get</code>**。</p>
+<p>我们知道，在存储层次体系（<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Memory_hierarchy">Memory hierarchy</a>）中，内存访问远快于磁盘，因此 LevelDB 为了达到目标做了以下设计：</p>
+<ol>
+<li><em>写入（Put）</em>：让所有写入都发生在<strong>内存</strong>中，然后达到一定尺寸后将其批量刷<strong>磁盘</strong>。</li>
+<li><em>读取（Get）</em>：随着时间推移，数据不断写入，内存中会有一小部分数据，磁盘中有剩余大部分数据。读取时，如果在内存中没命中，就需要去磁盘查找。</li>
+</ol>
+<p>为了保证写入性能，同时优化读取性能，需要内存中的存储结构能够同时支持高效的<strong>插入</strong>和<strong>查找</strong>。</p>
+<p>之前听说 LevelDB 时，最自然的想法，以为该内存结构（memtable）为是<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Self-balancing_binary_search_tree">平衡树</a>，比如<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Red%E2%80%93black_tree">红黑树</a>、<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/AVL_tree">AVL 树</a>等，可以保证插入和查找的时间复杂度都是 lg(n)，看源码才知道用了跳表。相比平衡树，跳表优势在于，在保证读写性能的同时，大大简化了实现。</p>
+<p>此外，为了将数据定期 dump 到磁盘，还需要该数据结构支持高效的顺序遍历。总结一下 LevelDB  内存数据结构（memtable）需求点：</p>
+<ol>
+<li>高效查找</li>
+<li>高效插入</li>
+<li>高效顺序遍历</li>
+</ol>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/07/03/leveldb-data-structures-skip-list/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/06/13/dynamo/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1213,99 +1318,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/02/08/CAP/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/02/08/CAP/" class="post-title-link" itemprop="url">分布式基础（一）：CAP 的理解</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-02-08 14:01:05" itemprop="dateCreated datePublished" datetime="2020-02-08T14:01:05+08:00">2020-02-08</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:15:58" itemprop="dateModified" datetime="2024-03-04T09:15:58+08:00">2024-03-04</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">基础</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><img src="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png" alt="cap-consistency-example.png"></p>
-<h2 id="小引"><a href="#小引" class="headerlink" title="小引"></a>小引</h2><p>曾经在一个面试中让谈谈对 CAP 的理解，当时凭着准备面试时谷歌到的N手资料，类似于小学生背书一样，生挤出只言片语。面试官无奈的笑笑，简练的概括出他想要听到的要点，听的我心下惭愧。面试自然是挂了，后来工作时偶尔接触到这个词汇，初不得要领，后通过不同资料的多侧面理解、印证，渐渐拼凑出了一个轮廓，在这里梳理下，将影子撵到纸上，以供日后索引。</p>
-<p>面试官大约是这么概括的：<em>在分布式系统中，失败必然的，分区容错（P）是一定需要的，因此设计系统时需要在可用性（A）和一致性（C）间进行权衡</em>。当时被教育印象很深，现在看来，这句概括是点出了小荷才露尖尖角的那个角。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/02/08/CAP/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/5/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/7/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/5/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><a class="extend next" rel="next" href="/page/7/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1373,19 +1389,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">108</span>
+          <span class="site-state-item-count">109</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">36</span>
+        <span class="site-state-item-count">37</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">177</span>
+        <span class="site-state-item-count">179</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

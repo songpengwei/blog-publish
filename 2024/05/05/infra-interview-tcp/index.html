@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="这是我在很早之前遇到的一个题，很有意思，所以到现在仍然记得。题意借用了 TCP 的上下文，要求实现 TCP 中一个“顺序组装”的关键逻辑：  对于 TCP 层来说，IP 层的 packet 是乱序的收到。 对于应用层来说，TCP 层交付的是顺序的数据。  这个题有意思的点在于，借用了 TCP 的上下文之后，就可以先和候选人讨论一些 TCP 的基础知识，然后话锋一转，引出这道题。这样既可以考察一些基">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Infra 面试之数据结构五：顺序组装">
+<meta property="og:url" content="https://www.qtmuniao.com/2024/05/05/infra-interview-tcp/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="这是我在很早之前遇到的一个题，很有意思，所以到现在仍然记得。题意借用了 TCP 的上下文，要求实现 TCP 中一个“顺序组装”的关键逻辑：  对于 TCP 层来说，IP 层的 packet 是乱序的收到。 对于应用层来说，TCP 层交付的是顺序的数据。  这个题有意思的点在于，借用了 TCP 的上下文之后，就可以先和候选人讨论一些 TCP 的基础知识，然后话锋一转，引出这道题。这样既可以考察一些基">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-05-05T02:49:31.000Z">
+<meta property="article:modified_time" content="2024-05-05T02:57:42.697Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="面试">
+<meta property="article:tag" content="TCP">
+<meta property="article:tag" content="基础">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2024/05/05/infra-interview-tcp/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Infra 面试之数据结构五：顺序组装 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-付费服务">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/05/05/infra-interview-tcp/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Infra 面试之数据结构五：顺序组装
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-05-05 10:49:31 / 修改时间：10:57:42" itemprop="dateCreated datePublished" datetime="2024-05-05T10:49:31+08:00">2024-05-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%9D%A2%E8%AF%95/" itemprop="url" rel="index"><span itemprop="name">面试</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这是我在很早之前遇到的一个题，很有意思，所以到现在仍然记得。题意借用了 TCP 的上下文，要求实现 TCP 中一个“顺序组装”的关键逻辑：</p>
+<ol>
+<li>对于 TCP 层来说，IP 层的 packet 是乱序的收到。</li>
+<li>对于应用层来说，TCP 层交付的是顺序的数据。</li>
+</ol>
+<p>这个题有意思的点在于，借用了 TCP 的上下文之后，就可以先和候选人讨论一些 TCP 的基础知识，然后话锋一转，引出这道题。这样既可以考察一些基础知识，也可以考察工程代码能力。</p>
+<h1 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Packet</span> &#123;</span><br><span class="line">    <span class="type">size_t</span> offset;</span><br><span class="line">    <span class="type">size_t</span> length;</span><br><span class="line">    <span class="type">uint8_t</span> *data;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现一个“顺序交付”语义</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TCP</span> &#123;</span><br><span class="line">  <span class="comment">// 应用层调用：按顺序读取不超过 count 的字节数到 buf 中，并返回实际读到的字节数</span></span><br><span class="line">  <span class="function"><span class="type">size_t</span> <span class="title">read</span><span class="params">(<span class="type">void</span> *buf, <span class="type">size_t</span> count)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：得到一些随机顺序的 IP 层封包</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">receive</span><span class="params">(Packet* p)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：数据发完，连接关闭</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">finish</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2024/05/05/infra-interview-tcp">https://www.qtmuniao.com/2024/05/05/infra-interview-tcp</a> 转载请注明出处</em></p>
+<h1 id="讨论"><a href="#讨论" class="headerlink" title="讨论"></a>讨论</h1><p>由于多少和“实际”有些关联，所以本题目中有相当多的可以讨论的点，反过来说，如果你不进行合适的建模和简化，实现起来复杂度会非常高——四十五分钟是写不完的。</p>
+<p>对于 Packet 结构体：</p>
+<ol>
+<li>offset 是否会有交叠？（只要发送数据足够多，耗尽 size_t 的范围就有可能发生）</li>
+<li>length 的长度是固定的还是变长的？</li>
+</ol>
+<p>对于 read 调用：</p>
+<ol>
+<li><code>TCP:read()</code> 是否阻塞？如果是阻塞的，是否要阻塞到凑齐要求大小（count）的数据才能返回，还是只要有一部分数据就立即返回？</li>
+<li>如果<code>TCP::finish()</code> 后，<code>TCP:read()</code> 的返回值是什么？</li>
+</ol>
+<p>对于内存问题：</p>
+<ol>
+<li><code>TCP::read</code>  中给应用层中 buf 填充数据时，是否要进行拷贝？</li>
+<li><code>TCP::receive</code> 中 <code>Packet::data</code> 的内存是否要在 TCP 类中释放？</li>
+</ol>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><p>这本质上是一个生产者消费者问题。我们需要维护一个线程安全的有序数据结构，生产者（<code>TCP::receive</code>）往里面放数据，消费者（<code>TCP::read</code>）从里面取数据。要求是：乱序放、顺序取、可切分。</p>
+<p>为了简化实现，可以和面试官做如下设定。</p>
+<p>对于 Packet 结构体：</p>
+<ol>
+<li>offset 没有交叠</li>
+<li>length 变长</li>
+</ol>
+<p>对于 read 是否阻塞问题，可以设定：</p>
+<ol>
+<li>read 函数是阻塞的</li>
+<li>read 只要收到一部分数据，即使没达到 count，也可以立即返回</li>
+</ol>
+<p>对于内存问题，可以设定：</p>
+<ol>
+<li>TCP 类不负责收到的数据的生命周期，但要求调用者保证 TCP 整个生命周期中 packet 中的数据都是有效（不能被释放）的。</li>
+<li>给应用层的数据会拷贝到用户提供的 buf 中。</li>
+</ol>
+<p>以下是代码：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Packet</span>&#123;</span><br><span class="line">    <span class="built_in">Packet</span>(<span class="type">size_t</span> off, <span class="type">size_t</span> len, <span class="type">uint8_t</span> *data):</span><br><span class="line">        <span class="built_in">offset</span>(off), <span class="built_in">length</span>(len), <span class="built_in">data</span>(data) &#123;&#125;</span><br><span class="line">    <span class="type">size_t</span> offset;</span><br><span class="line">    <span class="type">size_t</span> length;</span><br><span class="line">    <span class="type">uint8_t</span> *data;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TCP</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">TCP</span>() &#123;</span><br><span class="line">        nextOffset_ = <span class="number">0</span>;</span><br><span class="line">        finished_ = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">size_t</span> <span class="title">read</span><span class="params">(<span class="type">void</span> *buf, <span class="type">size_t</span> count)</span> </span>&#123;</span><br><span class="line">        <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mu_)</span></span>;</span><br><span class="line"></span><br><span class="line">        <span class="type">size_t</span> leftBytes = count;</span><br><span class="line">        <span class="keyword">while</span> (leftBytes &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (!packets_.<span class="built_in">empty</span>()) &#123;</span><br><span class="line">                <span class="type">size_t</span> offset = packets_.<span class="built_in">begin</span>()-&gt;first;</span><br><span class="line">                <span class="keyword">auto</span>* p = packets_.<span class="built_in">begin</span>()-&gt;second;</span><br><span class="line">                <span class="keyword">if</span> (offset == nextOffset_) &#123;</span><br><span class="line">                    <span class="comment">// fetch the packet</span></span><br><span class="line">                    packets_.<span class="built_in">erase</span>(offset);</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// copy to the user buf</span></span><br><span class="line">                    <span class="type">size_t</span> len = std::<span class="built_in">min</span>(p-&gt;length, leftBytes);</span><br><span class="line">                    std::<span class="built_in">memcpy</span>(buf, p-&gt;data, len);</span><br><span class="line">                    leftBytes -= len;</span><br><span class="line">                    nextOffset_ += len;</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// put back the left data</span></span><br><span class="line">                    p-&gt;length -= len;</span><br><span class="line">                    <span class="keyword">if</span> (p-&gt;length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                        p-&gt;data += len;</span><br><span class="line">                        p-&gt;offset += len;</span><br><span class="line">                        packets_[p-&gt;offset] = p;</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">return</span> count-leftBytes;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (finished_) &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            cv_.<span class="built_in">wait</span>(lock);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// finished</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">receive</span><span class="params">(Packet* p)</span> </span>&#123;</span><br><span class="line">        <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mu_)</span></span>;</span><br><span class="line">        packets_[p-&gt;offset] = p;</span><br><span class="line">        cv_.<span class="built_in">notify_one</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">finish</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="function">std::unique_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mu_)</span></span>;</span><br><span class="line">        finished_ = <span class="literal">true</span>;</span><br><span class="line">        cv_.<span class="built_in">notify_one</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    std::mutex mu_;</span><br><span class="line">    std::condition_variable cv_;</span><br><span class="line">    <span class="type">size_t</span> nextOffset_;</span><br><span class="line">    <span class="type">bool</span> finished_;</span><br><span class="line">    std::map&lt;<span class="type">uint64_t</span>, Packet*&gt; packets_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>核心实现点包括：</p>
+<ol>
+<li>使用 <code>std::map</code> 组织所有 IP 层封包</li>
+<li>使用 <code>nextOffset_</code> 来记录需要交付给应用层下一个偏移量</li>
+<li>如果包被切分了，剩余的包记得放回去</li>
+</ol>
+<h1 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h1><p>本题目的测试也有些意思：</p>
+<ol>
+<li>如何模拟乱序</li>
+<li>如何控制所有 IP 封包中的 data 生命周期</li>
+<li>如何对应用层收到的数据进行校验</li>
+</ol>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line">TCP tcp;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">producer</span><span class="params">(<span class="type">uint8_t</span>* data)</span> </span>&#123;</span><br><span class="line">    std::random_device rd;</span><br><span class="line">    <span class="function">std::mt19937 <span class="title">gen</span><span class="params">(rd())</span></span>;</span><br><span class="line">    std::uniform_int_distribution&lt;&gt; <span class="built_in">dis</span>(<span class="number">50</span>, <span class="number">99</span>);</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;construct data...&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">    <span class="function">std::vector&lt;Packet*&gt; <span class="title">packets</span><span class="params">(<span class="number">100</span>)</span></span>;</span><br><span class="line">    <span class="type">size_t</span> offset = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; ++i) &#123;</span><br><span class="line">        <span class="type">size_t</span> randLen = <span class="built_in">dis</span>(gen);</span><br><span class="line">        packets[i] = <span class="keyword">new</span> <span class="built_in">Packet</span>(offset, randLen, data);</span><br><span class="line">        data += randLen;</span><br><span class="line">        offset += randLen;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;total &quot;</span> &lt;&lt; offset &lt;&lt; <span class="string">&quot; bytes&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;make the data unordered...&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">    std::<span class="built_in">shuffle</span>(packets.<span class="built_in">begin</span>(), packets.<span class="built_in">end</span>(), gen);</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;give it to tcp...&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; ++i) &#123;</span><br><span class="line">        tcp.<span class="built_in">receive</span>(packets[i]);</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;receive data [&quot;</span> &lt;&lt; packets[i]-&gt;offset &lt;&lt; <span class="string">&quot; ,&quot;</span></span><br><span class="line">            &lt;&lt; packets[i]-&gt;offset+packets[i]-&gt;length&lt;&lt; <span class="string">&quot;): &quot;</span></span><br><span class="line">            &lt;&lt; packets[i]-&gt;length &lt;&lt; <span class="string">&quot; bytes&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">        std::this_thread::<span class="built_in">sleep_for</span>(std::chrono::<span class="built_in">milliseconds</span>(<span class="number">100</span>));</span><br><span class="line">    &#125;</span><br><span class="line">    tcp.<span class="built_in">finish</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">consumer</span><span class="params">(<span class="type">uint8_t</span>* data)</span> </span>&#123;</span><br><span class="line">    <span class="type">size_t</span> nBytes = <span class="number">0</span>;</span><br><span class="line">    <span class="type">uint8_t</span> buf[<span class="number">100</span>];</span><br><span class="line"></span><br><span class="line">    <span class="type">size_t</span> offset = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> ((nBytes = tcp.<span class="built_in">read</span>(buf, <span class="number">50</span>)) &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">auto</span> diff = std::<span class="built_in">memcmp</span>(data+offset, buf, nBytes);</span><br><span class="line">        std::stringstream ss;</span><br><span class="line">        ss &lt;&lt; <span class="string">&quot;read data [&quot;</span> &lt;&lt; offset &lt;&lt; <span class="string">&quot; ,&quot;</span> &lt;&lt; offset+nBytes &lt;&lt; <span class="string">&quot;): &quot;</span></span><br><span class="line">            &lt;&lt; nBytes &lt;&lt; <span class="string">&quot; bytes&quot;</span>;</span><br><span class="line">        <span class="keyword">if</span> (!diff) &#123;</span><br><span class="line">            ss &lt;&lt; <span class="string">&quot;; verify ok&quot;</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            ss &lt;&lt; <span class="string">&quot;; verify bad&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        std::cout &lt;&lt; ss.<span class="built_in">str</span>() &lt;&lt; std::endl;</span><br><span class="line"></span><br><span class="line">        offset += nBytes;</span><br><span class="line">    &#125;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;read finish&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="type">uint8_t</span> buffer[<span class="number">10000</span>];</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; <span class="number">10000</span>; ++i) &#123;</span><br><span class="line">        buffer[i] = i &amp; <span class="number">0xff</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function">std::thread <span class="title">c</span><span class="params">(consumer, buffer)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">p</span><span class="params">(producer, buffer)</span></span>;</span><br><span class="line"></span><br><span class="line">    p.<span class="built_in">join</span>();</span><br><span class="line">    c.<span class="built_in">join</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果你想自己跑下代码，可以在<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL0Rpc3RTeXNDb3JwL2ludGVydmlldy1kYXRhLXN0cnVjdHVyZXMvYmxvYi9tYWluL1BhY2tldHMuY2M=">这里<i class="fa fa-external-link-alt"></i></span>自取。</p>
+<h1 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h1><p>如果还有时间，面试官可能会跟你讨论些，如果取消你做的那些假设，需要怎么样实现，不过只要能做过基础版，剩下的就都是加分项了。</p>
+<blockquote>
+<p>本文出自我的专栏《(系统日知录)[<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0L2RiOTAxNDgwLTBlNTgtNDE5Yi1hZTAxLWY2NDEwZDM4Y2UxZl0lRTMlODAlOEIlRTclOUElODQ=">https://xiaobot.net/post/db901480-0e58-419b-ae01-f6410d38ce1f]》的<i class="fa fa-external-link-alt"></i></span> infra 程序员面试题系列，本系列集合了我多年来面试和被面试遇到的一些精华题目。当下一共更新了七篇：阻塞队列、无锁队列、事件队列、哈希表、顺序组装、堆、前缀树。如果大家感兴趣，之后还会继续更新。</p>
+</blockquote>
+<blockquote>
+<p>专栏目前有一百多篇文章。如果大家觉得我的文章写的不错，欢迎大家留言、订阅支持我，你们的支持是我持续创作的最大动力。</p>
+</blockquote>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distdb.org/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2023/08/19/live-show-infra-interview/" rel="bookmark">20230819 B 站求职面试直播</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2023/08/21/database-interview-myth/" rel="bookmark">数据库面试的几个常见误区</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E9%9D%A2%E8%AF%95/" rel="tag"># 面试</a>
+              <a href="/tags/TCP/" rel="tag"># TCP</a>
+              <a href="/tags/%E5%9F%BA%E7%A1%80/" rel="tag"># 基础</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/04/08/paywall-one-year/" rel="prev" title="关于如何在晴天卖出 250 把雨伞这件事">
+      <i class="fa fa-chevron-left"></i> 关于如何在晴天卖出 250 把雨伞这件事
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%A2%98%E7%9B%AE"><span class="nav-number">1.</span> <span class="nav-text">题目</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%A8%E8%AE%BA"><span class="nav-number">2.</span> <span class="nav-text">讨论</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">实现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">4.</span> <span class="nav-text">测试</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%80%E5%90%8E"><span class="nav-number">5.</span> <span class="nav-text">最后</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">109</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">37</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">179</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2024/05/05/infra-interview-tcp/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '7f37b35c29763bc8e3eb69c79f24a015',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

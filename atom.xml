@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://www.qtmuniao.com/"/>
-  <updated>2024-04-08T13:12:44.045Z</updated>
+  <updated>2024-05-05T02:57:42.697Z</updated>
   <id>https://www.qtmuniao.com/</id>
   
   <author>
@@ -15,6 +15,36 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Infra 面试之数据结构五：顺序组装</title>
+    <link href="https://www.qtmuniao.com/2024/05/05/infra-interview-tcp/"/>
+    <id>https://www.qtmuniao.com/2024/05/05/infra-interview-tcp/</id>
+    <published>2024-05-05T02:49:31.000Z</published>
+    <updated>2024-05-05T02:57:42.697Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;这是我在很早之前遇到的一个题，很有意思，所以到现在仍然记得。题意借用了 TCP 的上下文，要求实现 TCP 中一个“顺序组装”的关键逻辑：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;对于 TCP 层来说，IP 层的 packet 是乱序的收到。&lt;/li&gt;
+&lt;li&gt;对于应用层来说，TCP 层交付的是顺序的数据。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;这个题有意思的点在于，借用了 TCP 的上下文之后，就可以先和候选人讨论一些 TCP 的基础知识，然后话锋一转，引出这道题。这样既可以考察一些基础知识，也可以考察工程代码能力。&lt;/p&gt;
+&lt;h1 id=&quot;题目&quot;&gt;&lt;a href=&quot;#题目&quot; class=&quot;headerlink&quot; title=&quot;题目&quot;&gt;&lt;/a&gt;题目&lt;/h1&gt;&lt;figure class=&quot;highlight cpp&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;14&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;15&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title class_&quot;&gt;Packet&lt;/span&gt; &amp;#123;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; offset;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; length;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;type&quot;&gt;uint8_t&lt;/span&gt; *data;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&amp;#125;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;// 实现一个“顺序交付”语义&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;title class_&quot;&gt;TCP&lt;/span&gt; &amp;#123;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;comment&quot;&gt;// 应用层调用：按顺序读取不超过 count 的字节数到 buf 中，并返回实际读到的字节数&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;(&lt;span class=&quot;type&quot;&gt;void&lt;/span&gt; *buf, &lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; count)&lt;/span&gt;&lt;/span&gt;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;comment&quot;&gt;// TCP 层回调：得到一些随机顺序的 IP 层封包&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;type&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;receive&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;(Packet* p)&lt;/span&gt;&lt;/span&gt;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;comment&quot;&gt;// TCP 层回调：数据发完，连接关闭&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;type&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;()&lt;/span&gt;&lt;/span&gt;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&amp;#125;;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+    
+    </summary>
+    
+      <category term="面试" scheme="https://www.qtmuniao.com/categories/%E9%9D%A2%E8%AF%95/"/>
+    
+    
+      <category term="面试" scheme="https://www.qtmuniao.com/tags/%E9%9D%A2%E8%AF%95/"/>
+    
+      <category term="TCP" scheme="https://www.qtmuniao.com/tags/TCP/"/>
+    
+      <category term="基础" scheme="https://www.qtmuniao.com/tags/%E5%9F%BA%E7%A1%80/"/>
+    
+  </entry>
   
   <entry>
     <title>关于如何在晴天卖出 250 把雨伞这件事</title>
@@ -510,31 +540,6 @@
       <category term="生活" scheme="https://www.qtmuniao.com/tags/%E7%94%9F%E6%B4%BB/"/>
     
       <category term="年终总结" scheme="https://www.qtmuniao.com/tags/%E5%B9%B4%E7%BB%88%E6%80%BB%E7%BB%93/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>实现一个数据库需要如何入手？</title>
-    <link href="https://www.qtmuniao.com/2022/12/11/how-to-build-a-database/"/>
-    <id>https://www.qtmuniao.com/2022/12/11/how-to-build-a-database/</id>
-    <published>2022-12-11T03:11:59.000Z</published>
-    <updated>2024-03-04T01:23:23.800Z</updated>
-    
-    <summary type="html">
-    
-      &lt;blockquote&gt;
-&lt;p&gt;知乎上有个问题：如何实现一个数据库？手痒忍不住又水了一篇。以计算机中最常用的分析、理解问题的思想，我们可以从两个维度：&lt;strong&gt;逻辑&lt;/strong&gt;和&lt;strong&gt;物理&lt;/strong&gt;，来思考如何实现一个数据库。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h2 id=&quot;逻辑维度&quot;&gt;&lt;a href=&quot;#逻辑维度&quot; class=&quot;headerlink&quot; title=&quot;逻辑维度&quot;&gt;&lt;/a&gt;逻辑维度&lt;/h2&gt;&lt;h3 id=&quot;数据模型（对外，面向用户）&quot;&gt;&lt;a href=&quot;#数据模型（对外，面向用户）&quot; class=&quot;headerlink&quot; title=&quot;数据模型（对外，面向用户）&quot;&gt;&lt;/a&gt;数据模型（对外，面向用户）&lt;/h3&gt;&lt;p&gt;想要实现一个数据库，首先你得定义给给用户什么样的&lt;strong&gt;数据模型&lt;/strong&gt;？在前些年，这些可能不是个问题，彼时，数据库约等于关系型数据，约等于 Oracle&amp;#x2F;SQLServer&amp;#x2F;MySQL&amp;#x2F;PostgreSQL 。但随着数据量的不断增大、用户需求的不断细化，关系模型已经不能一招鲜、吃遍天。&lt;/p&gt;
-    
-    </summary>
-    
-      <category term="数据库" scheme="https://www.qtmuniao.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
-    
-    
-      <category term="数据库" scheme="https://www.qtmuniao.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
-    
-      <category term="database" scheme="https://www.qtmuniao.com/tags/database/"/>
     
   </entry>
   

@@ -193,6 +193,89 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/05/05/infra-interview-tcp/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/05/05/infra-interview-tcp/" class="post-title-link" itemprop="url">Infra 面试之数据结构五：顺序组装</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-05-05 10:49:31 / 修改时间：10:57:42" itemprop="dateCreated datePublished" datetime="2024-05-05T10:49:31+08:00">2024-05-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%9D%A2%E8%AF%95/" itemprop="url" rel="index"><span itemprop="name">面试</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>这是我在很早之前遇到的一个题，很有意思，所以到现在仍然记得。题意借用了 TCP 的上下文，要求实现 TCP 中一个“顺序组装”的关键逻辑：</p>
+<ol>
+<li>对于 TCP 层来说，IP 层的 packet 是乱序的收到。</li>
+<li>对于应用层来说，TCP 层交付的是顺序的数据。</li>
+</ol>
+<p>这个题有意思的点在于，借用了 TCP 的上下文之后，就可以先和候选人讨论一些 TCP 的基础知识，然后话锋一转，引出这道题。这样既可以考察一些基础知识，也可以考察工程代码能力。</p>
+<h1 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Packet</span> &#123;</span><br><span class="line">    <span class="type">size_t</span> offset;</span><br><span class="line">    <span class="type">size_t</span> length;</span><br><span class="line">    <span class="type">uint8_t</span> *data;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现一个“顺序交付”语义</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TCP</span> &#123;</span><br><span class="line">  <span class="comment">// 应用层调用：按顺序读取不超过 count 的字节数到 buf 中，并返回实际读到的字节数</span></span><br><span class="line">  <span class="function"><span class="type">size_t</span> <span class="title">read</span><span class="params">(<span class="type">void</span> *buf, <span class="type">size_t</span> count)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：得到一些随机顺序的 IP 层封包</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">receive</span><span class="params">(Packet* p)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：数据发完，连接关闭</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">finish</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/05/05/infra-interview-tcp/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/04/08/paywall-one-year/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1120,91 +1203,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/08/21/life-engineering-many-passes/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2023/08/21/life-engineering-many-passes/" class="post-title-link" itemprop="url">生活工程学（一）：多轮次拆解</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2023-08-21 16:19:43 / 修改时间：16:36:18" itemprop="dateCreated datePublished" datetime="2023-08-21T16:19:43+08:00">2023-08-21</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1 id=""><a href="#" class="headerlink" title=""></a></h1><blockquote>
-<p>我们在工程实践中，有些构建代码的小技巧，其背后所体现的思想，生活中也常常可见。本系列便是这样一组跨越生活和工程的奇怪联想。这是第一篇：多轮次拆解，也即，<strong>很多我们习惯一遍完成的事情，有时候拆成多个轮次完成，会简单、高效很多</strong>。</p>
-</blockquote>
-<p>我在进行 code review 时，常看到一些新手同学在一个 for 循环中干太多事情。常会引起多层嵌套，或者 for 循环内容巨大无比。此时，如果不损失太多性能，我通常建议同学将要干的事情拆成多少个步骤，每个步骤一个 for 循环。甚至，可以每个步骤一个函数。</p>
-<p>当然，这些全是从维护角度着眼的。因为人一下总是记不了太多事情，一步步来，而不是揉在一块来，会让每个步骤逻辑清晰很多。后者，我通常称之为”<strong>摊大饼</strong>“式代码，这种代码的特点是写时很自然，但是维护起来很费劲——细节揉在一起总会让复杂度爆炸。软件工程中的最小可用原型，也是类似的理念。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2023/08/21/life-engineering-many-passes/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1272,19 +1274,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">108</span>
+          <span class="site-state-item-count">109</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">36</span>
+        <span class="site-state-item-count">37</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">177</span>
+        <span class="site-state-item-count">179</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
