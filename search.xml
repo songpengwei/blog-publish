@@ -10992,7 +10992,7 @@
     <title>使用 ray.data 进行大规模数据处理（二）：全局视角</title>
     <url>/2024/07/07/ray-data-2/</url>
     <content><![CDATA[<blockquote>
-<p><span class="exturl" data-url="aHR0cDovL3JheS5kYXRhLw==">ray.data<i class="fa fa-external-link-alt"></i></span> 是基于 ray core 的一层封装。依赖 ray.data，用户用简单的代码，就可以实现数据大规模的异构处理（主要指同时使用 CPU 和 GPU）。一句话总结：很简单好用，同时也有很多坑。<br>在 <span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzU1YzJkNDU1LTMzMTktNGM3Zi05ZTVlLTRlYjExOGE0ODJkNw==">上一篇<i class="fa fa-external-link-alt"></i></span>中，我们从用户接口出发，浅浅地梳理了一下 <span class="exturl" data-url="aHR0cDovL3JheS5kYXRhLw==">ray.data<i class="fa fa-external-link-alt"></i></span> 的主要接口。本篇，我们从宏观的角度，大概串一下 ray.data 的基本原理。之后，我们再用几篇，结合代码细节和使用经验，探讨下比较重要的几块内容：执行调度、数据格式和避坑指南。</p>
+<p><span class="exturl" data-url="aHR0cDovL3JheS5kYXRhLw==">ray.data<i class="fa fa-external-link-alt"></i></span> 是基于 ray core 的一层封装。依赖 ray.data，用户用简单的代码，就可以实现数据大规模的异构处理（主要指同时使用 CPU 和 GPU）。一句话总结：很简单好用，同时也有很多坑。<br>在 <span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzU1YzJkNDU1LTMzMTktNGM3Zi05ZTVlLTRlYjExOGE0ODJkNw==">上一篇<i class="fa fa-external-link-alt"></i></span>中，我们从用户接口出发，浅浅地梳理了一下 <span class="exturl" data-url="aHR0cDovL3JheS5kYXRhLw==">ray.data<i class="fa fa-external-link-alt"></i></span> 的主要接口。本篇，我们从宏观的角度，大概串一下 ray.data 的基本原理。之后，我们再用几篇，结合代码细节和使用经验，探讨下比较重要的几块内容：执行调度、数据格式和避坑指南。<br> 本文来自我的专栏《<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">系统日知录<i class="fa fa-external-link-alt"></i></span>》，如果你觉得文章还不错，欢迎订阅支持我。</p>
 </blockquote>
 <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>从高层来理解，ray.data 的一次数据处理任务大致可以分成前后相继的三阶段：</p>
 <ol>
