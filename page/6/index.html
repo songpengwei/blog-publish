@@ -193,6 +193,120 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/11/18/leveldb-data-structures-bloom-filter/" class="post-title-link" itemprop="url">漫谈 LevelDB 数据结构（二）：布隆过滤器（Bloom Filter）</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-11-18 21:32:23" itemprop="dateCreated datePublished" datetime="2020-11-18T21:32:23+08:00">2020-11-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-03-17 09:54:05" itemprop="dateModified" datetime="2024-03-17T09:54:05+08:00">2024-03-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/leveldb/" itemprop="url" rel="index"><span itemprop="name">leveldb</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>早对 <a target="_blank" rel="noopener" href="https://github.com/google/leveldb">LevelDB</a> 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和  Jeff Dean 呢。</p>
+<p>看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路：从架构概览说起，以模块分析做合。读代码的这些天，一直在盘算从哪下笔比较好。在将将读完之时，印象最深的反而是 LevelDB 的各种精妙的数据结构：贴合场景、从头构建、剪裁得当、代码精到。不妨， LevelDB 系列就从这些边边角角的小构件开始吧。</p>
+<p>本系列主要想分享 LevelDB 中用到的三个工程中常用的经典数据结构，分别是用以快速读写 memtable 的 <a href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/"><strong>Skip List</strong></a>、用以快速筛选 sstable 的 <strong>Bloom Filter</strong> 和用以部分缓存 sstable 的 <strong>LRUCache</strong> 。这是第二篇，Bloom Filter。</p>
+</blockquote>
+<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>LevelDB 是一个单机的 KV 存储引擎，但没有使用传统的平衡查找树以平衡读写性能，而是使用了 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Log-structured_merge-tree">LSM-tree</a> 结构来组织数据，牺牲部分读性能来换取较高的写吞吐。下面来对照一张图来介绍 LSM-tree 在不同存储介质上的组织方式。</p>
+<p><img src="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png" alt="leveldb.png"></p>
+<p>LevelDB 将数据分为两大部分，分别存放在内存和文件系统中。主要数据模块包括 WAL log，memtable，immutable memtable，sstable。按照数据流向依次如下：</p>
+<ol>
+<li>当 LevelDB 收到一个写入请求 <code>put(k, v)</code> ，会首先将其操作日志追加到日志文件（WAL）中，以备节点意外宕机恢复。</li>
+<li>写完 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Write-ahead_logging">WAL</a> 后，LevelDB 将该条 kv 插入内存中的<a href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/">查找结构</a>：memtable。</li>
+<li>在 memtable 积累到一定程度后，会 rotate 为一个只读 memtable，即 immutable memtable；同时生成一个新的 memtable 以供写入。</li>
+<li>当内存有压力后，会将 immutable memtable 顺序写入文件系统，生成一个 level0 层的 sstable（sorted strings table） 文件。该过程称为一次 minor compaction。</li>
+<li>由于查询操作需要按层次遍历 memtable、immutable 和 sstable。当 sstable 文件生成的越来越多之后，查询性能必然越来越差，因此需要将不同的 sstable 进行归并，称为 major compaction。</li>
+</ol>
+<h3 id="LevelDB-层次组织"><a href="#LevelDB-层次组织" class="headerlink" title="LevelDB 层次组织"></a>LevelDB 层次组织</h3><p>所有在文件系统中的 sstable 文件，被 LevelDB 在逻辑上组织成多个层次（一般是 7层），并且满足以下性质：</p>
+<ol>
+<li>层次越大说明其数据写入越早，即先往上层进行“放”（minor compaction），上层“满”（达到容量限制）之后“溢”（major compaction）到下层进行合并。</li>
+<li>每层文件总大小都有一定限制，并且成指数级增长。比如 level0 层文件总大小上限为10MB，level1 层为100MB，依次类推，最高层（level6层）没有限制。</li>
+<li>由于 level0 每个 sstable 文件都是直接由 memtable 落盘而来， 因此多个 sstable 文件的 key 范围可能会有交叠。而其他层的多个 sstable 文件则通过一些规则保证没有交叠。</li>
+</ol>
+<p>对于 LevelDB 的一次读取操作，需要首先去 memtable、immutable memtable 查找，然后依次去文件系统中各层查找。可以看出，相比写入操作，读取操作实在有点效率低下。我们这种客户端进行一次读请求，进入系统后被变成多次读请求的现象为<strong>读放大</strong>。</p>
+<p>为了减小读放大，LevelDB 采取了几方面措施：</p>
+<ol>
+<li>通过 major compaction 尽量减少 sstable 文件</li>
+<li>使用快速筛选的办法，快速判断 key 是否在某个 sstable 文件中</li>
+</ol>
+<p>而快速判断某个 key 是否在某个 key 集合中，LevelDB 用的正是布隆过滤器。当然，布隆过滤器只能快速判断 key 一定不在某个 sstable 中，从而在层层查找时跳过某些 sstable 。之后会详述原因，此处按下不表。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/11/18/leveldb-data-structures-bloom-filter/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/07/12/go-context/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1214,109 +1328,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/02/29/6-824-video-notes-1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/02/29/6-824-video-notes-1/" class="post-title-link" itemprop="url">MIT 6.824 2020 视频笔记一：绪论</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-02-29 18:39:48" itemprop="dateCreated datePublished" datetime="2020-02-29T18:39:48+08:00">2020-02-29</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:16:07" itemprop="dateModified" datetime="2024-03-04T09:16:07+08:00">2024-03-04</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E5%85%AC%E5%BC%80%E8%AF%BE/" itemprop="url" rel="index"><span itemprop="name">公开课</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
-<p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <a target="_blank" rel="noopener" href="https://www.youtube.com/channel/UC_7WrbZTCODu1o_kfUMq88g/videos">Youtube</a>，<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/av90915526">B站</a>。课程资料：<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/schedule.html">6.824主页</a>。本篇是第一节课笔记，绪论。</p>
-</blockquote>
-<h2 id="课程背景"><a href="#课程背景" class="headerlink" title="课程背景"></a>课程背景</h2><p>构建分布式系统的原因：</p>
-<ol>
-<li>Parallelism，资源并行（提高效率）。</li>
-<li>Fault tolerance，容错。</li>
-<li>Physical，系统内在的物理分散。</li>
-<li>Security，不可信对端（区块链）。</li>
-</ol>
-<p>分布式系统面临的挑战：</p>
-<ol>
-<li>Concurrency，系统构件很多，并行繁杂，交互复杂。</li>
-<li>Partial failure，存在部分失败，而不是像单机一样要么正常运行，要么完全宕机。</li>
-<li>Performance，精巧设计才能获取与机器数量线性相关的性能。</li>
-</ol>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/02/29/6-824-video-notes-1/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1388,7 +1399,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">110</span>
+          <span class="site-state-item-count">111</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1400,7 +1411,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">181</span>
+        <span class="site-state-item-count">182</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

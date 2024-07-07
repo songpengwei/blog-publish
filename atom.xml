@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://www.qtmuniao.com/"/>
-  <updated>2024-06-30T06:46:56.653Z</updated>
+  <updated>2024-07-07T13:08:33.481Z</updated>
   <id>https://www.qtmuniao.com/</id>
   
   <author>
@@ -15,6 +15,40 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>使用 ray.data 进行大规模数据处理（二）：全局视角</title>
+    <link href="https://www.qtmuniao.com/2024/07/07/ray-data-2/"/>
+    <id>https://www.qtmuniao.com/2024/07/07/ray-data-2/</id>
+    <published>2024-07-07T13:03:33.000Z</published>
+    <updated>2024-07-07T13:08:33.481Z</updated>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;&lt;a href=&quot;http://ray.data/&quot;&gt;ray.data&lt;/a&gt; 是基于 ray core 的一层封装。依赖 ray.data，用户用简单的代码，就可以实现数据大规模的异构处理（主要指同时使用 CPU 和 GPU）。一句话总结：很简单好用，同时也有很多坑。&lt;br&gt;在 &lt;a href=&quot;https://xiaobot.net/post/55c2d455-3319-4c7f-9e5e-4eb118a482d7&quot;&gt;上一篇&lt;/a&gt;中，我们从用户接口出发，浅浅地梳理了一下 &lt;a href=&quot;http://ray.data/&quot;&gt;ray.data&lt;/a&gt; 的主要接口。本篇，我们从宏观的角度，大概串一下 ray.data 的基本原理。之后，我们再用几篇，结合代码细节和使用经验，探讨下比较重要的几块内容：执行调度、数据格式和避坑指南。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h1 id=&quot;概述&quot;&gt;&lt;a href=&quot;#概述&quot; class=&quot;headerlink&quot; title=&quot;概述&quot;&gt;&lt;/a&gt;概述&lt;/h1&gt;&lt;p&gt;从高层来理解，ray.data 的一次数据处理任务大致可以分成前后相继的三阶段：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;数据加载&lt;/strong&gt;：将数据从系统外部读到 ray 的 Object Store 中 （如 read_parquet）&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;数据变换&lt;/strong&gt;：利用各种算子在 Object Store 中对数据进行变换（如 map&amp;#x2F;filter&amp;#x2F;repartition）&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;数据写回&lt;/strong&gt;：将 Object Store 中的数据写回外部存储（如 write_parquet）&lt;/li&gt;
+&lt;/ol&gt;
+    
+    </summary>
+    
+      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
+    
+      <category term="架构" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%9E%B6%E6%9E%84/"/>
+    
+    
+      <category term="ray" scheme="https://www.qtmuniao.com/tags/ray/"/>
+    
+      <category term="数据处理" scheme="https://www.qtmuniao.com/tags/%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86/"/>
+    
+      <category term="大数据" scheme="https://www.qtmuniao.com/tags/%E5%A4%A7%E6%95%B0%E6%8D%AE/"/>
+    
+  </entry>
   
   <entry>
     <title>有趣的线性代数（一）：矩阵乘法</title>
@@ -519,31 +553,6 @@
       <category term="编程" scheme="https://www.qtmuniao.com/tags/%E7%BC%96%E7%A8%8B/"/>
     
       <category term="素养" scheme="https://www.qtmuniao.com/tags/%E7%B4%A0%E5%85%BB/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Facebook Velox 运行机制全面解析</title>
-    <link href="https://www.qtmuniao.com/2023/03/22/velox-task-analysis/"/>
-    <id>https://www.qtmuniao.com/2023/03/22/velox-task-analysis/</id>
-    <published>2023-03-22T12:00:33.000Z</published>
-    <updated>2024-02-21T08:01:31.316Z</updated>
-    
-    <summary type="html">
-    
-      &lt;h2 id=&quot;概述&quot;&gt;&lt;a href=&quot;#概述&quot; class=&quot;headerlink&quot; title=&quot;概述&quot;&gt;&lt;/a&gt;概述&lt;/h2&gt;&lt;p&gt;&lt;a href=&quot;https://research.facebook.com/publications/velox-metas-unified-execution-engine/&quot;&gt;Facebook Velox&lt;/a&gt; 是一个针对 SQL 运行时的 C++ 库，旨在统一 Facebook 各种计算流，包括 Spark 和 Presto，使用推的模式、支持向量计算。&lt;/p&gt;
-&lt;p&gt;Velox 接受一棵&lt;strong&gt;优化过的&lt;/strong&gt; &lt;code&gt;PlanNode&lt;/code&gt; Tree，然后将其切成一个个的线性的 &lt;code&gt;Pipeline&lt;/code&gt;，&lt;code&gt;Task&lt;/code&gt; 负责这个转变过程，每个 Task 针对一个 PlanTree Segment。大多数算子是一对一翻译的，但是有一些特殊的算子，通常出现在多个 Pipeline 的&lt;strong&gt;切口&lt;/strong&gt;处，通常来说，这些切口对应计划树的&lt;strong&gt;分叉处&lt;/strong&gt;，如 &lt;code&gt;HashJoinNode&lt;/code&gt;，&lt;code&gt;CrossJoinNode&lt;/code&gt;， &lt;code&gt;MergeJoinNode&lt;/code&gt; ，通常会翻译成 XXProbe 和 XXBuild。但也有一些例外，比如 &lt;code&gt;LocalPartitionNode&lt;/code&gt; 和 &lt;code&gt;LocalMergeNode&lt;/code&gt; 。&lt;/p&gt;
-    
-    </summary>
-    
-      <category term="数据库" scheme="https://www.qtmuniao.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
-    
-      <category term="查询引擎" scheme="https://www.qtmuniao.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E6%9F%A5%E8%AF%A2%E5%BC%95%E6%93%8E/"/>
-    
-    
-      <category term="Runtime" scheme="https://www.qtmuniao.com/tags/Runtime/"/>
-    
-      <category term="执行引擎" scheme="https://www.qtmuniao.com/tags/%E6%89%A7%E8%A1%8C%E5%BC%95%E6%93%8E/"/>
     
   </entry>
   
