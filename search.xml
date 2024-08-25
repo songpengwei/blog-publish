@@ -2543,6 +2543,7 @@
 </ul>
 ]]></content>
       <categories>
+        <category>技术</category>
         <category>工具</category>
       </categories>
       <tags>
@@ -9550,6 +9551,7 @@
 </ol>
 ]]></content>
       <categories>
+        <category>职场</category>
         <category>工作</category>
       </categories>
       <tags>
@@ -10945,6 +10947,7 @@
 </blockquote>
 ]]></content>
       <categories>
+        <category>职场</category>
         <category>面试</category>
       </categories>
       <tags>
@@ -11110,6 +11113,103 @@
       <tags>
         <tag>读书</tag>
         <tag>人生</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Snowflake：云原生数仓的开创者</title>
+    <url>/2024/08/25/snowflake-paper/</url>
+    <content><![CDATA[<blockquote>
+<p>Snowflake 由甲骨文的两位员工在 2012 年出来创办，一开始就瞄准云原生数仓，因此架构设计（在当时看来）非常“激进”。超前的视野带来超额的回报，Snowflake 在 2020 年正式上市，市值一度高达 700 亿美金，创造了史上规模最大的软件 IPO 记录。</p>
+<p>本文我们综合两篇论文：<span class="exturl" data-url="aHR0cHM6Ly9kbC5hY20ub3JnL2RvaS9wZGYvMTAuMTE0NS8yODgyOTAzLjI5MDM3NDE=">The Snowflake Elastic Data Warehouse<i class="fa fa-external-link-alt"></i></span> 和 <span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9zeXN0ZW0vZmlsZXMvbnNkaTIwLXBhcGVyLXZ1cHBhbGFwYXRpLnBkZg==">Building An Elastic Query Engine on Disaggregated Storage<i class="fa fa-external-link-alt"></i></span>  来大致聊聊其架构设计。</p>
+<p> 本文来自我的专栏《<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">系统日知录<i class="fa fa-external-link-alt"></i></span>》，如果你觉得文章还不错，欢迎订阅支持我。</p>
+</blockquote>
+<p>这篇文章我早就想写了，但上次在看论文时卡住了——论文信息太多，地毯式的阅读，很快就淹没在细节中，当时也只看了三分之二，就搁置了。上周（20240707）在文章 <span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wb3N0LzkzZDNlOWFkLTkwZjItNDdlYy1hOTQyLWZmOTVjMzUxY2JhMQ==">Spark：如何在云上做缩容<i class="fa fa-external-link-alt"></i></span>时提到了存算分离的 snowflake ，有读者要求写下，于是便重新捡起来。</p>
+<p>相比上次 push 的方式，本次采用 pull 的方式：即不是被动的读论文，而是先思考，如果让我设计这么一个云原生数仓，我要怎么设计，会有哪些问题等等。带着这些问题，我再去从论文中找答案，发现效率一下高了很多，也便让这篇文章没有再次难产。</p>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2024/08/25/snowflake-paper/">https://www.qtmuniao.com/2024/08/25/snowflake-paper/</a> 转载请注明出处</em></p>
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>Snowflake 主要设计目标如下：</p>
+<ol>
+<li><strong>存算分离</strong>：因此存储和计算都能做到弹性伸缩，按实际用量计费</li>
+<li><strong>多租户</strong>：保证多租户之间的隔离性</li>
+<li><strong>高性能</strong>：在1,2 前提下尽可能的提升性能</li>
+</ol>
+<h1 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h1><p>为了实现上述设计目标，让我们首先看看 snowflake 的整体架构：</p>
+<p><img src="https://s2.loli.net/2024/08/25/5ejpN3sDxutzdEb.png" alt="snow-architecture.png"></p>
+<p>可以看出，snowflake 整体分为三层。除了我们常说的存算两层外，还有一个元信息层。</p>
+<blockquote>
+<p>这也是分布式数据系统经典的分法，我在<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL0JWMXAxNDIxQzdTRg==">这个视频<i class="fa fa-external-link-alt"></i></span>中也按照这种分类方法梳理了分布式系统的一些脉络，感兴趣的同学可以去看看。</p>
+</blockquote>
+<h2 id="数据库存储层（Database-Storage）"><a href="#数据库存储层（Database-Storage）" class="headerlink" title="数据库存储层（Database Storage）"></a>数据库存储层（Database Storage）</h2><p>这一层是数据的最终持久化层，最开始时（论文发表时）通常存在各个云厂商的对象存储上。后来也开始支持第三方存储，比如 <span class="exturl" data-url="aHR0cHM6Ly9pY2ViZXJnLmFwYWNoZS5vcmcv">Apache Iceberg<i class="fa fa-external-link-alt"></i></span>。</p>
+<p>当数据写入 snowflake 后，snowflake 会将数据组织成<strong>微分区（micro partition）</strong>的方式，写入对象存储，具体如何做优化、压缩，如何确定大小、管理元信息，我们稍后会讲。</p>
+<h2 id="查询处理层（Query-Processing）"><a href="#查询处理层（Query-Processing）" class="headerlink" title="查询处理层（Query Processing）"></a>查询处理层（Query Processing）</h2><p>也就是计算层。Snowflake 使用 <strong>虚拟数仓（virtual warehouse，VM）</strong>来组织计算单元，每个 VM 包含一组计算节点，可以有不同尺寸。不同 VM 之间是隔离的，不会互相影响。</p>
+<p>查询处理层里有一个非常重要的缓存层，该层通常以 VM 为单位，以一致性哈希组织（避免节点增删后的数据 shuffle），来缓存对象存储捞上来的数据和算子运算的中间结果。</p>
+<h2 id="云服务（Cloud-Services）"><a href="#云服务（Cloud-Services）" class="headerlink" title="云服务（Cloud Services）"></a>云服务（Cloud Services）</h2><p>该层是整个 Snowflake 集群的“大脑”，由一组运行在云上的计算实例构成。包含以下组件：</p>
+<ol>
+<li><strong>鉴权认证（authentication）</strong>：多租户</li>
+<li><strong>基础设施管理（infra management）</strong>：也就是集群内物理信息管理管理</li>
+<li><strong>元信息管理（metadata management）</strong>：主要是数据库、表等 schema 信息的管理</li>
+<li><strong>查询解析和优化（query parsing and optimization）</strong>：SQL 解析到执行几个阶段中，除最后执行外都在这里，毕竟这里有全局元信息，便于优化</li>
+<li><strong>准入控制（ access control）</strong></li>
+</ol>
+<p>接下来我们重点说说存储层和计算层。</p>
+<h1 id="存储层"><a href="#存储层" class="headerlink" title="存储层"></a>存储层</h1><p>各家云上<strong>最便宜、容错性最好</strong>的，无疑就是对象存储了。云上的系统，如果有大规模的数据存储需求，一般都会用对象存储。对象存储也即 blob 存储（不管你存的是啥，人家都当做一段不理解的二进制块来存储），以桶（bucket，也就是 namespace）、对象（object）两级来进行逻辑组织。每个对象都是 path → object 的 kv 对，是拍平的，<strong>没有</strong>类似文件系统的目录树结构。</p>
+<p>对于 Snowflake 的存储系统来说，对象存储需要考虑的特点有：</p>
+<ol>
+<li><strong>自容错</strong>：因此不用再上层进行 replication</li>
+<li><strong>不可变</strong>：因此不能进行原地更新</li>
+</ol>
+<p>对象存储本身容错，从而使 Snowflake 无需担心可用性问题，也就不用像传统 share-nothing 的 TiDB 架构，得自己在多机搞多副本，然后还要用 raft 来维持一致性。</p>
+<h2 id="微分区（micro-partition）"><a href="#微分区（micro-partition）" class="headerlink" title="微分区（micro-partition）"></a>微分区（micro-partition）</h2><p>在表和实际存储中间，数据库通常都会按 block（叫 partition 也行）对数据进行组织，传统的数仓的 block 多为静态的。而 Snowflake 管每块数据叫 micro-partition，其特点是：</p>
+<ol>
+<li><strong>不太大</strong>：几十兆到几百兆间，便于拆分、合并和迁移，也即<strong>动态</strong>分区。</li>
+<li><strong>列存</strong>：每个 micro-partition 包含一些行，但是内部为了压缩和应对数仓场景，是按列存储的。</li>
+<li><strong>元信息</strong>：会保存每列 min-max 等元信息，以便进行快速过滤。</li>
+</ol>
+<p>大致示意图如下，左边是逻辑上的一张表，右边是物理上的数据组织，一张表“横切”为多个 micro-partition，每个  micro-partition 内“纵切”后按列存储。</p>
+<p><img src="https://s2.loli.net/2024/08/25/ek9EWqxnJAtD17M.png" alt="snowflake-storage-layout.png"></p>
+<p>每个 micro-partition 作为一个 object 存在对象存储中。</p>
+<h2 id="DML-操作"><a href="#DML-操作" class="headerlink" title="DML 操作"></a>DML 操作</h2><p>由于每个 micro-partition 是不可变的，那我们往表中插入、更新和删除行数据时该怎么办呢？</p>
+<p><strong>插入</strong>：插入最简单，将新插入的数据生成新的  micro-partition  即可。</p>
+<p><strong>更新</strong>：首先找到被更新的行对应的 micro-partition ，读到 VM 中，修改，然后整体写回对象存储中。这里为了区分新旧 micro-partition，会给每个 micro-partition 文件关联一个版本号。</p>
+<p><strong>删除</strong>：和更新类似，读取→删除→ 写回，此间也要更新版本号。</p>
+<p>基于每个文件版本号，Snowflake 可以做 MVCC 的并发控制，进一步提供 SI 级别的隔离性和<strong>时间回溯</strong>（time travel）的功能。</p>
+<p>整体来看，就是每次一个写事务，就会将系统的版本号推高，并且圈出一个文件集合，构成当前版本号下的一个 snapshot。基于这些 snapshot，我们可以访问任意时间的快照，即时间回溯。</p>
+<h1 id="计算层"><a href="#计算层" class="headerlink" title="计算层"></a>计算层</h1><p>计算层也就是查询执行层（之前的解析、优化都在云服务层完成了），Snowflake 引入了 VM（Virtual Warehouse）的概念。下面我们梳理下几个概念间的关系：</p>
+<ol>
+<li><strong>用户</strong>：每个用户可以起多个 VM，比如有的 VM 用来做 ETL，有的 VM 用来做查询。</li>
+<li><strong>VM</strong>：每个 VM 可以有 XS → XXL 不同的尺寸，表示其包含不同数量、尺寸的计算资源。VM 和 VM 之间是完全隔离的。</li>
+<li><strong>节点</strong>：云上的计算节点，会包含一定的内存和外存（HDD 或者 SSD）</li>
+</ol>
+<p>在设计执行层时，一个很重要的点是，是否支持 MPP ？可以粗略的理解为，一个查询语句是否能在多个节点上进行类似 spark 的分布式执行；还是只能局限在一个节点中进行单机执行。后者实现简单，但是吞吐上不去。而数仓通常是大数据量场景，因此多采用前者，当然实现会更负载，因为会在执行时，会涉及多机的的通信，以进行数据的 shuffle（可以参考 spark 中的 shuffle）。</p>
+<p>回到 Snowflake 中，也就是一个查询语句是否可以在 VM 中的多个节点执行，从论文中的蛛丝马迹来看，应该是可以的。</p>
+<p>除此之外，Snowflake 的计算引擎主要有以下几个特点：</p>
+<ol>
+<li><strong>列式（columnar）</strong>：由于数仓场景通常都是“宽表窄查”，因此采用列式执行引擎效率会更高，而且可以充分利用单机缓存和 SIMD 指令加速计算。</li>
+<li><strong>向量化执行（Vectorized）</strong>：这里感觉和列式稍微有点混淆，主要是想表达算子间是“流水线”地执行，而非每个算子的输出都物化。</li>
+<li><strong>推模型（push-based）</strong>：也即不是用的经典的基于拉的火山模型，将控制和数据解耦，能够充分利用缓存，效率也更高。当然，实现会更复杂一些。</li>
+</ol>
+<h2 id="伸缩"><a href="#伸缩" class="headerlink" title="伸缩"></a>伸缩</h2><p>每个 VM 的大小可以按用户的需求进行动态的伸缩。比如一个任务比较着急，就可以多加计算节点，用较短时间跑出来。由于 Snowflake 是按照 <code>机器*时间</code> 计费的，因此对于同一个 query 来说：多机器快速跑和少量机器慢慢跑，费用是差不多的，但前者无疑更快，利好用户。</p>
+<h2 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h2><p>执行引擎用到的数据主要包括两块：</p>
+<ol>
+<li><strong>输入数据</strong>：即执行计划各个叶子节点需要加载的数据，需要从远端（对象存储）中拉取。</li>
+<li><strong>中间数据</strong>：执行计划就是由算子组成的 DAG，每个算子会读入数据，进行“变换”后，产生输出，为下一个算子所用。</li>
+</ol>
+<p>上述两种数据都有被复用的可能，尤其是输入数据，即某个 table 的微分区被访问后，后续一段时间内很有可能被再次访问（<span class="exturl" data-url="aHR0cHM6Ly9iYWlrZS5iYWlkdS5jb20vaXRlbS8lRTUlQjElODAlRTklODMlQTglRTYlODAlQTclRTUlOEUlOUYlRTclOTAlODYvMzMzNDU1Ng==">局部性原理<i class="fa fa-external-link-alt"></i></span>）。因此，可以将其缓存在 VM 节点中的内存或者外存（HDD，SDD）中。单机容量有限，因此 Snowflake 会将 VM 内所有节点的内外存组成一个缓存池，并以<strong>一致性哈希算法</strong>（可以参考<a href="https://www.qtmuniao.com/2020/06/13/dynamo/">这篇文章</a>）来维护缓存，并且是 lazy 的一致性哈希，可以避免在 VM 中有节点变更时，数据频繁的迁移的。</p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><ol>
+<li><span class="exturl" data-url="aHR0cHM6Ly9kbC5hY20ub3JnL2RvaS9wZGYvMTAuMTE0NS8yODgyOTAzLjI5MDM3NDE=">The Snowflake Elastic Data Warehouse<i class="fa fa-external-link-alt"></i></span> </li>
+<li><span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9zeXN0ZW0vZmlsZXMvbnNkaTIwLXBhcGVyLXZ1cHBhbGFwYXRpLnBkZg==">Building An Elastic Query Engine on Disaggregated Storage<i class="fa fa-external-link-alt"></i></span>  </li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnNub3dmbGFrZS5jb20v">snowflake 官方文档<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly93d3cubGlua2VkaW4uY29tL3B1bHNlL2ltcGFjdC1kbWwtb3BlcmF0aW9ucy1taWNyby1wYXJ0aXRpb25zLXNub3dmbGFrZS1taW56aGVuLXlhbmcv">The Impact of DML Operations with micro-partitions in Snowflake<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>论文解读</category>
+      </categories>
+      <tags>
+        <tag>数据库</tag>
+        <tag>云原生</tag>
+        <tag>snowflake</tag>
       </tags>
   </entry>
 </search>
