@@ -203,6 +203,94 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/10/27/jemalloc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/10/27/jemalloc/" class="post-title-link" itemprop="url">从“丰巢”快递柜看 Jemalloc 的内存管理</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-10-27 22:32:37 / 修改时间：22:36:11" itemprop="dateCreated datePublished" datetime="2024-10-27T22:32:37+08:00">2024-10-27</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">计算机基础</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h1><p>在某些工作负载中，随着时间的推移，内存的使用会逐渐增长，直到 OOM。后面发现是内存碎片问题，而将系统默认的内存分配器（<a target="_blank" rel="noopener" href="https://github.com/lattera/glibc/blob/master/malloc/malloc.c">glibc malloc</a>）换成 <a target="_blank" rel="noopener" href="https://jemalloc.net/">jemalloc</a> ，能有效控制内存的增长上界。</p>
+<p>为了解其背后原理，便找来 jemalloc 最初的论文：<a target="_blank" rel="noopener" href="https://www.bsdcan.org/2006/papers/jemalloc.pdf">A Scalable Concurrent malloc(3) Implementation for FreeBSD</a> 来一探究竟。当然，相比 2006 年论文发表时，当前的 jemalloc 可能已经发生了很大改变，因此本文只对当时论文内容负责。更多 jemalloc 机制，大家可以去其 <a target="_blank" rel="noopener" href="https://github.com/jemalloc/jemalloc">github 仓库</a>查看文档和源码。</p>
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>在探讨论文的主要思路之前，我们先简单回顾下<strong>内存分配器</strong>（memory allocator）的<em>作用</em>和<em>边界</em>。简言之：</p>
+<ol>
+<li>对下，向操作系统申请<strong>大块</strong>内存（使用 <code>sbrk</code>、<code>mmap</code> 等系统调用）</li>
+<li>对上，处理应用层的各种尺寸的内存申请请求（<code>malloc(size)</code>），并在应用层“表示”不用（<code>free</code>）后进行释放</li>
+</ol>
+<p>往小了说，分配器的功能非常简单：<strong>分配</strong>和<strong>释放</strong>（malloc 和 free）。想象中，实现也应该很简单，只需利用一个表来记录所有已使用内存和未分配内存（ a bit of bookkeeping），然后：</p>
+<ol>
+<li>malloc 请求来了，先去空闲表中找，不够的话就问操作系统要</li>
+<li>free 请求来了，还回空闲表中，如果空的多了，就还给操作系统</li>
+</ol>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/10/27/jemalloc/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/08/25/snowflake-paper/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1164,91 +1252,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/11/15/s3-experience/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2023/11/15/s3-experience/" class="post-title-link" itemprop="url">构建和维护星球最强对象存储系统的一点微小经验</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-11-15 21:29:38" itemprop="dateCreated datePublished" datetime="2023-11-15T21:29:38+08:00">2023-11-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:23:33" itemprop="dateModified" datetime="2024-03-04T09:23:33+08:00">2024-03-04</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>本文来自 Amazon S3 VP  <a target="_blank" rel="noopener" href="https://www.linkedin.com/in/andywarfield">Andy Warfield</a> 在 FAST 23 上的主旨演讲的<a target="_blank" rel="noopener" href="https://www.allthingsdistributed.com/2023/07/building-and-operating-a-pretty-big-storage-system.html">文字稿</a>，总结了他们在构架和维护如此量级的对象存储 —— S3 的一些经验。我们知道，Amazon S3 是云时代最重要的存储基础设施之一，现在各家云厂商的对象存储基本都兼容 S3 接口，所有云原生的基础设施，比如云原生数据库，其最终存储都要落到对象存储上。</p>
-</blockquote>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2023/11/15/s3-experience/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1320,7 +1323,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">113</span>
+          <span class="site-state-item-count">114</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1332,7 +1335,7 @@
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">184</span>
+        <span class="site-state-item-count">186</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

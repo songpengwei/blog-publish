@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="引子在某些工作负载中，随着时间的推移，内存的使用会逐渐增长，直到 OOM。后面发现是内存碎片问题，而将系统默认的内存分配器（glibc malloc）换成 jemalloc ，能有效控制内存的增长上界。 为了解其背后原理，便找来 jemalloc 最初的论文：A Scalable Concurrent malloc(3) Implementation for FreeBSD 来一探究竟。当然，相比">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从“丰巢”快递柜看 Jemalloc 的内存管理">
+<meta property="og:url" content="https://www.qtmuniao.com/2024/10/27/jemalloc/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="引子在某些工作负载中，随着时间的推移，内存的使用会逐渐增长，直到 OOM。后面发现是内存碎片问题，而将系统默认的内存分配器（glibc malloc）换成 jemalloc ，能有效控制内存的增长上界。 为了解其背后原理，便找来 jemalloc 最初的论文：A Scalable Concurrent malloc(3) Implementation for FreeBSD 来一探究竟。当然，相比">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://s2.loli.net/2024/10/27/ZHUtIgPlTpeqEOm.png">
+<meta property="og:image" content="https://s2.loli.net/2024/10/27/ZyhwJDaf5rLiPlv.png">
+<meta property="article:published_time" content="2024-10-27T14:32:37.000Z">
+<meta property="article:modified_time" content="2024-10-27T14:36:11.573Z">
+<meta property="article:author" content="木鸟杂记">
+<meta property="article:tag" content="jemalloc">
+<meta property="article:tag" content="memory">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2024/10/27/ZHUtIgPlTpeqEOm.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/2024/10/27/jemalloc/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>从“丰巢”快递柜看 Jemalloc 的内存管理 | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/10/27/jemalloc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从“丰巢”快递柜看 Jemalloc 的内存管理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-10-27 22:32:37 / 修改时间：22:36:11" itemprop="dateCreated datePublished" datetime="2024-10-27T22:32:37+08:00">2024-10-27</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">计算机基础</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h1><p>在某些工作负载中，随着时间的推移，内存的使用会逐渐增长，直到 OOM。后面发现是内存碎片问题，而将系统默认的内存分配器（<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2xhdHRlcmEvZ2xpYmMvYmxvYi9tYXN0ZXIvbWFsbG9jL21hbGxvYy5j">glibc malloc<i class="fa fa-external-link-alt"></i></span>）换成 <span class="exturl" data-url="aHR0cHM6Ly9qZW1hbGxvYy5uZXQv">jemalloc<i class="fa fa-external-link-alt"></i></span> ，能有效控制内存的增长上界。</p>
+<p>为了解其背后原理，便找来 jemalloc 最初的论文：<span class="exturl" data-url="aHR0cHM6Ly93d3cuYnNkY2FuLm9yZy8yMDA2L3BhcGVycy9qZW1hbGxvYy5wZGY=">A Scalable Concurrent malloc(3) Implementation for FreeBSD<i class="fa fa-external-link-alt"></i></span> 来一探究竟。当然，相比 2006 年论文发表时，当前的 jemalloc 可能已经发生了很大改变，因此本文只对当时论文内容负责。更多 jemalloc 机制，大家可以去其 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2plbWFsbG9jL2plbWFsbG9j">github 仓库<i class="fa fa-external-link-alt"></i></span>查看文档和源码。</p>
+<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>在探讨论文的主要思路之前，我们先简单回顾下<strong>内存分配器</strong>（memory allocator）的<em>作用</em>和<em>边界</em>。简言之：</p>
+<ol>
+<li>对下，向操作系统申请<strong>大块</strong>内存（使用 <code>sbrk</code>、<code>mmap</code> 等系统调用）</li>
+<li>对上，处理应用层的各种尺寸的内存申请请求（<code>malloc(size)</code>），并在应用层“表示”不用（<code>free</code>）后进行释放</li>
+</ol>
+<p>往小了说，分配器的功能非常简单：<strong>分配</strong>和<strong>释放</strong>（malloc 和 free）。想象中，实现也应该很简单，只需利用一个表来记录所有已使用内存和未分配内存（ a bit of bookkeeping），然后：</p>
+<ol>
+<li>malloc 请求来了，先去空闲表中找，不够的话就问操作系统要</li>
+<li>free 请求来了，还回空闲表中，如果空的多了，就还给操作系统</li>
+</ol>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2024/10/27/jemalloc/">https://www.qtmuniao.com/2024/10/27/jemalloc/</a> 转载请注明出处</em></p>
+<p>但为了实现内存的高效分配和回收、控制内存的利用率，其间的学问就大了去了，CPU 缓存、 RAM 特性和虚拟内存都会对其造成影响。其中最核心的点，就是如何进行内存组织排布，以便在用户<strong>高并发</strong>、<strong>多尺寸</strong>、<strong>不定时</strong>的申请和释放后，仍然能保证<strong>较低的调用延迟</strong>和<strong>较高的使用率</strong>。当然，对于本论文来说，还要加上一条：越多的核数能够支持越高的并发，谓之<strong>可扩展</strong>（scale）。</p>
+<p>需要说明的是，不要将本文的内存分配器和各种具有自动 GC 功能的编程语言运行时（比如 Java 的 JVM、Golang 的 Runtime）所混淆。后者是在 malloc&#x2F;free 的基础上，往上继续封装了一层，通过<strong>对象间的引用关系来追踪每个对象的生命周期，以自动地回收空间</strong>。</p>
+<p>可以这么理解，C++&#x2F;C 等编程语言要用户自己通过 malloc&#x2F;free 来管理内存；而使用 Java&#x2F;Golang&#x2F;Python，用户无脑新建对象就可以了，什么时候回收是语言“运行时”的工作。而我们本文只讨论前者。</p>
+<p>但从另外角度来看，存储引擎中也实现了类似的功能。因为存储引擎本质上也是要面对用户 put&#x2F;delete 的的请求，来进行存储的的分配和释放。只不过这里的存储，就不局限于内存（存储引擎多是 disk-based）。但其主要思想非常相似，比如使用<strong>空闲列表</strong>（free list）对可分配内存进行追踪。</p>
+<h1 id="主要思想"><a href="#主要思想" class="headerlink" title="主要思想"></a>主要思想</h1><p>从论文标题可以看出，jemalloc 在提出时，主要为了解决在多核时代下内存分配器性能随核数而 scale 问题，但其实论文花了相当多的篇幅来阐释如何进行内存排布来解决碎片问题。下面，我们就围绕这两个方向来大致窥探下其原理。</p>
+<h2 id="多核并发"><a href="#多核并发" class="headerlink" title="多核并发"></a>多核并发</h2><p>在多核时代进行内存分配时，主要面对的问题有：</p>
+<ol>
+<li>抢锁竞争</li>
+<li>缓存震荡</li>
+</ol>
+<p>为了保证全局数据结构的一致性的问题，就必须引入某种手段（比如锁）来进行协调。但如果多线程抢锁过于频繁，就会造成严重的性能下降。为了降低对锁的竞争，自然的想法就是，对主要的全局数据结构粒度拆分（比如 Java 的 ConcurrentHashMap 就是将哈希桶分成了多个段进行上锁）。</p>
+<p>分配器中最重要的数据结构就是空闲列表，我们可以将空闲列表拆分成多个，每个空闲列表使用单独的锁。这样可以缓解多线程的竞争问题，但却解决不了多核架构的另外一个问题——<strong>缓存震荡</strong>（cache sloshing）。</p>
+<p>在多核架构中，如果两个线程没有正确的共享缓存。比如线程 A 和线程 B 共享了一个缓存行（Cache Line），且两线程分别会反复修改缓存行的不同部分。如果 A 和 B 调度到了不同的 CPU 上，就会造成 Cache Line 所有权的反复竞争。</p>
+<p><img src="https://s2.loli.net/2024/10/27/ZHUtIgPlTpeqEOm.png" alt="cache-sloshing.png"></p>
+<p>为了解决此问题，jemalloc 会将所管理的内存分为几个（通常是 CPU 核数的四倍）区域（ 称为 Arena，“竞技场”）。在不同线程的 client 到来时，会均匀地（round robin）绑定到某个 Arena，之后该 client 所有内存的申请和释放都发生在该 Arena。论文还提及了 <span class="exturl" data-url="aHR0cHM6Ly9kbC5hY20ub3JnL2RvaS9wZGYvMTAuMTE0NS8zMDE1ODkuMjg2ODgw">Larson and Krishnan<i class="fa fa-external-link-alt"></i></span> (1998) 之前使用 hash 的方法进行绑定，但由于哈希过程是<strong>伪随机</strong>的（pseudo-random），因此很难保证线程到 Arena 的均匀。</p>
+<p>下面我们来讨论如何在每个 Arena 内排布内存来应对用户对象的申请和释放。</p>
+<h2 id="内存排布"><a href="#内存排布" class="headerlink" title="内存排布"></a>内存排布</h2><p>在开始讨论前，我们首先引入一个衡量内存利用率的指标——内存碎片（fragments），分为<strong>内部碎片</strong>和<strong>外部碎片</strong>。为了理解这个概念，我们可以思考下平日中“丰巢寄存柜”的工作原理，借此意象来比对理解分配器如何进行内存排布的。</p>
+<p>“丰巢”一般是问物业要一块地方，来建立一个快递柜（对应一个 Arena），就近服务小区居民。对于每个快递柜，会进一步将其划分成一个个格子，但如何划分就是讲究之处。</p>
+<p>由于快递通常大小不一，如果将快递柜等分，会有什么问题？</p>
+<ol>
+<li>对于小快递，每个格子会浪费很多空间（内部碎片）</li>
+<li>对于大快递，所有格子都放不下（明明总空间够，但却放不下，此时整个格子就是外部碎片）</li>
+</ol>
+<p>为了解决这个问题，我们日常中所见的快递柜多会分成大大小小尺寸不等的格子。但仍然可能有快递员，选一个大格子却放一个小快递。对于真实世界来说，这无解，因为所有格子是在快递柜出厂时就分好的，也即“静态分配”的；但在计算机世界，我们对内存的划分都是“逻辑上的”，因此可以做到“动态分配”。</p>
+<blockquote>
+<p>如果有人往大格子中放了一个小对象，可以将剩下的空间切出来形成一个新格子，给后面的对象用。且，在后面该小对象被取走后，可以将两个格子重新合并成一个大格子，以应对更大的对象。</p>
+</blockquote>
+<p>这就是“伙伴分配算法”的基本思想，当然，这并非 jemalloc 原创。但 jemalloc 在“二分伙伴算法”基础上，通过统计用户负载，进一步精细化管理内存，从而控制了碎片的无节制增长。</p>
+<p>比如 jemalloc 发现，大部分的对象不超过 512 B，因此引入了“量子间距”（quantum-spaced）。对这个尺寸附近及以下的格子并不使用伙伴算法，而是在一个页内进行静态分配，让其全是同样大小的格子——这样有什么好处呢？由于每个格子大小固定，就可以使用 bitmap 来充当空闲列表，从而加快了空闲列表的查找。</p>
+<p><img src="https://s2.loli.net/2024/10/27/ZyhwJDaf5rLiPlv.png" alt="memory-layout.png"></p>
+<p>这种精细化管理虽然会带来比较多的外部碎片（很多格子用不了），但却能更多地减少内部碎片（大部分格子能用满），得可偿失。</p>
+<h1 id="评估"><a href="#评估" class="headerlink" title="评估"></a>评估</h1><p>由于实践中不同应用程序内存负载的千变万化，如何衡量分配器好坏本身就是一个非常复杂的问题。很可能一个分配器设计出来后，在某些用户负载中表现良好、但在另外负载中却表现极差，此时我们很难说其是一个好的分配器。好的分配器应该是<strong>多数方面表现均衡、某些方面表现突出</strong>——因为面对如此复杂的现实世界，不可能所有方面都好，总会有取舍。</p>
+<p>因此作者花了很大功夫来设计了一套分配器性能评价工具，来证明 jemalloc 的优势，但这部分就不是本文重点了，感兴趣的同学可以去查论文原文。</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>我们首先铺垫了内存分配器的一些背景，说明了分配器是什么（malloc&#x2F;free），不是什么（auto gc），和什么相似（存储引擎 put&#x2F;get）；然后分析了论文中实现 jemalloc 的主要目标——多核扩展；继而讨论了其主要实现思路——为了避免竞争和缓存震荡问题，引入均匀的内存分区；为了减少碎片问题，基于伙伴算法对分区内存精细化管理，并以“丰巢快递柜”比对来帮助理解。</p>
+<p>最后提了一嘴如何评估分配器的好坏。需要强调的是，本文旨在帮你建立直觉，有想要展开查证之处，强烈推荐大家去读论文原文。</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><ol>
+<li><span class="exturl" data-url="aHR0cHM6Ly93d3cuYnNkY2FuLm9yZy8yMDA2L3BhcGVycy9qZW1hbGxvYy5wZGY=">A Scalable Concurrent malloc(3) Implementation for FreeBSD<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9kbC5hY20ub3JnL2RvaS9wZGYvMTAuMTE0NS8zMDE1ODkuMjg2ODgw">Memory Allocation for Long-Running Server Applications<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <p>微信支付</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/jemalloc/" rel="tag"># jemalloc</a>
+              <a href="/tags/memory/" rel="tag"># memory</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/08/25/snowflake-paper/" rel="prev" title="Snowflake：云原生数仓的开创者">
+      <i class="fa fa-chevron-left"></i> Snowflake：云原生数仓的开创者
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%95%E5%AD%90"><span class="nav-number">1.</span> <span class="nav-text">引子</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E6%80%9D%E6%83%B3"><span class="nav-number">3.</span> <span class="nav-text">主要思想</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E6%A0%B8%E5%B9%B6%E5%8F%91"><span class="nav-number">3.1.</span> <span class="nav-text">多核并发</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%8E%92%E5%B8%83"><span class="nav-number">3.2.</span> <span class="nav-text">内存排布</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%84%E4%BC%B0"><span class="nav-number">4.</span> <span class="nav-text">评估</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">6.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">木鸟杂记</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">114</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">186</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly94aWFveW91NjYuY29t" title="https:&#x2F;&#x2F;xiaoyou66.com">小游网</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+
+      <div class="site-overview-wrap">
+        <div class="motion-element sidebar-ads">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- 侧边栏-1 -->
+<ins class="adsbygoogle"
+style="display:inline-block;width:280px;height:100px"
+data-ad-client="ca-pub-4303078477555566"
+data-ad-slot="4071023010"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+<div style="
+    font-size: 0.3em;
+    height: 20px;
+    margin-top: -10px;
+">轻点广告 请我喝杯茶</div>
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/2024/10/27/jemalloc/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '033306ee2159ac3eb391f3050218c7bd',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

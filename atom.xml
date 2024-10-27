@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://www.qtmuniao.com/"/>
-  <updated>2024-08-25T06:47:29.706Z</updated>
+  <updated>2024-10-27T14:36:11.573Z</updated>
   <id>https://www.qtmuniao.com/</id>
   
   <author>
@@ -15,6 +15,39 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>从“丰巢”快递柜看 Jemalloc 的内存管理</title>
+    <link href="https://www.qtmuniao.com/2024/10/27/jemalloc/"/>
+    <id>https://www.qtmuniao.com/2024/10/27/jemalloc/</id>
+    <published>2024-10-27T14:32:37.000Z</published>
+    <updated>2024-10-27T14:36:11.573Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;引子&quot;&gt;&lt;a href=&quot;#引子&quot; class=&quot;headerlink&quot; title=&quot;引子&quot;&gt;&lt;/a&gt;引子&lt;/h1&gt;&lt;p&gt;在某些工作负载中，随着时间的推移，内存的使用会逐渐增长，直到 OOM。后面发现是内存碎片问题，而将系统默认的内存分配器（&lt;a href=&quot;https://github.com/lattera/glibc/blob/master/malloc/malloc.c&quot;&gt;glibc malloc&lt;/a&gt;）换成 &lt;a href=&quot;https://jemalloc.net/&quot;&gt;jemalloc&lt;/a&gt; ，能有效控制内存的增长上界。&lt;/p&gt;
+&lt;p&gt;为了解其背后原理，便找来 jemalloc 最初的论文：&lt;a href=&quot;https://www.bsdcan.org/2006/papers/jemalloc.pdf&quot;&gt;A Scalable Concurrent malloc(3) Implementation for FreeBSD&lt;/a&gt; 来一探究竟。当然，相比 2006 年论文发表时，当前的 jemalloc 可能已经发生了很大改变，因此本文只对当时论文内容负责。更多 jemalloc 机制，大家可以去其 &lt;a href=&quot;https://github.com/jemalloc/jemalloc&quot;&gt;github 仓库&lt;/a&gt;查看文档和源码。&lt;/p&gt;
+&lt;h1 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h1&gt;&lt;p&gt;在探讨论文的主要思路之前，我们先简单回顾下&lt;strong&gt;内存分配器&lt;/strong&gt;（memory allocator）的&lt;em&gt;作用&lt;/em&gt;和&lt;em&gt;边界&lt;/em&gt;。简言之：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;对下，向操作系统申请&lt;strong&gt;大块&lt;/strong&gt;内存（使用 &lt;code&gt;sbrk&lt;/code&gt;、&lt;code&gt;mmap&lt;/code&gt; 等系统调用）&lt;/li&gt;
+&lt;li&gt;对上，处理应用层的各种尺寸的内存申请请求（&lt;code&gt;malloc(size)&lt;/code&gt;），并在应用层“表示”不用（&lt;code&gt;free&lt;/code&gt;）后进行释放&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;往小了说，分配器的功能非常简单：&lt;strong&gt;分配&lt;/strong&gt;和&lt;strong&gt;释放&lt;/strong&gt;（malloc 和 free）。想象中，实现也应该很简单，只需利用一个表来记录所有已使用内存和未分配内存（ a bit of bookkeeping），然后：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;malloc 请求来了，先去空闲表中找，不够的话就问操作系统要&lt;/li&gt;
+&lt;li&gt;free 请求来了，还回空闲表中，如果空的多了，就还给操作系统&lt;/li&gt;
+&lt;/ol&gt;
+    
+    </summary>
+    
+      <category term="计算机基础" scheme="https://www.qtmuniao.com/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80/"/>
+    
+    
+      <category term="jemalloc" scheme="https://www.qtmuniao.com/tags/jemalloc/"/>
+    
+      <category term="memory" scheme="https://www.qtmuniao.com/tags/memory/"/>
+    
+  </entry>
   
   <entry>
     <title>Snowflake：云原生数仓的开创者</title>
@@ -449,7 +482,7 @@
     <link href="https://www.qtmuniao.com/2023/08/21/life-engineering-many-passes/"/>
     <id>https://www.qtmuniao.com/2023/08/21/life-engineering-many-passes/</id>
     <published>2023-08-21T08:19:43.000Z</published>
-    <updated>2023-08-21T08:36:18.727Z</updated>
+    <updated>2024-10-27T14:32:19.051Z</updated>
     
     <summary type="html">
     
@@ -532,42 +565,6 @@
       <category term="dadtabase" scheme="https://www.qtmuniao.com/tags/dadtabase/"/>
     
       <category term="NUMA" scheme="https://www.qtmuniao.com/tags/NUMA/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>20230819 B 站求职面试直播</title>
-    <link href="https://www.qtmuniao.com/2023/08/19/live-show-infra-interview/"/>
-    <id>https://www.qtmuniao.com/2023/08/19/live-show-infra-interview/</id>
-    <published>2023-08-19T03:37:59.000Z</published>
-    <updated>2024-07-28T00:48:02.107Z</updated>
-    
-    <summary type="html">
-    
-      &lt;p&gt;这是我第一次在 b 站直播分享，录屏地址 &lt;a href=&quot;https://www.bilibili.com/video/BV1Fz4y1u79v&quot;&gt;https://www.bilibili.com/video/BV1Fz4y1u79v&lt;/a&gt; ，主要是从我的求职经历以及面试经历角度聊了一些关于 infra 找工作的注意点，并回答了同学一些现场问题。&lt;/p&gt;
-&lt;h1 id=&quot;🐎-求职准备&quot;&gt;&lt;a href=&quot;#🐎-求职准备&quot; class=&quot;headerlink&quot; title=&quot;🐎 求职准备&quot;&gt;&lt;/a&gt;🐎 求职准备&lt;/h1&gt;&lt;h2 id=&quot;软素质&quot;&gt;&lt;a href=&quot;#软素质&quot; class=&quot;headerlink&quot; title=&quot;软素质&quot;&gt;&lt;/a&gt;软素质&lt;/h2&gt;&lt;p&gt;💁‍♂️ &lt;strong&gt;沟通&lt;/strong&gt;。面试时无论是经历描述，系统设计甚至写代码，沟通都是第一位的，这是面试各个环节顺利展开的前提。&lt;/p&gt;
-&lt;p&gt;把一件事说清楚：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;上下文：先和面试官对齐上下文，不要默认他比你知道的多。&lt;/li&gt;
-&lt;li&gt;条理性：背景 → 需求 → 方案 → 挑战点 → 结果&lt;/li&gt;
-&lt;li&gt;简洁性：就跟写文章一样，多过几遍就好了。&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;🧠 &lt;strong&gt;思维&lt;/strong&gt;。主要是&lt;strong&gt;抽象&lt;/strong&gt;和&lt;strong&gt;联想&lt;/strong&gt;。&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;strong&gt;抽象&lt;/strong&gt;。也可以说是归纳，或者叫&lt;strong&gt;知识聚簇&lt;/strong&gt;。以树来做类比，就是遍历几个子节点，抽象出其共通的父节点的特质，然后进而推演出新的子节点。比如调度问题（CPU 调度、分布式任务调度）。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;联想&lt;/strong&gt;。也可以说是关联，或者叫&lt;strong&gt;跨域跳联&lt;/strong&gt;。以图来做类比，就是对于几个连通子图，在新的维度上给其建立通路。比如文字是思想的一种序列化。&lt;/li&gt;
-&lt;/ol&gt;
-    
-    </summary>
-    
-      <category term="职场" scheme="https://www.qtmuniao.com/categories/%E8%81%8C%E5%9C%BA/"/>
-    
-      <category term="工作" scheme="https://www.qtmuniao.com/categories/%E8%81%8C%E5%9C%BA/%E5%B7%A5%E4%BD%9C/"/>
-    
-    
-      <category term="面试" scheme="https://www.qtmuniao.com/tags/%E9%9D%A2%E8%AF%95/"/>
-    
-      <category term="infra" scheme="https://www.qtmuniao.com/tags/infra/"/>
     
   </entry>
   
