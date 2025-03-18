@@ -11277,4 +11277,65 @@
         <tag>memory</tag>
       </tags>
   </entry>
+  <entry>
+    <title>Streamlit</title>
+    <url>/2025/03/18/streamlit/</url>
+    <content><![CDATA[<p><span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3N0cmVhbWxpdC9zdHJlYW1saXQ=">streamlit<i class="fa fa-external-link-alt"></i></span> 是一款可以快速进行简单网页开发的 Python 库，其 slogan 是：</p>
+<blockquote>
+<p><strong>A faster way to build and share data apps</strong></p>
+</blockquote>
+<p>即“一种快速构建、分享数据应用的方法”。其在机器学习、数据科学，甚至当今大模型领域非常流行。其优点非常突出：</p>
+<ol>
+<li>使用上述领域开发者最喜欢的语言：Python。不用写前端，pip 安装就能用。</li>
+<li>简单几行代码就能快速攒出一个数据可视化、打标等小工具的网页。</li>
+<li>还支持丰富的第三方组件扩展，比如社区开发的 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2JvdXppZGFuYXMvc3RyZWFtbGl0LWNvZGUtZWRpdG9y">code_editor<i class="fa fa-external-link-alt"></i></span> 。</li>
+</ol>
+<p>当然，如果你还想要低延迟、高并发、深度定制等需求，那对不起，这是 streamlit 被 tradeoff 出去的那一部分。但对于面向内部少数人使用的小工具来说，streamlit 简直是利器。可以说这个小生态位被它卡的太好了，所以能在 2022 年以 8 亿美金卖给 Snowflake。</p>
+<p>本文我们就一块来看看其基本设计哲学和一些简单实践。</p>
+<h1 id="设计哲学"><a href="#设计哲学" class="headerlink" title="设计哲学"></a>设计哲学</h1><p>其基本设计哲学可以概括为：</p>
+<ol>
+<li>用后端语言写前端</li>
+<li>收到新事件会重新构建</li>
+<li>支持会话级别的缓存</li>
+</ol>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2025/03/18/streamlit/">https://www.qtmuniao.com/2025/03/18/streamlit/</a> 转载请注明出处</em></p>
+<p>上面三点是依次递进的设计：由于是用后端语言写前端，因此每次响应用户请求都会全部重新执行一遍代码，当然也就不支持局部刷新；为了避免每次全部执行带来的不必要的数据加载，引入了细粒度（每次用户主动刷新页面会丢失）的缓存，从而达到了类似局部刷新的目标——不需要刷新的部分缓存起来复用就好了。</p>
+<p>总结成一句话就是：<strong>顺序执行以保持简洁，按需缓存来提高效率。</strong></p>
+<h1 id="看个例子"><a href="#看个例子" class="headerlink" title="看个例子"></a>看个例子</h1><p>我们把功能搞简单一点：用户输入一个 parquet 格式本地路径，我们将其读出展示可视化。</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># app.py</span></span><br><span class="line"></span><br><span class="line">import streamlit as st</span><br><span class="line">import pandas as pd</span><br><span class="line">import pyarrow.parquet as pq</span><br><span class="line">import os</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载 Parquet 文件</span></span><br><span class="line">def load_parquet(file_path):</span><br><span class="line">    <span class="built_in">return</span> pq.read_table(file_path).to_pandas()</span><br><span class="line"></span><br><span class="line">st.title(<span class="string">&quot;学生绩点可视化&quot;</span>)</span><br><span class="line"></span><br><span class="line">file_path = st.text_input(<span class="string">&quot;请输入 Parquet 文件的地址:&quot;</span>, value=<span class="string">&quot;students.parquet&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 检查文件是否存在</span></span><br><span class="line"><span class="keyword">if</span> os.path.exists(file_path):</span><br><span class="line">    <span class="comment"># 加载数据</span></span><br><span class="line">    data = load_parquet(file_path)</span><br><span class="line">    st.write(<span class="string">&quot;数据预览:&quot;</span>)</span><br><span class="line">    st.dataframe(data)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 可选项1：显示统计信息</span></span><br><span class="line">    <span class="keyword">if</span> st.checkbox(<span class="string">&quot;统计信息&quot;</span>):</span><br><span class="line">        st.write(data.describe())</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 可选项2：绘制直方图</span></span><br><span class="line">    <span class="keyword">if</span> st.checkbox(<span class="string">&quot;直方图&quot;</span>):</span><br><span class="line">        st.bar_chart(data.set_index(<span class="string">&#x27;姓名&#x27;</span>)[<span class="string">&#x27;绩点&#x27;</span>]</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    st.error(<span class="string">&quot;输入的文件路径不存在，请检查后再试。&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>简单构造了包括学生名和绩点两列的数据，存在 parquet 文件中（构造代码会放在附录中）。运行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">streamlit run app.py</span><br></pre></td></tr></table></figure>
+
+<p>然后访问 <a href="http://localhost:8501/"><code>http://localhost:8501</code></a> 即可看到页面：</p>
+<p><img src="https://s2.loli.net/2025/03/18/HZcuFpMVKLYRNTb.png" alt="streamlit-example.png"></p>
+<p>从该例子可以大致看出 streamlit 的语法相当简洁：</p>
+<ol>
+<li><strong>组件构造</strong>：通过 <code>st.title，st.dataframe，st.checkbox</code> 等接口就可以快速构造很多标准组件，而不用在意其样式。</li>
+<li><strong>顺序执行</strong>：和 js 事件驱动不同，streamlit 的代码就是自上而下顺序执行的，非常容易理解和调试。每次重新输入路径、重新点击复选框后整个页面都会重新渲染。</li>
+</ol>
+<h2 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h2><p>那么问题来了，如果学生表的数据量很大，每次重新输入路径后都会全部重新执行、重新加载，岂不是冗余且很慢？为此，我们可以通过 streamlit 的缓存机制，将<strong>数据</strong>缓存下来。</p>
+<p>可以使用  <code>st.session_state</code> 显式的进行缓存：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">st.session_state[file_path] = data</span><br></pre></td></tr></table></figure>
+
+<p>也可以通过在加载数据上的函数增加注解 <code>st.cache_data</code>进行缓存，此时缓存的 key 就是函数的输入参数，本例中也是 <code>file_path</code>。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">@st.cache_data</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load_parquet</span>(<span class="params">file_path</span>):</span><br><span class="line">    <span class="keyword">return</span> pq.read_table(file_path).to_pandas()</span><br></pre></td></tr></table></figure>
+
+<p>但其实，在 streamlit 中，我们不仅可以缓存数据，也可以缓存组件（widget）。比如说 <code>st.dataframe</code>，如果我们不想其每次都重新渲染怎么办？给其一个 key！</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">st.dataframe(data, key=<span class="string">f&quot;df-<span class="subst">&#123;file_path&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>这样，只要 key 不变，该 dataframe 就不会重新渲染。</p>
+<p>至此，我们大概从感性上明白了 streamlit 的哲学：<strong>通过顺序执行来保持简洁、通过按需缓存来保持效率</strong>。下面用一张图来概括下：</p>
+<p><img src="https://s2.loli.net/2025/03/18/3xBRWoC8IZEFdXj.png" alt="streamlit-architecture.png"></p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>本文非常浅显的通过一个小例子来分析了下 streamlit 的设计哲学，帮助大家建立一个感性的认识，如果有类似面向团队内部的可 GUI 需求，不妨一试。</p>
+<p>但囿于篇幅，并没有剖析其背后是如何实现的，也没有讲更多的进阶使用，如果大家对这些东西感兴趣，欢迎留言告诉我。</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><p>官方文档：<span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnN0cmVhbWxpdC5pby9nZXQtc3RhcnRlZC9mdW5kYW1lbnRhbHMvYWR2YW5jZWQtY29uY2VwdHM=">https://docs.streamlit.io/get-started/fundamentals/advanced-concepts<i class="fa fa-external-link-alt"></i></span></p>
+<h1 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h1><p>需要安装的库：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pip install streamlit pyarrow pandas</span><br></pre></td></tr></table></figure>
+
+<p>构造数据的代码：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">import pandas as pd</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建学生数据</span></span><br><span class="line">data = &#123;</span><br><span class="line">    <span class="string">&#x27;姓名&#x27;</span>: [<span class="string">&#x27;Alice&#x27;</span>, <span class="string">&#x27;Bob&#x27;</span>, <span class="string">&#x27;Charlie&#x27;</span>, <span class="string">&#x27;David&#x27;</span>, <span class="string">&#x27;Eva&#x27;</span>],</span><br><span class="line">    <span class="string">&#x27;绩点&#x27;</span>: [3.5, 3.8, 2.9, 3.2, 3.9]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建 DataFrame</span></span><br><span class="line"><span class="built_in">df</span> = pd.DataFrame(data)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 写入 Parquet 文件</span></span><br><span class="line">df.to_parquet(<span class="string">&#x27;students.parquet&#x27;</span>, index=False)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;学生数据已写入 students.parquet 文件。&quot;</span>)</span><br></pre></td></tr></table></figure>
+]]></content>
+  </entry>
 </search>

@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://www.qtmuniao.com/"/>
-  <updated>2024-10-27T14:36:11.573Z</updated>
+  <updated>2025-03-18T14:23:45.664Z</updated>
   <id>https://www.qtmuniao.com/</id>
   
   <author>
@@ -15,6 +15,39 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Streamlit</title>
+    <link href="https://www.qtmuniao.com/2025/03/18/streamlit/"/>
+    <id>https://www.qtmuniao.com/2025/03/18/streamlit/</id>
+    <published>2025-03-18T12:07:31.000Z</published>
+    <updated>2025-03-18T14:23:45.664Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&lt;a href=&quot;https://github.com/streamlit/streamlit&quot;&gt;streamlit&lt;/a&gt; 是一款可以快速进行简单网页开发的 Python 库，其 slogan 是：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;A faster way to build and share data apps&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;即“一种快速构建、分享数据应用的方法”。其在机器学习、数据科学，甚至当今大模型领域非常流行。其优点非常突出：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;使用上述领域开发者最喜欢的语言：Python。不用写前端，pip 安装就能用。&lt;/li&gt;
+&lt;li&gt;简单几行代码就能快速攒出一个数据可视化、打标等小工具的网页。&lt;/li&gt;
+&lt;li&gt;还支持丰富的第三方组件扩展，比如社区开发的 &lt;a href=&quot;https://github.com/bouzidanas/streamlit-code-editor&quot;&gt;code_editor&lt;/a&gt; 。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;当然，如果你还想要低延迟、高并发、深度定制等需求，那对不起，这是 streamlit 被 tradeoff 出去的那一部分。但对于面向内部少数人使用的小工具来说，streamlit 简直是利器。可以说这个小生态位被它卡的太好了，所以能在 2022 年以 8 亿美金卖给 Snowflake。&lt;/p&gt;
+&lt;p&gt;本文我们就一块来看看其基本设计哲学和一些简单实践。&lt;/p&gt;
+&lt;h1 id=&quot;设计哲学&quot;&gt;&lt;a href=&quot;#设计哲学&quot; class=&quot;headerlink&quot; title=&quot;设计哲学&quot;&gt;&lt;/a&gt;设计哲学&lt;/h1&gt;&lt;p&gt;其基本设计哲学可以概括为：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;用后端语言写前端&lt;/li&gt;
+&lt;li&gt;收到新事件会重新构建&lt;/li&gt;
+&lt;li&gt;支持会话级别的缓存&lt;/li&gt;
+&lt;/ol&gt;
+    
+    </summary>
+    
+    
+  </entry>
   
   <entry>
     <title>从“丰巢”快递柜看 Jemalloc 的内存管理</title>
@@ -527,44 +560,6 @@
     
     
       <category term="data processing" scheme="https://www.qtmuniao.com/tags/data-processing/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>NUMA-Aware 执行引擎论文解读</title>
-    <link href="https://www.qtmuniao.com/2023/08/21/numa-aware-execution-engine/"/>
-    <id>https://www.qtmuniao.com/2023/08/21/numa-aware-execution-engine/</id>
-    <published>2023-08-21T07:01:39.000Z</published>
-    <updated>2023-08-21T07:27:20.623Z</updated>
-    
-    <summary type="html">
-    
-      &lt;blockquote&gt;
-&lt;p&gt;最近翻 DuckDB 的执行引擎相关的 PPT(&lt;a href=&quot;https://dsdsd.da.cwi.nl/slides/dsdsd-duckdb-push-based-execution.pdf&quot;&gt;Push-Based-Execution&lt;/a&gt;) 时，发现了这篇论文：&lt;a href=&quot;https://15721.courses.cs.cmu.edu/spring2016/papers/p743-leis.pdf&quot;&gt;Morsel-Driven Parallelism: A NUMA-Aware Query Evaluation Framework for the Many-Core Age&lt;/a&gt;。印象中在执行引擎相关的文章中看到他好几次；且 NUMA 架构对于现代数据库架构设计非常重要，但我对此了解尚浅，因此便找来读一读。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;从题目中也可以看到，论文最主要关键词有两个：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;NUMA-Aware&lt;/li&gt;
-&lt;li&gt;Morsel-Driven&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;据此，大致总结下论文的中心思想：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;多核时代，由于部分 CPU 和部分内存的绑定关系，CPU 访问内存是不均匀（NUMA）的。也即，对于某一个 CPU 核来说，本机上一部分内存访问延迟较低，另一部分内存延迟要高。&lt;/li&gt;
-&lt;li&gt;传统火山模型，使用 Exchange 算子来进行并发。其他算子并不感知多线程，因此也就没办法就近内存调度计算（硬件亲和性）。也即，非 NUMA-local。&lt;/li&gt;
-&lt;li&gt;为了解决此问题，论文在数据维度：对数据集进行水平分片，一个 NUMA-node 处理一个数据分片；对每个分片进行垂直分段（Morsel），在 Morsel 粒度上进行并发调度和抢占执行。&lt;/li&gt;
-&lt;li&gt;在计算维度：为每个 CPU 预分配一个线程，在调度时，每个线程只接受数据块（Morsel）分配到本 NUMA-node 上的任务；当线程间子任务的执行进度不均衡时，快线程会”窃取“本应调度到其他线程的任务，从而保证一个 Query 的多个子任务大约同时完成，而不会出现”长尾“分片。&lt;/li&gt;
-&lt;/ol&gt;
-    
-    </summary>
-    
-      <category term="数据库" scheme="https://www.qtmuniao.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
-    
-      <category term="论文解读" scheme="https://www.qtmuniao.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/"/>
-    
-    
-      <category term="dadtabase" scheme="https://www.qtmuniao.com/tags/dadtabase/"/>
-    
-      <category term="NUMA" scheme="https://www.qtmuniao.com/tags/NUMA/"/>
     
   </entry>
   

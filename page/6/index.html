@@ -203,6 +203,105 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/02/10/cmu15445-project1-buffer-pool/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/02/10/cmu15445-project1-buffer-pool/" class="post-title-link" itemprop="url">Cmu15445 数据库系统实验一：Buffer Pool Manager</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-02-10 00:13:33" itemprop="dateCreated datePublished" datetime="2021-02-10T00:13:33+08:00">2021-02-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-03-04 09:18:06" itemprop="dateModified" datetime="2024-03-04T09:18:06+08:00">2024-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%85%AC%E5%BC%80%E8%AF%BE/" itemprop="url" rel="index"><span itemprop="name">公开课</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>cmu15445 是一门关于数据库管理系统（DBMS）设计与实现的经典公开课。该课程以 <a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">Database System Concepts</a> 为教材，提供随堂讲义、笔记和视频，精心准备了几个互相勾连的小实验。该课程十分注重系统设计和编程实现，用主讲教授 <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a> 的话说，这是一门可以写在简历上、并且能帮你拿到好 offer 的课程。</p>
+<p>这个假期得空，翻出这门课程，即被其翔实的内容、精当的组织所折服。无奈时间有限，只能以<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/assignments.html">实验</a>为主线，辅以<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/slides/">讲义</a>和<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/notes/">笔记</a>，简单跟一跟。如果再有时间，就去扫下<a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">教材</a>和<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=oeYBdghaIjc&list=PLSE8ODhjZXjbohkNBWQs_otTrBTrjyohi">视频</a>。从实验一开始，每个实验 <a target="_blank" rel="noopener" href="https://www.gradescope.com/">autograder</a> 跑过之后，出一篇笔记，聊以备忘。 <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a>  教授建议不要公开实验代码仓库，因此文章尽量少贴代码，多写思路。</p>
+<p>本篇是实验一，管理文件系统的页在内存中的缓存 —— buffer pool manager。</p>
+</blockquote>
+<h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>实验的目标系统 <a target="_blank" rel="noopener" href="https://github.com/cmu-db/bustub">BusTub</a> 是一个面向磁盘的 DBMS，但磁盘上的数据不支持字节粒度的访问。这就需要一个管理页的中间层，但 <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a>  教授坚持不使用 mmap 将页管理权力让渡给操作系统，因此<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/project1/">实验一</a> 的目标便在于主动管理磁盘中的页（page）在内存中的缓存，从而，最小化磁盘访问次数（时间上）、最大化相关数据连续（空间上）。</p>
+<p>该实验可以分解为相对独立的两个子任务：</p>
+<ol>
+<li>维护替换策略的： LRU replacement policy</li>
+<li>管理缓冲池的： buffer pool manager</li>
+</ol>
+<p>两个组件都要求线程安全。</p>
+<p>本文首先从基本概念、核心数据流总体分析下实验内容，然后分别对两个子任务进行梳理。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/02/10/cmu15445-project1-buffer-pool/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/01/09/go-slice/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1259,95 +1358,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/03/19/wisckey/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/03/19/wisckey/" class="post-title-link" itemprop="url">WiscKey —— SSD 介质下的 LSM-Tree 优化</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-03-19 22:05:22" itemprop="dateCreated datePublished" datetime="2020-03-19T22:05:22+08:00">2020-03-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:16:18" itemprop="dateModified" datetime="2024-03-04T09:16:18+08:00">2024-03-04</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><p>充分利用现代存储 SSD 的性能，在提供同样 API 的情况下，显著降低 LSMTree 的读写放大，以提高其性能。</p>
-<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在传统磁盘上，顺序 IO 的性能大概是随机 IO 的 100 多倍，LSMTree 基于此，将海量 KV 的随机读写实现为内存随机读写+顺序刷盘+定期归并（compact），以提高读写性能，尤其适用于<strong>写多于读</strong>且<strong>时效性比较强</strong>（最近数据最常访问）的场景。</p>
-<p><img src="https://i.loli.net/2020/03/21/IetKyMmGNQVrBsS.png" alt="wisckey-lsm-tree.png"></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/03/19/wisckey/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1419,7 +1429,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">114</span>
+          <span class="site-state-item-count">115</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1517,7 +1527,7 @@
 <div class="copyright">
   
   &copy; 2017 – 
-  <span itemprop="copyrightYear">2024</span>
+  <span itemprop="copyrightYear">2025</span>
   <span class="with-love">
     <i class="user"></i>
   </span>
