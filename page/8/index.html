@@ -203,6 +203,105 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/12/22/kafka/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/12/22/kafka/" class="post-title-link" itemprop="url">Kafka —— 弥合日志系统和消息队列的鸿沟</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-12-22 01:07:10" itemprop="dateCreated datePublished" datetime="2019-12-22T01:07:10+08:00">2019-12-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-03-04 09:15:46" itemprop="dateModified" datetime="2024-03-04T09:15:46+08:00">2024-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>Kafka （该论文发表于2011年6月**[1]**）是日志处理和消息队列系统的集大成者。较低的延迟、极高的容量和吞吐，使其可以应用于在线服务和离线业务。为了兼顾性能和可扩展性，Kafka 做了一些看起来反直觉但是却很实用的设计。例行总结一下其设计特点：</p>
+<ol>
+<li><p><strong>面向存储的消息队列</strong>：意味在近实时的情况下能够将传统消息队列的存储增加几个数量级。实现原理是充分利用了磁盘的顺序写和操作系统自身的缓存；此外为了提高访盘、传输效率，使用了文件分段、段首索引、零拷贝和批量拉取等技术。</p>
+</li>
+<li><p><strong>灵活的生产消费方式</strong>：总体而言是基于主题粒度的发布订阅式架构，并且既支持<strong>组内多消费者</strong>互斥消费，也支持不同<strong>消费者组</strong>间的重复消费。这里面涉及到消息队列的两个核心设计选择：<em>pull</em> 式消费以及客户端侧存储消费进度。拉式消费可能会导致空轮询以及稍微的延迟，好处在于灵活；客户端存储消费进度可以使的 broker 无状态，以进行灵活伸缩和容错。为了简化实现，消费时，每个分区最多为一个消费者所消费。</p>
+</li>
+<li><p><strong>Zookeeper 存储元信息</strong>：利用分布式一致性组件 Zookeeper 以注册表的形式存储系统元信息，包括 broker 和消费者的存活信息、消费者和分区间的对应关系、每个分区的消费进度等等。Zookeeper 作为一个前缀树形式组织 KV、支持发布订阅的高可用组件，可以满足 Kafka 进行消费协调和进度保存的协作需求。</p>
+</li>
+<li><p><strong>分区级别的多副本设计</strong>：这一点在论文中还没实现，应该是后来系统开源演进时加上的。利用该条可以实现对 broker 的容错。</p>
+</li>
+<li><p><strong>简洁强大的消费接口</strong>：Kafka 的客户端一般提供两层接口抽象。包括无需关注<strong>分区</strong>和<strong>偏移量</strong>信息的高层（high-level）<em>简单读写</em>接口，以及可以灵活控制分区组织和消费进度的低层（low-level）接口。论文中只提到了前者，以表现其简洁。</p>
+</li>
+</ol>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2019/12/22/kafka/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/12/07/bazel-build-golang/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1193,95 +1292,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/04/05/python-default-parameter-values/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/04/05/python-default-parameter-values/" class="post-title-link" itemprop="url">Python函数的默认参数的那些"坑"</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-04-05 22:29:55" itemprop="dateCreated datePublished" datetime="2019-04-05T22:29:55+08:00">2019-04-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><img src="https://i.loli.net/2020/02/09/pA3sWeiMj6xl2T1.png" alt="python-default-parameter.png"></p>
-<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>栽在 Python 的默认参数的“坑”中几次之后打算专门弄一篇博客来说一下这个事情。但是最近看到一篇很好地<a target="_blank" rel="noopener" href="http://effbot.org/zone/default-values.htm">英文文章</a>（<em>Default Parameter Values in Python，Fredrik Lundh | July 17, 2008 | based on a comp.lang.python post</em>），鞭辟入里。珠玉在前，就不舞文弄墨了。当然，也算是偷个懒，在这里简单翻译一下，希望更多的人能看到。</p>
-<p>以下是翻译，意译，加了一些私货，不严格跟原文保持一致，语法特性以 <em><strong>Python3</strong></em> 为准。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2019/04/05/python-default-parameter-values/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1353,19 +1363,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">115</span>
+          <span class="site-state-item-count">116</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">39</span>
+        <span class="site-state-item-count">40</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">188</span>
+        <span class="site-state-item-count">191</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

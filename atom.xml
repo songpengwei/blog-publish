@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://www.qtmuniao.com/"/>
-  <updated>2025-03-18T14:28:57.202Z</updated>
+  <updated>2025-06-04T15:38:30.908Z</updated>
   <id>https://www.qtmuniao.com/</id>
   
   <author>
@@ -15,6 +15,33 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>在云上进行大规模数据处理的一些实践</title>
+    <link href="https://www.qtmuniao.com/2025/06/04/data-processing-on-cloud/"/>
+    <id>https://www.qtmuniao.com/2025/06/04/data-processing-on-cloud/</id>
+    <published>2025-06-04T15:35:51.000Z</published>
+    <updated>2025-06-04T15:38:30.908Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;随着云基础设施的不断成熟，新兴的公司为了快速实现业务目标，一般都会让基础设施上云。而在云上进行开发与传统上直接使用物理机开发其实有很大不同。云上更强调&lt;strong&gt;共享&lt;/strong&gt;和&lt;strong&gt;弹性&lt;/strong&gt;，此外，规模变大又会带来&lt;strong&gt;隔离性&lt;/strong&gt;。这些改变也倒逼我们在进行开发时做出一些改变。在云上进行大规模数据处理，我主要有一些 spark 和 ray 的经验，使用的语言主要是 python；从这些技术栈出发，谈谈一些还算行之有效开发实践。&lt;/p&gt;
+&lt;p&gt;使用 ray 在云上进行大规模数据处理，一个基本的思路是：构建最小可并行单元，进行功能测试和性能测试，然后再利用 &lt;a href=&quot;http://ray.data/&quot;&gt;ray.data&lt;/a&gt; （比如 &lt;a href=&quot;https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map.html&quot;&gt;map&lt;/a&gt;，&lt;a href=&quot;https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html&quot;&gt;map_batches&lt;/a&gt; ）进行 scale。使用 spark 时，会稍有不同；相比 ray，spark 虽然灵活性稍差一些，但抽象封装更好，可以从数据集整体的角度来考虑数据处理，spark 会通过你设置的分区数和并行度，自动地扩展和容错。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="技术" scheme="https://www.qtmuniao.com/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+      <category term="云" scheme="https://www.qtmuniao.com/categories/%E6%8A%80%E6%9C%AF/%E4%BA%91/"/>
+    
+    
+      <category term="云" scheme="https://www.qtmuniao.com/tags/%E4%BA%91/"/>
+    
+      <category term="大规模数据处理" scheme="https://www.qtmuniao.com/tags/%E5%A4%A7%E8%A7%84%E6%A8%A1%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86/"/>
+    
+      <category term="实践" scheme="https://www.qtmuniao.com/tags/%E5%AE%9E%E8%B7%B5/"/>
+    
+  </entry>
   
   <entry>
     <title>数据可视化利器—— Streamlit 的有趣哲学</title>
@@ -541,33 +568,6 @@
       <category term="多轮次" scheme="https://www.qtmuniao.com/tags/%E5%A4%9A%E8%BD%AE%E6%AC%A1/"/>
     
       <category term="multi-passes" scheme="https://www.qtmuniao.com/tags/multi-passes/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>数据处理的大一统——从 Shell 脚本到 SQL 引擎</title>
-    <link href="https://www.qtmuniao.com/2023/08/21/unify-data-processing/"/>
-    <id>https://www.qtmuniao.com/2023/08/21/unify-data-processing/</id>
-    <published>2023-08-21T07:44:11.000Z</published>
-    <updated>2023-08-21T08:28:01.245Z</updated>
-    
-    <summary type="html">
-    
-      &lt;p&gt;“工业流水线”的鼻祖，&lt;a href=&quot;https://www.youtube.com/watch?v=As0lqsd2-NI&quot;&gt;福特 T 型汽车&lt;/a&gt;的电机装配，将组装过程拆成 29 道工序，将装备时间由平均二十分钟降到五分钟，效率提升四倍 ，下图&lt;a href=&quot;https://www.motor1.com/features/178264/ford-model-t-factory-cutaway-kimble/&quot;&gt;图源&lt;/a&gt;。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;https://s2.loli.net/2023/08/21/BrMe3j9oapmX8f2.png&quot; alt=&quot;T-model-car.png&quot;&gt;&lt;/p&gt;
-&lt;p&gt;这种流水线的思想在数据处理过程中也随处可见。其核心概念是：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;strong&gt;标准化的数据集合&lt;/strong&gt;：对应待组装对象，是对数据处理中各个环节输入输出的一种&lt;strong&gt;一致性抽象&lt;/strong&gt;。所谓一致，就是一个任意处理环节的输出，都可以作为任意处理环节的输入。&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;可组合的数据变换&lt;/strong&gt;：对应单道组装工序，定义了对数据进行变换的一个&lt;strong&gt;原子&lt;/strong&gt;操作。通过组合各种原子操作，可以具有强大的表达力。&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;则，数据处理的本质是：&lt;strong&gt;针对不同需求，读取并标准化数据集后，施加不同的变换组合&lt;/strong&gt;。&lt;/p&gt;
-    
-    </summary>
-    
-      <category term="分布式系统" scheme="https://www.qtmuniao.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/"/>
-    
-    
-      <category term="data processing" scheme="https://www.qtmuniao.com/tags/data-processing/"/>
     
   </entry>
   
