@@ -203,6 +203,99 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/02/06/memory-mvcc-serial/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="木鸟杂记">
+      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/02/06/memory-mvcc-serial/" class="post-title-link" itemprop="url">MemGraph 背后论文《基于内存和MVCC 的高速可串行化》详细解析（一）</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-02-06 20:21:12 / 修改时间：20:28:56" itemprop="dateCreated datePublished" datetime="2024-02-06T20:21:12+08:00">2024-02-06</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p><a target="_blank" rel="noopener" href="https://memgraph.com/">Memgraph</a> 是一个内存型图数据库，使用 OpenCypher 作为查询语言，主打小数据量、低延迟的图场景。由于 Memgraph 是开源的（repo 在<a target="_blank" rel="noopener" href="https://github.com/memgraph/memgraph">这</a>，使用 C++ 实现）我们可以一窥其实现。根据<a target="_blank" rel="noopener" href="https://github.com/memgraph/memgraph/blob/master/src/storage/v2/storage.hpp#L57">这行注释</a>，我们可以看出，其内存结构实现灵感主要来自论文：<a target="_blank" rel="noopener" href="https://db.in.tum.de/~muehlbau/papers/mvcc.pdf">Fast Serializable Multi-Version Concurrency Control for Main-Memory Database Systems</a>。</p>
+<p>本系列主要分为两大部分，<strong>论文解读</strong>和<strong>代码串讲</strong>，每一部分会根据情况拆成几篇。本篇，是论文解读（一），主要讲论文概述以及如何使用链表巧妙的存储了多版本、控制了可见性。论文解析（二）和（三），会讲如何实现可串行化以及回收多版本数据。</p>
+</blockquote>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>从论文题目可以看出，本论文旨在实现一种针对<strong>内存型</strong>数据库的、基于<strong>多版本</strong>（MVCC）实现的、支持可<strong>串行化</strong>隔离级别的高性能数据结构。其基本思想是：</p>
+<ol>
+<li>使用列存</li>
+<li>复用 Undo Buffer 数据结构</li>
+<li>使用双向链表来串起数据的多版本</li>
+<li>巧妙设计时间戳来实现数据的可见性</li>
+<li>通过谓词树（PT）来判事务读集合（Read Set）是否被更改</li>
+</ol>
+<p>与一般的多版本不同的是，本论文会在<strong>原地更新</strong>数据，然后将旧版本数据“压”到链表中去，使用 “压”是因为链表采用头插法：表头一侧数据较新、表尾一侧数据较旧。所有数据的链表头由一个叫 <code>VersionVector</code> 的数据结构维护，如果某一行没有旧数据，对应的位置就是 <code>null</code>。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/02/06/memory-mvcc-serial/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/01/04/2023-summary/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1138,105 +1231,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/08/19/live-show-infra-interview/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2023/08/19/live-show-infra-interview/" class="post-title-link" itemprop="url">20230819 B 站求职面试直播</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-08-19 11:37:59" itemprop="dateCreated datePublished" datetime="2023-08-19T11:37:59+08:00">2023-08-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-07-28 08:48:02" itemprop="dateModified" datetime="2024-07-28T08:48:02+08:00">2024-07-28</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%81%8C%E5%9C%BA/" itemprop="url" rel="index"><span itemprop="name">职场</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%81%8C%E5%9C%BA/%E5%B7%A5%E4%BD%9C/" itemprop="url" rel="index"><span itemprop="name">工作</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>这是我第一次在 b 站直播分享，录屏地址 <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1Fz4y1u79v">https://www.bilibili.com/video/BV1Fz4y1u79v</a> ，主要是从我的求职经历以及面试经历角度聊了一些关于 infra 找工作的注意点，并回答了同学一些现场问题。</p>
-<h1 id="🐎-求职准备"><a href="#🐎-求职准备" class="headerlink" title="🐎 求职准备"></a>🐎 求职准备</h1><h2 id="软素质"><a href="#软素质" class="headerlink" title="软素质"></a>软素质</h2><p>💁‍♂️ <strong>沟通</strong>。面试时无论是经历描述，系统设计甚至写代码，沟通都是第一位的，这是面试各个环节顺利展开的前提。</p>
-<p>把一件事说清楚：</p>
-<ol>
-<li>上下文：先和面试官对齐上下文，不要默认他比你知道的多。</li>
-<li>条理性：背景 → 需求 → 方案 → 挑战点 → 结果</li>
-<li>简洁性：就跟写文章一样，多过几遍就好了。</li>
-</ol>
-<p>🧠 <strong>思维</strong>。主要是<strong>抽象</strong>和<strong>联想</strong>。</p>
-<ol>
-<li><strong>抽象</strong>。也可以说是归纳，或者叫<strong>知识聚簇</strong>。以树来做类比，就是遍历几个子节点，抽象出其共通的父节点的特质，然后进而推演出新的子节点。比如调度问题（CPU 调度、分布式任务调度）。</li>
-<li><strong>联想</strong>。也可以说是关联，或者叫<strong>跨域跳联</strong>。以图来做类比，就是对于几个连通子图，在新的维度上给其建立通路。比如文字是思想的一种序列化。</li>
-</ol>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2023/08/19/live-show-infra-interview/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1308,7 +1302,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">117</span>
+          <span class="site-state-item-count">118</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
