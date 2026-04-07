@@ -288,9 +288,9 @@
 <p>本文整理自OSDI 2020 Virtual Consensus in Delos 论文演讲，探讨了分布式系统中控制面的存储系统，提出了一种基于分层抽象思想的分布式架构。其核心在于提出了一种逻辑协议层，使得物理层可以按需进行实现和移植，有点类似于单机系统中虚拟内存之于物理内存的味道。</p>
 </blockquote>
 <span id="more"></span>
-
 <p><em>作者：木鸟杂记  <a href="https://www.qtmuniao.com/2021/03/14/facebook-delos/">https://www.qtmuniao.com/2021/03/14/facebook-delos/</a> , 转载请注明出处</em></p>
-<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Facebook 的软件系统栈一般包括两层：上层是数据平面， 下层是控制平面。</p>
+<h2 id="背景">背景</h2>
+<p>Facebook 的软件系统栈一般包括两层：上层是数据平面， 下层是控制平面。</p>
 <p><img src="https://i.loli.net/2021/03/14/K69lS8LIh57OdnZ.png" alt="facebook software stack"></p>
 <p>数据平面包括大量的服务，他们需要存储和处理海量数据。控制平面用来支撑数据平面，起到一些控制作用：调度、配置、命名、切片等等。控制平面通常是有状态的，比如控制的元信息，为了存储这些元信息，控制平面需要有自己的存储。控制平面对存储有以下要求：</p>
 <ol>
@@ -303,9 +303,11 @@
 <li>ZooKeeper：容错，零依赖，但是 API 表达能力弱。</li>
 </ol>
 <p>可以看出，他们都不能很好的同时满足控制平面对存储的需求。此外，作为单体架构，上述组件都比较难改造成同时支持容错和丰富 API 的系统。此外，还有一大问题，团队当时所面临的工期非常紧。最终，他们交出的答卷是 —— Delos。</p>
-<h2 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h2><p>Delos 是一个基于共享日志（shared log）的控制面存储系统。db 层的实例通过 append 和 read 与共享日志进行交互，从而保持对外状态的一致性。根据近几十年的研究，使用共享日志作为 API，可以很好的向 db 层隐藏共识协议的大量细节。</p>
+<h2 id="架构">架构</h2>
+<p>Delos 是一个基于共享日志（shared log）的控制面存储系统。db 层的实例通过 append 和 read 与共享日志进行交互，从而保持对外状态的一致性。根据近几十年的研究，使用共享日志作为 API，可以很好的向 db 层隐藏共识协议的大量细节。</p>
 <p><img src="https://i.loli.net/2021/03/14/ZRxKvi8UTp2juPY.png" alt="design based sharedlog"></p>
-<h3 id="读写流程"><a href="#读写流程" class="headerlink" title="读写流程"></a>读写流程</h3><p><img src="https://i.loli.net/2021/03/14/y83jTcWDXtILAGF.png" alt="read write procedure via shared log"></p>
+<h3 id="读写流程">读写流程</h3>
+<p><img src="https://i.loli.net/2021/03/14/y83jTcWDXtILAGF.png" alt="read write procedure via shared log"></p>
 <p>存储服务可以分为两层，db API 层和共享日志 runtime 层。如上图，以表格存储为例，在上层，DelosTable 负责提供表格存储的 API；在下层，DelosRuntime 负责共享日志的读写。则，一个典型的写流程如下：</p>
 <ol>
 <li>客户端发起一个写请求</li>
@@ -318,7 +320,8 @@
 <li>共享日志层提供了具有线性一致性保证的极简 API</li>
 <li>基于该简明 API，上层可以方便的提供不同存储接口的实现</li>
 </ol>
-<h3 id="虚拟共识"><a href="#虚拟共识" class="headerlink" title="虚拟共识"></a>虚拟共识</h3><p>到此为止，该架构设计看起来相当简单，但我们知道，复杂性只能被转移，但不可能凭空消失。可以看到，最复杂的共识协议被隐藏在了共享日志后面，于是问题随之而来：</p>
+<h3 id="虚拟共识">虚拟共识</h3>
+<p>到此为止，该架构设计看起来相当简单，但我们知道，复杂性只能被转移，但不可能凭空消失。可以看到，最复杂的共识协议被隐藏在了共享日志后面，于是问题随之而来：</p>
 <ol>
 <li>我们需要如何快速实现一个满足共识协议的的共享日志组件？</li>
 <li>随着技术的发展，如果我们之后想用更好的共识协议，该如何进行替换？</li>
@@ -327,13 +330,15 @@
 <p>在 Delos 中，虚拟共识协议的承载层被称为 <strong>VirtualLog</strong>。对上，db 层基于 VirtualLog 层进行实现；对下，VirtualLog 被映射成一组物理共享日志，称为 <strong>Loglets</strong>。每个 loget 提供和共享日志同样的 API，外加一个 seal 命令。 一旦被 seal，Loglet 便不再接受追加。为了存储 VirtualLog 逻辑空间到 Loglets 物理空间的映射，Delos 引入了新的组件： <strong>MetaStore</strong>。</p>
 <p>MetaStore 是一个带版本的简单 KV 存储。通过存储的不同版本的 Loglet 的切换，VirtualLog 就自然的将流量打到新的 Loglet 上。如下图展示了 VirtualLog 向 MetaStore put 一个新版本（ver0 -&gt; ver1）的映射信息，将流量无宕机的从 Zookeeper 切换到了 LogDevice 的过程 。</p>
 <p><img src="https://i.loli.net/2021/03/14/M8HJ7LX3m14NxpD.png" alt="virtualizing consensus via the VirtualLog"></p>
-<h2 id="定制-Loglet"><a href="#定制-Loglet" class="headerlink" title="定制 Loglet"></a>定制 Loglet</h2><p>在满足基本需求后，为了进一步提升性能，Delos 想自己定制 Loglet，以满足以下特点：</p>
+<h2 id="定制-Loglet">定制 Loglet</h2>
+<p>在满足基本需求后，为了进一步提升性能，Delos 想自己定制 Loglet，以满足以下特点：</p>
 <ol>
 <li>简单：simple</li>
 <li>快速：fast</li>
 <li>容错：fault tolerant</li>
 </ol>
-<h3 id="NativeLoglet"><a href="#NativeLoglet" class="headerlink" title="NativeLoglet"></a>NativeLoglet</h3><p>只实现其中两点，比较容易；若要三者皆得，有点困难。Delos 通过分治策略，将其分解为两个组件：</p>
+<h3 id="NativeLoglet">NativeLoglet</h3>
+<p>只实现其中两点，比较容易；若要三者皆得，有点困难。Delos 通过分治策略，将其分解为两个组件：</p>
 <ol>
 <li>MetaStore：进行容错</li>
 <li>Loglet：专注性能</li>
@@ -341,7 +346,7 @@
 <p>此时，所有一致性的来源便都移到了 MetaStore 之上。 而 MetaStore 功能相对简单，只需保存空间映射，并提供容错的 <strong>reconfiguration</strong> 源语（即对映射进行操作，比如 loglet 切换），且 reconfiguration 是个低频操作。因此 MetaStore 的实现无需关注性能优化，只需要按照 Lamport 最初的 Paxos 进行实现即可，可以保证 MetaStore 实现的简洁性。</p>
 <p>同时，将 Loglet 职能弱化，不再需要提供完全的容错机制，只需提供一个高可用的 seal 命令即可。如此一来，当一个 Loget 不可用时，VirtualLog 只需将其 seal，然后将流量切向其他 Loglet 即可。</p>
 <p>据此，Delos 实现了新的 Loglet 实例——<strong>NativeLoglet</strong> 。</p>
-<p> <img src="https://i.loli.net/2021/03/14/aIFxzr2EpYmbluf.png" alt="the NativeLoglet"></p>
+<p><img src="https://i.loli.net/2021/03/14/aIFxzr2EpYmbluf.png" alt="the NativeLoglet"></p>
 <p>直观感觉来说，NativeLoglet 类似一个弱化版的 LogDevice。其交互流程如下：</p>
 <ol>
 <li>正常运行时，集群中某个 LogServer 充当 Sequencer</li>
@@ -353,26 +358,33 @@
 <p><img src="https://i.loli.net/2021/03/14/Namb2vlGL5kcXP3.png" alt="converged vs disaggregated"></p>
 <p>下图是一个替换 NativeLoglet 后的性能提升对比：</p>
 <p><img src="https://i.loli.net/2021/03/14/4W3M8gxISfwUVJk.png" alt="NativeLoglet compare"></p>
-<h3 id="StripedLoglet"><a href="#StripedLoglet" class="headerlink" title="StripedLoglet"></a>StripedLoglet</h3><p> 为了进一步提升性能，在 VirtualLog 的抽象下，Delos 利用分片思想又造出了一种叫做 <strong>StripedLoglet</strong> 的实现。该实现在底层组合了多个 Loglets 实例，当 Append 请求到来时，将其 round robin 的打到各个底层 Loglet 系统中，从而极大提升性能。</p>
+<h3 id="StripedLoglet">StripedLoglet</h3>
+<p>为了进一步提升性能，在 VirtualLog 的抽象下，Delos 利用分片思想又造出了一种叫做 <strong>StripedLoglet</strong> 的实现。该实现在底层组合了多个 Loglets 实例，当 Append 请求到来时，将其 round robin 的打到各个底层 Loglet 系统中，从而极大提升性能。</p>
 <p>此外，StripedLoglet 允许多个 DelosRuntime 使用不同策略进行并行 Append，并且允许暂时的空洞存在，之后使用类似滑动窗口的机制，进行捎带 ACK，从而进一步提升性能。</p>
 <p>底层多个 Loglet 系统可以视情况共享一个集群或分散到多个集群。</p>
 <p><img src="https://i.loli.net/2021/03/14/Chg4esWOuHBXk8a.png" alt="striped loglet"></p>
-<h2 id="The-Last-Thing：VirtualLog-Triming"><a href="#The-Last-Thing：VirtualLog-Triming" class="headerlink" title="The Last Thing：VirtualLog Triming"></a>The Last Thing：VirtualLog Triming</h2><p>此外值得一说的细节是，VirtualLog 提供的 Trim 操作。得益于虚拟化的抽象，Delos 可以通过删除映射，将老的日志进行移除。当然，一种更好的做法是，将老的日志移动到 BackupLoget 的冷集群中，然后改变映射，对外提供一种无限日志的抽象，进而允许按年龄对不同日志段进行细粒度的存储控制。</p>
+<h2 id="The-Last-Thing：VirtualLog-Triming">The Last Thing：VirtualLog Triming</h2>
+<p>此外值得一说的细节是，VirtualLog 提供的 Trim 操作。得益于虚拟化的抽象，Delos 可以通过删除映射，将老的日志进行移除。当然，一种更好的做法是，将老的日志移动到 BackupLoget 的冷集群中，然后改变映射，对外提供一种无限日志的抽象，进而允许按年龄对不同日志段进行细粒度的存储控制。</p>
 <p>另一方面，通过修改 MetaStore 中的映射，Delos 允许修改单个日志记录，对某些有问题的日志进行删除，以避免系统 hang 住或者反复重启宕机。这是之前的一致性协议无法做到的。</p>
 <p><img src="https://i.loli.net/2021/03/14/LSXWgwsxFVO6cQa.png" alt="trimming the VirtualLog"></p>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>Delos 位于 Facebook 系统的底层（用于控制面的存储），它采用分层的设计，使得：</p>
+<h2 id="结语">结语</h2>
+<p>Delos 位于 Facebook 系统的底层（用于控制面的存储），它采用分层的设计，使得：</p>
 <ol>
 <li>在项目之初，可以在某些层复用现有系统，进行快速上线，投入使用。</li>
 <li>在上线之后，允许不停机的替换更高性能的组件、实验更新的一致性协议。</li>
 </ol>
 <p><img src="https://i.loli.net/2021/03/14/UzctHaiYvb9pFfh.png" alt="summary"></p>
 <p>虚拟共识之于分布式系统，有点像虚拟内存之于单机系统，通过分层解耦，使得设计者在系统构建时有更多腾挪空间。至于该思想是否能够实至名归，还得等待时间和实践的检验。</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
-<li><p>OSDI 20 该论文的讲解视频：<span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj13ZC1HQ19YaEEyZw==">https://www.youtube.com/watch?v=wd-GC_XhA2g<i class="fa fa-external-link-alt"></i></span></p>
+<h2 id="参考">参考</h2>
+<ol>
+<li>
+<p>OSDI 20 该论文的讲解视频：<span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj13ZC1HQ19YaEEyZw==">https://www.youtube.com/watch?v=wd-GC_XhA2g<i class="fa fa-external-link-alt"></i></span></p>
 </li>
-<li><p>谷歌工程文章：<span class="exturl" data-url="aHR0cHM6Ly9lbmdpbmVlcmluZy5mYi5jb20vMjAxOS8wNi8wNi9kYXRhLWNlbnRlci1lbmdpbmVlcmluZy9kZWxvcy8=">https://engineering.fb.com/2019/06/06/data-center-engineering/delos/<i class="fa fa-external-link-alt"></i></span></p>
+<li>
+<p>谷歌工程文章：<span class="exturl" data-url="aHR0cHM6Ly9lbmdpbmVlcmluZy5mYi5jb20vMjAxOS8wNi8wNi9kYXRhLWNlbnRlci1lbmdpbmVlcmluZy9kZWxvcy8=">https://engineering.fb.com/2019/06/06/data-center-engineering/delos/<i class="fa fa-external-link-alt"></i></span></p>
 </li>
-<li><p>论文 Virtual Consensus in Delos：<span class="exturl" data-url="aHR0cHM6Ly9yZXNlYXJjaC5mYi5jb20vcHVibGljYXRpb25zL3ZpcnR1YWwtY29uc2Vuc3VzLWluLWRlbG9zLw==">https://research.fb.com/publications/virtual-consensus-in-delos/<i class="fa fa-external-link-alt"></i></span></p>
+<li>
+<p>论文 Virtual Consensus in Delos：<span class="exturl" data-url="aHR0cHM6Ly9yZXNlYXJjaC5mYi5jb20vcHVibGljYXRpb25zL3ZpcnR1YWwtY29uc2Vuc3VzLWluLWRlbG9zLw==">https://research.fb.com/publications/virtual-consensus-in-delos/<i class="fa fa-external-link-alt"></i></span></p>
 </li>
 </ol>
 <hr>
@@ -412,16 +424,16 @@
       <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
     </li>
   </ul>
 
@@ -582,12 +594,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -598,6 +604,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

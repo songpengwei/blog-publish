@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="概览Haystack 的基本思想就是将索引信息放在内存中，避免额外的IO。为了做到这一点，主要进行了两方面的设计：  将小文件集合成大文件，减少文件数，从而减少了元信息的数目。 精简文件元信息，去掉一切在 Facebook 场景中不需要的 POSIX 语义中元信息。  这样就可以将数据元信息减小到一个内存可以放的下的量级，基本上每次每次数据访问同一个一次 IO 就可以完成，而非以前的好几次。">
+  <meta name="description" content="概览 Haystack 的基本思想就是将索引信息放在内存中，避免额外的IO。为了做到这一点，主要进行了两方面的设计：  将小文件集合成大文件，减少文件数，从而减少了元信息的数目。 精简文件元信息，去掉一切在 Facebook 场景中不需要的 POSIX 语义中元信息。  这样就可以将数据元信息减小到一个内存可以放的下的量级，基本上每次每次数据访问同一个一次 IO 就可以完成，而非以前的好几次。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Finding a Needle in Haystack：Facebook&#39;s Photo Storage">
 <meta property="og:url" content="https://www.qtmuniao.com/2019/03/24/haystack/index.html">
 <meta property="og:site_name" content="木鸟杂记">
-<meta property="og:description" content="概览Haystack 的基本思想就是将索引信息放在内存中，避免额外的IO。为了做到这一点，主要进行了两方面的设计：  将小文件集合成大文件，减少文件数，从而减少了元信息的数目。 精简文件元信息，去掉一切在 Facebook 场景中不需要的 POSIX 语义中元信息。  这样就可以将数据元信息减小到一个内存可以放的下的量级，基本上每次每次数据访问同一个一次 IO 就可以完成，而非以前的好几次。">
+<meta property="og:description" content="概览 Haystack 的基本思想就是将索引信息放在内存中，避免额外的IO。为了做到这一点，主要进行了两方面的设计：  将小文件集合成大文件，减少文件数，从而减少了元信息的数目。 精简文件元信息，去掉一切在 Facebook 场景中不需要的 POSIX 语义中元信息。  这样就可以将数据元信息减小到一个内存可以放的下的量级，基本上每次每次数据访问同一个一次 IO 就可以完成，而非以前的好几次。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png">
 <meta property="og:image" content="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png">
@@ -40,9 +40,9 @@
 <meta property="article:modified_time" content="2024-03-04T01:15:13.280Z">
 <meta property="article:author" content="木鸟杂记">
 <meta property="article:tag" content="分布式系统">
+<meta property="article:tag" content="存储">
 <meta property="article:tag" content="haystack">
 <meta property="article:tag" content="distributed storage">
-<meta property="article:tag" content="存储">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png">
 
@@ -280,67 +280,80 @@
 
       
         <p><img src="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png" alt="serving a photo"></p>
-<h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>Haystack 的基本思想就是将索引信息放在内存中，避免额外的IO。为了做到这一点，主要进行了两方面的设计：</p>
+<h2 id="概览">概览</h2>
+<p>Haystack 的基本思想就是将索引信息放在内存中，避免额外的IO。为了做到这一点，主要进行了两方面的设计：</p>
 <ol>
 <li>将小文件集合成大文件，减少文件数，从而减少了元信息的数目。</li>
 <li>精简文件元信息，去掉一切在 Facebook 场景中不需要的 POSIX 语义中元信息。</li>
 </ol>
 <p>这样就可以将数据元信息减小到一个内存可以放的下的量级，基本上每次每次数据访问同一个一次 IO 就可以完成，而非以前的好几次。</p>
 <span id="more"></span>
-
-<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
-<h2 id="Facebook业务量级"><a href="#Facebook业务量级" class="headerlink" title="Facebook业务量级"></a>Facebook业务量级</h2><p>2600w， 20P</p>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
+<h2 id="Facebook业务量级">Facebook业务量级</h2>
+<p>2600w， 20P</p>
 <p>峰值每秒钟100w图片。</p>
-<h2 id="key-observation"><a href="#key-observation" class="headerlink" title="key observation"></a>key observation</h2><p>传统文件系统设计导致了过多的元信息查找，我们进行的减少了每个图片的元信息使得Haystack 能够在内存中进行所有的元信息查找操作。</p>
-<h2 id="定位"><a href="#定位" class="headerlink" title="定位"></a>定位</h2><p>是一个对象存储，用来存分享的图片，针对的是一次写，经常读，从来不改，很少删的数据集。不得不造轮子，因为传统的分拣系统在如此高并发下，表现太差。</p>
-<h2 id="缘起"><a href="#缘起" class="headerlink" title="缘起"></a>缘起</h2><p>POSIX：目录组织，并且每个文件存了过多的我们用不到的元信息，如用户权限。而在读文件的时候，元信息必须预先读入内存，在有数十亿量级的文件时，这几乎是不可忍受的。尤其对于NAS（network attached storage）</p>
+<h2 id="key-observation">key observation</h2>
+<p>传统文件系统设计导致了过多的元信息查找，我们进行的减少了每个图片的元信息使得Haystack 能够在内存中进行所有的元信息查找操作。</p>
+<h2 id="定位">定位</h2>
+<p>是一个对象存储，用来存分享的图片，针对的是一次写，经常读，从来不改，很少删的数据集。不得不造轮子，因为传统的分拣系统在如此高并发下，表现太差。</p>
+<h2 id="缘起">缘起</h2>
+<p>POSIX：目录组织，并且每个文件存了过多的我们用不到的元信息，如用户权限。而在读文件的时候，元信息必须预先读入内存，在有数十亿量级的文件时，这几乎是不可忍受的。尤其对于NAS（network attached storage）</p>
 <p>一个图片读写需要三次访问磁盘：</p>
 <ol>
 <li>将文件名翻译为inode</li>
 <li>从磁盘读入inode</li>
 <li>根据inode信息读文件本身</li>
 </ol>
-<h2 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h2><p><strong>高并发低延迟</strong>： CDN太贵，只能减少单个文件的metadata，然后将所有metadata保存在内存中，尽量做到一次访盘。</p>
+<h2 id="特点">特点</h2>
+<p><strong>高并发低延迟</strong>： CDN太贵，只能减少单个文件的metadata，然后将所有metadata保存在内存中，尽量做到一次访盘。</p>
 <p><strong>容错</strong>：异地备份</p>
 <p><strong>花销</strong>： 比 CND 便宜。</p>
-<p><strong>简单</strong>： 没有那么长时间的完善和测试，为了可用，只能做到尽量简单。 </p>
-<h2 id="旧流程"><a href="#旧流程" class="headerlink" title="旧流程"></a>旧流程</h2><p>首先访问 webserver，获取图片的的全局URL，里面包含图片的位置信息。然后用CDN做缓存，命中返回，否则去 photo storage加载到CDN再访问。</p>
+<p><strong>简单</strong>： 没有那么长时间的完善和测试，为了可用，只能做到尽量简单。</p>
+<h2 id="旧流程">旧流程</h2>
+<p>首先访问 webserver，获取图片的的全局URL，里面包含图片的位置信息。然后用CDN做缓存，命中返回，否则去 photo storage加载到CDN再访问。</p>
 <p>一个文件夹存数千张图片的时候，目录到block映射增大，一次不能载入内存，更加重了访问次数。</p>
 <p>总之，我们明白了无论是内部缓存还是外部缓存（memcached），都无助于长尾形式的访问流量。</p>
 <p>RAM-to-disk 比率，提高这个比率，但是一个图片最少占一个inode，从而带来至少数百比特的额外元信息占用。</p>
-<h2 id="新设计"><a href="#新设计" class="headerlink" title="新设计"></a>新设计</h2><p>传统来说，如果网页静态内容服务如果出现瓶颈，就用CDN来解决。但是长尾文件的访问还需另谋他路，当然我们承认非热门图片的请求是可以访盘的，但是我们可以减少这个次数。</p>
+<h2 id="新设计">新设计</h2>
+<p>传统来说，如果网页静态内容服务如果出现瓶颈，就用CDN来解决。但是长尾文件的访问还需另谋他路，当然我们承认非热门图片的请求是可以访盘的，但是我们可以减少这个次数。</p>
 <p>一个图片存一个文件元信息太多，那么直观的想法就是一堆图片存成一个文件。</p>
 <p>接下来我们区分两种元信息：</p>
 <ol>
 <li>应用元信息，用来构建浏览器可以用来检索图片的URL。</li>
 <li>文件系统元信息，用以让某个主机在其磁盘上定位该图片。</li>
 </ol>
-<h3 id="概览-1"><a href="#概览-1" class="headerlink" title="概览"></a>概览</h3><p>三个主要组件：Haystack Store, Haystack Directory, Haystack Cache，简略起见，我们将 Haystack 省略代称为存储，目录和缓存。</p>
+<h3 id="概览-2">概览</h3>
+<p>三个主要组件：Haystack Store, Haystack Directory, Haystack Cache，简略起见，我们将 Haystack 省略代称为存储，目录和缓存。</p>
 <ol>
 <li>Store 对图片的持久化层做了封装，是唯一管理图片文件元信息的组件。实现上来说，我们将主机的存储进行划分，称为一个个物理上的 Volume。然后不同主机上的某几个物理 volume 作为一组称为一个逻辑上的 volume。那么这几个物理上的volume就是该逻辑 volume 的 replica，以进行备份，容错和分流。</li>
 <li>Directory 维护了逻辑到物理的映射，以及另外一些应用信息，包括图片到逻辑volume的映射，有空闲空间的逻辑volume</li>
 <li>Cache 起内部CDN的作用。当对热门图片的请求过来时，上层CDN不可用或者没命中时，屏蔽了直接对store的访问。</li>
 </ol>
-<p>一个典型的要访问CDN的图片请求URL长这样：http:&#x2F;&#x2F;⟨CDN⟩&#x2F;⟨Cache⟩&#x2F;⟨Machine id⟩&#x2F;⟨Logical volume, Photo⟩ </p>
+<p>一个典型的要访问CDN的图片请求URL长这样：http://⟨CDN⟩/⟨Cache⟩/⟨Machine id⟩/⟨Logical volume, Photo⟩</p>
 <p>在CDN，Cache，Machine，层如果命中就返回，否则剥离该层次地址，然后将请求转发到下一层。</p>
 <p><img src="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png" alt="serving a photo"></p>
 <p>上传一个图片的时候，首先请求被打到 web server 中；然后 server 从 Directory 中选择一个可写的逻辑卷（logic volume）。最后，webserver 给该图片一个 id，并且将图片上传到选定的逻辑卷对应的几个物理卷中。</p>
 <p><img src="https://i.loli.net/2020/02/09/f5ZAatgdiFNDWUI.png" alt="up loading a photo"></p>
 <p>这里我有两个问题：1. 如何选择逻辑卷？和图片请求的大区相关吗？ 2. 明显有可能造成不一致。即从 Directory 选择逻辑卷后，写的时候发现全满了或者网络问题写失败怎么办？试看paper接下来怎么说。</p>
-<h3 id="Haystack-Directory"><a href="#Haystack-Directory" class="headerlink" title="Haystack Directory"></a>Haystack Directory</h3><p>Directory 负责四方面的功能：</p>
+<h3 id="Haystack-Directory">Haystack Directory</h3>
+<p>Directory 负责四方面的功能：</p>
 <ol>
 <li>维护逻辑卷到物理卷的映射</li>
 </ol>
 <p>webserver 使用该映射关系进行上传图片和构建图片请求URL</p>
 <ol start="2">
-<li><p>负责逻辑卷间写的负载均衡和跨物理卷间的读</p>
+<li>
+<p>负责逻辑卷间写的负载均衡和跨物理卷间的读</p>
 </li>
-<li><p>决定一个请求是由CDN处理还是Cache处理</p>
+<li>
+<p>决定一个请求是由CDN处理还是Cache处理</p>
 </li>
-<li><p>检查是否由于逻辑卷达到容量或者操作原因导致逻辑卷变为只读</p>
+<li>
+<p>检查是否由于逻辑卷达到容量或者操作原因导致逻辑卷变为只读</p>
 </li>
 </ol>
-<h3 id="Haystack-Cache"><a href="#Haystack-Cache" class="headerlink" title="Haystack Cache"></a>Haystack Cache</h3><p>Cache 会从CDN或者直接从用户浏览器收到图片的HTTP请求。Cache被组织成了分布式的Hash Table，并且用图片的 id 去定位 cache。命不中，则从根据 URL 从指定 Store 拉去图片。</p>
+<h3 id="Haystack-Cache">Haystack Cache</h3>
+<p>Cache 会从CDN或者直接从用户浏览器收到图片的HTTP请求。Cache被组织成了分布式的Hash Table，并且用图片的 id 去定位 cache。命不中，则从根据 URL 从指定 Store 拉去图片。</p>
 <p>只有当满足</p>
 <ol>
 <li>请求直接从浏览器而非 CDN 过来。</li>
@@ -348,22 +361,30 @@
 </ol>
 <p>才会在 Cache 中缓存该请求的图片。</p>
 <p>理由二是因为a. 图片被写后往往会很快被读取  b. 读写分开速度会更快</p>
-<h3 id="Hyastack-Store"><a href="#Hyastack-Store" class="headerlink" title="Hyastack Store"></a>Hyastack Store</h3><p>Haystack 的主要设计就在于 Store 的组织上。</p>
+<h3 id="Hyastack-Store">Hyastack Store</h3>
+<p>Haystack 的主要设计就在于 Store 的组织上。</p>
 <p>每个物理卷在物理上是一个大文件，每个 Store 机器和通过一个逻辑卷id + offset 来迅速定位一个图片。Heystack 一个关键设计就在于此：不用硬盘访问就可以获取某个图片的文件名，偏移量和大小。因为Store 的每个物理节点一直在内存中维护着每个物理卷对应文件的描述符和图片 id 到其元信息的映射。</p>
 <p>具体组织上来说，每个物理卷就是一个包含一个超级块（superblock）和一系列 needles。每个needle保存图片元信息和图片本身。其中 flag 是为了标记该图片是否被删除，cookie 是在上传图片时随机生成，为了防止猜 url ，而 alternate key 是为了保存同一个图片的不同分辨率的文件而增加的。Data Checksum 进行数据校验，而 padding 可能是为了硬盘块对齐。</p>
 <p><img src="https://i.loli.net/2020/02/09/JBYr8FL4O53Cz6Q.png" alt="layout of haystack store file"></p>
 <p>为了加快图片的访问，物理机在内存中维护所有图片的基本元信息，如下图，只剩下了最简单的几项信息。为了加快机器重启后内存中元信息的构建，物理机会将内存中的这些元信息定期做 snapshot 即 index file；其顺序和 store file 保持一致。</p>
 <p><img src="https://i.loli.net/2020/02/09/9AKPDpN7OwBgTVM.png" alt="layout of haystack index file"></p>
 <p>根据上述物理结构，我们来过一遍 Haystack 每个 API 对应的实际流程：</p>
-<h4 id="Photo-Read"><a href="#Photo-Read" class="headerlink" title="Photo Read"></a>Photo Read</h4><p>一个来自 Cache 的读请求会携带 volume id, key, alternate key 和 cookie，Store 物理机会在内存中查找图片相关的元信息，找到（文件描述符，offset 和 size）， 从而读出该图片文件及其元信息；然后进行 cookie 比对和 checksum 校验，通过后返回图片数据。</p>
-<h4 id="Photo-Write"><a href="#Photo-Write" class="headerlink" title="Photo Write"></a>Photo Write</h4><p>来自 web server 的写请求会携带逻辑 volume id，key，alternate key，cookie 和 图片数据，每个物理机会同步的将这些信息追加到对应的 Store file 中。对于图片的 update 请求（比如图片旋转），我们也是进行简单的追加。但这样会造成重复的 key + alternate key；如果其和原图片落在不同逻辑卷中，Directory 只需要更新图片到逻辑卷的映射就行；如果落在同一个逻辑卷，那么通过 offset 就能获取版本的新旧（看起来除了index file 这种顺序组织，还有是利用 id 作为索引的 dict，新旧的元信息会落到一个桶内，每次取offset大的那个）</p>
-<h4 id="Photo-Delete"><a href="#Photo-Delete" class="headerlink" title="Photo Delete"></a>Photo Delete</h4><p>删除文件很直观，就是同步的依次设置下内存和 store  file 中对应图片元信息的 flag。如果请求到某个被删的 Photo，在内存中发现其 flag 被设置了，就报一个异常。暂时的，被置为已删除的图片所占的空间会暂时不可用；在定期的紧缩（compact）时，会回收这部分空间。</p>
-<h4 id="The-Index-File"><a href="#The-Index-File" class="headerlink" title="The Index File"></a>The Index File</h4><p>然后说回 index file。既然是定期做 snapshot 得到的 index file ，那么就会有宕机一致性问题。包括，新增文件写入 volume 和内存后没有及时写到 index file 就宕机；设置某图片 Store file 和内存删除 flag 时候没有及时同步到 index file 就宕机。应对这两个问题也简单，对于前者在重启时，读index file 时候，可以对比对应 offset 的 volume id，看是否是最新的，否则将最新的补到 index 和内存中就行；对于后者，每次读取图片时，除了内存中做检查，额外检查下 Store file 中图片的删除 flag 是否被设置，并将其同步到内存和 index file 中。</p>
-<h4 id="Filesystem"><a href="#Filesystem" class="headerlink" title="Filesystem"></a>Filesystem</h4><p>此外，为了减少不必要的读盘，没有采用传统的 POSIX 文件系统，而是用了对大文件友好的 XFS。</p>
-<h3 id="错误恢复"><a href="#错误恢复" class="headerlink" title="错误恢复"></a>错误恢复</h3><p>跑在大规模廉价硬件上的系统总避免不了出现一些错误，比如说硬件驱动错误，RAID 控制器问题，主板故障等等。我们的应对方法也简单，做了两件小事，一个是定期检测，一个是适时恢复。</p>
+<h4 id="Photo-Read">Photo Read</h4>
+<p>一个来自 Cache 的读请求会携带 volume id, key, alternate key 和 cookie，Store 物理机会在内存中查找图片相关的元信息，找到（文件描述符，offset 和 size）， 从而读出该图片文件及其元信息；然后进行 cookie 比对和 checksum 校验，通过后返回图片数据。</p>
+<h4 id="Photo-Write">Photo Write</h4>
+<p>来自 web server 的写请求会携带逻辑 volume id，key，alternate key，cookie 和 图片数据，每个物理机会同步的将这些信息追加到对应的 Store file 中。对于图片的 update 请求（比如图片旋转），我们也是进行简单的追加。但这样会造成重复的 key + alternate key；如果其和原图片落在不同逻辑卷中，Directory 只需要更新图片到逻辑卷的映射就行；如果落在同一个逻辑卷，那么通过 offset 就能获取版本的新旧（看起来除了index file 这种顺序组织，还有是利用 id 作为索引的 dict，新旧的元信息会落到一个桶内，每次取offset大的那个）</p>
+<h4 id="Photo-Delete">Photo Delete</h4>
+<p>删除文件很直观，就是同步的依次设置下内存和 store  file 中对应图片元信息的 flag。如果请求到某个被删的 Photo，在内存中发现其 flag 被设置了，就报一个异常。暂时的，被置为已删除的图片所占的空间会暂时不可用；在定期的紧缩（compact）时，会回收这部分空间。</p>
+<h4 id="The-Index-File">The Index File</h4>
+<p>然后说回 index file。既然是定期做 snapshot 得到的 index file ，那么就会有宕机一致性问题。包括，新增文件写入 volume 和内存后没有及时写到 index file 就宕机；设置某图片 Store file 和内存删除 flag 时候没有及时同步到 index file 就宕机。应对这两个问题也简单，对于前者在重启时，读index file 时候，可以对比对应 offset 的 volume id，看是否是最新的，否则将最新的补到 index 和内存中就行；对于后者，每次读取图片时，除了内存中做检查，额外检查下 Store file 中图片的删除 flag 是否被设置，并将其同步到内存和 index file 中。</p>
+<h4 id="Filesystem">Filesystem</h4>
+<p>此外，为了减少不必要的读盘，没有采用传统的 POSIX 文件系统，而是用了对大文件友好的 XFS。</p>
+<h3 id="错误恢复">错误恢复</h3>
+<p>跑在大规模廉价硬件上的系统总避免不了出现一些错误，比如说硬件驱动错误，RAID 控制器问题，主板故障等等。我们的应对方法也简单，做了两件小事，一个是定期检测，一个是适时恢复。</p>
 <p>我们用一个叫 Pitchfork（草叉） 的后台任务，定期检测每台存储节点（Store machine）的健康状况。比如查看与每个节点的连通情况，每个 volume 的可用性，并尝试从物理节点读一些数据以进行测试。一旦健康检查失败，Pitchfork 程序就回标记该物理机上的所有 volume id 为只读。</p>
 <p>稍后一旦确诊，就会立即修复这些问题。偶尔修复不了的，就只能先重置该节点数据，然后从备份节点利用一个比较重的 bulk sync 的操作去同步数据过来。</p>
-<h3 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h3><p>一些常用的优化有：</p>
+<h3 id="优化">优化</h3>
+<p>一些常用的优化有：</p>
 <p><strong>定期紧缩</strong>（Compaction）：这是个在线操作，旨在收回被删除文件和重复（key 和 alternate key都一样）文件所占的空间；具体做法是新生成一个文件，逐个拷贝有效的文件，跳过被删除和重复的文件。一旦完成，就暂时阻止所有落到该 volume 的修改请求，然后交换 Store file 和内存映射。</p>
 <p><strong>精简内存</strong>，由于现在用 flag 只做是否删除的标志，太浪费了。可以改成将内存中所有删除了的文件对应的元信息的 offset 设置为0。并且不再内存中保存图片的 cookie，改为从硬盘读取，如此一来，省了百分之二十左右的内存。</p>
 <p><strong>批量上传</strong>，硬盘在进行大批量写的时相对随机写平均性能会好一些，因此我们尽可能的追求批量上传。幸运的是，用户更倾向于同时上传一批图片而非一张图片。</p>
@@ -410,10 +431,10 @@
       <div class="popular-posts-title"><a href="/2020/06/13/dynamo/" rel="bookmark">Amazon 针对小对象的分布式键值存储——Dynamo</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2021/05/16/distributed-system-material/" rel="bookmark">分布式系统学习资料汇总</a></div>
+      <div class="popular-posts-title"><a href="/2021/04/17/storage-interview/" rel="bookmark">分布式存储面试经验</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2021/04/17/storage-interview/" rel="bookmark">分布式存储面试经验</a></div>
+      <div class="popular-posts-title"><a href="/2021/05/16/distributed-system-material/" rel="bookmark">分布式系统学习资料汇总</a></div>
     </li>
   </ul>
 
@@ -436,9 +457,9 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
+              <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
               <a href="/tags/haystack/" rel="tag"># haystack</a>
               <a href="/tags/distributed-storage/" rel="tag"># distributed storage</a>
-              <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
           </div>
 
         
@@ -513,7 +534,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%A7%88"><span class="nav-number">1.</span> <span class="nav-text">概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Facebook%E4%B8%9A%E5%8A%A1%E9%87%8F%E7%BA%A7"><span class="nav-number">2.</span> <span class="nav-text">Facebook业务量级</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#key-observation"><span class="nav-number">3.</span> <span class="nav-text">key observation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9A%E4%BD%8D"><span class="nav-number">4.</span> <span class="nav-text">定位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%98%E8%B5%B7"><span class="nav-number">5.</span> <span class="nav-text">缘起</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E7%82%B9"><span class="nav-number">6.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A7%E6%B5%81%E7%A8%8B"><span class="nav-number">7.</span> <span class="nav-text">旧流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B0%E8%AE%BE%E8%AE%A1"><span class="nav-number">8.</span> <span class="nav-text">新设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%A7%88-1"><span class="nav-number">8.1.</span> <span class="nav-text">概览</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Haystack-Directory"><span class="nav-number">8.2.</span> <span class="nav-text">Haystack Directory</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Haystack-Cache"><span class="nav-number">8.3.</span> <span class="nav-text">Haystack Cache</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hyastack-Store"><span class="nav-number">8.4.</span> <span class="nav-text">Hyastack Store</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Photo-Read"><span class="nav-number">8.4.1.</span> <span class="nav-text">Photo Read</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Photo-Write"><span class="nav-number">8.4.2.</span> <span class="nav-text">Photo Write</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Photo-Delete"><span class="nav-number">8.4.3.</span> <span class="nav-text">Photo Delete</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#The-Index-File"><span class="nav-number">8.4.4.</span> <span class="nav-text">The Index File</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Filesystem"><span class="nav-number">8.4.5.</span> <span class="nav-text">Filesystem</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E6%81%A2%E5%A4%8D"><span class="nav-number">8.5.</span> <span class="nav-text">错误恢复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%98%E5%8C%96"><span class="nav-number">8.6.</span> <span class="nav-text">优化</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%A7%88"><span class="nav-number">1.</span> <span class="nav-text">概览</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Facebook%E4%B8%9A%E5%8A%A1%E9%87%8F%E7%BA%A7"><span class="nav-number">2.</span> <span class="nav-text">Facebook业务量级</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#key-observation"><span class="nav-number">3.</span> <span class="nav-text">key observation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9A%E4%BD%8D"><span class="nav-number">4.</span> <span class="nav-text">定位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%98%E8%B5%B7"><span class="nav-number">5.</span> <span class="nav-text">缘起</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E7%82%B9"><span class="nav-number">6.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A7%E6%B5%81%E7%A8%8B"><span class="nav-number">7.</span> <span class="nav-text">旧流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B0%E8%AE%BE%E8%AE%A1"><span class="nav-number">8.</span> <span class="nav-text">新设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%A7%88-2"><span class="nav-number">8.1.</span> <span class="nav-text">概览</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Haystack-Directory"><span class="nav-number">8.2.</span> <span class="nav-text">Haystack Directory</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Haystack-Cache"><span class="nav-number">8.3.</span> <span class="nav-text">Haystack Cache</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hyastack-Store"><span class="nav-number">8.4.</span> <span class="nav-text">Hyastack Store</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Photo-Read"><span class="nav-number">8.4.1.</span> <span class="nav-text">Photo Read</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Photo-Write"><span class="nav-number">8.4.2.</span> <span class="nav-text">Photo Write</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Photo-Delete"><span class="nav-number">8.4.3.</span> <span class="nav-text">Photo Delete</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#The-Index-File"><span class="nav-number">8.4.4.</span> <span class="nav-text">The Index File</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Filesystem"><span class="nav-number">8.4.5.</span> <span class="nav-text">Filesystem</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E6%81%A2%E5%A4%8D"><span class="nav-number">8.5.</span> <span class="nav-text">错误恢复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%98%E5%8C%96"><span class="nav-number">8.6.</span> <span class="nav-text">优化</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -574,12 +595,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -590,6 +605,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

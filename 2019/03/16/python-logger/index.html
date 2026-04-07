@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="绪论使用 Logging 前可以先捋一下我们常见的日志输出需求，俗话说，不管需求的设计就是耍流氓。  能够定位事件（Event）的产生位置（代码文件&amp;行数）和生成时间，用于调试和跟踪。 一份日志可以同时送到多个目标输出。 可以通过不同级别或者更精细条件筛选日志输出。 可以方便的控制第三方模块的日志输出。 实现上面的一切的前提下，配置&#x2F;设置 尽量简单。  Python 的 Log">
+  <meta name="description" content="绪论 使用 Logging 前可以先捋一下我们常见的日志输出需求，俗话说，不管需求的设计就是耍流氓。  能够定位事件（Event）的产生位置（代码文件&amp;行数）和生成时间，用于调试和跟踪。 一份日志可以同时送到多个目标输出。 可以通过不同级别或者更精细条件筛选日志输出。 可以方便的控制第三方模块的日志输出。 实现上面的一切的前提下，配置&#x2F;设置 尽量简单。  Python 的 Logging">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Python Logging 库分析">
 <meta property="og:url" content="https://www.qtmuniao.com/2019/03/16/python-logger/index.html">
 <meta property="og:site_name" content="木鸟杂记">
-<meta property="og:description" content="绪论使用 Logging 前可以先捋一下我们常见的日志输出需求，俗话说，不管需求的设计就是耍流氓。  能够定位事件（Event）的产生位置（代码文件&amp;行数）和生成时间，用于调试和跟踪。 一份日志可以同时送到多个目标输出。 可以通过不同级别或者更精细条件筛选日志输出。 可以方便的控制第三方模块的日志输出。 实现上面的一切的前提下，配置&#x2F;设置 尽量简单。  Python 的 Log">
+<meta property="og:description" content="绪论 使用 Logging 前可以先捋一下我们常见的日志输出需求，俗话说，不管需求的设计就是耍流氓。  能够定位事件（Event）的产生位置（代码文件&amp;行数）和生成时间，用于调试和跟踪。 一份日志可以同时送到多个目标输出。 可以通过不同级别或者更精细条件筛选日志输出。 可以方便的控制第三方模块的日志输出。 实现上面的一切的前提下，配置&#x2F;设置 尽量简单。  Python 的 Logging">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://i.loli.net/2020/02/09/zMtSnoRFshGc6dl.png">
 <meta property="og:image" content="https://docs.python.org/3/_images/logging_flow.png">
@@ -277,32 +277,35 @@
 
       
         <p><img src="https://i.loli.net/2020/02/09/zMtSnoRFshGc6dl.png" alt="python-learn.png"></p>
-<h2 id="绪论"><a href="#绪论" class="headerlink" title="绪论"></a>绪论</h2><p>使用 Logging 前可以先捋一下我们常见的日志输出需求，俗话说，不管需求的设计就是耍流氓。</p>
+<h2 id="绪论">绪论</h2>
+<p>使用 Logging 前可以先捋一下我们常见的日志输出需求，俗话说，不管需求的设计就是耍流氓。</p>
 <ol>
 <li>能够定位<a href="#logevent">事件</a>（Event）的产生位置（代码文件&amp;行数）和生成时间，用于调试和跟踪。</li>
 <li>一份日志可以同时送到多个<a href="#dstout">目标输出</a>。</li>
 <li>可以通过不同级别或者更精细条件筛选日志输出。</li>
 <li>可以方便的控制第三方模块的日志输出。</li>
-<li>实现上面的一切的前提下，配置&#x2F;设置 尽量简单。</li>
+<li>实现上面的一切的前提下，配置/设置 尽量简单。</li>
 </ol>
 <p>Python 的 Logging 模块通过神奇的模块化设计，<a href="#tree">树</a>形的方式组织完美的实现了以上五点。</p>
 <span id="more"></span>
-
-<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
-<h2 id="模块设计"><a href="#模块设计" class="headerlink" title="模块设计"></a>模块设计</h2><p>Python 的 logger 抽象出了几个具有从属关系的元概念，Logger，Handler ，Filter和  Formattor 作为 logger 实现的基石。</p>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
+<h2 id="模块设计">模块设计</h2>
+<p>Python 的 logger 抽象出了几个具有从属关系的元概念，Logger，Handler ，Filter和  Formattor 作为 logger 实现的基石。</p>
 <ol>
 <li>Loggers 提供了应用代码可以直接使用的接口</li>
 <li>Handlers 将（loggers生成的）日志记录分发到合适的输出</li>
 <li>Filters 提供了对哪些日志进行输出的精细控制</li>
 <li>Formatters 则决定了日志在最终的输出上样式</li>
 </ol>
-<h3 id="Loggers"><a href="#Loggers" class="headerlink" title="Loggers"></a>Loggers</h3><p><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9saWJyYXJ5L2xvZ2dpbmcuaHRtbCNsb2dnaW5nLkxvZ2dlcg==">Logger<i class="fa fa-external-link-alt"></i></span> 类作为日志库的基本模块，能做三件小事：</p>
+<h3 id="Loggers">Loggers</h3>
+<p><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9saWJyYXJ5L2xvZ2dpbmcuaHRtbCNsb2dnaW5nLkxvZ2dlcg==">Logger<i class="fa fa-external-link-alt"></i></span> 类作为日志库的基本模块，能做三件小事：</p>
 <ul>
 <li>它是在用户代码中进行日志输出调用的类，暴露了<code>debug(), info()</code> 等接口；</li>
 <li>根据日志级别和 filter 类决定用户调用该类（<code>logger.info(msg)</code>）时，是否创造一个日志记录（LogRecord）并传递该日志输出的事件；</li>
-<li>作为日志模块树的一个节点，将该事件往根部传递，所有处于传递路径（该logger-&gt;parent logger -&gt; … -&gt; root logger）上的所有 logger 节点添加的所有 Handler 都会相应该事件。当然，通过设置 logger 的 propagate &#x3D; False 或者没有parent logger 可以阻止事件传播。</li>
+<li>作为日志模块树的一个节点，将该事件往根部传递，所有处于传递路径（该logger-&gt;parent logger -&gt; … -&gt; root logger）上的所有 logger 节点添加的所有 Handler 都会相应该事件。当然，通过设置 logger 的 propagate = False 或者没有parent logger 可以阻止事件传播。</li>
 </ul>
-<h3 id="Handlers"><a href="#Handlers" class="headerlink" title="Handlers"></a>Handlers</h3><p><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9saWJyYXJ5L2xvZ2dpbmcuaHRtbCNsb2dnaW5nLkhhbmRsZXI=">Handler<i class="fa fa-external-link-alt"></i></span> 负责将符合级别要求的日志消息分发到各种 handler 指定的目标输出。Logger 实例可以通过 <code>addHandler</code> 方法添加零到多个 Handler。<span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9ob3d0by9sb2dnaW5nLmh0bWwjdXNlZnVsLWhhbmRsZXJz">常见的可以添加的 Handler<i class="fa fa-external-link-alt"></i></span> 子类有 <code>StreamHandler</code>，<code>FileHandler</code>，<code>BaseRotatingHandler</code> 等等。</p>
+<h3 id="Handlers">Handlers</h3>
+<p><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9saWJyYXJ5L2xvZ2dpbmcuaHRtbCNsb2dnaW5nLkhhbmRsZXI=">Handler<i class="fa fa-external-link-alt"></i></span> 负责将符合级别要求的日志消息分发到各种 handler 指定的目标输出。Logger 实例可以通过 <code>addHandler</code> 方法添加零到多个 Handler。<span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9ob3d0by9sb2dnaW5nLmh0bWwjdXNlZnVsLWhhbmRsZXJz">常见的可以添加的 Handler<i class="fa fa-external-link-alt"></i></span> 子类有 <code>StreamHandler</code>，<code>FileHandler</code>，<code>BaseRotatingHandler</code> 等等。</p>
 <p>设想一个场景，某个应用想将所有级别日志信息输出到文件中，将 error 级别以上的日志在标准输出显示，而将所有severity 以上的日志通过邮件报警。那么就可以设置三个 handler，每个handler分别负责捕获不同级别的消息，并且发送到不同的目标输出。</p>
 <p>Handler 的最常用的几个方法：</p>
 <ul>
@@ -311,17 +314,19 @@
 <li><code>addFilter()</code> 和 <code>removeFilter</code> 增删过滤规则，用以决定某条日志消息是要过滤掉。</li>
 </ul>
 <p>应用程序不要直接使用 <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9saWJyYXJ5L2xvZ2dpbmcuaHRtbCNsb2dnaW5nLkhhbmRsZXI=">Handler<i class="fa fa-external-link-alt"></i></span> 类，这只是一个基类，规定了一些接口和默认行为。</p>
-<h3 id="Formatters"><a href="#Formatters" class="headerlink" title="Formatters"></a>Formatters</h3><p>与 Handler 不同的是，用户程序可以直接实例化并使用 <code>logging.Formatter</code> 类：</p>
+<h3 id="Formatters">Formatters</h3>
+<p>与 Handler 不同的是，用户程序可以直接实例化并使用 <code>logging.Formatter</code> 类：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logging.Formatter.__init__(fmt=<span class="literal">None</span>, datefmt=<span class="literal">None</span>, style=<span class="string">&#x27;%&#x27;</span>)</span><br></pre></td></tr></table></figure>
-
 <p>其中 <code>fmt</code> 规定消息布局和格式，<code>datefmt</code>  指定日期显示格式，<code>style</code> 指定 <code>fmt</code> 串中变量解析方式。</p>
 <p>想说下的几个点是</p>
 <ul>
 <li><code>fmt</code> 不仅可以指定格式，在 terminal 进行输出时，可以使用 <code>ColoredFormatter</code> 设定配色方案，使命令行输出变的炫酷起来。</li>
-<li><code>style</code> 是 <code>%, ‘&#123;‘ or ‘$’</code> 三选一，默认是 <code>%</code>。但 python3 推荐用 <code>str.format</code> 方式进行字符串格式化，可以改成 <code>style = &#39;&#123;&#39;</code></li>
+<li><code>style</code> 是 <code>%, ‘&#123;‘ or ‘$’</code> 三选一，默认是 <code>%</code>。但 python3 推荐用 <code>str.format</code> 方式进行字符串格式化，可以改成 <code>style = '&#123;'</code></li>
 </ul>
-<h3 id="Filters"><a href="#Filters" class="headerlink" title="Filters"></a>Filters</h3><p>精细的控制日志过滤，就先不讲啦，高阶玩家可以自己去看官方文档。</p>
-<h2 id="树形组织"><a href="#树形组织" class="headerlink" title="树形组织"></a>树形组织</h2><p>Logging 库利用 Python 中天然存在的 Module 间的树形层次结构构建了以 Logger 为树节点的日志系统。这表现在</p>
+<h3 id="Filters">Filters</h3>
+<p>精细的控制日志过滤，就先不讲啦，高阶玩家可以自己去看官方文档。</p>
+<h2 id="树形组织">树形组织</h2>
+<p>Logging 库利用 Python 中天然存在的 Module 间的树形层次结构构建了以 Logger 为树节点的日志系统。这表现在</p>
 <ol>
 <li>logger 和 module_name 具有一一对应关系</li>
 <li>logger 的“有效级别”（<em>effective level</em>）是通过树中向上遍历确定的</li>
@@ -329,30 +334,35 @@
 </ol>
 <p>此外，日志模块有个内置的根节点，负责给所有模块日志输出行为一个默认实现。可以通过 <code>root_logger = Logging.getLogger()</code> 即 <code>module_name = None</code> 来获取。该 root_logger 默认的有效日志级别为 <code>WARNING</code>，并 添加了一个默认的 handler，该 handler 绑定了一个简单的 formatter。</p>
 <p>也就是说，用户无需任何配置，只要通过 <code>root_logger = Logging.getLogger()</code>  获取 <code>root_logger</code> 即可进行日志输出。而有额外需求的用户，则可以通过前述机制对不同模块的输出位置和布局格式进行精细化的配置。这种<strong>开箱即用 + 增量细调</strong> 的设计时程序框架常见的手法，可以同时兼顾入门菜鸟和高阶玩家的不同需求。</p>
-<h3 id="一一对应"><a href="#一一对应" class="headerlink" title="一一对应"></a>一一对应</h3><p>每个logger 是和 python 的 module_name 一一对应的单例。也就是说，在同一进程中，不同位置通过：</p>
+<h3 id="一一对应">一一对应</h3>
+<p>每个logger 是和 python 的 module_name 一一对应的单例。也就是说，在同一进程中，不同位置通过：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">smap_logger = logging.getLogger()</span><br></pre></td></tr></table></figure>
-
 <p>获取的smap_logger 是同一实例。</p>
-<h3 id="有效级别"><a href="#有效级别" class="headerlink" title="有效级别"></a>有效级别</h3><p>logger 有一个<strong>有效级别</strong>的概念，当一个 logger 没有被显式的设置日志级别（setLevel）的时候，它就会使用其父节点 logger 的日志级别。如果其父节点的日志级别也没有被显式设置，就会继续看其祖父节点。如此往复，直到找到一个被显式设置了有效级别的 logger 节点。当然，无论如何这个搜寻过程都会在根节点结束，而根节点默认的级别为 <code>WARNING</code>。</p>
+<h3 id="有效级别">有效级别</h3>
+<p>logger 有一个<strong>有效级别</strong>的概念，当一个 logger 没有被显式的设置日志级别（setLevel）的时候，它就会使用其父节点 logger 的日志级别。如果其父节点的日志级别也没有被显式设置，就会继续看其祖父节点。如此往复，直到找到一个被显式设置了有效级别的 logger 节点。当然，无论如何这个搜寻过程都会在根节点结束，而根节点默认的级别为 <code>WARNING</code>。</p>
 <p>当 logger 接收到一个日志输出的事件时，会根据其有效级别来确定该事件是否会分发给该 logger 所添加的所有 handlers。</p>
-<h3 id="事件响应"><a href="#事件响应" class="headerlink" title="事件响应"></a>事件响应</h3><p>子 loggers 会将日志事件沿着树中的路径向其祖先传递。因此并不需要为所有 logger 绑定 handler，只需要在几个合适的关键顶层节点添加 handler 就可以使得其所有子分支上的日志节点，按该 handler 的行为进行日志输出。</p>
+<h3 id="事件响应">事件响应</h3>
+<p>子 loggers 会将日志事件沿着树中的路径向其祖先传递。因此并不需要为所有 logger 绑定 handler，只需要在几个合适的关键顶层节点添加 handler 就可以使得其所有子分支上的日志节点，按该 handler 的行为进行日志输出。</p>
 <p>当然，你还可以通过设置某 logger 的 <em>propagrate</em> 属性为 <code>False</code> 来阻止该节点向上传递日志事件。</p>
 <p>输出日志流程，可以用下面一张图来说明：</p>
 <p><img src="https://docs.python.org/3/_images/logging_flow.png" alt="Logging Flow"></p>
-<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><h3 id="一个-example"><a href="#一个-example" class="headerlink" title="一个 example"></a>一个 example</h3><p>官方文档提供的一个最基本示例，</p>
+<h2 id="实践">实践</h2>
+<h3 id="一个-example">一个 example</h3>
+<p>官方文档提供的一个最基本示例，</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> logging</span><br><span class="line"></span><br><span class="line"><span class="comment"># create logger</span></span><br><span class="line">logger = logging.getLogger(<span class="string">&#x27;simple_example&#x27;</span>)</span><br><span class="line">logger.setLevel(logging.DEBUG)</span><br><span class="line"></span><br><span class="line"><span class="comment"># create console handler and set level to debug</span></span><br><span class="line">ch = logging.StreamHandler()</span><br><span class="line">ch.setLevel(logging.DEBUG)</span><br><span class="line"></span><br><span class="line"><span class="comment"># create formatter</span></span><br><span class="line">formatter = logging.Formatter(<span class="string">&#x27;%(asctime)s - %(name)s - %(levelname)s - %(message)s&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># add formatter to ch</span></span><br><span class="line">ch.setFormatter(formatter)</span><br><span class="line"></span><br><span class="line"><span class="comment"># add ch to logger</span></span><br><span class="line">logger.addHandler(ch)</span><br><span class="line"></span><br><span class="line"><span class="comment"># &#x27;application&#x27; code</span></span><br><span class="line">logger.debug(<span class="string">&#x27;debug message&#x27;</span>)</span><br><span class="line">logger.info(<span class="string">&#x27;info message&#x27;</span>)</span><br><span class="line">logger.warning(<span class="string">&#x27;warn message&#x27;</span>)</span><br><span class="line">logger.error(<span class="string">&#x27;error message&#x27;</span>)</span><br><span class="line">logger.critical(<span class="string">&#x27;critical message&#x27;</span>)</span><br></pre></td></tr></table></figure>
-
 <p>此外，像 log4j 等 Java 的日志框架一样，这些配置能通过配置文件来完成。包括基本格式和YAML格式。<strong>官方文档</strong>都有讲。</p>
-<h3 id="自己的例子"><a href="#自己的例子" class="headerlink" title="自己的例子"></a>自己的例子</h3><p>我在写 smap（slice-map，对数据集分片，分发到多机执行map的一个计算框架）的 Python 库时，想实现功能：可以让用户侧在使用该库时，动态设置该库的日志级别。当时还费劲心机的将日志级别作为一个参数，传递到框架中，然后每次用之前先将该模块的 logger 设置为该有效级别。</p>
-<p>如果能早就知道 logging 库模块级别的单例以及树形组织设计，那么基本上实现这个功能就啥也不用做，只需要告诉用户我使用的是 logging 日志库就可以了。用户就可以通过 </p>
+<h3 id="自己的例子">自己的例子</h3>
+<p>我在写 smap（slice-map，对数据集分片，分发到多机执行map的一个计算框架）的 Python 库时，想实现功能：可以让用户侧在使用该库时，动态设置该库的日志级别。当时还费劲心机的将日志级别作为一个参数，传递到框架中，然后每次用之前先将该模块的 logger 设置为该有效级别。</p>
+<p>如果能早就知道 logging 库模块级别的单例以及树形组织设计，那么基本上实现这个功能就啥也不用做，只需要告诉用户我使用的是 logging 日志库就可以了。用户就可以通过</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> logging</span><br><span class="line"></span><br><span class="line">smap_logger = logging.getLogger()</span><br><span class="line">smap_logger.setLevel(logging.INFO)</span><br></pre></td></tr></table></figure>
-
 <p>就行了。</p>
-<h2 id="注解"><a href="#注解" class="headerlink" title="注解"></a>注解</h2><p><span id="tree">「<strong>树</strong>」</span>：是计算机中一种常用的数据结构，用来模拟具有树种结构性质的<strong>数据集合</strong>，看起来像一棵根朝上，叶朝下的倒挂树。详细参见<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU2JUEwJTkxXyglRTYlOTUlQjAlRTYlOEQlQUUlRTclQkIlOTMlRTYlOUUlODQp">维基百科<i class="fa fa-external-link-alt"></i></span>。</p>
+<h2 id="注解">注解</h2>
+<p><span id="tree">「<strong>树</strong>」</span>：是计算机中一种常用的数据结构，用来模拟具有树种结构性质的<strong>数据集合</strong>，看起来像一棵根朝上，叶朝下的倒挂树。详细参见<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU2JUEwJTkxXyglRTYlOTUlQjAlRTYlOEQlQUUlRTclQkIlOTMlRTYlOUUlODQp">维基百科<i class="fa fa-external-link-alt"></i></span>。</p>
 <p>「<strong>父节点，祖先节点</strong>」：都是树这种数据结构范畴内的概念。</p>
 <p><span id="logevent">「<strong>日志事件</strong>」</span>： 由 <code>logger.info()</code> 等 API 调用产生，发送给日志系统，让系统决定如何响应该事件在合适位置进行以合适布局和格式进行输出。其他所谓<strong>消息</strong>（<code>Message</code>），<strong>日志记录</strong>（<code>LogRecord</code>）其实都是类似的意思。</p>
 <p><span id="dstout">「<strong>目标输出</strong>」</span>：各种输出目的地，比如说标准输出（stdout），文件（File），数据库（db），邮件（email），中心化日志服务（log service）等等。</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<h2 id="参考">参考</h2>
+<ol>
 <li><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9ob3d0by9sb2dnaW5nLmh0bWw=">Logging facility for Python<i class="fa fa-external-link-alt"></i></span>， 该篇大部分来源于此，只是做了个翻译和重新组织。</li>
 </ol>
 
@@ -385,10 +395,10 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/02/23/python-closure/" rel="bookmark">Python 闭包</a></div>
+      <div class="popular-posts-title"><a href="/2019/03/06/python-mixins/" rel="bookmark">Python 混入类 Mix-Ins</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/06/python-mixins/" rel="bookmark">Python 混入类 Mix-Ins</a></div>
+      <div class="popular-posts-title"><a href="/2019/02/23/python-closure/" rel="bookmark">Python 闭包</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/04/05/python-default-parameter-values/" rel="bookmark">Python函数的默认参数的那些"坑"</a></div>
@@ -552,12 +562,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -568,6 +572,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

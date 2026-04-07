@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="在Google I&#x2F;O 2022 大会上，Google Cloud 发布了兼容 PostgreSQL 标准的云原生数据库 AlloyDB（注：Alloy 意为合金），号称比 Amazon 的同类产品（Aurora？）快两倍，这个口号，对老用户来说，应该不足以让其迁移，但对于新用户来说，确有一些吸引力。 由于笔者主要做存储，下面基于谷歌这篇介绍 AlloyDB 存储层博文，剖析下 Allo">
+  <meta name="description" content="在Google I&#x2F;O 2022 大会上，Google Cloud 发布了兼容 PostgreSQL 标准的云原生数据库 AlloyDB（注：Alloy 意为合金），号称比 Amazon 的同类产品（Aurora？）快两倍，这个口号，对老用户来说，应该不足以让其迁移，但对于新用户来说，确有一些吸引力。 由于笔者主要做存储，下面基于谷歌这篇介绍 AlloyDB 存储层博文，剖析下 AlloyDB 存">
 <meta property="og:type" content="article">
 <meta property="og:title" content="解析谷歌兼容 PostgreSQL 的云原生数据库——AlloyDB 的存储层">
 <meta property="og:url" content="https://www.qtmuniao.com/2022/05/15/google-alloydb-storage/index.html">
 <meta property="og:site_name" content="木鸟杂记">
-<meta property="og:description" content="在Google I&#x2F;O 2022 大会上，Google Cloud 发布了兼容 PostgreSQL 标准的云原生数据库 AlloyDB（注：Alloy 意为合金），号称比 Amazon 的同类产品（Aurora？）快两倍，这个口号，对老用户来说，应该不足以让其迁移，但对于新用户来说，确有一些吸引力。 由于笔者主要做存储，下面基于谷歌这篇介绍 AlloyDB 存储层博文，剖析下 Allo">
+<meta property="og:description" content="在Google I&#x2F;O 2022 大会上，Google Cloud 发布了兼容 PostgreSQL 标准的云原生数据库 AlloyDB（注：Alloy 意为合金），号称比 Amazon 的同类产品（Aurora？）快两倍，这个口号，对老用户来说，应该不足以让其迁移，但对于新用户来说，确有一些吸引力。 由于笔者主要做存储，下面基于谷歌这篇介绍 AlloyDB 存储层博文，剖析下 AlloyDB 存">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://s2.loli.net/2022/05/15/lHFZw8SqjIAGCWh.png">
 <meta property="og:image" content="https://s2.loli.net/2022/05/15/pLtwf1YN4vJDQsl.png">
@@ -277,7 +277,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>在<span class="exturl" data-url="aHR0cHM6Ly9pby5nb29nbGUvMjAyMi8=">Google I&#x2F;O 2022<i class="fa fa-external-link-alt"></i></span> 大会上，Google Cloud 发布了兼容 PostgreSQL 标准的云原生数据库 AlloyDB（注：Alloy 意为合金），号称比 Amazon 的同类产品（Aurora？）快两倍，这个口号，对老用户来说，应该不足以让其迁移，但对于新用户来说，确有一些吸引力。</p>
+        <p>在<span class="exturl" data-url="aHR0cHM6Ly9pby5nb29nbGUvMjAyMi8=">Google I/O 2022<i class="fa fa-external-link-alt"></i></span> 大会上，Google Cloud 发布了兼容 PostgreSQL 标准的云原生数据库 AlloyDB（注：Alloy 意为合金），号称比 Amazon 的同类产品（Aurora？）快两倍，这个口号，对老用户来说，应该不足以让其迁移，但对于新用户来说，确有一些吸引力。</p>
 <p>由于笔者主要做存储，下面基于谷歌这篇介绍 AlloyDB 存储层<span class="exturl" data-url="aHR0cHM6Ly9jbG91ZC5nb29nbGUuY29tL2Jsb2cvcHJvZHVjdHMvZGF0YWJhc2VzL2FsbG95ZGItZm9yLXBvc3RncmVzcWwtaW50ZWxsaWdlbnQtc2NhbGFibGUtc3RvcmFnZQ==">博文<i class="fa fa-external-link-alt"></i></span>，剖析下 AlloyDB 存储层架构，看看其设计有何亮色。</p>
 <blockquote>
 <p><strong>整体架构</strong></p>
@@ -289,7 +289,6 @@
 <li><strong>block storage 层</strong>：对应单机 PostgreSQL 的 block 层，用于服务查询，通过<strong>分片</strong>（shard）提供并行度、通过<strong>冗余</strong>（replication）保证跨区容错性。</li>
 </ol>
 <span id="more"></span>
-
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/05/15/google-alloydb-storage">https://www.qtmuniao.com/2022/05/15/google-alloydb-storage</a> 转载请注明出处</em></p>
 <p><img src="https://s2.loli.net/2022/05/15/lHFZw8SqjIAGCWh.png" alt="database-storage.png"></p>
 <p>即，AlloyDB 将其存储层进一步拆分为<strong>两个存储层</strong>和<strong>一个计算层</strong>，以拆解复杂度：</p>
@@ -303,7 +302,8 @@
 <blockquote>
 <p><strong>读写流程</strong></p>
 </blockquote>
-<p><strong>写入请求</strong>（如 SQL insert），由客户端向<strong>主实例</strong>发起，在经过 DB 层解析后，变为一组 WAL Records 发到存储层。在 WAL <strong>同步</strong>写入成功后，事务提交成功返回。之后，LPS 会将日志异步的物化为 Block。<br><img src="https://s2.loli.net/2022/05/15/pLtwf1YN4vJDQsl.png" alt="write-workflow.png"></p>
+<p><strong>写入请求</strong>（如 SQL insert），由客户端向<strong>主实例</strong>发起，在经过 DB 层解析后，变为一组 WAL Records 发到存储层。在 WAL <strong>同步</strong>写入成功后，事务提交成功返回。之后，LPS 会将日志异步的物化为 Block。<br>
+<img src="https://s2.loli.net/2022/05/15/pLtwf1YN4vJDQsl.png" alt="write-workflow.png"></p>
 <p>原文没有展开，但如何对日志进行<strong>分段</strong>和<strong>容错</strong>、如何多地部署、如何管理日志<strong>生命周期</strong>，也是很关键的设计点。</p>
 <p><strong>读取请求</strong>（如 SQL query），由客户端向<strong>任何实例</strong>发起，在 DB 层解析后，如果命中该 DB 层中的缓存（Buffer Cache），则直接返回；如果请求所需数据缓存不够，则可以去更大的、类似二级缓存的 Ultra-fast Cache 中去捞，如命中，则仍可不访问存储层。</p>
 <p>如 Ultra-fast Cache 中仍然缺少所需 block，则会带上 <strong>block id 和 LSN</strong>，向存储层发送 block 读取请求：</p>
@@ -378,10 +378,10 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
@@ -390,10 +390,10 @@
       <div class="popular-posts-title"><a href="/2020/03/19/wisckey/" rel="bookmark">WiscKey —— SSD 介质下的 LSM-Tree 优化</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/06/13/dynamo/" rel="bookmark">Amazon 针对小对象的分布式键值存储——Dynamo</a></div>
+      <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/07/03/leveldb-data-structures-skip-list/" rel="bookmark">漫谈 LevelDB 数据结构（一）：跳表（Skip List）</a></div>
+      <div class="popular-posts-title"><a href="/2020/06/13/dynamo/" rel="bookmark">Amazon 针对小对象的分布式键值存储——Dynamo</a></div>
     </li>
   </ul>
 
@@ -551,12 +551,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -567,6 +561,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。  第二章讲了上层抽象：数据模型和查询语言。本章下沉一些，聚焦数据库底层如何处理查">
+  <meta name="description" content="DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。  第二章讲了上层抽象：数据模型和查询语言。 本章下沉一些，聚焦数据库底层如何处理">
 <meta property="og:type" content="article">
 <meta property="og:title" content="DDIA 读书笔记（三）：B-Tree 和 LSM-Tree">
 <meta property="og:url" content="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part1/index.html">
 <meta property="og:site_name" content="木鸟杂记">
-<meta property="og:description" content="DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。  第二章讲了上层抽象：数据模型和查询语言。本章下沉一些，聚焦数据库底层如何处理查">
+<meta property="og:description" content="DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。  第二章讲了上层抽象：数据模型和查询语言。 本章下沉一些，聚焦数据库底层如何处理">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://s2.loli.net/2022/04/16/iXVWtdGLxb6RDqB.png">
 <meta property="og:image" content="https://s2.loli.net/2022/04/16/OUVfroWha34L8i7.png">
@@ -284,12 +284,12 @@
         <blockquote>
 <p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">这里<i class="fa fa-external-link-alt"></i></span>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。</p>
 </blockquote>
-<p>第二章讲了上层抽象：数据模型和查询语言。<br>本章下沉一些，聚焦数据库底层如何处理查询和存储。这其中，有个<strong>逻辑链条</strong>：</p>
+<p>第二章讲了上层抽象：数据模型和查询语言。<br>
+本章下沉一些，聚焦数据库底层如何处理查询和存储。这其中，有个<strong>逻辑链条</strong>：</p>
 <blockquote>
 <p>使用场景→ 查询类型 → 存储格式。</p>
 </blockquote>
 <span id="more"></span>
-
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part1">https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part1</a> 转载请注明出处</em></p>
 <p>查询类型主要分为两大类：</p>
 <table>
@@ -305,7 +305,8 @@
 <th>产品举例</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>OLTP</td>
 <td>相对频繁，侧重在线交易</td>
 <td>总体和单次查询都相对较小</td>
@@ -325,7 +326,8 @@
 <td>商业分析</td>
 <td>ClickHouse</td>
 </tr>
-</tbody></table>
+</tbody>
+</table>
 <p>其中，OLTP 侧，常用的存储引擎又有两种流派：</p>
 <table>
 <thead>
@@ -336,7 +338,8 @@
 <th>代表</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>log-structured 流</td>
 <td>只允许追加，所有修改都表现为文件的追加和文件整体增删</td>
 <td>变随机写为顺序写</td>
@@ -348,22 +351,22 @@
 <td>面向页、查找树</td>
 <td>B族树，所有主流关系型数据库和一些非关系型数据库</td>
 </tr>
-</tbody></table>
+</tbody>
+</table>
 <p>此外，针对 OLTP， 还探索了常见的建索引的方法，以及一种特殊的数据库——全内存数据库。</p>
 <p>对于数据仓库，本章分析了它与 OLTP 的主要不同之处。数据仓库主要侧重于聚合查询，需要扫描很大量的数据，此时，索引就相对不太有用。需要考虑的是存储成本、带宽优化等，由此引出列式存储。</p>
-<h1 id="驱动数据库的底层数据结构"><a href="#驱动数据库的底层数据结构" class="headerlink" title="驱动数据库的底层数据结构"></a>驱动数据库的底层数据结构</h1><p>本节由一个 shell 脚本出发，到一个相当简单但可用的存储引擎 Bitcask，然后引出 LSM-tree，他们都属于日志流范畴。之后转向存储引擎另一流派——B 族树，之后对其做了简单对比。最后探讨了存储中离不开的结构——索引。</p>
+<h1>驱动数据库的底层数据结构</h1>
+<p>本节由一个 shell 脚本出发，到一个相当简单但可用的存储引擎 Bitcask，然后引出 LSM-tree，他们都属于日志流范畴。之后转向存储引擎另一流派——B 族树，之后对其做了简单对比。最后探讨了存储中离不开的结构——索引。</p>
 <p>首先来看，世界上“最简单”的数据库，由两个 Bash 函数构成：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="function"><span class="title">db_set</span></span> () &#123;</span><br><span class="line">  <span class="built_in">echo</span> <span class="string">&quot;<span class="variable">$1</span>,<span class="variable">$2</span>&quot;</span> &gt;&gt; database</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">db_get</span></span> () &#123;</span><br><span class="line">  grep <span class="string">&quot;^<span class="variable">$1</span>,&quot;</span> database | sed -e <span class="string">&quot;s/^<span class="variable">$1</span>,//&quot;</span> | <span class="built_in">tail</span> -n 1</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这两个函数实现了一个基于字符串的 KV 存储（只支持 get&#x2F;set，不支持 delete）：</p>
+<p>这两个函数实现了一个基于字符串的 KV 存储（只支持 get/set，不支持 delete）：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ db_set 123456 <span class="string">&#x27;&#123;&quot;name&quot;:&quot;London&quot;,&quot;attractions&quot;:[&quot;Big Ben&quot;,&quot;London Eye&quot;]&#125;&#x27;</span> </span><br><span class="line">$ db_set 42 <span class="string">&#x27;&#123;&quot;name&quot;:&quot;San Francisco&quot;,&quot;attractions&quot;:[&quot;Golden Gate Bridge&quot;]&#125;&#x27;</span></span><br><span class="line">$ db_get 42</span><br><span class="line">&#123;<span class="string">&quot;name&quot;</span>:<span class="string">&quot;San Francisco&quot;</span>,<span class="string">&quot;attractions&quot;</span>:[<span class="string">&quot;Golden Gate Bridge&quot;</span>]&#125;</span><br></pre></td></tr></table></figure>
-
 <p>来分析下它为什么 work，也反映了日志结构存储的最基本原理：</p>
 <ol>
 <li>set：在文件末尾追加一个 KV 对。</li>
 <li>get：匹配所有 Key，返回最后（也即最新）一条 KV 对中的 Value。</li>
 </ol>
-<p>可以看出：写很快，但是读需要全文逐行扫描，会慢很多。典型的以读换写。为了加快读，我们需要构建<strong>索引：</strong>一种允许基于某些字段查找的额外数据结构。</p>
+<p>可以看出：写很快，但是读需要全文逐行扫描，会慢很多。典型的以读换写。为了加快读，我们需要构建**索引：**一种允许基于某些字段查找的额外数据结构。</p>
 <p>索引从原数据中构建，只为加快查找。因此索引会耗费一定额外空间，和插入时间（每次插入要更新索引），即，重新以空间和写换读取。</p>
 <p>这便是数据库存储引擎设计和选择时最常见的<strong>权衡（trade off）</strong>：</p>
 <ol>
@@ -371,7 +374,8 @@
 <li>为了弥补读性能，可以构建索引。但是会牺牲写入性能和耗费额外空间。</li>
 </ol>
 <p>存储格式一般不好动，但是索引构建与否，一般交予用户选择。</p>
-<h2 id="哈希索引"><a href="#哈希索引" class="headerlink" title="哈希索引"></a>哈希索引</h2><p>本节主要基于最基础的 KV 索引。</p>
+<h2 id="哈希索引">哈希索引</h2>
+<p>本节主要基于最基础的 KV 索引。</p>
 <p>依上小节的例子，所有数据顺序追加到磁盘上。为了加快查询，我们在内存中构建一个哈希索引：</p>
 <ol>
 <li>Key 是查询 Key</li>
@@ -400,7 +404,7 @@
 <p>乍一看，基于日志的存储结构存在折不少浪费：需要以追加进行更新和删除。但日志结构有几个原地更新结构无法做的优点：</p>
 <ol>
 <li><strong>以顺序写代替随机写</strong>。对于磁盘和 SSD，顺序写都要比随机写快几个数量级。</li>
-<li><strong>简易的并发控制</strong>。由于大部分的文件都是<strong>不可变（immutable）</strong>的，因此更容易做并发读取和紧缩。也不用担心原地更新会造成新老数据交替。</li>
+<li><strong>简易的并发控制</strong>。由于大部分的文件都是**不可变（immutable）**的，因此更容易做并发读取和紧缩。也不用担心原地更新会造成新老数据交替。</li>
 <li><strong>更少的内部碎片</strong>。每次紧缩会将垃圾完全挤出。但是原地更新就会在 page 中留下一些不可用空间。</li>
 </ol>
 <p>当然，基于内存的哈希索引也有其局限：</p>
@@ -412,7 +416,8 @@
 <ul>
 <li>想想，会如何进行规避？</li>
 </ul>
-<h2 id="SSTables-和-LSM-Trees"><a href="#SSTables-和-LSM-Trees" class="headerlink" title="SSTables 和 LSM-Trees"></a>SSTables 和 LSM-Trees</h2><p>这一节层层递进，步步做引，从 SSTables 格式出发，牵出 LSM-Trees 全貌。</p>
+<h2 id="SSTables-和-LSM-Trees">SSTables 和 LSM-Trees</h2>
+<p>这一节层层递进，步步做引，从 SSTables 格式出发，牵出 LSM-Trees 全貌。</p>
 <p>对于 KV 数据，前面的 BitCask 存储结构是：</p>
 <ol>
 <li>外存上日志片段</li>
@@ -426,7 +431,8 @@
 <p><strong>不需要在内存中保存所有数据的索引</strong>。仅需要记录下每个文件界限（以区间表示：[startKey, endKey]，当然实际会记录的更细）即可。查找某个 Key 时，去所有包含该 Key 的区间对应的文件二分查找即可。</p>
 <p><img src="https://s2.loli.net/2022/04/16/j8tM6IUk1QrJXuw.png" alt="ddia-3-5-sst-index.png"></p>
 <p><strong>分块压缩，节省空间，减少 IO</strong>。相邻 Key 共享前缀，既然每次都要批量取，那正好一组 key batch 到一块，称为 block，且只记录 block 的索引。</p>
-<h3 id="构建和维护-SSTables"><a href="#构建和维护-SSTables" class="headerlink" title="构建和维护 SSTables"></a>构建和维护 SSTables</h3><p>SSTables 格式听起来很美好，但须知数据是乱序的来的，我们如何得到有序的数据文件呢？</p>
+<h3 id="构建和维护-SSTables">构建和维护 SSTables</h3>
+<p>SSTables 格式听起来很美好，但须知数据是乱序的来的，我们如何得到有序的数据文件呢？</p>
 <p>这可以拆解为两个小问题：</p>
 <ol>
 <li>如何构建。</li>
@@ -444,12 +450,14 @@
 </ol>
 <p>如果 SSTable 文件越来越多，则查找代价会越来越大。因此需要将多个 SSTable 文件合并，以减少文件数量，同时进行 GC，我们称之为<strong>紧缩</strong>（ Compaction）。</p>
 <p><strong>该方案的问题</strong>：如果出现宕机，内存中的数据结构将会消失。 解决方法也很经典：WAL。</p>
-<h3 id="从-SSTables-到-LSM-Tree"><a href="#从-SSTables-到-LSM-Tree" class="headerlink" title="从 SSTables 到 LSM-Tree"></a>从 SSTables 到 LSM-Tree</h3><p>将前面几节的一些碎片有机的组织起来，便是时下流行的存储引擎 LevelDB 和 RocksDB 后面的存储结构：LSM-Tree：</p>
+<h3 id="从-SSTables-到-LSM-Tree">从 SSTables 到 LSM-Tree</h3>
+<p>将前面几节的一些碎片有机的组织起来，便是时下流行的存储引擎 LevelDB 和 RocksDB 后面的存储结构：LSM-Tree：</p>
 <p><img src="https://s2.loli.net/2022/04/16/pHgxdn4TPwCoil6.png" alt="ddia-3-leveldb-architecture.png"></p>
 <p>这种数据结构是 Patrick O’Neil 等人，在 1996 年提出的：<span class="exturl" data-url="aHR0cHM6Ly93d3cuY3MudW1iLmVkdS9+cG9uZWlsL2xzbXRyZWUucGRm">The Log-Structured Merge-Tree<i class="fa fa-external-link-alt"></i></span>。</p>
 <p>Elasticsearch 和 Solr 的索引引擎 Lucene，也使用类似 LSM-Tree 存储结构。但其数据模型不是 KV，但类似：word → document list。</p>
-<h3 id="性能优化"><a href="#性能优化" class="headerlink" title="性能优化"></a>性能优化</h3><p>如果想让一个引擎工程上可用，还会做大量的性能优化。对于 LSM-Tree 来说，包括：</p>
-<p><strong>优化 SSTable 的查找。</strong>常用 <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/"><strong>Bloom Filter</strong></a>。该数据结构可以使用较少的内存为每个 SSTable 做一些指纹，起到一些初筛的作用。</p>
+<h3 id="性能优化">性能优化</h3>
+<p>如果想让一个引擎工程上可用，还会做大量的性能优化。对于 LSM-Tree 来说，包括：</p>
+<p>**优化 SSTable 的查找。**常用 <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/"><strong>Bloom Filter</strong></a>。该数据结构可以使用较少的内存为每个 SSTable 做一些指纹，起到一些初筛的作用。</p>
 <p><strong>层级化组织 SSTable</strong>。以控制 Compaction 的顺序和时间。常见的有 size-tiered 和 leveled compaction。LevelDB 便是支持后者而得名。前者比较简单粗暴，后者性能更好，也因此更为常见。</p>
 <p><img src="https://s2.loli.net/2022/04/16/yBxIZR8CusbQrPO.png" alt="ddia-sized-tierd-compact.png"></p>
 <p>对于 RocksDB 来说，工程上的优化和使用上的优化就更多了。在其 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2ZhY2Vib29rL3JvY2tzZGIvd2lraQ==">Wiki<i class="fa fa-external-link-alt"></i></span> 上随便摘录几点：</p>
@@ -459,7 +467,8 @@
 <li>键值分离，BlobDB</li>
 </ol>
 <p>但无论有多少变种和优化，LSM-Tree 的核心思想——<strong>保存一组合理组织、后台合并的 SSTables</strong> ——简约而强大。可以方便的进行范围遍历，可以变大量随机为少量顺序。</p>
-<h2 id="B-族树"><a href="#B-族树" class="headerlink" title="B 族树"></a>B 族树</h2><p>虽然先讲的 LSM-Tree，但是它要比 B+ 树新的多。</p>
+<h2 id="B-族树">B 族树</h2>
+<p>虽然先讲的 LSM-Tree，但是它要比 B+ 树新的多。</p>
 <p>B 树于 1970 年被 R. Bayer and E. McCreight <span class="exturl" data-url="aHR0cHM6Ly9kbC5hY20ub3JnL2RvaS8xMC4xMTQ1LzE3MzQ2NjMuMTczNDY3MQ==">提出<i class="fa fa-external-link-alt"></i></span>后，便迅速流行了起来。现在几乎所有的关系型数据中，它都是数据索引标准一般的实现。</p>
 <p>与 LSM-Tree 一样，它也支持高效的<strong>点查</strong>和<strong>范围查</strong>。但却使用了完全不同的组织方式。</p>
 <p>其特点有：</p>
@@ -473,17 +482,20 @@
 <p><strong>插入 or 更新</strong>。和查找过程一样，定位到原 Key 所在页，插入或者更新后，将页完整写回。如果页剩余空间不够，则分裂后写入。</p>
 <p><strong>分裂 or 合并</strong>。级联分裂和合并。</p>
 <ul>
-<li><p>一个记录大于一个 page 怎么办？</p>
-<p>  树的节点是逻辑概念，page or block 是物理概念。一个逻辑节点可以对应多个物理 page。</p>
+<li>
+<p>一个记录大于一个 page 怎么办？</p>
+<p>树的节点是逻辑概念，page or block 是物理概念。一个逻辑节点可以对应多个物理 page。</p>
 </li>
 </ul>
-<h3 id="让-B-树更可靠"><a href="#让-B-树更可靠" class="headerlink" title="让 B 树更可靠"></a>让 B 树更可靠</h3><p>B 树不像 LSM-Tree ，会在原地修改数据文件。</p>
+<h3 id="让-B-树更可靠">让 B 树更可靠</h3>
+<p>B 树不像 LSM-Tree ，会在原地修改数据文件。</p>
 <p>在树结构调整时，可能会级联修改很多 Page。比如叶子节点分裂后，就需要写入两个新的叶子节点，和一个父节点（更新叶子指针）。</p>
 <ol>
 <li>增加预写日志（WAL），将所有修改操作记录下来，预防宕机时中断树结构调整而产生的混乱现场。</li>
 <li>使用 latch 对树结构进行并发控制。</li>
 </ol>
-<h3 id="B-树的优化"><a href="#B-树的优化" class="headerlink" title="B 树的优化"></a>B 树的优化</h3><p>B 树出来了这么久，因此有很多优化：</p>
+<h3 id="B-树的优化">B 树的优化</h3>
+<p>B 树出来了这么久，因此有很多优化：</p>
 <ol>
 <li>不使用 WAL，而在写入时利用 Copy On Write 技术。同时，也方便了并发控制。如 LMDB、BoltDB。</li>
 <li>对中间节点的 Key 做压缩，保留足够的路由信息即可。以此，可以节省空间，增大分支因子。</li>
@@ -491,7 +503,8 @@
 <li>为叶子节点增加兄弟指针，以避免顺序遍历时的回溯。即 B+ 树的做法，但远不局限于 B+ 树。</li>
 <li>B 树的变种，分形树，从 LSM-tree 借鉴了一些思想以优化 seek。</li>
 </ol>
-<h2 id="B-Trees-和-LSM-Trees-对比"><a href="#B-Trees-和-LSM-Trees-对比" class="headerlink" title="B-Trees 和 LSM-Trees 对比"></a>B-Trees 和 LSM-Trees 对比</h2><table>
+<h2 id="B-Trees-和-LSM-Trees-对比">B-Trees 和 LSM-Trees 对比</h2>
+<table>
 <thead>
 <tr>
 <th>存储引擎</th>
@@ -500,7 +513,8 @@
 <th>备注</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>优势</td>
 <td>读取更快</td>
 <td>写入更快</td>
@@ -542,26 +556,32 @@
 <td>同一个 Key 会存多遍，一般使用 MVCC 进行控制。</td>
 <td></td>
 </tr>
-</tbody></table>
-<h2 id="其他索引结构"><a href="#其他索引结构" class="headerlink" title="其他索引结构"></a>其他索引结构</h2><p><strong>次级索引（secondary indexes）</strong>。即，非主键的其他属性到该元素（SQL 中的行，MongoDB 中的文档和图数据库中的点和边）的映射。</p>
-<h3 id="聚集索引和非聚集索引（cluster-indexes-and-non-cluster-indexes）"><a href="#聚集索引和非聚集索引（cluster-indexes-and-non-cluster-indexes）" class="headerlink" title="聚集索引和非聚集索引（cluster indexes and non-cluster indexes）"></a><strong>聚集索引和非聚集索引（cluster indexes and non-cluster indexes）</strong></h3><p>对于存储数据和组织索引，我们可以有多种选择：</p>
+</tbody>
+</table>
+<h2 id="其他索引结构">其他索引结构</h2>
+<p><strong>次级索引（secondary indexes）</strong>。即，非主键的其他属性到该元素（SQL 中的行，MongoDB 中的文档和图数据库中的点和边）的映射。</p>
+<h3 id="聚集索引和非聚集索引（cluster-indexes-and-non-cluster-indexes）"><strong>聚集索引和非聚集索引（cluster indexes and non-cluster indexes）</strong></h3>
+<p>对于存储数据和组织索引，我们可以有多种选择：</p>
 <ol>
 <li>数据本身<strong>无序</strong>的存在文件中，称为 <strong>堆文件（heap file）</strong>，索引的值指向对应数据在 heap file 中的位置。这样可以避免多个索引时的数据拷贝。</li>
 <li>数据本身按某个字段有序存储，该字段通常是主键。则称基于此字段的索引为<strong>聚集索引</strong>（clustered index），从另外一个角度理解，即将索引和数据存在一块。则基于其他字段的索引为<strong>非聚集索引</strong>，在索引中仅存数据的引用。</li>
-<li>一部分列内嵌到索引中存储，一部分列数据额外存储。称为<strong>覆盖索引（covering index）</strong><br> 或 <strong>包含列的索引（index with included columns）</strong>。</li>
+<li>一部分列内嵌到索引中存储，一部分列数据额外存储。称为<strong>覆盖索引（covering index）</strong><br>
+ 或 <strong>包含列的索引（index with included columns）</strong>。</li>
 </ol>
 <p>索引可以加快查询速度，但需要占用额外空间，并且牺牲了部分更新开销，且需要维持某种一致性。</p>
-<h3 id="多列索引（Multi-column-indexes）。"><a href="#多列索引（Multi-column-indexes）。" class="headerlink" title="多列索引（Multi-column indexes）。"></a><strong>多列索引</strong>（<strong>Multi-column indexes</strong>）。</h3><p>现实生活中，多个字段联合查询更为常见。比如查询某个用户周边一定范围内的商户，需要经度和纬度二维查询。</p>
+<h3 id="多列索引（Multi-column-indexes）。"><strong>多列索引</strong>（<strong>Multi-column indexes</strong>）。</h3>
+<p>现实生活中，多个字段联合查询更为常见。比如查询某个用户周边一定范围内的商户，需要经度和纬度二维查询。</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> restaurants <span class="keyword">WHERE</span> latitude <span class="operator">&gt;</span> <span class="number">51.4946</span> <span class="keyword">AND</span> latitude <span class="operator">&lt;</span> <span class="number">51.5079</span></span><br><span class="line">                            <span class="keyword">AND</span> longitude <span class="operator">&gt;</span> <span class="number">-0.1162</span> <span class="keyword">AND</span> longitude <span class="operator">&lt;</span> <span class="number">-0.1004</span>;</span><br></pre></td></tr></table></figure>
-
 <p>可以：</p>
 <ol>
 <li>将二维编码为一维，然后按普通索引存储。</li>
 <li>使用特殊数据结构，如 R 树。</li>
 </ol>
-<h3 id="全文索引和模糊索引（Full-text-search-and-fuzzy-indexes）。"><a href="#全文索引和模糊索引（Full-text-search-and-fuzzy-indexes）。" class="headerlink" title="全文索引和模糊索引（Full-text search and fuzzy indexes）。"></a><strong>全文索引和模糊索引（Full-text search and fuzzy indexes）</strong>。</h3><p>前述索引只提供全字段的精确匹配，而不提供类似搜索引擎的功能。比如，按字符串中包含的单词查询，针对笔误的单词查询。</p>
+<h3 id="全文索引和模糊索引（Full-text-search-and-fuzzy-indexes）。"><strong>全文索引和模糊索引（Full-text search and fuzzy indexes）</strong>。</h3>
+<p>前述索引只提供全字段的精确匹配，而不提供类似搜索引擎的功能。比如，按字符串中包含的单词查询，针对笔误的单词查询。</p>
 <p>在工程中常用 <span class="exturl" data-url="aHR0cHM6Ly9sdWNlbmUuYXBhY2hlLm9yZy8=">Apace Lucene<i class="fa fa-external-link-alt"></i></span> 库，和其包装出来的服务：<span class="exturl" data-url="aHR0cHM6Ly93d3cuZWxhc3RpYy5jby9jbi8=">Elasticsearch<i class="fa fa-external-link-alt"></i></span>。他也使用类似 LSM-tree 的日志存储结构，但其索引是一个有限状态自动机，在行为上类似 Trie 树。</p>
-<h3 id="全内存数据结构"><a href="#全内存数据结构" class="headerlink" title="全内存数据结构"></a>全内存数据结构</h3><p>随着单位内存成本下降，甚至支持持久化（<em>non-volatile memory，</em>NVM，如 Intel 的 <span class="exturl" data-url="aHR0cHM6Ly93d3cuaW50ZWwuY24vY29udGVudC93d3cvY24vemgvcHJvZHVjdHMvZGV0YWlscy9tZW1vcnktc3RvcmFnZS9vcHRhbmUtZGMtcGVyc2lzdGVudC1tZW1vcnkuaHRtbA==">傲腾<i class="fa fa-external-link-alt"></i></span>），全内存数据库也逐渐开始流行。</p>
+<h3 id="全内存数据结构">全内存数据结构</h3>
+<p>随着单位内存成本下降，甚至支持持久化（*non-volatile memory，*NVM，如 Intel 的 <span class="exturl" data-url="aHR0cHM6Ly93d3cuaW50ZWwuY24vY29udGVudC93d3cvY24vemgvcHJvZHVjdHMvZGV0YWlscy9tZW1vcnktc3RvcmFnZS9vcHRhbmUtZGMtcGVyc2lzdGVudC1tZW1vcnkuaHRtbA==">傲腾<i class="fa fa-external-link-alt"></i></span>），全内存数据库也逐渐开始流行。</p>
 <p>根据是否需要持久化，内存数据大概可以分为两类：</p>
 <ol>
 <li><strong>不需要持久化</strong>。如只用于缓存的 Memcached。</li>
@@ -608,19 +628,19 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter2/" rel="bookmark">DDIA 读书笔记（二）：数据模型和查询语言</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="bookmark">DDIA 读书笔记（三）： TP AP 和列存</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA 读书笔记（五）：冗余</a></div>
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA 读书笔记（五）：冗余</a></div>
     </li>
   </ul>
 
@@ -719,7 +739,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%A9%B1%E5%8A%A8%E6%95%B0%E6%8D%AE%E5%BA%93%E7%9A%84%E5%BA%95%E5%B1%82%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">驱动数据库的底层数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%93%88%E5%B8%8C%E7%B4%A2%E5%BC%95"><span class="nav-number">1.1.</span> <span class="nav-text">哈希索引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SSTables-%E5%92%8C-LSM-Trees"><span class="nav-number">1.2.</span> <span class="nav-text">SSTables 和 LSM-Trees</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E5%92%8C%E7%BB%B4%E6%8A%A4-SSTables"><span class="nav-number">1.2.1.</span> <span class="nav-text">构建和维护 SSTables</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E-SSTables-%E5%88%B0-LSM-Tree"><span class="nav-number">1.2.2.</span> <span class="nav-text">从 SSTables 到 LSM-Tree</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96"><span class="nav-number">1.2.3.</span> <span class="nav-text">性能优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#B-%E6%97%8F%E6%A0%91"><span class="nav-number">1.3.</span> <span class="nav-text">B 族树</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A9-B-%E6%A0%91%E6%9B%B4%E5%8F%AF%E9%9D%A0"><span class="nav-number">1.3.1.</span> <span class="nav-text">让 B 树更可靠</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#B-%E6%A0%91%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">1.3.2.</span> <span class="nav-text">B 树的优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#B-Trees-%E5%92%8C-LSM-Trees-%E5%AF%B9%E6%AF%94"><span class="nav-number">1.4.</span> <span class="nav-text">B-Trees 和 LSM-Trees 对比</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E7%B4%A2%E5%BC%95%E7%BB%93%E6%9E%84"><span class="nav-number">1.5.</span> <span class="nav-text">其他索引结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%81%9A%E9%9B%86%E7%B4%A2%E5%BC%95%E5%92%8C%E9%9D%9E%E8%81%9A%E9%9B%86%E7%B4%A2%E5%BC%95%EF%BC%88cluster-indexes-and-non-cluster-indexes%EF%BC%89"><span class="nav-number">1.5.1.</span> <span class="nav-text">聚集索引和非聚集索引（cluster indexes and non-cluster indexes）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E5%88%97%E7%B4%A2%E5%BC%95%EF%BC%88Multi-column-indexes%EF%BC%89%E3%80%82"><span class="nav-number">1.5.2.</span> <span class="nav-text">多列索引（Multi-column indexes）。</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E6%96%87%E7%B4%A2%E5%BC%95%E5%92%8C%E6%A8%A1%E7%B3%8A%E7%B4%A2%E5%BC%95%EF%BC%88Full-text-search-and-fuzzy-indexes%EF%BC%89%E3%80%82"><span class="nav-number">1.5.3.</span> <span class="nav-text">全文索引和模糊索引（Full-text search and fuzzy indexes）。</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E5%86%85%E5%AD%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.5.4.</span> <span class="nav-text">全内存数据结构</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">驱动数据库的底层数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%93%88%E5%B8%8C%E7%B4%A2%E5%BC%95"><span class="nav-number">1.1.</span> <span class="nav-text">哈希索引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SSTables-%E5%92%8C-LSM-Trees"><span class="nav-number">1.2.</span> <span class="nav-text">SSTables 和 LSM-Trees</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9E%84%E5%BB%BA%E5%92%8C%E7%BB%B4%E6%8A%A4-SSTables"><span class="nav-number">1.2.1.</span> <span class="nav-text">构建和维护 SSTables</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E-SSTables-%E5%88%B0-LSM-Tree"><span class="nav-number">1.2.2.</span> <span class="nav-text">从 SSTables 到 LSM-Tree</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96"><span class="nav-number">1.2.3.</span> <span class="nav-text">性能优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#B-%E6%97%8F%E6%A0%91"><span class="nav-number">1.3.</span> <span class="nav-text">B 族树</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%A9-B-%E6%A0%91%E6%9B%B4%E5%8F%AF%E9%9D%A0"><span class="nav-number">1.3.1.</span> <span class="nav-text">让 B 树更可靠</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#B-%E6%A0%91%E7%9A%84%E4%BC%98%E5%8C%96"><span class="nav-number">1.3.2.</span> <span class="nav-text">B 树的优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#B-Trees-%E5%92%8C-LSM-Trees-%E5%AF%B9%E6%AF%94"><span class="nav-number">1.4.</span> <span class="nav-text">B-Trees 和 LSM-Trees 对比</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E7%B4%A2%E5%BC%95%E7%BB%93%E6%9E%84"><span class="nav-number">1.5.</span> <span class="nav-text">其他索引结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%81%9A%E9%9B%86%E7%B4%A2%E5%BC%95%E5%92%8C%E9%9D%9E%E8%81%9A%E9%9B%86%E7%B4%A2%E5%BC%95%EF%BC%88cluster-indexes-and-non-cluster-indexes%EF%BC%89"><span class="nav-number">1.5.1.</span> <span class="nav-text">聚集索引和非聚集索引（cluster indexes and non-cluster indexes）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E5%88%97%E7%B4%A2%E5%BC%95%EF%BC%88Multi-column-indexes%EF%BC%89%E3%80%82"><span class="nav-number">1.5.2.</span> <span class="nav-text">多列索引（Multi-column indexes）。</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E6%96%87%E7%B4%A2%E5%BC%95%E5%92%8C%E6%A8%A1%E7%B3%8A%E7%B4%A2%E5%BC%95%EF%BC%88Full-text-search-and-fuzzy-indexes%EF%BC%89%E3%80%82"><span class="nav-number">1.5.3.</span> <span class="nav-text">全文索引和模糊索引（Full-text search and fuzzy indexes）。</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E5%86%85%E5%AD%98%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.5.4.</span> <span class="nav-text">全内存数据结构</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -780,12 +800,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -796,6 +810,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

@@ -272,30 +272,37 @@
 <p><img src="https://s2.loli.net/2026/01/25/p5hVJcA4ytHolCf.png" alt="题图"></p>
 <span id="more"></span>
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2026/01/25/llm-switch/">https://www.qtmuniao.com/2026/01/25/llm-switch/</a> 转载请注明出处</em></p>
-<h1 id="类型分野"><a href="#类型分野" class="headerlink" title="类型分野"></a>类型分野</h1><p>大模型的相关工作从底层到上层：infra 侧、数据侧、模型侧 | Agent 层、应用层。</p>
+<h1>类型分野</h1>
+<p>大模型的相关工作从底层到上层：infra 侧、数据侧、模型侧 | Agent 层、应用层。</p>
 <p>infra 侧和数据侧分布式系统相关的同学都相对沾边，比较好转。模型侧准入门槛比较高，要么需要发过不错论文的博士、要么需要有受认可公司的一些年的工作经验。Agent 层、应用层和传统的后端开发很像，只需要了解一些大模型的能力边界和使用实践就行，目前还是偏蓝海的状态。</p>
 <p>泛 AI infra 按需求的多少可以分为推理侧 infra、训练侧 infra 和数据侧 infra。推理侧 infra 在分布式系统和计算机基础知识之外，还需要一些对模型原理的了解，对并行计算和主流推理框架熟悉和调优。训练大模型的公司要远少于使用大模型的公司，因此推理侧的 infra 岗位要多于后两者。训练侧infra 和推理侧其实差不多，但要求强一致性（也即可复现性）。数据侧 infra 主要是围绕构建数据爬取和清洗的各个环节，沉淀一些工具库。</p>
-<h1 id="数据工程"><a href="#数据工程" class="headerlink" title="数据工程"></a>数据工程</h1><p>我主要在大模型做数据工程，所以稍微展开讲讲。数据库工程另一个说法就是围绕模型训练需求、构造数据清洗流水线，再直白点就是洗数据。</p>
+<h1>数据工程</h1>
+<p>我主要在大模型做数据工程，所以稍微展开讲讲。数据库工程另一个说法就是围绕模型训练需求、构造数据清洗流水线，再直白点就是洗数据。</p>
 <p>大模型预训练数据的来源主要有爬、买、造，前两者得来的数据基本都要做清洗才能使用。宏观来看，清洗主要提取结构化信息、提取语义信息、根据需求进行过滤、转换成目标格式。此过程中，还有经常需要用到的操作：大规模去重。去重根据精细度，可以基于值进行精确去重、基于语义信息进行模糊去重。</p>
 <p>围绕这些的基建，也可以从计算和存储两块来分。计算一般都用 spark 和 ray ，存储主要是文件存储和对象存储，然后在之上抽象出一些适合训练和清洗的数据集。<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">我的专栏<i class="fa fa-external-link-alt"></i></span>和公众号有分享更多细节，欢迎<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">订阅<i class="fa fa-external-link-alt"></i></span>。</p>
 <p><img src="https://s2.loli.net/2026/01/25/iD4uqsABCfdh75y.png" alt=".png"></p>
-<h1 id="模型使用"><a href="#模型使用" class="headerlink" title="模型使用"></a>模型使用</h1><p>使用模型最简单的方式就是 Prompt，稍微复杂一点可以做 RAG 或者 Agent，这些都不会动模型参数。如果对某领域的任务精度有更高的要求，可能需要大量（ 10k 以上）高质量的数据，基于开源模型做微调或者 RL，会真正的动模型权重。因此<strong>是否动模型参数</strong>可以看做是一个使用门槛的简单分水岭，当然这是在使用深度上。</p>
+<h1>模型使用</h1>
+<p>使用模型最简单的方式就是 Prompt，稍微复杂一点可以做 RAG 或者 Agent，这些都不会动模型参数。如果对某领域的任务精度有更高的要求，可能需要大量（ 10k 以上）高质量的数据，基于开源模型做微调或者 RL，会真正的动模型权重。因此<strong>是否动模型参数</strong>可以看做是一个使用门槛的简单分水岭，当然这是在使用深度上。</p>
 <p>如果看过 GPT 系列论文，可以大概知道，大模型的初衷就是为了通用，尽可能地降低为了适配不同下游任务的微调。虽然大模型也有一定的泛化能力，但是在没有见过的特殊数据的理解能力还是有限，因此在很多高精度需求的专用领域（比如分子生物学、交易序列等等）仍然需要专用的数据来调整大模型的能力。</p>
 <p>这种需要微调的对应的需求<strong>深度</strong>，不过目前大部分需要落地的任务更多的是需要<strong>广度</strong>，也即复杂度。最简单的可以使用 RAG 来根据需求，将合适的数据作为背景 Prompt 给大模型；稍微复杂一点，可以基于固定规则进行工作流编排（比如使用代码或者 <span class="exturl" data-url="aHR0cHM6Ly9uOG4uaW8v">n8n<i class="fa fa-external-link-alt"></i></span> 等工具），将大模型作为其中某一环的组件来使用；再复杂一点，就是让大模型在解决问题时进行自主的路径选择和工具调用，也就是现在大家常说的 Agent 系统。</p>
 <p>构建 Agent 系统，首先需要一个有强大决策能力和会使用工具的基础模型，然后用户再用某种方式，动态的将最少而全的上下文在合适的时机给到模型。<span class="exturl" data-url="aHR0cHM6Ly9tYW51cy5pbS8=">manus<i class="fa fa-external-link-alt"></i></span> 和 <span class="exturl" data-url="aHR0cHM6Ly93d3cuYW50aHJvcGljLmNvbS8=">anthropic<i class="fa fa-external-link-alt"></i></span> 在这些方面有不少的探索，也发了很多博文，附在了下面。</p>
-<h1 id="Vibe-Coding"><a href="#Vibe-Coding" class="headerlink" title="Vibe Coding"></a>Vibe Coding</h1><p>Vibe Coding 是大模型在工业界最先大规模落地的 Agent 方向。建议所有没有试过的程序员都去试试最前沿的 Code Agent 来编程。只有试过，才知道现在模型能力能干什么，不能干什么。我们不迷信、不害怕，但也绝对不可小觑现在编程类 Agent 的迭代速度。快速变革的时代，听听“一线的炮火”得到的体感是最重要的。</p>
+<h1>Vibe Coding</h1>
+<p>Vibe Coding 是大模型在工业界最先大规模落地的 Agent 方向。建议所有没有试过的程序员都去试试最前沿的 Code Agent 来编程。只有试过，才知道现在模型能力能干什么，不能干什么。我们不迷信、不害怕，但也绝对不可小觑现在编程类 Agent 的迭代速度。快速变革的时代，听听“一线的炮火”得到的体感是最重要的。</p>
 <p>比如我两三个月前用着还很不顺手，无论是指令跟随和用户交互方面都觉得差强人意，然而最近（202601）已经用起来相当丝滑了。基本上，只要我能将上下文以合理的方式给出、将意图以精确的方式描述，Claude Code 在大部分场景就已经可以工作的非常好了，甚至我会从他那里学到很多新的代码写法和组织方式。</p>
 <p>如何用控制大模型输出代码质量，我提供一个简单的切入点：<strong>代码以后是否需要人来维护</strong>。如果用大模型写的代码还需要人看，就要还是要用传统软件工程（抽象封装，降低复杂度）的标准来要求它，可以让他多精简几轮代码——人的带宽毕竟是有限的。但若并不想让人维护或者只是临时性甚至一次性代码，那大可不必太过当白盒。只要功能满足，通过黑盒测试就可以用。大不了下次有类似需求，不用旧代码，让模型重写就行。</p>
 <p>最近和出去创业的朋友聊、听了很多的关于 Vibe Coding 的播客，也有个感受：<strong>Code Agent 的大规模落地带来了太多全新的可能性</strong>。比如：代码的生命周期重新考量、基于自然语言的工作流编排。</p>
 <p>关于代码的生命周期，一个核心的观察就是，既然我们以后能以 10x 效率生成代码，那同时也可以以十倍的速度扔掉代码。即，代码不再是一件手工品，而可以是一个工业品，甚至一次性用品，这会极大改变我们对代码的认知。比如我们做一个活动，可以让策划人员通过 Code Agent 直接生成一次性宣发网页。相比传统的 PS 生成的静态海报，基于代码的网页有更多的定制性、动态性和交互性。即使用一次就扔也没什么。这种成本数量级的降低会改变我们各种使用“广义上的软件”的方式。</p>
 <p>关于自然语言的工作编排，了解数据库应该都知道，数据库本质是让用户以 SQL 的方式组合基本算子来编排数据流。抽象一步，就是让用户以某种 DSL （<a target="_blank" rel="noopener" href="https://martinfowler.com/books/dsl.html"><strong>Domain Specific Languages</strong></a>，即领域专用的精确描述性语言）的方式来编排工作流，而 Code Agent 可以将其再往前推一步——使用自然语言（高维性、模糊性）编排常用工作流。大致就是让运营同学可以绕开数仓同学，直接做实验获得洞察。而，anthropic 最近提出了类似 MCP 和 Skills 的概念，正是这一理念落地的先驱。MCP 定义<strong>外部工具</strong>，Skill 提供基于这些工具的<strong>组合技</strong>。每个 Skill 会以摘要的形式将自己的元信息注册给大模型，大模型在执行任务时会根据这些摘要来做动态规划和原则。于是，在每个具体场景进行落地，需要做的就是构建、遴选自己的 Skill 集。</p>
 <p>因此，Vibe Coding 是一个必然的趋势，因为它真切的降低了门槛，提高了生产力。无论我们这些写代码的手艺师傅喜不喜欢，被工业化替代大部分工作都是一个必然的趋势，作为最早看到这种趋势的我们，何不主动拥抱。</p>
-<h1 id="多模态的趋势"><a href="#多模态的趋势" class="headerlink" title="多模态的趋势"></a>多模态的趋势</h1><p>大模型的多模态能力可以分为两块，一是理解，一是生成。理解能力要变强需要更多的高质量的图文数据，生成能力要变好需要更强的模型融合。</p>
+<h1>多模态的趋势</h1>
+<p>大模型的多模态能力可以分为两块，一是理解，一是生成。理解能力要变强需要更多的高质量的图文数据，生成能力要变好需要更强的模型融合。</p>
 <p><strong>多模态理解</strong>的主干网络还是基于 Transformer，只不过在输入端将图片 Token 以各种方式接入语言模型进行训练。因此，这个图像到文本序列的转接头（Vision Tower）很重要，如果参数量太小且进行不合理的冻结，就会很容易成为瓶颈。因此，在现有架构下，多模态理解的质量提升，首重数据，次重 VT。多模态理解落地场景很多，比如各种做题场景（K12、考公考研）、物体识别、网页复刻、图片复刻（SVG）、基于图片的逻辑物理推理等等。</p>
-<p><strong>多模态生成</strong>主干模型是扩散模型，和 Transformer 完全不同的模型。但在生成效果方面更惊艳，所以在创意内容方面，扩散模型很适合。但其问题在于做<strong>语义和物理约束</strong>相对较难，体现在使用上，就是早期的图像生成工具往往难以支持多轮对话的精确修改，也常常会生成七八根手指的手这种不符合物理世界的东西。如何更好的进行生成，现在起码有两个发展方向，一个是更深度地和语言模型进行融合以对满足语义的理解、对指令的跟随的需求，谷歌的 <span class="exturl" data-url="aHR0cHM6Ly9nZW1pbmkuZ29vZ2xlLmNvbS9hcHA/aXNfc2E9MSZpc19zYT0xJmFuZHJvaWQtbWluLXZlcnNpb249MzAxMzU2MjMyJmlvcy1taW4tdmVyc2lvbj0zMjIuMCZjYW1wYWlnbl9pZD1ia3dzJnV0bV9zb3VyY2U9c2VtJnV0bV9tZWRpdW09cGFpZC1tZWRpYSZ1dG1fY2FtcGFpZ249Ymt3cyZwdD05MDA4Jm10PTgmY3Q9cC1ncm93dGgtc2VtLWJrd3MmZ2Nsc3JjPWF3LmRzJmdhZF9zb3VyY2U9MSZnYWRfY2FtcGFpZ25pZD0yMDQzNzMzMDY4MCZnYnJhaWQ9MEFBQUFBcGs1QmhuQVhrWXpvcEJBbVZ6ZzV5RkFaTkI5UyZnY2xpZD1DajBLQ1FpQW05ZkxCaENRQVJJc0FKb05PY3R0TS11UmhxVkE0M1pUTHpHYVFidXMwSnhrTmVJZFFjcHZiUmJhSEw2b28xSmxETkVHbVNzYUFzcmxFQUx3X3djQg==">Gemini<i class="fa fa-external-link-alt"></i></span> 系列在这方面做的很好。另一个就是完全的改弦更张，也即最近各路做前沿研究的学者常常提到的“世界模型”。即构造新的范式，让大模型可以真正的理解和探索这个世界的物理规律和边界。而非像现在这样，大模型基本上是一个诞生于<strong>人类“语言空间”的幽灵</strong>。</p>
-<h1 id="数字游民-amp-校招生"><a href="#数字游民-amp-校招生" class="headerlink" title="数字游民 &amp; 校招生"></a>数字游民 &amp; 校招生</h1><p>大模型和各种下游生产力工具的成熟，在互联网这种“水电”的基础上，又给个人增加了“智力”外包这种超级杠杆。因此 OPC（one-person-company）这个概念最近很火，甚至很多城市（比如苏州）直接推出了针对这种概念的补贴。因此，如果你有好的想法和创意，不妨大胆去吃螃蟹。</p>
+<p><strong>多模态生成</strong>主干模型是扩散模型，和 Transformer 完全不同的模型。但在生成效果方面更惊艳，所以在创意内容方面，扩散模型很适合。但其问题在于做<strong>语义和物理约束</strong>相对较难，体现在使用上，就是早期的图像生成工具往往难以支持多轮对话的精确修改，也常常会生成七八根手指的手这种不符合物理世界的东西。如何更好的进行生成，现在起码有两个发展方向，一个是更深度地和语言模型进行融合以对满足语义的理解、对指令的跟随的需求，谷歌的 <span class="exturl" data-url="aHR0cHM6Ly9nZW1pbmkuZ29vZ2xlLmNvbS9hcHA/aXNfc2E9MSZhbXA7aXNfc2E9MSZhbXA7YW5kcm9pZC1taW4tdmVyc2lvbj0zMDEzNTYyMzImYW1wO2lvcy1taW4tdmVyc2lvbj0zMjIuMCZhbXA7Y2FtcGFpZ25faWQ9Ymt3cyZhbXA7dXRtX3NvdXJjZT1zZW0mYW1wO3V0bV9tZWRpdW09cGFpZC1tZWRpYSZhbXA7dXRtX2NhbXBhaWduPWJrd3MmYW1wO3B0PTkwMDgmYW1wO210PTgmYW1wO2N0PXAtZ3Jvd3RoLXNlbS1ia3dzJmFtcDtnY2xzcmM9YXcuZHMmYW1wO2dhZF9zb3VyY2U9MSZhbXA7Z2FkX2NhbXBhaWduaWQ9MjA0MzczMzA2ODAmYW1wO2dicmFpZD0wQUFBQUFwazVCaG5BWGtZem9wQkFtVnpnNXlGQVpOQjlTJmFtcDtnY2xpZD1DajBLQ1FpQW05ZkxCaENRQVJJc0FKb05PY3R0TS11UmhxVkE0M1pUTHpHYVFidXMwSnhrTmVJZFFjcHZiUmJhSEw2b28xSmxETkVHbVNzYUFzcmxFQUx3X3djQg==">Gemini<i class="fa fa-external-link-alt"></i></span> 系列在这方面做的很好。另一个就是完全的改弦更张，也即最近各路做前沿研究的学者常常提到的“世界模型”。即构造新的范式，让大模型可以真正的理解和探索这个世界的物理规律和边界。而非像现在这样，大模型基本上是一个诞生于<strong>人类“语言空间”的幽灵</strong>。</p>
+<h1>数字游民 &amp; 校招生</h1>
+<p>大模型和各种下游生产力工具的成熟，在互联网这种“水电”的基础上，又给个人增加了“智力”外包这种超级杠杆。因此 OPC（one-person-company）这个概念最近很火，甚至很多城市（比如苏州）直接推出了针对这种概念的补贴。因此，如果你有好的想法和创意，不妨大胆去吃螃蟹。</p>
 <p>至于在校生，在找工作之余，也可以大胆探索下现在这种大模型落地可能性。当然，能更为熟练地使用大模型并熟悉相关生态，本身就很会受用人方的青睐。造大模型的机会会越来越少，且会越来越富集到少数几家公司，大家也不用太往这方面卷，但是如何用好大模型却可能是一个会遍地开花的机会。</p>
-<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><p>这里罗列一些我看过觉得还不错的材料：</p>
+<h1>参考资料</h1>
+<p>这里罗列一些我看过觉得还不错的材料：</p>
 <ol>
 <li>数学基础：MIT 有门经典的线性代数课 <span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL0JWMXJINHkxTjdCVyVFMyU4MCU4Mg==">https://www.bilibili.com/video/BV1rH4y1N7BW。<i class="fa fa-external-link-alt"></i></span></li>
 <li>论文脉络：普林斯顿的一门公开课，<span class="exturl" data-url="aHR0cHM6Ly9wcmluY2V0b24tY29zNTk3ci5naXRodWIuaW8vJUVGJUJDJThDJUU2JTg4JTkxJUU1JTlDJUE4JUU0JUI4JTkzJUU2JUEwJThGJUU5JTg3JThDJUVGJUJDJTg4aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZyVFRiVCQyU4OSVFNCVCOSU5RiVFNSU5QyVBOCVFNiU5QiVCNCVFNiU5NiVCMCVFOCVBNyVBMyVFOCVBRiVCQiVFRiVCQyU4QyVFNiVBQyVBMiVFOCVCRiU4RSVFOCVBRSVBMiVFOSU5OCU4NSVFMyU4MCU4Mg==">https://princeton-cos597r.github.io/，我在专栏里（https://xiaobot.net/p/system-thinking）也在更新解读，欢迎订阅。<i class="fa fa-external-link-alt"></i></span></li>
@@ -433,7 +440,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%B1%BB%E5%9E%8B%E5%88%86%E9%87%8E"><span class="nav-number">1.</span> <span class="nav-text">类型分野</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%B7%A5%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">数据工程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E4%BD%BF%E7%94%A8"><span class="nav-number">3.</span> <span class="nav-text">模型使用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Vibe-Coding"><span class="nav-number">4.</span> <span class="nav-text">Vibe Coding</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E6%A8%A1%E6%80%81%E7%9A%84%E8%B6%8B%E5%8A%BF"><span class="nav-number">5.</span> <span class="nav-text">多模态的趋势</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E5%AD%97%E6%B8%B8%E6%B0%91-amp-%E6%A0%A1%E6%8B%9B%E7%94%9F"><span class="nav-number">6.</span> <span class="nav-text">数字游民 &amp; 校招生</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">7.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">类型分野</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">数据工程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">3.</span> <span class="nav-text">模型使用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">4.</span> <span class="nav-text">Vibe Coding</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">5.</span> <span class="nav-text">多模态的趋势</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">6.</span> <span class="nav-text">数字游民 &amp; 校招生</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">7.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -494,12 +501,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -510,6 +511,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

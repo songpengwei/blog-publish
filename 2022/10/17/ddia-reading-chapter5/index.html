@@ -289,7 +289,8 @@
 
       
         <blockquote>
-<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">这里<i class="fa fa-external-link-alt"></i></span>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。另外，我的公众号：“木鸟杂记”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注<br>本书第一部分讲单机数据系统，第二部分讲多机数据系统。</p>
+<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">这里<i class="fa fa-external-link-alt"></i></span>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。另外，我的公众号：“木鸟杂记”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注<br>
+本书第一部分讲单机数据系统，第二部分讲多机数据系统。</p>
 </blockquote>
 <p><strong>冗余（Replication）</strong> 是指将同一份数据复制多份，放到通过网络互联的多个机器上去。其好处有：</p>
 <ol>
@@ -301,12 +302,12 @@
 <p>本章假设我们的数据系统中所有数据能够存放到一台机器中，则本章只需考虑多机冗余的问题。如果数据超过单机尺度该怎么办？那是下一章要解决的事情。</p>
 </blockquote>
 <span id="more"></span>
-
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/10/17/ddia-reading-chapter5">https://www.qtmuniao.com/2022/10/17/ddia-reading-chapter5</a> 转载请注明出处</em></p>
 <p>如果数据是<strong>只读</strong>的，则冗余很好做，直接复制到多机即可。我们有时可以利用这个特性，使用分治策略，将数据分为只读部分和读写部分，则只读部分的冗余就会容易处理的多，甚至可以用 EC 方式做冗余，减小存储放大的同时，还提高了可用性。</p>
 <ul>
-<li><p>想想 EC 牺牲了什么？</p>
-<p>  以计算换存储。</p>
+<li>
+<p>想想 EC 牺牲了什么？</p>
+<p>以计算换存储。</p>
 </li>
 </ul>
 <p>但难点就在于，数据允许数据变更时，如何维护多机冗余且一致。常用的冗余控制算法有：</p>
@@ -321,7 +322,8 @@
 <li>如何处理失败的副本</li>
 </ol>
 <p>数据库冗余问题在学术界不是一个新问题了，但在工业界，大部分人都是新手——分布式数据库是近些年才大规模的在工业界落地的。</p>
-<h1 id="领导者与跟随者"><a href="#领导者与跟随者" class="headerlink" title="领导者与跟随者"></a>领导者与跟随者</h1><p>冗余存储的每份数据称为<strong>副本</strong>（replica）。多副本所带来的最主要的一个问题是：如何保证所有数据被同步到了所有副本上？</p>
+<h1>领导者与跟随者</h1>
+<p>冗余存储的每份数据称为<strong>副本</strong>（replica）。多副本所带来的最主要的一个问题是：如何保证所有数据被同步到了所有副本上？</p>
 <p>基于<strong>领导者（leader-based）</strong> 的同步算法，是最常用解决办法。</p>
 <ol>
 <li>其中一个副本称为<strong>领导者</strong>（leader），别称<strong>主副本</strong>（primary、master）。主副本作为写入的协调者，所有写入都要发给主副本。</li>
@@ -336,7 +338,8 @@
 <li><strong>非关系型数据库</strong>：MonogoDB、RethinkDB 和 Espresso</li>
 <li><strong>消息队列</strong>：Kafka 和 RabbitMQ。</li>
 </ol>
-<h2 id="同步复制和异步复制"><a href="#同步复制和异步复制" class="headerlink" title="同步复制和异步复制"></a>同步复制和异步复制</h2><p><strong>同步（synchronously）复制</strong>和<strong>异步（asynchronously）复制</strong>和关键区别在于：请求何时返回给客户端。</p>
+<h2 id="同步复制和异步复制">同步复制和异步复制</h2>
+<p><strong>同步（synchronously）复制</strong>和<strong>异步（asynchronously）复制</strong>和关键区别在于：请求何时返回给客户端。</p>
 <ol>
 <li>如果等待某副本写完成后，则该副本为同步复制。</li>
 <li>如果不等待某副本写完成，则该副本为异步复制。</li>
@@ -357,7 +360,8 @@
 <p>异步复制可能会造成副本丢失等严重问题，为了能兼顾一致性和性能，学术界也在不断研究新的复制方法。如，<strong>链式复制（chain-replication）</strong>。</p>
 <p>多副本的一致性和共识性有诸多联系，本书后面章节会讨论。</p>
 </blockquote>
-<h2 id="新增副本"><a href="#新增副本" class="headerlink" title="新增副本"></a>新增副本</h2><p>在很多情况下，需要给现有系统新增副本。</p>
+<h2 id="新增副本">新增副本</h2>
+<p>在很多情况下，需要给现有系统新增副本。</p>
 <p>如果原副本是只读（read-only）的，只需要简单拷贝即可。但是如果是可写副本，则问题要复杂很多。因此，比较简单的一种解决方法是：禁止写入，然后拷贝。这在某些情况下很有用，比如夜间没有写入流量，同时一晚上肯定能复制完。</p>
 <p>如果要不停机，可以：</p>
 <ol>
@@ -367,9 +371,12 @@
 <li>当从副本赶上主副本进度后，就可以正常跟随主副本了。</li>
 </ol>
 <p>这个过程一般是自动化的，比如 Raft 中；当然也可以手动化，比如写一些脚本。</p>
-<h2 id="宕机处理"><a href="#宕机处理" class="headerlink" title="宕机处理"></a>宕机处理</h2><p>系统中任何节点都可能在计划内或者计划外宕机。那么如何应对这些宕机情况，保持整个系统的可用性呢？</p>
-<h3 id="从副本宕机：追赶恢复。"><a href="#从副本宕机：追赶恢复。" class="headerlink" title="从副本宕机：追赶恢复。"></a><strong>从副本宕机：追赶恢复</strong>。</h3><p>类似于新增从副本。如果落后的多，可以直接向主副本拉取快照+日志；如果落后的少，可以仅拉取缺失日志。</p>
-<h3 id="主副本宕机：故障转移。"><a href="#主副本宕机：故障转移。" class="headerlink" title="主副本宕机：故障转移。"></a><strong>主副本宕机：故障转移。</strong></h3><p>处理相对麻烦，首先要选出新的主副本，然后要通知所有客户端主副本变更。具体来说，包含下面步骤：</p>
+<h2 id="宕机处理">宕机处理</h2>
+<p>系统中任何节点都可能在计划内或者计划外宕机。那么如何应对这些宕机情况，保持整个系统的可用性呢？</p>
+<h3 id="从副本宕机：追赶恢复。"><strong>从副本宕机：追赶恢复</strong>。</h3>
+<p>类似于新增从副本。如果落后的多，可以直接向主副本拉取快照+日志；如果落后的少，可以仅拉取缺失日志。</p>
+<h3 id="主副本宕机：故障转移。"><strong>主副本宕机：故障转移。</strong></h3>
+<p>处理相对麻烦，首先要选出新的主副本，然后要通知所有客户端主副本变更。具体来说，包含下面步骤：</p>
 <ol>
 <li><strong>确认主副本故障</strong>。要防止由于网络抖动造成的误判。一般会用心跳探活，并设置合理超时（timeout）阈值，超过阈值后没有收到该节点心跳，则认为该节点故障。</li>
 <li><strong>选择新的主副本</strong>。新的主副本可以通过<strong>选举</strong>（共识问题）或者<strong>指定</strong>（外部控制程序）来产生。选主时，要保证备选节点数据尽可能的新，以最小化数据损失。</li>
@@ -384,7 +391,8 @@
 </ol>
 <p>所有上述问题，在不同需求、不同环境、不同时间点，都可能会有不同的解决方案。因此在系统上线初期，不少运维团队更愿意手动进行切换；等积累一定经验后，再进行逐步自动化。</p>
 <p>节点故障；不可靠网络；在一致性、持久化、可用性和延迟间的取舍；等等问题，都是设计分布式系统时，所面临的的基本问题。根据实际情况，对这些问题进行艺术化的取舍，便是分布式系统之美。</p>
-<h2 id="日志复制"><a href="#日志复制" class="headerlink" title="日志复制"></a>日志复制</h2><p>在数据库中，基于领导者的多副本是如何实现的？在不同层次有多种方法，包括：</p>
+<h2 id="日志复制">日志复制</h2>
+<p>在数据库中，基于领导者的多副本是如何实现的？在不同层次有多种方法，包括：</p>
 <ol>
 <li><strong>语句层面的复制。</strong></li>
 <li><strong>预写日志的复制</strong>。</li>
@@ -393,10 +401,11 @@
 </ol>
 <p>对于一个<strong>系统</strong>来说，多副本同步的是什么？<strong>增量修改</strong>。</p>
 <p>具体到一个由数据库构成的<strong>数据系统</strong>，通常由数据库外部的<strong>应用层</strong>、数据库内部<strong>查询层</strong>和<strong>存储层</strong>组成。<strong>修改</strong>在查询层表现为：语句；在存储层表现为：存储引擎相关的预写日志、存储引擎无关的逻辑日志；修改完成后，在应用层表现为：触发器逻辑。</p>
-<h3 id="基于语句的复制"><a href="#基于语句的复制" class="headerlink" title="基于语句的复制"></a>基于语句的复制</h3><p>主副本记录下所有更新语句：<code>INSERT</code>、<code>UPDATE</code> 或 <code>DELETE</code> 然后发给从库。主副本在这里类似于充当其他从副本的<strong>伪客户端</strong>。</p>
+<h3 id="基于语句的复制">基于语句的复制</h3>
+<p>主副本记录下所有更新语句：<code>INSERT</code>、<code>UPDATE</code> 或 <code>DELETE</code> 然后发给从库。主副本在这里类似于充当其他从副本的<strong>伪客户端</strong>。</p>
 <p>但这种方法有一些问题：</p>
 <ol>
-<li><strong>非确定性函数（nondeterministic）</strong>的语句可能会在不同副本造成不同改动。如 NOW()、RAND()</li>
+<li>**非确定性函数（nondeterministic）**的语句可能会在不同副本造成不同改动。如 NOW()、RAND()</li>
 <li><strong>使用自增列，或依赖于现有数据</strong>。则不同用户的语句需要完全按相同顺序执行，当有并发事务时，可能会造成不同的执行顺序，进而导致副本不一致。</li>
 <li><strong>有副作用</strong>（触发器、存储过程、UDF）的语句，可能不同副本由于上下文不同，产生的副作用不一样。除非副作用是确定的输出。</li>
 </ol>
@@ -406,7 +415,8 @@
 <li>对于这些语句同步值而非语句。</li>
 </ol>
 <p>但是 Corner Case 实在太多，步骤 1 需要考虑的情况太多。</p>
-<h3 id="传输预写日志（-WAL）"><a href="#传输预写日志（-WAL）" class="headerlink" title="传输预写日志（ WAL）"></a>传输预写日志（ WAL）</h3><p>我们发现主流的存储引擎都有<strong>预写日志</strong>（WAL，为了宕机恢复）：</p>
+<h3 id="传输预写日志（-WAL）">传输预写日志（ WAL）</h3>
+<p>我们发现主流的存储引擎都有<strong>预写日志</strong>（WAL，为了宕机恢复）：</p>
 <ol>
 <li>对于日志流派（LSM-Tree，如 LevelDB），每次修改先写入 log 文件，防止写入 MemTable 中的数据丢失。</li>
 <li>对于原地更新流派（B+ Tree），每次修改先写入 WAL，以进行崩溃恢复。</li>
@@ -422,7 +432,8 @@
 <li>如果允许旧版本代码给新版本代码（应该会自然做到后向兼容）发送日志（前向兼容）。则在升级时可以先升级从库，再切换升级主库。</li>
 <li>否则，只能进行停机升级软件版本。</li>
 </ol>
-<h3 id="逻辑日志复制（基于行）"><a href="#逻辑日志复制（基于行）" class="headerlink" title="逻辑日志复制（基于行）"></a>逻辑日志复制（基于行）</h3><p>为了和具体的存储引擎物理格式解耦，在做数据同步时，可以使用不同的日志格式：<strong>逻辑日志</strong>。</p>
+<h3 id="逻辑日志复制（基于行）">逻辑日志复制（基于行）</h3>
+<p>为了和具体的存储引擎物理格式解耦，在做数据同步时，可以使用不同的日志格式：<strong>逻辑日志</strong>。</p>
 <p>对于关系型数据库来说，行是一个合适的粒度：</p>
 <ol>
 <li><strong>对于插入行</strong>：日志需包含所有列值。</li>
@@ -437,7 +448,8 @@
 <li>允许导出变动做各种<strong>变换</strong>。如导出到数据仓库进行离线分析、建立索引、增加缓存等等。</li>
 </ol>
 <p>之前分析过一种基于日志，统一各种数据系统的<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC80NTg2ODMxNjQ=">文章<i class="fa fa-external-link-alt"></i></span>，很有意思。</p>
-<h3 id="基于触发器的复制"><a href="#基于触发器的复制" class="headerlink" title="基于触发器的复制"></a>基于触发器的复制</h3><p>前面所说方法，都是在<strong>数据库内部</strong>对数据进行多副本同步。</p>
+<h3 id="基于触发器的复制">基于触发器的复制</h3>
+<p>前面所说方法，都是在<strong>数据库内部</strong>对数据进行多副本同步。</p>
 <p>但有些情况下，可能需要用户决策，如何对数据进行复制：</p>
 <ol>
 <li>对需要复制的数据进行过滤，只复制一个子集。</li>
@@ -445,7 +457,8 @@
 </ol>
 <p>有些数据库如 Oracle 会提供一些工具。但对于另外一些数据库，可以使用<strong>触发器和存储过程</strong>。即，将用户代码 hook 到数据库中去执行。</p>
 <p>基于触发器的复制，性能较差且更易出错；但是给了用户更多的灵活性。</p>
-<h1 id="复制滞后问题"><a href="#复制滞后问题" class="headerlink" title="复制滞后问题"></a>复制滞后问题</h1><p> 如前所述，使用多副本的好处有：</p>
+<h1>复制滞后问题</h1>
+<p>如前所述，使用多副本的好处有：</p>
 <ol>
 <li><strong>可用性</strong>：容忍部分节点故障</li>
 <li><strong>可伸缩性</strong>：增加读副本处理更多读请求</li>
@@ -454,12 +467,13 @@
 <p>对于读多写少的场景，想象中，可以通过使劲增加读副本来均摊流量。但有个<strong>隐含</strong>的条件是，多副本建的同步得做成<strong>异步</strong>的，否则，读副本一多，某些副本就很容易出故障，进而阻塞写入。</p>
 <p>但若是异步复制，就会引入不一致问题：某些副本进度落后于主副本。</p>
 <p>如果此时不再有写入，经过一段时间后，多副本最终会达到一致：<strong>最终一致性</strong>。</p>
-<p>在实际中，网络通常比较快，<strong>副本滞后（replication lag）</strong>不太久，也即这个<em>最终</em><strong>通常</strong>不会太久，比如 ms 级别，最多 s 级别。但是，对于分布式系统，谁都不敢打包票，由于网络分区、机器高负载等等软硬件问题，在极端情况下，这个<em>最终</em>可能会非常久。</p>
+<p>在实际中，网络通常比较快，<strong>副本滞后（replication lag）<strong>不太久，也即这个<em>最终</em></strong>通常</strong>不会太久，比如 ms 级别，最多 s 级别。但是，对于分布式系统，谁都不敢打包票，由于网络分区、机器高负载等等软硬件问题，在极端情况下，这个<em>最终</em>可能会非常久。</p>
 <blockquote>
 <p>总之，<strong>最终</strong>是一个非常不精确的限定词。</p>
 </blockquote>
 <p>对于这种最终一致的系统，在工程中，要考虑到由于副本滞后所带来的一致性问题。</p>
-<h2 id="读你所写"><a href="#读你所写" class="headerlink" title="读你所写"></a>读你所写</h2><p><img src="https://ddia.qtmuniao.com/img/ch05-fig03.png" alt="read after write"></p>
+<h2 id="读你所写">读你所写</h2>
+<p><img src="https://ddia.qtmuniao.com/img/ch05-fig03.png" alt="read after write"></p>
 <p>上图问题在于，在一个<strong>异步复制</strong>的分布式数据库里，同一个客户端，写入<strong>主副本</strong>后返回；稍后再去读一个落后的<strong>从副本</strong>，就会发现：读不到自己刚写的内容！</p>
 <p>为了避免这种反直觉的事情发生，我们引入一种新的一致性：<strong>读写一致性（read-after-write consistency）</strong>，或者 <strong>读你所写一致性（read-your-writes consistency）</strong>。</p>
 <p>若数据库提供这种一致性保证，对于<strong>单个客户端</strong>来说，就一定能够读到其所写变动。也即，这种一致性是从<strong>单个客户端</strong>角度来看的一种因果一致性。</p>
@@ -474,12 +488,14 @@
 <li><strong>数据分布在多个物理中心</strong>。所有需要发送给主副本的请求都要首先路由到主副本所在的数据中心。</li>
 <li><strong>一个逻辑用户有多个物理客户端</strong>。比如一个用户通过电脑、手机多终端同时访问，此时就不能用设备 id，而需要使用用户 id，来保证用户角度的读写一致性。但不同设备有不同物理时间戳，不同设备访问时可能会路由到不同数据中心。</li>
 </ol>
-<h2 id="单调读"><a href="#单调读" class="headerlink" title="单调读"></a>单调读</h2><p>异步复制可能带来的另外一个问题：对于一个客户端来说，系统可能会发生<strong>时光倒流（moving backward in time）</strong>。</p>
+<h2 id="单调读">单调读</h2>
+<p>异步复制可能带来的另外一个问题：对于一个客户端来说，系统可能会发生<strong>时光倒流（moving backward in time）</strong>。</p>
 <p><img src="https://ddia.qtmuniao.com/img/ch05-fig04.png" alt="monotonic reads"></p>
 <p>于是，我们再引入一种一致性保证：<strong>单调读（Monotonic reads）</strong>。</p>
 <ul>
-<li><p>读写一致性和单调读有什么区别？</p>
-<p>  写后读保证的是写后读顺序，单调读保证的是<strong>多次读</strong>之间的顺序。</p>
+<li>
+<p>读写一致性和单调读有什么区别？</p>
+<p>写后读保证的是写后读顺序，单调读保证的是<strong>多次读</strong>之间的顺序。</p>
 </li>
 </ul>
 <p>如何实现单调读？</p>
@@ -487,7 +503,8 @@
 <li>只从一个副本读数据。</li>
 <li>前面提到的时间戳机制。</li>
 </ol>
-<h2 id="一致前缀读"><a href="#一致前缀读" class="headerlink" title="一致前缀读"></a>一致前缀读</h2><p><img src="https://ddia.qtmuniao.com/img/ch05-fig05.png" alt="lower partition"></p>
+<h2 id="一致前缀读">一致前缀读</h2>
+<p><img src="https://ddia.qtmuniao.com/img/ch05-fig05.png" alt="lower partition"></p>
 <p>异步复制所带来的第三个问题：有时候会违反因果关系。</p>
 <p>本质在于：如果数据库由多个分区（Partition）组成，而分区间的事件顺序无法保证。此时，如果有因果关系的两个事件落在了不同分区，则有可能会出现<strong>果在前，因在后</strong>。</p>
 <p>为了防止这种问题，我们又引入了一种一致性：<strong>一致前缀读（consistent prefix reads）</strong>。奇怪的名字。</p>
@@ -497,10 +514,12 @@
 <li>让所有有因果关系的事件路由到一个分区。</li>
 </ol>
 <p>但如何追踪因果关系是个难题。</p>
-<h2 id="副本滞后的终极解决方案"><a href="#副本滞后的终极解决方案" class="headerlink" title="副本滞后的终极解决方案"></a>副本滞后的终极解决方案</h2><p>事务！</p>
-<p>多副本异步复制所带来的一致性问题，都可以通过<strong>事务（transaction）</strong>来解决。单机事务已经存在了很长时间，但在数据库走向分布式时代，一开始很多 NoSQL 系统抛弃了事务。</p>
+<h2 id="副本滞后的终极解决方案">副本滞后的终极解决方案</h2>
+<p>事务！</p>
+<p>多副本异步复制所带来的一致性问题，都可以通过**事务（transaction）**来解决。单机事务已经存在了很长时间，但在数据库走向分布式时代，一开始很多 NoSQL 系统抛弃了事务。</p>
 <ul>
-<li>这是为什么？<ol>
+<li>这是为什么？
+<ol>
 <li>更容易的实现。2. 更好的性能。3. 更好的可用性。</li>
 </ol>
 </li>
@@ -508,16 +527,19 @@
 <p>于是复杂度被转移到了应用层。</p>
 <p>这是数据库系统刚大规模步入分布式（<strong>多副本、多分区</strong>）时代的一种妥，在经验积累的够多之后，事务必然会被引回。</p>
 <p>于是近年来越来越多的分布式数据库开始支持事务，是为<strong>分布式事务</strong>。</p>
-<h1 id="多主模型"><a href="#多主模型" class="headerlink" title="多主模型"></a>多主模型</h1><p><strong>单主模型一个最大问题</strong>：所有写入都要经过它，如果由于任何原因，客户端无法连接到主副本，就无法向数据库写入。</p>
+<h1>多主模型</h1>
+<p><strong>单主模型一个最大问题</strong>：所有写入都要经过它，如果由于任何原因，客户端无法连接到主副本，就无法向数据库写入。</p>
 <p>于是自然产生一种想法：多主行不行？</p>
 <p><strong>多主复制（multi-leader replication）</strong>：有多个可以接受写入的主副本，每个主副本在接收到写入之后，都要转给所有其他副本。即一个系统，有多个<strong>写入点</strong>。</p>
-<h2 id="多主模型应用场景"><a href="#多主模型应用场景" class="headerlink" title="多主模型应用场景"></a>多主模型应用场景</h2><p>单个数据中心，多主模型意义不大：复杂度超过了收益。总体而言，由于一致性等问题，多主模型应用场景较少，但有一些场景，很适合多主：</p>
+<h2 id="多主模型应用场景">多主模型应用场景</h2>
+<p>单个数据中心，多主模型意义不大：复杂度超过了收益。总体而言，由于一致性等问题，多主模型应用场景较少，但有一些场景，很适合多主：</p>
 <ol>
 <li>数据库横跨多个数据中心</li>
 <li>需要离线工作的客户端</li>
 <li>协同编辑</li>
 </ol>
-<h3 id="多个数据中心"><a href="#多个数据中心" class="headerlink" title="多个数据中心"></a>多个数据中心</h3><p>假设一个数据库的副本，横跨多个数据中心，如果使用单主模型，在写入时的延迟会很大。那么每个数据中心能不能各配一个主副本？</p>
+<h3 id="多个数据中心">多个数据中心</h3>
+<p>假设一个数据库的副本，横跨多个数据中心，如果使用单主模型，在写入时的延迟会很大。那么每个数据中心能不能各配一个主副本？</p>
 <p><img src="https://ddia.qtmuniao.com/img/ch05-fig06.png" alt="multi-leader across multiple data centers"></p>
 <p>单主和多主，在多数据中心场景下的对比：</p>
 <table>
@@ -528,7 +550,8 @@
 <th>多主模型</th>
 </tr>
 </thead>
-<tbody><tr>
+<tbody>
+<tr>
 <td>性能</td>
 <td>所有写入都要路由到一个数据中心</td>
 <td>写入可以就近</td>
@@ -543,13 +566,16 @@
 <td>跨数据中心，写入对网络抖动更敏感</td>
 <td>数据中心间异步复制，对公网容错性更高</td>
 </tr>
-</tbody></table>
+</tbody>
+</table>
 <p>但是多主模型在一致性方面有很大缺陷：如果两个数据中心同时修改同样的数据，必须合理解决写冲突。另外，对于数据库来说，多主很难保证一些自增主键、触发器和完整性约束的一致性。因此在工程实践中，多主用的相对较少。</p>
-<h3 id="离线工作的客户端"><a href="#离线工作的客户端" class="headerlink" title="离线工作的客户端"></a>离线工作的客户端</h3><p>离线工作的一个应用的多个设备上的客户端，如果也允许继续写入数据。如：日历应用。在电脑上和手机上离线时如果也支持添加日程。则在各个设备联网时，需要互相同步数据。</p>
+<h3 id="离线工作的客户端">离线工作的客户端</h3>
+<p>离线工作的一个应用的多个设备上的客户端，如果也允许继续写入数据。如：日历应用。在电脑上和手机上离线时如果也支持添加日程。则在各个设备联网时，需要互相同步数据。</p>
 <p>则离线后还继续工作的多个副本，本质上就是一个多主模型：每个主都可以独立的写入数据，然后在网络连通后解决冲突。</p>
 <p>但，如何支持离线后正常地工作，联网后优雅的解决冲突，是一个难题。</p>
 <p>Apache CouchDB 的一个特点便是支持多主模型。</p>
-<h3 id="协同编辑"><a href="#协同编辑" class="headerlink" title="协同编辑"></a>协同编辑</h3><p>Google Docs 等类似 SaaS 模式的在线协同应用越来越流行。</p>
+<h3 id="协同编辑">协同编辑</h3>
+<p>Google Docs 等类似 SaaS 模式的在线协同应用越来越流行。</p>
 <p>这种应用允许多人在线同时编辑文档或者电子表格，其背后的原理，与上一节离线工作的客户端很像。</p>
 <p>为了实现协同，并解决冲突，可以：</p>
 <ol>
@@ -557,7 +583,8 @@
 <li><strong>乐观方式</strong>。允许每个用户无脑写入，然后如果有冲突，交由用户解决。</li>
 </ol>
 <p>git 也是一个类似的协议。</p>
-<h2 id="处理写入冲突"><a href="#处理写入冲突" class="headerlink" title="处理写入冲突"></a>处理写入冲突</h2><p>多主模型最大的问题是：如何解决冲突。</p>
+<h2 id="处理写入冲突">处理写入冲突</h2>
+<p>多主模型最大的问题是：如何解决冲突。</p>
 <p><img src="https://ddia.qtmuniao.com/img/ch05-fig07.png" alt="write conflict"></p>
 <p>考虑 wiki 一个页面标题的修改：</p>
 <ol>
@@ -565,7 +592,8 @@
 <li>用户 2 将该页面标题从 A 修改到 C</li>
 </ol>
 <p>两个操作在本地都修改成功，然后<strong>异步同步</strong>时，会出现冲突。</p>
-<h3 id="冲突检测"><a href="#冲突检测" class="headerlink" title="冲突检测"></a>冲突检测</h3><p><strong>有同步</strong>或者<strong>异步</strong>的方式进行冲突检测。</p>
+<h3 id="冲突检测">冲突检测</h3>
+<p><strong>有同步</strong>或者<strong>异步</strong>的方式进行冲突检测。</p>
 <p>对于<strong>单主模型</strong>，当检测到冲突时，由于只有一个主副本，可以同步的检测冲突，从而解决冲突：</p>
 <ol>
 <li>让第二个写入阻塞，直到第一个写完成。</li>
@@ -573,7 +601,8 @@
 </ol>
 <p>但对于<strong>多主模型</strong>，两个写入可能会在不同主副本立即成功。然后异步同步时，发现冲突，但为时已晚（没有办法简单决定如何解决冲突）。</p>
 <p>虽然，可以在多主间使用同步方式写入所有副本后，再返回请求给客户端。但这会失掉多主模型的主要优点：<strong>允许多个主副本独立接受写入</strong>。此时，蜕化成单主模型。</p>
-<h3 id="冲突避免"><a href="#冲突避免" class="headerlink" title="冲突避免"></a>冲突避免</h3><p><strong>解决冲突最好的方式是在设计上避免冲突</strong>。</p>
+<h3 id="冲突避免">冲突避免</h3>
+<p><strong>解决冲突最好的方式是在设计上避免冲突</strong>。</p>
 <p>由于多主模型在冲突发生后再去解决会有很大的复杂度，因此常使用冲突避免的设计。</p>
 <p>假设你的数据集可以分成多个分区，让不同分区的主副本放在不同数据中心中，那么从任何一个分区的角度来看，变成了单主模型。</p>
 <p>举个栗子：对于服务全球用户的应用，每个用户就近固定路由到附近的数据中心。则，每个用户信息都有唯一的主副本。</p>
@@ -583,25 +612,29 @@
 <li>某个数据中心损坏，导致路由变化</li>
 </ol>
 <p>就会对该设计提出一些挑战。</p>
-<h3 id="冲突收敛"><a href="#冲突收敛" class="headerlink" title="冲突收敛"></a>冲突收敛</h3><p>在单主模型中，所有事件比较容易进行<strong>定序</strong>，因此我们总可以用后一个写入覆盖前一个写入。</p>
+<h3 id="冲突收敛">冲突收敛</h3>
+<p>在单主模型中，所有事件比较容易进行<strong>定序</strong>，因此我们总可以用后一个写入覆盖前一个写入。</p>
 <p>但在多主模型中，很多冲突无法定序：<strong>从每个主副本来看，事件顺序是不一致的</strong>，并且没有哪个更权威一些，那么就无法让所有副本最终<strong>收敛（convergent）</strong>。</p>
 <p>此时，我们就需要一些规则，来让其收敛：</p>
 <ol>
 <li><strong>给每个写入一个序号，并且后者胜</strong>。本质上是使用外部系统对所有事件进行定序。但可能会产生数据丢失。举个例子，对于一个账户，原有 10 元，客户端 A - 8，客户端 B - 3，任何一个单独成功都有问题。</li>
 <li><strong>给每个副本一个序号，序号更高的副本有更高的优先级</strong>。这也会造成低序号副本的数据丢失。</li>
-<li><strong>提供一种自动的合并冲突的方式</strong>。如，假设结果是字符串，则可以将其排序后，使用连接符进行链接，如在之前 Wiki 的冲突中，合并后的标题为 “B&#x2F;C”</li>
+<li><strong>提供一种自动的合并冲突的方式</strong>。如，假设结果是字符串，则可以将其排序后，使用连接符进行链接，如在之前 Wiki 的冲突中，合并后的标题为 “B/C”</li>
 <li><strong>使用程序定制一种保留所有冲突值信息的冲突解决策略</strong>。也可以将这个定制权，交给用户。</li>
 </ol>
-<h3 id="自定义解决"><a href="#自定义解决" class="headerlink" title="自定义解决"></a>自定义解决</h3><p>由于只有用户知道数据本身的信息，因此较好的方式是，将如何解决冲突交给用户。即，允许用户编写回调代码，提供冲突解决逻。该回调可以在：</p>
+<h3 id="自定义解决">自定义解决</h3>
+<p>由于只有用户知道数据本身的信息，因此较好的方式是，将如何解决冲突交给用户。即，允许用户编写回调代码，提供冲突解决逻。该回调可以在：</p>
 <ol>
 <li><strong>写时执行</strong>。在写入时发现冲突，调用回调代码，解决冲突后写入。这些代码通常在后台执行，并且不能阻塞，因此不能在调用时同步的通知用户。但打个日志之类的还是可以的。</li>
 <li><strong>读时执行</strong>。在写入冲突时，所有冲突都会被保留（如使用多版本）。下次读取时，系统会将所有数据本版本返回给用户，进行交互式的或者自动的解决冲突，并将结果写回系统。</li>
 </ol>
 <p>上述冲突解决只限于单个记录、行、文档层面。</p>
 <p>TODO（自动冲突解决）</p>
-<h3 id="界定冲突"><a href="#界定冲突" class="headerlink" title="界定冲突"></a>界定冲突</h3><p>有些冲突显而易见：并发写同一个 Key。</p>
+<h3 id="界定冲突">界定冲突</h3>
+<p>有些冲突显而易见：并发写同一个 Key。</p>
 <p>有些冲突则更隐晦，考虑一个会议室预定系统。预定同一个会议室不一定会发生冲突，只有预定时间段有交叠，才会有冲突。</p>
-<h2 id="多主复制拓扑"><a href="#多主复制拓扑" class="headerlink" title="多主复制拓扑"></a>多主复制拓扑</h2><p><strong>复制拓扑</strong>（replication topology）描述了数据写入从一个节点到另一个节点的传播路径。</p>
+<h2 id="多主复制拓扑">多主复制拓扑</h2>
+<p><strong>复制拓扑</strong>（replication topology）描述了数据写入从一个节点到另一个节点的传播路径。</p>
 <p>在只有两个主副本时，拓扑是确定的，如图 5-7。Leader1 和 Leader 都得把数据发给对方。但随着副本数的增多，数据复制拓扑就会有多种选择，如下图：</p>
 <p><img src="https://ddia.qtmuniao.com/img/ch05-fig08.png" alt="multi-leader topologies"></p>
 <p>上图表示了 ≥ 4 个主副本时，常见的复制拓扑：</p>
@@ -619,9 +652,10 @@
 <li>可能不能够充分同步</li>
 <li>同步时可能会发生回退</li>
 </ol>
-<p>可以用一种叫做<strong>版本向量（version vectors）</strong>的策略，对多个副本的事件进行排序，解决因果一致性问题。下一节会详细讨论。</p>
+<p>可以用一种叫做**版本向量（version vectors）**的策略，对多个副本的事件进行排序，解决因果一致性问题。下一节会详细讨论。</p>
 <p>最后忠告：如果你要使用基于多主模型的系统，一定要知晓上面提到的问题，多做测试，确保其提供的保证符合你的使用场景。</p>
-<h1 id="无主模型"><a href="#无主模型" class="headerlink" title="无主模型"></a>无主模型</h1><p>有主模型中，由主副本决定写入顺序，从副本在写入上不直接和客户端打交道，只是重放其对应的主副本的写入顺序（也可以理解为主副本为从副本的客户端）。</p>
+<h1>无主模型</h1>
+<p>有主模型中，由主副本决定写入顺序，从副本在写入上不直接和客户端打交道，只是重放其对应的主副本的写入顺序（也可以理解为主副本为从副本的客户端）。</p>
 <p>而无主模型，则允许任何副本接受写入。</p>
 <p>在关系数据库时代，无主模型已经快被忘却。从 Amazon 的 Dynamo 论文开始，无主模型又重新大放异彩，Riak，Cassandra 和 Voldemort 都受其启发，可以统称为 <strong>Dynamo 流（Dynamo-style）</strong>。</p>
 <blockquote>
@@ -630,26 +664,29 @@
 <p>通常来说，在无主模型中，写入时可以：</p>
 <ol>
 <li>由客户端直接写入副本。</li>
-<li>由<strong>协调者（coordinator）</strong>接收写入，转发给多副本。但与主副本不同，协调者并不负责定序。</li>
+<li>由**协调者（coordinator）**接收写入，转发给多副本。但与主副本不同，协调者并不负责定序。</li>
 </ol>
-<h2 id="有节点故障时的写入"><a href="#有节点故障时的写入" class="headerlink" title="有节点故障时的写入"></a>有节点故障时的写入</h2><p>基于主副本（leader-based）的模型，在有副本故障时，需要进行故障切换。</p>
+<h2 id="有节点故障时的写入">有节点故障时的写入</h2>
+<p>基于主副本（leader-based）的模型，在有副本故障时，需要进行故障切换。</p>
 <p>但在无主模型中，简单忽略它就行。</p>
 <p><img src="https://ddia.qtmuniao.com/img/ch05-fig10.png" alt="quorum write"></p>
 <p>多数派写入，多数派读取，以及读时修复。</p>
 <p>由于写入时，简单的忽略了宕机副本；在读取时，就要多做些事情了：<strong>同时读取多个副本，选取最新<em>版本</em>的值</strong>。</p>
-<h3 id="读时修复和反熵"><a href="#读时修复和反熵" class="headerlink" title="读时修复和反熵"></a>读时修复和反熵</h3><p>无主模型也需要维持多个副本数据的一致性。在某些节点宕机重启后，如何让其弥补错过的数据？</p>
+<h3 id="读时修复和反熵">读时修复和反熵</h3>
+<p>无主模型也需要维持多个副本数据的一致性。在某些节点宕机重启后，如何让其弥补错过的数据？</p>
 <p>Dynamo 流派的存储中通常有两种机制：</p>
 <ol>
 <li><strong>读时修复（read repair）</strong>，本质上是一种捎带修复，在读取时发现旧的就顺手修了。</li>
 <li><strong>反熵过程（Anti-entropy process）</strong>，本质上是一种兜底修复，读时修复不可能覆盖所有过期数据，因此需要一些后台进程，持续进行扫描，寻找陈旧数据，然后更新。<span class="exturl" data-url="aHR0cHM6Ly93d3cuaW5mbHV4ZGF0YS5jb20vYmxvZy9ldmVudHVhbC1jb25zaXN0ZW5jeS1hbnRpLWVudHJvcHkv">这个博文<i class="fa fa-external-link-alt"></i></span>对该词有展开描述。</li>
 </ol>
-<h3 id="Quorum-读写"><a href="#Quorum-读写" class="headerlink" title="Quorum 读写"></a>Quorum 读写</h3><p>如果副本总数为 n，写入 w 个副本才认定写入成功，并且在查询时最少需要读取 r 个节点。只要满足 w + r &gt; n，我们就能读到最新的数据（<strong>鸽巢原理</strong>）。此时 r 和 w 的值称为 <strong>quorum 读写</strong>。即这个约束是保证数据有效所需的最低（法定）票数。</p>
+<h3 id="Quorum-读写">Quorum 读写</h3>
+<p>如果副本总数为 n，写入 w 个副本才认定写入成功，并且在查询时最少需要读取 r 个节点。只要满足 w + r &gt; n，我们就能读到最新的数据（<strong>鸽巢原理</strong>）。此时 r 和 w 的值称为 <strong>quorum 读写</strong>。即这个约束是保证数据有效所需的最低（法定）票数。</p>
 <p><img src="https://ddia.qtmuniao.com/img/ch05-fig11.png" alt="w+r&gt;n"></p>
 <p>在 Dynamo 流派的存储中，n、r 和 w 通常是可以配置的：</p>
 <ol>
 <li>n 越大冗余度就越高，也就越可靠。</li>
 <li>r 和 w 都常都选择超过半数，如 <code>(n+1)/2</code></li>
-<li>w &#x3D; n 时，可以让 r &#x3D; 1。此时是牺牲写入性能换来读取性能。</li>
+<li>w = n 时，可以让 r = 1。此时是牺牲写入性能换来读取性能。</li>
 </ol>
 <p>考量满足 w+r &gt; n 系统对节点故障的容忍性：</p>
 <ol>
@@ -658,12 +695,13 @@
 </ol>
 <p>特化一下：</p>
 <ol>
-<li>如果 n &#x3D; 3，r &#x3D; w &#x3D; 2，则系统可以容忍最多一个节点宕机。</li>
-<li>如果 n &#x3D; 5，r &#x3D; w &#x3D; 3，则系统可以容忍最多两个节点宕机。</li>
+<li>如果 n = 3，r = w = 2，则系统可以容忍最多一个节点宕机。</li>
+<li>如果 n = 5，r = w = 3，则系统可以容忍最多两个节点宕机。</li>
 </ol>
 <p>通常来说，我们会将读或者写并行的发到全部 n 个副本，但是只要等到法定个副本的结果，就可以返回。</p>
 <p>如果由于某种原因，可用节点数少于 r 或者 w，则读取或者写入就会出错。</p>
-<h2 id="quorum-一致性的局限"><a href="#quorum-一致性的局限" class="headerlink" title="quorum 一致性的局限"></a>quorum 一致性的局限</h2><p>由于 w + r &gt; n 时，总会至少有一个节点（读写子集至少有一个节点的交集）保存了最新的数据，因此总是期望能读到最新的。</p>
+<h2 id="quorum-一致性的局限">quorum 一致性的局限</h2>
+<p>由于 w + r &gt; n 时，总会至少有一个节点（读写子集至少有一个节点的交集）保存了最新的数据，因此总是期望能读到最新的。</p>
 <p>当 w + r ≤ n 时，则很可能会读到过期的数据。</p>
 <p>但在 w + r &gt; n 时，有一些边角情况（corner case），也会导致客户端读不到最新数据：</p>
 <ol>
@@ -676,11 +714,13 @@
 </ol>
 <p>因此，虽然 Quorum 读写看起来能够保证返回最新值，但在工程实践中，有很多细节需要处理。</p>
 <p>如果数据库不遵守之前副本滞后小节引入的几个一致性保障，前面提到的异常仍然可能会发生。</p>
-<h3 id="一致性监控"><a href="#一致性监控" class="headerlink" title="一致性监控"></a>一致性监控</h3><p>对副本数据陈旧性监控，能够让你了解副本的健康情况，当其落后太多时，可以及时调查原因。  </p>
+<h3 id="一致性监控">一致性监控</h3>
+<p>对副本数据陈旧性监控，能够让你了解副本的健康情况，当其落后太多时，可以及时调查原因。</p>
 <p>基于领导者的多副本模型，由于每个副本复制顺序一致，则可以方便的给出每个副本的落后（lag）进度。</p>
 <p>但对于无主模型，由于没有固定写入顺序，副本的落后进度变得难以界定。如果系统只使用读时修复策略，则对于一个副本的落后程度是没有限制的。读取频率很低数据可能版本很老。</p>
 <p>最终一致性是一种很模糊的保证，但通过监控能够量化“最终”（比如到一个阈值），也是很棒的。</p>
-<h2 id="放松的-Quorum-和提示转交"><a href="#放松的-Quorum-和提示转交" class="headerlink" title="放松的 Quorum 和提示转交"></a>放松的 Quorum 和提示转交</h2><p>正常的 Quorum 能够容忍一些副本节点的宕机。但在大型集群（总节点数目 &gt; n）中，可能最初选中的 n 台机器，由于种种原因（宕机、网络问题），导致无法达到法定读写数目，则此时有两种选择：</p>
+<h2 id="放松的-Quorum-和提示转交">放松的 Quorum 和提示转交</h2>
+<p>正常的 Quorum 能够容忍一些副本节点的宕机。但在大型集群（总节点数目 &gt; n）中，可能最初选中的 n 台机器，由于种种原因（宕机、网络问题），导致无法达到法定读写数目，则此时有两种选择：</p>
 <ol>
 <li>对于所有无法达到 r 或 w 个法定数目的读写，直接报错。</li>
 <li>仍然接受写入，并且将新的写入暂时交给一些正常节点。</li>
@@ -689,25 +729,29 @@
 <p><img src="ihttps://ddia.qtmuniao.com/img/ch05-sloppy-quorum.png" alt="sloppy quorum"></p>
 <p>一旦问题得到解决，数据将会根据线索移回其应该在的节点（D—&gt; B），我们称之为<strong>提示移交</strong>（hinted handoff）。这个移交过程是由反熵 anti-entropy 后台进程完成的。</p>
 <p>这是一种典型的牺牲部分一致性，换取更高可用性的做法。在常见的 Dynamo 实现中，放松的法定人数是可选的。在 Riak 中，它们默认是启用的，而在 Cassandra 和 Voldemort 中它们默认是禁用的</p>
-<h3 id="多数据中心"><a href="#多数据中心" class="headerlink" title="多数据中心"></a>多数据中心</h3><p>无主模型也适用于系统多数据中心部署。</p>
+<h3 id="多数据中心">多数据中心</h3>
+<p>无主模型也适用于系统多数据中心部署。</p>
 <p>为了同时兼顾<strong>多数据中心</strong>和<strong>写入的低延迟</strong>，有一些不同的基于无主模型的多数据中心的策略：</p>
 <ol>
 <li>其中 Cassandra 和 Voldemort 将 n 配置到所有数据中心，但写入时只等待本数据中心副本完成就可以返回。</li>
 <li>Riak 将 n 限制在一个数据中心内，因此所有客户端到存储节点的通信可以限制到单个数据中心内，而数据复制在后台异步进行。</li>
 </ol>
-<h2 id="并发写入检测"><a href="#并发写入检测" class="headerlink" title="并发写入检测"></a>并发写入检测</h2><p>由于 Dynamo 允许多个客户端并发写入相同 Key，则即使使用严格的 Quorum 读写，也会产生冲突：<strong>对于时间间隔很短（并发）的相同 key 两个写入，不同副本上收到的顺序可能不一致</strong>。</p>
+<h2 id="并发写入检测">并发写入检测</h2>
+<p>由于 Dynamo 允许多个客户端并发写入相同 Key，则即使使用严格的 Quorum 读写，也会产生冲突：<strong>对于时间间隔很短（并发）的相同 key 两个写入，不同副本上收到的顺序可能不一致</strong>。</p>
 <p>此外，读时修复和提示移交时，也可能产生冲突。</p>
 <p><img src="https://ddia.qtmuniao.com/img/ch05-fig12.png" alt="dynamo style datastore"></p>
 <p>如上图，如果每个节点不去检查顺序，而是简单的接受写入请求，就落到本地，不同副本间可能就会出现永久不一致：上图 Node1 和 Node3 上副本X 的值是 A，Node2 上副本 X 的值是 B。</p>
 <p>为了使所有副本最终一致，需要有一种手段来解决并发冲突。</p>
-<h3 id="后者胜（Last-Write-Win）"><a href="#后者胜（Last-Write-Win）" class="headerlink" title="后者胜（Last-Write-Win）"></a>后者胜（Last-Write-Win）</h3><p>后者胜（LWW，last write wins）的策略是，通过某种手段确定一种全局唯一的顺序，然后让后面的修改覆盖之前的修改。</p>
+<h3 id="后者胜（Last-Write-Win）">后者胜（Last-Write-Win）</h3>
+<p>后者胜（LWW，last write wins）的策略是，通过某种手段确定一种全局唯一的顺序，然后让后面的修改覆盖之前的修改。</p>
 <p>如，为所有写入附加一个全局时间戳，如果对于某个 key 的写入有冲突，可以挑选具有最大时间戳的数据保留，并丢弃较早时间戳的写入。</p>
 <p>LWW 有一个问题，就是多个并发写入的客户端，可能都认为自己成功了，但是最终只有一个值被保留了，其他都在后台被丢弃了。即，其迅速再读，会发现不是自己写入的数据。</p>
 <p>使用 LWW 唯一安全的方法是：key 是一次可写，后变为只读。如 Cassandra 建议使用一个 UUID 作为主键，则每个写操作都只会有一个唯一的键。</p>
-<h3 id="发生于-之前（Happens-before）和并发关系"><a href="#发生于-之前（Happens-before）和并发关系" class="headerlink" title="发生于**之前（Happens-before）和并发关系"></a>发生于**之前（Happens-before）和并发关系</h3><p>考虑之前的两个图：</p>
+<h3 id="发生于-之前（Happens-before）和并发关系">发生于**之前（Happens-before）和并发关系</h3>
+<p>考虑之前的两个图：</p>
 <ol>
 <li>在 5-9 中，由于 client B 的更新依赖于 client A 的插入，因此他们是因果关系。</li>
-<li>在 5-12 中，set X &#x3D; A 和 set X &#x3D; B 是并发的，因为他们都互相不知道对方存在，也不存在因果关系。</li>
+<li>在 5-12 中，set X = A 和 set X = B 是并发的，因为他们都互相不知道对方存在，也不存在因果关系。</li>
 </ol>
 <p>系统中任意的两个写入 A 和 B，只可能存在三种关系：</p>
 <ol>
@@ -717,7 +761,6 @@
 </ol>
 <p>从另外一个角度来说（集合运算），</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A 和 B 并发 &lt; === &gt; A 不 happens-before B  &amp;&amp; B 不 happens-before A</span><br></pre></td></tr></table></figure>
-
 <p>如果两个操作可以定序，则 last write win；如果两个操作并发，则需要进行冲突解决。</p>
 <blockquote>
 <p>并发、时间和相对性</p>
@@ -725,7 +768,8 @@
 <blockquote>
 <p>Lamport 时钟相关论文中有详细推导相关概念关系。为了定义并发，事件发生的绝对时间先后并不重要，只要两个事件都意识不到对方的存在，则称两个操作 “并发”。 从狭义相对论上来说，只要两个事件发生的时间差，小于光在两者距离传播所用时间，则两个事件不可能互相影响。推广到计算机网络中，只要由于网络问题导致，在事件发生时间差内，两者不能互相意识到，则称其是并发的。</p>
 </blockquote>
-<h3 id="确定-Happens-Before-关系"><a href="#确定-Happens-Before-关系" class="headerlink" title="确定 Happens-Before 关系"></a>确定 Happens-Before 关系</h3><p>我们可以用某种算法来确定系统中任意两个事件，是否存在 happens-before 关系，还是并发关系。以一个两个 client 并发添加购物车例子来看：</p>
+<h3 id="确定-Happens-Before-关系">确定 Happens-Before 关系</h3>
+<p>我们可以用某种算法来确定系统中任意两个事件，是否存在 happens-before 关系，还是并发关系。以一个两个 client 并发添加购物车例子来看：</p>
 <p><img src="https://ddia.qtmuniao.com/img/ch05-fig13.png" alt="causal dependencies"></p>
 <p>需要注意：</p>
 <ol>
@@ -743,15 +787,16 @@
 <li>当服务器收到特定版本号 Vx 的写入时，可以用其值覆盖所有 V ≤  Vx 的值。、</li>
 </ol>
 <p>如果又来一个新的写入，不基于任何版本号，则该写入不会覆盖任何内容。</p>
-<h3 id="合并并发值"><a href="#合并并发值" class="headerlink" title="合并并发值"></a>合并并发值</h3><p>该算法可以保证所有数据都不会被无声的丢弃。但，需要客户端在随后写入时合并之前的值来清理多个值。如果简单基于时间戳进行 LWW，则有些数据又会被丢掉。</p>
+<h3 id="合并并发值">合并并发值</h3>
+<p>该算法可以保证所有数据都不会被无声的丢弃。但，需要客户端在随后写入时合并之前的值来清理多个值。如果简单基于时间戳进行 LWW，则有些数据又会被丢掉。</p>
 <p>因此需要根据实际情况，选择一些策略来解决冲突，合并数据。</p>
 <ol>
 <li>对于上述购物车中只增加物品的例子，可以使用“并集”来合并冲突数据。</li>
 <li>如果购物车汇总还有删除操作，就不能简单并了，但是可以将删除变为增加（写一个 tombstone 标记）。</li>
 </ol>
-<h3 id="版本向量"><a href="#版本向量" class="headerlink" title="版本向量"></a>版本向量</h3><p>上面例子只有单个副本。将该算法扩展到无主多副本模型时，只使用一个版本值显然不够，这时需要给每个副本的键都引入版本号，对于同一个键来说，不同副本的版本会构成<strong>版本向量（version vector）</strong>。</p>
+<h3 id="版本向量">版本向量</h3>
+<p>上面例子只有单个副本。将该算法扩展到无主多副本模型时，只使用一个版本值显然不够，这时需要给每个副本的键都引入版本号，对于同一个键来说，不同副本的版本会构成<strong>版本向量（version vector）</strong>。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">    key1 </span><br><span class="line">A   Va</span><br><span class="line">B   Vb</span><br><span class="line">C   Vc</span><br><span class="line"></span><br><span class="line">key1: [Va, Vb, Vc]</span><br><span class="line"></span><br><span class="line">[Va-x, Vb-y, Vc-z] &lt;= [Va-x1, Vb-y1, Vc-z1]  &lt;==&gt; </span><br><span class="line">x &lt;= x1 &amp;&amp; y &lt;= y1 &amp;&amp; z &lt;= z1</span><br></pre></td></tr></table></figure>
-
 <p>每个副本在遇到写入时，会增加对应键的版本号，同时跟踪从其他副本中看到的版本号，通过比较版本号大小，来决定哪些值要覆盖哪些值要保留。</p>
 
          <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
@@ -783,19 +828,19 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter2/" rel="bookmark">DDIA 读书笔记（二）：数据模型和查询语言</a></div>
-    </li>
-    <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="bookmark">DDIA 读书笔记（三）： TP AP 和列存</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
     </li>
   </ul>
 
@@ -894,7 +939,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%A2%86%E5%AF%BC%E8%80%85%E4%B8%8E%E8%B7%9F%E9%9A%8F%E8%80%85"><span class="nav-number">1.</span> <span class="nav-text">领导者与跟随者</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%A4%8D%E5%88%B6%E5%92%8C%E5%BC%82%E6%AD%A5%E5%A4%8D%E5%88%B6"><span class="nav-number">1.1.</span> <span class="nav-text">同步复制和异步复制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B0%E5%A2%9E%E5%89%AF%E6%9C%AC"><span class="nav-number">1.2.</span> <span class="nav-text">新增副本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%95%E6%9C%BA%E5%A4%84%E7%90%86"><span class="nav-number">1.3.</span> <span class="nav-text">宕机处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E%E5%89%AF%E6%9C%AC%E5%AE%95%E6%9C%BA%EF%BC%9A%E8%BF%BD%E8%B5%B6%E6%81%A2%E5%A4%8D%E3%80%82"><span class="nav-number">1.3.1.</span> <span class="nav-text">从副本宕机：追赶恢复。</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E5%89%AF%E6%9C%AC%E5%AE%95%E6%9C%BA%EF%BC%9A%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB%E3%80%82"><span class="nav-number">1.3.2.</span> <span class="nav-text">主副本宕机：故障转移。</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E5%A4%8D%E5%88%B6"><span class="nav-number">1.4.</span> <span class="nav-text">日志复制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%AF%AD%E5%8F%A5%E7%9A%84%E5%A4%8D%E5%88%B6"><span class="nav-number">1.4.1.</span> <span class="nav-text">基于语句的复制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%A0%E8%BE%93%E9%A2%84%E5%86%99%E6%97%A5%E5%BF%97%EF%BC%88-WAL%EF%BC%89"><span class="nav-number">1.4.2.</span> <span class="nav-text">传输预写日志（ WAL）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%BB%E8%BE%91%E6%97%A5%E5%BF%97%E5%A4%8D%E5%88%B6%EF%BC%88%E5%9F%BA%E4%BA%8E%E8%A1%8C%EF%BC%89"><span class="nav-number">1.4.3.</span> <span class="nav-text">逻辑日志复制（基于行）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%A7%A6%E5%8F%91%E5%99%A8%E7%9A%84%E5%A4%8D%E5%88%B6"><span class="nav-number">1.4.4.</span> <span class="nav-text">基于触发器的复制</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%8D%E5%88%B6%E6%BB%9E%E5%90%8E%E9%97%AE%E9%A2%98"><span class="nav-number">2.</span> <span class="nav-text">复制滞后问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%BB%E4%BD%A0%E6%89%80%E5%86%99"><span class="nav-number">2.1.</span> <span class="nav-text">读你所写</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E8%B0%83%E8%AF%BB"><span class="nav-number">2.2.</span> <span class="nav-text">单调读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E5%89%8D%E7%BC%80%E8%AF%BB"><span class="nav-number">2.3.</span> <span class="nav-text">一致前缀读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%AF%E6%9C%AC%E6%BB%9E%E5%90%8E%E7%9A%84%E7%BB%88%E6%9E%81%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">2.4.</span> <span class="nav-text">副本滞后的终极解决方案</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%9A%E4%B8%BB%E6%A8%A1%E5%9E%8B"><span class="nav-number">3.</span> <span class="nav-text">多主模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E4%B8%BB%E6%A8%A1%E5%9E%8B%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">3.1.</span> <span class="nav-text">多主模型应用场景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AA%E6%95%B0%E6%8D%AE%E4%B8%AD%E5%BF%83"><span class="nav-number">3.1.1.</span> <span class="nav-text">多个数据中心</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A6%BB%E7%BA%BF%E5%B7%A5%E4%BD%9C%E7%9A%84%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="nav-number">3.1.2.</span> <span class="nav-text">离线工作的客户端</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%8F%E5%90%8C%E7%BC%96%E8%BE%91"><span class="nav-number">3.1.3.</span> <span class="nav-text">协同编辑</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E5%86%99%E5%85%A5%E5%86%B2%E7%AA%81"><span class="nav-number">3.2.</span> <span class="nav-text">处理写入冲突</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%B2%E7%AA%81%E6%A3%80%E6%B5%8B"><span class="nav-number">3.2.1.</span> <span class="nav-text">冲突检测</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%B2%E7%AA%81%E9%81%BF%E5%85%8D"><span class="nav-number">3.2.2.</span> <span class="nav-text">冲突避免</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%B2%E7%AA%81%E6%94%B6%E6%95%9B"><span class="nav-number">3.2.3.</span> <span class="nav-text">冲突收敛</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E8%A7%A3%E5%86%B3"><span class="nav-number">3.2.4.</span> <span class="nav-text">自定义解决</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%95%8C%E5%AE%9A%E5%86%B2%E7%AA%81"><span class="nav-number">3.2.5.</span> <span class="nav-text">界定冲突</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E4%B8%BB%E5%A4%8D%E5%88%B6%E6%8B%93%E6%89%91"><span class="nav-number">3.3.</span> <span class="nav-text">多主复制拓扑</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%97%A0%E4%B8%BB%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.</span> <span class="nav-text">无主模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%89%E8%8A%82%E7%82%B9%E6%95%85%E9%9A%9C%E6%97%B6%E7%9A%84%E5%86%99%E5%85%A5"><span class="nav-number">4.1.</span> <span class="nav-text">有节点故障时的写入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E6%97%B6%E4%BF%AE%E5%A4%8D%E5%92%8C%E5%8F%8D%E7%86%B5"><span class="nav-number">4.1.1.</span> <span class="nav-text">读时修复和反熵</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Quorum-%E8%AF%BB%E5%86%99"><span class="nav-number">4.1.2.</span> <span class="nav-text">Quorum 读写</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#quorum-%E4%B8%80%E8%87%B4%E6%80%A7%E7%9A%84%E5%B1%80%E9%99%90"><span class="nav-number">4.2.</span> <span class="nav-text">quorum 一致性的局限</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%E7%9B%91%E6%8E%A7"><span class="nav-number">4.2.1.</span> <span class="nav-text">一致性监控</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%BE%E6%9D%BE%E7%9A%84-Quorum-%E5%92%8C%E6%8F%90%E7%A4%BA%E8%BD%AC%E4%BA%A4"><span class="nav-number">4.3.</span> <span class="nav-text">放松的 Quorum 和提示转交</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E6%95%B0%E6%8D%AE%E4%B8%AD%E5%BF%83"><span class="nav-number">4.3.1.</span> <span class="nav-text">多数据中心</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E5%86%99%E5%85%A5%E6%A3%80%E6%B5%8B"><span class="nav-number">4.4.</span> <span class="nav-text">并发写入检测</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8E%E8%80%85%E8%83%9C%EF%BC%88Last-Write-Win%EF%BC%89"><span class="nav-number">4.4.1.</span> <span class="nav-text">后者胜（Last-Write-Win）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%91%E7%94%9F%E4%BA%8E-%E4%B9%8B%E5%89%8D%EF%BC%88Happens-before%EF%BC%89%E5%92%8C%E5%B9%B6%E5%8F%91%E5%85%B3%E7%B3%BB"><span class="nav-number">4.4.2.</span> <span class="nav-text">发生于**之前（Happens-before）和并发关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A1%AE%E5%AE%9A-Happens-Before-%E5%85%B3%E7%B3%BB"><span class="nav-number">4.4.3.</span> <span class="nav-text">确定 Happens-Before 关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%88%E5%B9%B6%E5%B9%B6%E5%8F%91%E5%80%BC"><span class="nav-number">4.4.4.</span> <span class="nav-text">合并并发值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E5%90%91%E9%87%8F"><span class="nav-number">4.4.5.</span> <span class="nav-text">版本向量</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">领导者与跟随者</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%A4%8D%E5%88%B6%E5%92%8C%E5%BC%82%E6%AD%A5%E5%A4%8D%E5%88%B6"><span class="nav-number">1.1.</span> <span class="nav-text">同步复制和异步复制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B0%E5%A2%9E%E5%89%AF%E6%9C%AC"><span class="nav-number">1.2.</span> <span class="nav-text">新增副本</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%95%E6%9C%BA%E5%A4%84%E7%90%86"><span class="nav-number">1.3.</span> <span class="nav-text">宕机处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E%E5%89%AF%E6%9C%AC%E5%AE%95%E6%9C%BA%EF%BC%9A%E8%BF%BD%E8%B5%B6%E6%81%A2%E5%A4%8D%E3%80%82"><span class="nav-number">1.3.1.</span> <span class="nav-text">从副本宕机：追赶恢复。</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E5%89%AF%E6%9C%AC%E5%AE%95%E6%9C%BA%EF%BC%9A%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB%E3%80%82"><span class="nav-number">1.3.2.</span> <span class="nav-text">主副本宕机：故障转移。</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E5%A4%8D%E5%88%B6"><span class="nav-number">1.4.</span> <span class="nav-text">日志复制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%AF%AD%E5%8F%A5%E7%9A%84%E5%A4%8D%E5%88%B6"><span class="nav-number">1.4.1.</span> <span class="nav-text">基于语句的复制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%A0%E8%BE%93%E9%A2%84%E5%86%99%E6%97%A5%E5%BF%97%EF%BC%88-WAL%EF%BC%89"><span class="nav-number">1.4.2.</span> <span class="nav-text">传输预写日志（ WAL）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%BB%E8%BE%91%E6%97%A5%E5%BF%97%E5%A4%8D%E5%88%B6%EF%BC%88%E5%9F%BA%E4%BA%8E%E8%A1%8C%EF%BC%89"><span class="nav-number">1.4.3.</span> <span class="nav-text">逻辑日志复制（基于行）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%A7%A6%E5%8F%91%E5%99%A8%E7%9A%84%E5%A4%8D%E5%88%B6"><span class="nav-number">1.4.4.</span> <span class="nav-text">基于触发器的复制</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">复制滞后问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%BB%E4%BD%A0%E6%89%80%E5%86%99"><span class="nav-number">2.1.</span> <span class="nav-text">读你所写</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E8%B0%83%E8%AF%BB"><span class="nav-number">2.2.</span> <span class="nav-text">单调读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E5%89%8D%E7%BC%80%E8%AF%BB"><span class="nav-number">2.3.</span> <span class="nav-text">一致前缀读</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%AF%E6%9C%AC%E6%BB%9E%E5%90%8E%E7%9A%84%E7%BB%88%E6%9E%81%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">2.4.</span> <span class="nav-text">副本滞后的终极解决方案</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">3.</span> <span class="nav-text">多主模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E4%B8%BB%E6%A8%A1%E5%9E%8B%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">3.1.</span> <span class="nav-text">多主模型应用场景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AA%E6%95%B0%E6%8D%AE%E4%B8%AD%E5%BF%83"><span class="nav-number">3.1.1.</span> <span class="nav-text">多个数据中心</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A6%BB%E7%BA%BF%E5%B7%A5%E4%BD%9C%E7%9A%84%E5%AE%A2%E6%88%B7%E7%AB%AF"><span class="nav-number">3.1.2.</span> <span class="nav-text">离线工作的客户端</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%8F%E5%90%8C%E7%BC%96%E8%BE%91"><span class="nav-number">3.1.3.</span> <span class="nav-text">协同编辑</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E5%86%99%E5%85%A5%E5%86%B2%E7%AA%81"><span class="nav-number">3.2.</span> <span class="nav-text">处理写入冲突</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%B2%E7%AA%81%E6%A3%80%E6%B5%8B"><span class="nav-number">3.2.1.</span> <span class="nav-text">冲突检测</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%B2%E7%AA%81%E9%81%BF%E5%85%8D"><span class="nav-number">3.2.2.</span> <span class="nav-text">冲突避免</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%B2%E7%AA%81%E6%94%B6%E6%95%9B"><span class="nav-number">3.2.3.</span> <span class="nav-text">冲突收敛</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E8%A7%A3%E5%86%B3"><span class="nav-number">3.2.4.</span> <span class="nav-text">自定义解决</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%95%8C%E5%AE%9A%E5%86%B2%E7%AA%81"><span class="nav-number">3.2.5.</span> <span class="nav-text">界定冲突</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E4%B8%BB%E5%A4%8D%E5%88%B6%E6%8B%93%E6%89%91"><span class="nav-number">3.3.</span> <span class="nav-text">多主复制拓扑</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">4.</span> <span class="nav-text">无主模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%89%E8%8A%82%E7%82%B9%E6%95%85%E9%9A%9C%E6%97%B6%E7%9A%84%E5%86%99%E5%85%A5"><span class="nav-number">4.1.</span> <span class="nav-text">有节点故障时的写入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E6%97%B6%E4%BF%AE%E5%A4%8D%E5%92%8C%E5%8F%8D%E7%86%B5"><span class="nav-number">4.1.1.</span> <span class="nav-text">读时修复和反熵</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Quorum-%E8%AF%BB%E5%86%99"><span class="nav-number">4.1.2.</span> <span class="nav-text">Quorum 读写</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#quorum-%E4%B8%80%E8%87%B4%E6%80%A7%E7%9A%84%E5%B1%80%E9%99%90"><span class="nav-number">4.2.</span> <span class="nav-text">quorum 一致性的局限</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%E7%9B%91%E6%8E%A7"><span class="nav-number">4.2.1.</span> <span class="nav-text">一致性监控</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%BE%E6%9D%BE%E7%9A%84-Quorum-%E5%92%8C%E6%8F%90%E7%A4%BA%E8%BD%AC%E4%BA%A4"><span class="nav-number">4.3.</span> <span class="nav-text">放松的 Quorum 和提示转交</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E6%95%B0%E6%8D%AE%E4%B8%AD%E5%BF%83"><span class="nav-number">4.3.1.</span> <span class="nav-text">多数据中心</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B9%B6%E5%8F%91%E5%86%99%E5%85%A5%E6%A3%80%E6%B5%8B"><span class="nav-number">4.4.</span> <span class="nav-text">并发写入检测</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8E%E8%80%85%E8%83%9C%EF%BC%88Last-Write-Win%EF%BC%89"><span class="nav-number">4.4.1.</span> <span class="nav-text">后者胜（Last-Write-Win）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%91%E7%94%9F%E4%BA%8E-%E4%B9%8B%E5%89%8D%EF%BC%88Happens-before%EF%BC%89%E5%92%8C%E5%B9%B6%E5%8F%91%E5%85%B3%E7%B3%BB"><span class="nav-number">4.4.2.</span> <span class="nav-text">发生于**之前（Happens-before）和并发关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A1%AE%E5%AE%9A-Happens-Before-%E5%85%B3%E7%B3%BB"><span class="nav-number">4.4.3.</span> <span class="nav-text">确定 Happens-Before 关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%88%E5%B9%B6%E5%B9%B6%E5%8F%91%E5%80%BC"><span class="nav-number">4.4.4.</span> <span class="nav-text">合并并发值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%88%E6%9C%AC%E5%90%91%E9%87%8F"><span class="nav-number">4.4.5.</span> <span class="nav-text">版本向量</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -955,12 +1000,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -971,6 +1010,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

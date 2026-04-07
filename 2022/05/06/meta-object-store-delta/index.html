@@ -280,7 +280,8 @@
         <p><strong>来源</strong>：<span class="exturl" data-url="aHR0cHM6Ly9lbmdpbmVlcmluZy5mYi5jb20vMjAyMi8wNS8wNC9kYXRhLWluZnJhc3RydWN0dXJlL2RlbHRhLw==">https://engineering.fb.com/2022/05/04/data-infrastructure/delta/<i class="fa fa-external-link-alt"></i></span></p>
 <p><strong>导读</strong>：偶然看到群里同学分享的 <span class="exturl" data-url="aHR0cHM6Ly9lbmdpbmVlcmluZy5mYi5jb20v">Meta 博客<i class="fa fa-external-link-alt"></i></span>新公开的高可用、强一致、链式复制的对象存储。由于我也做过一段时间的对象存储，也分享过 Facebook 家的小文件存储：<a href="https://www.qtmuniao.com/2019/03/24/haystack/">Haystack</a>（做 batch） 和 <a href="https://www.qtmuniao.com/2019/03/30/f4/">F4</a>（冷热分开、EC）， 顿时来了兴致，好奇这次 Meta 又带来了什么干货。</p>
 <p>看完之后觉得的确有点意思，下面简单梳理下文章要点，感兴趣的同学可以去看看博客原文，还有华人小姐姐解说的相关视频哦。</p>
-<h3 id="Delta-是什么？"><a href="#Delta-是什么？" class="headerlink" title="Delta 是什么？"></a>Delta 是什么？</h3><p>Delta 是简单、可靠、可扩展、低依赖的对象存储，只提供四个基本操作：put、get、delete 和 list。在架构设计上，Delta 牺牲了<strong>读写延迟</strong>和<strong>存储效率</strong>，来换取架构的<strong>简单性</strong>和<strong>可靠性</strong>。</p>
+<h3 id="Delta-是什么？">Delta 是什么？</h3>
+<p>Delta 是简单、可靠、可扩展、低依赖的对象存储，只提供四个基本操作：put、get、delete 和 list。在架构设计上，Delta 牺牲了<strong>读写延迟</strong>和<strong>存储效率</strong>，来换取架构的<strong>简单性</strong>和<strong>可靠性</strong>。</p>
 <p>Delta 不是：</p>
 <ol>
 <li><strong>通用存储系统</strong>。Delta 只追求弹性、可靠和最小依赖。</li>
@@ -288,11 +289,11 @@
 <li><strong>为存储效率而优化的系统</strong>。Delta 并没有针对存储效率、延迟和吞吐做优化，而是专注简单和弹性。</li>
 </ol>
 <span id="more"></span>
-
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/05/06/meta-object-store-delta">https://www.qtmuniao.com/2022/05/06/meta-object-store-delta</a> 转载请注明出处</em></p>
 <p>总结来说，定位是一个基座式存储服务，就是性能可以不高，但要简单、弹性、可靠。其定位坐标如下图：</p>
 <p><img src="https://s2.loli.net/2022/05/06/uJ24hBZPmwjTCnX.png" alt="storage-system-cordinate-system.png"></p>
-<h3 id="Delta-的架构有何特点？"><a href="#Delta-的架构有何特点？" class="headerlink" title="Delta 的架构有何特点？"></a>Delta 的架构有何特点？</h3><ol>
+<h3 id="Delta-的架构有何特点？">Delta 的架构有何特点？</h3>
+<ol>
 <li><strong>链式复制</strong></li>
 </ol>
 <p>对于一个逻辑上的 Bucket（对象存储的命名空间）中的数据，首先使用<strong>一致性哈希</strong>进行分片（Partition），对于每个分片，使用<strong>链式复制</strong>（Chain Replication）进行冗余。通常每个分片有四个副本，每个副本放在不同的容错阈。</p>
@@ -527,12 +528,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -543,6 +538,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

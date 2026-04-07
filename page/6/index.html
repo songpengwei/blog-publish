@@ -266,7 +266,8 @@
 <p>为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。</p>
 <p>本系列计划分成三篇文章，依次围绕<a href="https://www.qtmuniao.com/2020/11/29/bolt-data-organised/"><strong>数据组织</strong></a>、<a href="https://www.qtmuniao.com/2020/12/14/bolt-index-design/"><strong>索引设计</strong></a>、<strong>事务实现</strong>等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第三篇， boltdb 事务实现。</p>
 </blockquote>
-<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>在分析 boltd 的事务之前，我们有必要对事务概念做一个界定，以此来明确我们的讨论范围。<strong>数据库事务</strong>（简称：<strong>事务</strong>）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93">数据库</a>操作序列构成<a href="%E7%BB%B4%E5%9F%BA%E7%99%BE%E7%A7%91%E4%BA%8B%E5%8A%A1%EF%BC%9Ahttps://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1">^1</a>。wiki 上的定义有点拗口，理解时只需抓住几个关键点即可：</p>
+<h2 id="引子">引子</h2>
+<p>在分析 boltd 的事务之前，我们有必要对事务概念做一个界定，以此来明确我们的讨论范围。<strong>数据库事务</strong>（简称：<strong>事务</strong>）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93">数据库</a>操作序列构成<a href="%E7%BB%B4%E5%9F%BA%E7%99%BE%E7%A7%91%E4%BA%8B%E5%8A%A1%EF%BC%9Ahttps://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1">^1</a>。wiki 上的定义有点拗口，理解时只需抓住几个关键点即可：</p>
 <ol>
 <li>执行：计算层面</li>
 <li>逻辑单位：意味着不可分割</li>
@@ -537,8 +538,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="小引"><a href="#小引" class="headerlink" title="小引"></a>小引</h2><p>大学时，数据库学的不是很深，现在有印象的也就 SQL、ER 图、范式、事务等<strong>使用上</strong>的寥寥概念。对于其<strong>实现上</strong>一直没有过系统性的了解，但既然走上了存储这条路，数据库知识肯定要补一下。先前，知乎上很多地方看到大家推荐 cmu15445 这门课，也早就将课程主页收藏到了文件夹，但一直没得空来看。念念不忘，必有回响，到这个假期，恰逢换工作，才有点大块的时间开个头。</p>
-<h2 id="大纲"><a href="#大纲" class="headerlink" title="大纲"></a>大纲</h2><p>简单介绍下 <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/">cmu15445</a> 的<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/syllabus.html">教学大纲</a>，该课以 <a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">Database System Concepts</a> 为辅助教材， 讲述了数据库管理系统（DBMS）设计和实现的方方面面，包括：</p>
+          <h2 id="小引">小引</h2>
+<p>大学时，数据库学的不是很深，现在有印象的也就 SQL、ER 图、范式、事务等<strong>使用上</strong>的寥寥概念。对于其<strong>实现上</strong>一直没有过系统性的了解，但既然走上了存储这条路，数据库知识肯定要补一下。先前，知乎上很多地方看到大家推荐 cmu15445 这门课，也早就将课程主页收藏到了文件夹，但一直没得空来看。念念不忘，必有回响，到这个假期，恰逢换工作，才有点大块的时间开个头。</p>
+<h2 id="大纲">大纲</h2>
+<p>简单介绍下 <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/">cmu15445</a> 的<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/syllabus.html">教学大纲</a>，该课以 <a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">Database System Concepts</a> 为辅助教材， 讲述了数据库管理系统（DBMS）设计和实现的方方面面，包括：</p>
 <ol>
 <li>数据模型（关系型，文档型，键值型）</li>
 <li>存储模型（n-ary，decomposition，可以理解为行式、列式）</li>
@@ -639,10 +642,11 @@
       
           <blockquote>
 <p>cmu15445 是一门关于数据库管理系统（DBMS）设计与实现的经典公开课。该课程以 <a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">Database System Concepts</a> 为教材，提供随堂讲义、笔记和视频，精心准备了几个互相勾连的小实验。该课程十分注重系统设计和编程实现，用主讲教授 <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a> 的话说，这是一门可以写在简历上、并且能帮你拿到好 offer 的课程。</p>
-<p>这个假期得空，翻出这门课程，即被其翔实的内容、精当的组织所折服。无奈时间有限，只能以<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/assignments.html">实验</a>为主线，辅以<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/slides/">讲义</a>和<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/notes/">笔记</a>，简单跟一跟。如果再有时间，就去扫下<a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">教材</a>和<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=oeYBdghaIjc&list=PLSE8ODhjZXjbohkNBWQs_otTrBTrjyohi">视频</a>。从实验一开始，每个实验 <a target="_blank" rel="noopener" href="https://www.gradescope.com/">autograder</a> 跑过之后，出一篇笔记，聊以备忘。 <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a>  教授建议不要公开实验代码仓库，因此文章尽量少贴代码，多写思路。</p>
+<p>这个假期得空，翻出这门课程，即被其翔实的内容、精当的组织所折服。无奈时间有限，只能以<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/assignments.html">实验</a>为主线，辅以<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/slides/">讲义</a>和<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/notes/">笔记</a>，简单跟一跟。如果再有时间，就去扫下<a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">教材</a>和<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=oeYBdghaIjc&amp;list=PLSE8ODhjZXjbohkNBWQs_otTrBTrjyohi">视频</a>。从实验一开始，每个实验 <a target="_blank" rel="noopener" href="https://www.gradescope.com/">autograder</a> 跑过之后，出一篇笔记，聊以备忘。 <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a>  教授建议不要公开实验代码仓库，因此文章尽量少贴代码，多写思路。</p>
 <p>本篇是实验一，管理文件系统的页在内存中的缓存 —— buffer pool manager。</p>
 </blockquote>
-<h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>实验的目标系统 <a target="_blank" rel="noopener" href="https://github.com/cmu-db/bustub">BusTub</a> 是一个面向磁盘的 DBMS，但磁盘上的数据不支持字节粒度的访问。这就需要一个管理页的中间层，但 <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a>  教授坚持不使用 mmap 将页管理权力让渡给操作系统，因此<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/project1/">实验一</a> 的目标便在于主动管理磁盘中的页（page）在内存中的缓存，从而，最小化磁盘访问次数（时间上）、最大化相关数据连续（空间上）。</p>
+<h2 id="概览">概览</h2>
+<p>实验的目标系统 <a target="_blank" rel="noopener" href="https://github.com/cmu-db/bustub">BusTub</a> 是一个面向磁盘的 DBMS，但磁盘上的数据不支持字节粒度的访问。这就需要一个管理页的中间层，但 <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a>  教授坚持不使用 mmap 将页管理权力让渡给操作系统，因此<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/project1/">实验一</a> 的目标便在于主动管理磁盘中的页（page）在内存中的缓存，从而，最小化磁盘访问次数（时间上）、最大化相关数据连续（空间上）。</p>
 <p>该实验可以分解为相对独立的两个子任务：</p>
 <ol>
 <li>维护替换策略的： LRU replacement policy</li>
@@ -736,7 +740,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>Golang 中 slice 极似其他语言中数组，但又有诸多不同，因此容易使初学者产生一些误解，并在使用时不易察觉地掉进各种坑中。本篇小文，首先从 Go 语言官方博客出发，铺陈官方给出的 slice 的相关语法；其次以图示的方式给出一种理解 slice 的模型；最后再总结分析一些特殊的使用情况，以期在多个角度对 slice 都有个更清晰侧写。</p>
+          <h2 id="概述">概述</h2>
+<p>Golang 中 slice 极似其他语言中数组，但又有诸多不同，因此容易使初学者产生一些误解，并在使用时不易察觉地掉进各种坑中。本篇小文，首先从 Go 语言官方博客出发，铺陈官方给出的 slice 的相关语法；其次以图示的方式给出一种理解 slice 的模型；最后再总结分析一些特殊的使用情况，以期在多个角度对 slice 都有个更清晰侧写。</p>
 <p>如不愿看繁琐叙述过程，可直接跳到最后小结看总结。</p>
 <p><img src="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png" alt="go-slice-view-derive.png"></p>
           <!--noindex-->
@@ -830,7 +835,8 @@
 <p>为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。</p>
 <p>本系列计划分成三篇文章，依次围绕<strong>数据组织</strong>、<strong>索引设计</strong>、<strong>事务实现</strong>等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第一篇， boltdb 数据组织。</p>
 </blockquote>
-<h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>数据库中常用的索引设计有两种，一个是 B+ 树，一个是 LSM-tree。B+ 树比较经典，比如说传统单机数据库 mysql 就是 B+ 树索引，它对快速读取和范围查询（range query）比较友好。 LSM-tree 是近年来比较流行的索引结构，Bigtable、LevelDB、RocksDB 都有它的影子；<a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/">前面文章</a>也有提到，LSM-tree 使用 WAL 和多级数据组织以牺牲部分读性能，换来强悍的随机写性能。因此，这也是一个经典的取舍问题。</p>
+<h2 id="概览">概览</h2>
+<p>数据库中常用的索引设计有两种，一个是 B+ 树，一个是 LSM-tree。B+ 树比较经典，比如说传统单机数据库 mysql 就是 B+ 树索引，它对快速读取和范围查询（range query）比较友好。 LSM-tree 是近年来比较流行的索引结构，Bigtable、LevelDB、RocksDB 都有它的影子；<a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/">前面文章</a>也有提到，LSM-tree 使用 WAL 和多级数据组织以牺牲部分读性能，换来强悍的随机写性能。因此，这也是一个经典的取舍问题。</p>
 <p>BoltDB 在逻辑上以桶来组织数据，一个桶可以看做一个命名空间，是一组 KV 对的集合，和对象存储的桶概念类似。每个桶对应一棵 B+ 树，命名空间是可以嵌套的，因此 BoltDB 的 Bucket 间也是允许嵌套的。在实现上来说，子 bucket 的 root node 的 page id 保存在父 bucket 叶子节点上实现嵌套。</p>
 <p>每个 db 文件，是一组树形组织的 B+ 树。我们知道对于 B+ 树来说，分支节点用于查找，叶子节点存数据。</p>
 <ol>
@@ -943,7 +949,8 @@
 <p>为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。</p>
 <p>本系列计划分成三篇文章，依次围绕<strong>数据组织</strong>、<strong>索引设计</strong>、<strong>事务实现</strong>等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第一篇， boltdb 数据组织。</p>
 </blockquote>
-<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>一个存储引擎最底层的构成，就是处理数据在各种物理介质（比如在磁盘上、在内存里）上的组织。而这些数据组织也体现了该存储引擎在设计上的取舍哲学。</p>
+<h2 id="引子">引子</h2>
+<p>一个存储引擎最底层的构成，就是处理数据在各种物理介质（比如在磁盘上、在内存里）上的组织。而这些数据组织也体现了该存储引擎在设计上的取舍哲学。</p>
 <p>在文件系统上，boltdb 采用<strong>页</strong>（page）的组织方式，将一切数据都<strong>对齐</strong>到页；在内存中，boltdb 按 B+ 树组织数据，其基本单元是<strong>节点</strong>（node），一个内存中的树节点对应文件系统上一个或者多个<strong>连续的</strong>页。boltdb 就在数据组织上就只有这两种核心抽象，可谓设计简洁。当然，这种简洁必然是有代价的，后面文章会进行详细分析。</p>
 <p>本文首先对节点和页的关系进行总体说明，然后逐一分析四种页的格式及其载入内存后的表示，最后按照 db 的生命周期串一下 db 文件的增长过程以及载入内存的策略。</p>
           <!--noindex-->
@@ -1037,7 +1044,8 @@
 <p>看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路：从架构概览说起，以模块分析做合。读代码的这些天，一直在盘算从哪下笔比较好。在将将读完之时，印象最深的反而是 LevelDB 的各种精妙的数据结构：贴合场景、从头构建、剪裁得当、代码精到。不妨， LevelDB 系列就从这些边边角角的小构件开始吧。</p>
 <p>本系列主要想分享 LevelDB 中用到的三个工程中常用的经典数据结构，分别是用以快速读写 memtable 的 <a href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/"><strong>Skip List</strong></a>、用以快速筛选 sstable 的 <strong>Bloom Filter</strong> 和用以部分缓存 sstable 的 <strong>LRUCache</strong> 。这是第二篇，Bloom Filter。</p>
 </blockquote>
-<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>LevelDB 是一个单机的 KV 存储引擎，但没有使用传统的平衡查找树以平衡读写性能，而是使用了 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Log-structured_merge-tree">LSM-tree</a> 结构来组织数据，牺牲部分读性能来换取较高的写吞吐。下面来对照一张图来介绍 LSM-tree 在不同存储介质上的组织方式。</p>
+<h2 id="引子">引子</h2>
+<p>LevelDB 是一个单机的 KV 存储引擎，但没有使用传统的平衡查找树以平衡读写性能，而是使用了 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Log-structured_merge-tree">LSM-tree</a> 结构来组织数据，牺牲部分读性能来换取较高的写吞吐。下面来对照一张图来介绍 LSM-tree 在不同存储介质上的组织方式。</p>
 <p><img src="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png" alt="leveldb.png"></p>
 <p>LevelDB 将数据分为两大部分，分别存放在内存和文件系统中。主要数据模块包括 WAL log，memtable，immutable memtable，sstable。按照数据流向依次如下：</p>
 <ol>
@@ -1047,7 +1055,8 @@
 <li>当内存有压力后，会将 immutable memtable 顺序写入文件系统，生成一个 level0 层的 sstable（sorted strings table） 文件。该过程称为一次 minor compaction。</li>
 <li>由于查询操作需要按层次遍历 memtable、immutable 和 sstable。当 sstable 文件生成的越来越多之后，查询性能必然越来越差，因此需要将不同的 sstable 进行归并，称为 major compaction。</li>
 </ol>
-<h3 id="LevelDB-层次组织"><a href="#LevelDB-层次组织" class="headerlink" title="LevelDB 层次组织"></a>LevelDB 层次组织</h3><p>所有在文件系统中的 sstable 文件，被 LevelDB 在逻辑上组织成多个层次（一般是 7层），并且满足以下性质：</p>
+<h3 id="LevelDB-层次组织">LevelDB 层次组织</h3>
+<p>所有在文件系统中的 sstable 文件，被 LevelDB 在逻辑上组织成多个层次（一般是 7层），并且满足以下性质：</p>
 <ol>
 <li>层次越大说明其数据写入越早，即先往上层进行“放”（minor compaction），上层“满”（达到容量限制）之后“溢”（major compaction）到下层进行合并。</li>
 <li>每层文件总大小都有一定限制，并且成指数级增长。比如 level0 层文件总大小上限为10MB，level1 层为100MB，依次类推，最高层（level6层）没有限制。</li>
@@ -1147,9 +1156,10 @@
 
       
           <p><img src="https://i.loli.net/2020/07/25/Yjbq6ZSkEHQ3X1u.png" alt="go-context-tree-construction.png"></p>
-<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>Context 是 Go 中一个比较独特而常用的概念，用好了往往能事半功倍。但如果不知其然而滥用，则往往变成 “为赋新词强说愁”，轻则影响代码结构，重则埋下许多bug。</p>
-<p>Golang  使用树形派生的方式构造 Context，通过在不同过程 <em>[1]</em> 中传递 deadline 和 cancel 信号，来管理处理某个任务所涉及到的一组 goroutine 的生命周期，防止 goroutine 泄露。并且可以通过附加在 Context 上的 Value 来传递&#x2F;共享一些跨越整个请求间的数据。</p>
-<p>Context 最常用来追踪 RPC&#x2F;HTTP 等耗时的、跨进程的 IO 请求的生命周期，从而让外层调用者可以主动地或者自动地取消该请求，进而告诉子过程回收用到的所有 goroutine 和相关资源。</p>
+<h2 id="概述">概述</h2>
+<p>Context 是 Go 中一个比较独特而常用的概念，用好了往往能事半功倍。但如果不知其然而滥用，则往往变成 “为赋新词强说愁”，轻则影响代码结构，重则埋下许多bug。</p>
+<p>Golang  使用树形派生的方式构造 Context，通过在不同过程 <em>[1]</em> 中传递 deadline 和 cancel 信号，来管理处理某个任务所涉及到的一组 goroutine 的生命周期，防止 goroutine 泄露。并且可以通过附加在 Context 上的 Value 来传递/共享一些跨越整个请求间的数据。</p>
+<p>Context 最常用来追踪 RPC/HTTP 等耗时的、跨进程的 IO 请求的生命周期，从而让外层调用者可以主动地或者自动地取消该请求，进而告诉子过程回收用到的所有 goroutine 和相关资源。</p>
 <p>Context 本质上是一种在 API 间树形嵌套调用时传递信号的机制。本文将从接口、派生、源码分析、使用等几个方面来逐一解析 Context。</p>
           <!--noindex-->
             <div class="post-button">
@@ -1242,7 +1252,8 @@
 <p>看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路，从架构概览说起，以模块分析做合。读代码的这些天，一直在盘算从哪下笔比较好。在将将读完之时，印象最深的反而是 LevelDB 的各种精妙的数据结构：贴合场景、从头构建、剪裁得当、代码精到。不妨， LevelDB 系列就从这些边边角角的小构件开始吧。</p>
 <p>本系列主要想分享 LevelDB 中用到的三个工程中常用的经典数据结构，分别是用以快速读写 memtable 的 <strong>Skip List</strong>、用以快速筛选 sstable 的 <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter"><strong>Bloom Filter</strong></a> 和用以部分缓存 sstable 的 <strong>LRUCache</strong> 。这是第一篇，Skip List。</p>
 </blockquote>
-<h2 id="需求"><a href="#需求" class="headerlink" title="需求"></a>需求</h2><p>LevelDB 是一个单机的 KV 存储引擎。KV 引擎在本质上可认为只提供对数据条目（key，val） <code>Put(key, val), Get(key) val, Delete(key)</code> 操作的三个接口。而在实现上，LevelDB 在收到删除请求时不会真正删除数据，而是为该 Key 写一个特殊标记，以备读取时发现该 Key 不存在，从而将  <code>Delete</code> 转为 <code>Put</code> ，进而将三个接口简化为两个。砍完这一刀后，剩下的就是在 <code>Put</code> 和 <code>Get</code> 间进行性能取舍，LevelDB 的选择是：**牺牲部分 <code>Get</code> 性能，换取强悍 <code>Put</code> 性能，再极力优化 <code>Get</code>**。</p>
+<h2 id="需求">需求</h2>
+<p>LevelDB 是一个单机的 KV 存储引擎。KV 引擎在本质上可认为只提供对数据条目（key，val） <code>Put(key, val), Get(key) val, Delete(key)</code> 操作的三个接口。而在实现上，LevelDB 在收到删除请求时不会真正删除数据，而是为该 Key 写一个特殊标记，以备读取时发现该 Key 不存在，从而将  <code>Delete</code> 转为 <code>Put</code> ，进而将三个接口简化为两个。砍完这一刀后，剩下的就是在 <code>Put</code> 和 <code>Get</code> 间进行性能取舍，LevelDB 的选择是：<strong>牺牲部分 <code>Get</code> 性能，换取强悍 <code>Put</code> 性能，再极力优化 <code>Get</code></strong>。</p>
 <p>我们知道，在存储层次体系（<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Memory_hierarchy">Memory hierarchy</a>）中，内存访问远快于磁盘，因此 LevelDB 为了达到目标做了以下设计：</p>
 <ol>
 <li><em>写入（Put）</em>：让所有写入都发生在<strong>内存</strong>中，然后达到一定尺寸后将其批量刷<strong>磁盘</strong>。</li>
@@ -1342,7 +1353,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>Dynamo 是一个高可用的 KV 存储系统。为了保证高可用和高性能，Dynamo 采用了最终一致性模型，它对开发人员提供一种新型 API，使用了版本机制，并通过用户侧辅助解决冲突。Dynamo 目标是提供不间断的服务，同时保证性能和可扩展性。由于亚马逊大量采用了去中心化、高度解耦微服务架构，因此对微服务状态的存储系统的可用性要求尤其高。</p>
+          <h2 id="概览">概览</h2>
+<p>Dynamo 是一个高可用的 KV 存储系统。为了保证高可用和高性能，Dynamo 采用了最终一致性模型，它对开发人员提供一种新型 API，使用了版本机制，并通过用户侧辅助解决冲突。Dynamo 目标是提供不间断的服务，同时保证性能和可扩展性。由于亚马逊大量采用了去中心化、高度解耦微服务架构，因此对微服务状态的存储系统的可用性要求尤其高。</p>
 <p>S3 （Simple Storage Service）是 Amazon 另一款有名的存储服务，虽然也可以理解为 KV 存储，但它和 Dynamo 的目标场景并不一致。S3 是面向大文件的对象存储服务，主要存储二进制文件，不提供跨对象的事务。而 Dynamo 是一款面向小文件的文档存储服务，主要存储结构化数据（如 json），并且可以对数据设置索引，且支持跨数据条目的事务。</p>
 <p>相对于传统的关系型数据库，Dynamo 可以认为是只提供主键索引，从而获取更高的性能和更好的扩展性。</p>
 <p>为了实现可扩展性和高可用性，并保证最终一致性，Dynamo 综合使用了以下技术：</p>
@@ -1498,12 +1510,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -1514,6 +1520,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

@@ -524,9 +524,17 @@
       
           <p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
 <p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <a target="_blank" rel="noopener" href="https://www.youtube.com/channel/UC_7WrbZTCODu1o_kfUMq88g/videos">Youtube</a>，<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/av90915526">B站</a>。课程资料：<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/schedule.html">6.824主页</a>。本篇是第四节课笔记，VM-FT。</p>
-<h2 id="备份——容错"><a href="#备份——容错" class="headerlink" title="备份——容错"></a>备份——容错</h2><h3 id="失败（Failue）"><a href="#失败（Failue）" class="headerlink" title="失败（Failue）"></a>失败（Failue）</h3><p>如何定义？在其他电脑看来，停止对外提供服务。<br>通过备份&#x2F;副本（Replication）<br>可以解决：宕机（fail-stop），比如 CPU 过热而关闭、主机或者网络断电、硬盘空间耗尽等问题。<br>不能解决：一些相关联（correlated，主副本机器会同时存在）的问题，比如软件 Bug、人为配置问题</p>
-<h3 id="前提"><a href="#前提" class="headerlink" title="前提"></a>前提</h3><p>主从备份可以工作的一个假设是，主从机器的出错概率需要时独立的。<br>比如说：同一批次机器、同一个机架上的机器，出错概率就存在强正相关特性。</p>
-<h3 id="是否值当"><a href="#是否值当" class="headerlink" title="是否值当"></a>是否值当</h3><p>需要对业务场景和所需费用考量，是否真的需要进行 Replica。比如银行数据就需要多备份，而课程网站可能并不需要。</p>
+<h2 id="备份——容错">备份——容错</h2>
+<h3 id="失败（Failue）">失败（Failue）</h3>
+<p>如何定义？在其他电脑看来，停止对外提供服务。<br>
+通过备份/副本（Replication）<br>
+可以解决：宕机（fail-stop），比如 CPU 过热而关闭、主机或者网络断电、硬盘空间耗尽等问题。<br>
+不能解决：一些相关联（correlated，主副本机器会同时存在）的问题，比如软件 Bug、人为配置问题</p>
+<h3 id="前提">前提</h3>
+<p>主从备份可以工作的一个假设是，主从机器的出错概率需要时独立的。<br>
+比如说：同一批次机器、同一个机架上的机器，出错概率就存在强正相关特性。</p>
+<h3 id="是否值当">是否值当</h3>
+<p>需要对业务场景和所需费用考量，是否真的需要进行 Replica。比如银行数据就需要多备份，而课程网站可能并不需要。</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2020/04/01/6-824-video-notes-4-vm-ft/#more" rel="contents">
@@ -613,8 +621,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><p>充分利用现代存储 SSD 的性能，在提供同样 API 的情况下，显著降低 LSMTree 的读写放大，以提高其性能。</p>
-<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>在传统磁盘上，顺序 IO 的性能大概是随机 IO 的 100 多倍，LSMTree 基于此，将海量 KV 的随机读写实现为内存随机读写+顺序刷盘+定期归并（compact），以提高读写性能，尤其适用于<strong>写多于读</strong>且<strong>时效性比较强</strong>（最近数据最常访问）的场景。</p>
+          <h2 id="目标">目标</h2>
+<p>充分利用现代存储 SSD 的性能，在提供同样 API 的情况下，显著降低 LSMTree 的读写放大，以提高其性能。</p>
+<h2 id="背景">背景</h2>
+<p>在传统磁盘上，顺序 IO 的性能大概是随机 IO 的 100 多倍，LSMTree 基于此，将海量 KV 的随机读写实现为内存随机读写+顺序刷盘+定期归并（compact），以提高读写性能，尤其适用于<strong>写多于读</strong>且<strong>时效性比较强</strong>（最近数据最常访问）的场景。</p>
 <p><img src="https://i.loli.net/2020/03/21/IetKyMmGNQVrBsS.png" alt="wisckey-lsm-tree.png"></p>
           <!--noindex-->
             <div class="post-button">
@@ -711,7 +721,7 @@
 <li>bing: 2.6%</li>
 <li>Other: 2.08%</li>
 </ul>
-<p>而作为一个中文博客，还是希望能够被更多的国内用户看到，因此一直在寻求一个使得百度爬虫自动爬取博客的方法。偶然间在浏览博客时，看到了有人在推荐 zeit.co 这个托管平台，使用了下，发现真是个非常棒的静态代码托管+CI Serverless Function 平台，在这里推荐给大家。</p>
+<p>而作为一个中文博客，还是希望能够被更多的国内用户看到，因此一直在寻求一个使得百度爬虫自动爬取博客的方法。偶然间在浏览博客时，看到了有人在推荐 <a target="_blank" rel="noopener" href="http://zeit.co">zeit.co</a> 这个托管平台，使用了下，发现真是个非常棒的静态代码托管+CI Serverless Function 平台，在这里推荐给大家。</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2020/03/15/hexo-to-zeit-co/#more" rel="contents">
@@ -802,7 +812,8 @@
 <p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
 <p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <a target="_blank" rel="noopener" href="https://www.youtube.com/channel/UC_7WrbZTCODu1o_kfUMq88g/videos">Youtube</a>，<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/av90915526">B站</a>。课程资料：<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/schedule.html">6.824主页</a>。本篇是第三节课笔记，GFS。</p>
 </blockquote>
-<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>存储（Storage）是一个非常关键的抽象，用途广泛。</p>
+<h2 id="概述">概述</h2>
+<p>存储（Storage）是一个非常关键的抽象，用途广泛。</p>
 <p>GFS 论文还提到了很多关于容错、备份和一致性的问题。</p>
 <p>GFS 本身是 Google 内部一个很成功的实用系统，其关键点被很好的组织到一块发表成为了学术论文，从硬件到软件，涵盖了很多问题，值得我们学习。</p>
 <p>想详细了解 GFS，也可以看我之前的 <a href="https://www.qtmuniao.com/2019/05/26/gfs/">GFS 论文笔记</a>。</p>
@@ -896,7 +907,8 @@
 <p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
 <p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <a target="_blank" rel="noopener" href="https://www.youtube.com/channel/UC_7WrbZTCODu1o_kfUMq88g/videos">Youtube</a>，<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/av90915526">B站</a>。课程资料：<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/schedule.html">6.824主页</a>。本篇是第二节课笔记，RPC 和线程。</p>
 </blockquote>
-<h2 id="为什么用-Go"><a href="#为什么用-Go" class="headerlink" title="为什么用 Go"></a>为什么用 Go</h2><ol>
+<h2 id="为什么用-Go">为什么用 Go</h2>
+<ol>
 <li><strong>语法先进</strong>。在语言层面支持线程（goroutine）和管道（channel）。对线程间的加锁、同步支持良好。</li>
 <li><strong>类型安全（type safe）</strong>。内存访问安全（memory safe），很难写出像 C++ 一样内存越界访问等 bug。</li>
 <li><strong>支持垃圾回收（GC）</strong>。不需要用户手动管理内存，这一点在多线程编程中尤为重要，因为在多线程中你很容易引用某块内存，然后忘记了在哪引用过。</li>
@@ -992,7 +1004,8 @@
 <p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
 <p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <a target="_blank" rel="noopener" href="https://www.youtube.com/channel/UC_7WrbZTCODu1o_kfUMq88g/videos">Youtube</a>，<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/av90915526">B站</a>。课程资料：<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/schedule.html">6.824主页</a>。本篇是第一节课笔记，绪论。</p>
 </blockquote>
-<h2 id="课程背景"><a href="#课程背景" class="headerlink" title="课程背景"></a>课程背景</h2><p>构建分布式系统的原因：</p>
+<h2 id="课程背景">课程背景</h2>
+<p>构建分布式系统的原因：</p>
 <ol>
 <li>Parallelism，资源并行（提高效率）。</li>
 <li>Fault tolerance，容错。</li>
@@ -1092,9 +1105,9 @@
 
       
           <blockquote>
-<p>本文缘起于Lu Pan 的个人博客文章：<a target="_blank" rel="noopener" href="https://blog.the-pans.com/cap/">https://blog.the-pans.com/cap/</a> ，是他经过 Martin Kleppmann 授权并且翻译的博文”Please stop calling databases CP or AP”中文版本。但译文中不少句子读来颇为古怪，我对照<a target="_blank" rel="noopener" href="https://martin.kleppmann.com/2015/05/11/please-stop-calling-databases-cp-or-ap.html">英文原文</a>，按照自己理解，逐句校验、重译了一遍。这篇文章探讨了为什么不应该滥用 <strong>CAP定理</strong> 这个概念，旁征博引，入木三分，值得一读。更值得称道的是，Martin 文中所有关键观点都给出了来源，并在最后推荐了一些学习资料，都是不错的阅读材料。以下是正文。</p>
+<p>本文缘起于Lu Pan 的个人博客文章：<a target="_blank" rel="noopener" href="https://blog.the-pans.com/cap/">https://blog.the-pans.com/cap/</a> ，是他经过 Martin Kleppmann 授权并且翻译的博文&quot;Please stop calling databases CP or AP&quot;中文版本。但译文中不少句子读来颇为古怪，我对照<a target="_blank" rel="noopener" href="https://martin.kleppmann.com/2015/05/11/please-stop-calling-databases-cp-or-ap.html">英文原文</a>，按照自己理解，逐句校验、重译了一遍。这篇文章探讨了为什么不应该滥用 <strong>CAP定理</strong> 这个概念，旁征博引，入木三分，值得一读。更值得称道的是，Martin 文中所有关键观点都给出了来源，并在最后推荐了一些学习资料，都是不错的阅读材料。以下是正文。</p>
 </blockquote>
-<p>在 Jeff Hodges 的精彩博文<a target="_blank" rel="noopener" href="https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/">给年轻人关于分布式系统的笔记 </a>中，他建议我们用<a target="_blank" rel="noopener" href="http://www.the-paper-trail.org/page/cap-faq/">CAP定理</a>来评判系统。不少人听从了这个建议，将他们的系统称为”CP” （提供一致性但在网络分区时不可用），“AP”（高可用但是在网络分区时不一致） 或者干脆 “CA” （说明还没有读过Coda的<a target="_blank" rel="noopener" href="https://codahale.com/you-cant-sacrifice-partition-tolerance/">五年前的文章</a>）。</p>
+<p>在 Jeff Hodges 的精彩博文<a target="_blank" rel="noopener" href="https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/">给年轻人关于分布式系统的笔记 </a>中，他建议我们用<a target="_blank" rel="noopener" href="http://www.the-paper-trail.org/page/cap-faq/">CAP定理</a>来评判系统。不少人听从了这个建议，将他们的系统称为&quot;CP&quot; （提供一致性但在网络分区时不可用），“AP”（高可用但是在网络分区时不一致） 或者干脆 “CA” （说明还没有读过Coda的<a target="_blank" rel="noopener" href="https://codahale.com/you-cant-sacrifice-partition-tolerance/">五年前的文章</a>）。</p>
 <p>我同意 Jeff 的所有其他观点，但其关于 CAP 定理的使用建议，我不能表示赞同。CAP 定理本身太过简化而且存在广泛的误解，以至于在界定系统时不能有效的起到作用。因此我请求大家不要再引用CAP定理， 不要再讨论CAP定理。取而代之，我们应该用更精确的术语来表述我们对系统的取舍。</p>
 <p>（当然，讽刺的是我不希望别人再讨论这个话题，自己却正在写一篇关于这个话题的文章。不过至少以后别人问我为什么不喜欢讨论CAP定理的时候，我可以把这篇文章的链接给他。还有，抱歉这篇文章会有些吐槽，但是至少这些吐槽给出了文献引用）</p>
           <!--noindex-->
@@ -1184,7 +1197,8 @@
 
       
           <p><img src="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png" alt="cap-consistency-example.png"></p>
-<h2 id="小引"><a href="#小引" class="headerlink" title="小引"></a>小引</h2><p>曾经在一个面试中让谈谈对 CAP 的理解，当时凭着准备面试时谷歌到的N手资料，类似于小学生背书一样，生挤出只言片语。面试官无奈的笑笑，简练的概括出他想要听到的要点，听的我心下惭愧。面试自然是挂了，后来工作时偶尔接触到这个词汇，初不得要领，后通过不同资料的多侧面理解、印证，渐渐拼凑出了一个轮廓，在这里梳理下，将影子撵到纸上，以供日后索引。</p>
+<h2 id="小引">小引</h2>
+<p>曾经在一个面试中让谈谈对 CAP 的理解，当时凭着准备面试时谷歌到的N手资料，类似于小学生背书一样，生挤出只言片语。面试官无奈的笑笑，简练的概括出他想要听到的要点，听的我心下惭愧。面试自然是挂了，后来工作时偶尔接触到这个词汇，初不得要领，后通过不同资料的多侧面理解、印证，渐渐拼凑出了一个轮廓，在这里梳理下，将影子撵到纸上，以供日后索引。</p>
 <p>面试官大约是这么概括的：<em>在分布式系统中，失败必然的，分区容错（P）是一定需要的，因此设计系统时需要在可用性（A）和一致性（C）间进行权衡</em>。当时被教育印象很深，现在看来，这句概括是点出了小荷才露尖尖角的那个角。</p>
           <!--noindex-->
             <div class="post-button">
@@ -1272,7 +1286,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p><img src="https://photo.tuchong.com/15470921/f/488359358.jpg"></p>
+          <p><img src="https://photo.tuchong.com/15470921/f/488359358.jpg" alt=""></p>
 <p>初冬一个晴朗的午后，从地坛出发，经交道口三条，过圆恩寺胡同，一路走到什刹海。当天天气出奇的好，在太阳的透照下，整个胡同片区懒洋洋的，心里也不由的很轻快。</p>
           <!--noindex-->
             <div class="post-button">
@@ -1414,12 +1428,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -1430,6 +1438,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

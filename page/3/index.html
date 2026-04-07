@@ -357,7 +357,9 @@
 
       
           <p>这是我第一次在 b 站直播分享，录屏地址 <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1Fz4y1u79v">https://www.bilibili.com/video/BV1Fz4y1u79v</a> ，主要是从我的求职经历以及面试经历角度聊了一些关于 infra 找工作的注意点，并回答了同学一些现场问题。</p>
-<h1 id="🐎-求职准备"><a href="#🐎-求职准备" class="headerlink" title="🐎 求职准备"></a>🐎 求职准备</h1><h2 id="软素质"><a href="#软素质" class="headerlink" title="软素质"></a>软素质</h2><p>💁‍♂️ <strong>沟通</strong>。面试时无论是经历描述，系统设计甚至写代码，沟通都是第一位的，这是面试各个环节顺利展开的前提。</p>
+<h1>🐎 求职准备</h1>
+<h2 id="软素质">软素质</h2>
+<p>💁‍♂️ <strong>沟通</strong>。面试时无论是经历描述，系统设计甚至写代码，沟通都是第一位的，这是面试各个环节顺利展开的前提。</p>
 <p>把一件事说清楚：</p>
 <ol>
 <li>上下文：先和面试官对齐上下文，不要默认他比你知道的多。</li>
@@ -454,7 +456,8 @@
           <blockquote>
 <p>RocksDB 是很多分布式数据库的底层存储，如 TiKV、CRDB、NebulaGraph 等等。在 DataDog 工作的 <a target="_blank" rel="noopener" href="https://artem.krylysov.com/">Artem Krylysov</a> 写了一篇<a target="_blank" rel="noopener" href="https://artem.krylysov.com/blog/2023/04/19/how-rocksdb-works/">文章</a>来对 RocksDB 做了一个科普，通俗易懂，在这里翻译下分享给大家。</p>
 </blockquote>
-<h2 id="导语"><a href="#导语" class="headerlink" title="导语"></a>导语</h2><p>近几年，RocksDB 的采用率急速上升，俨然成为内嵌型键值存储（以下简称 kv 存储）的不二之选。</p>
+<h2 id="导语">导语</h2>
+<p>近几年，RocksDB 的采用率急速上升，俨然成为内嵌型键值存储（以下简称 kv 存储）的不二之选。</p>
 <p>目前，RocksDB 在 Meta、<a target="_blank" rel="noopener" href="https://blogs.bing.com/Engineering-Blog/october-2021/RocksDB-in-Microsoft-Bing">Microsoft</a>、<a target="_blank" rel="noopener" href="https://netflixtechblog.com/application-data-caching-using-ssds-5bf25df851ef">Netflix</a> 和 <a target="_blank" rel="noopener" href="https://www.uber.com/en-JP/blog/cherami-message-queue-system/">Uber</a> 等公司的生产环境上运行。在 <a target="_blank" rel="noopener" href="https://engineering.fb.com/2021/07/22/data-infrastructure/mysql/">Meta</a>，RocksDB 作为 MySQL 部署的存储引擎，为分布式图数据库（<a href="https://www.qtmuniao.com/2021/10/07/facebook-tao/">TAO</a>）提供支持存储服务。</p>
 <p>大型科技公司并非 RocksDB 的仅有用户，像是 CockroachDB、Yugabyte、PingCAP 和 Rockset 等多个初创企业都构建在 RocksDB 基础之上。</p>
 <p><a target="_blank" rel="noopener" href="https://artem.krylysov.com/">我</a>在 Datadog 工作了 4 年时间，在生产环境中构建和运行了一系列基于 RocksDB 的服务。本文将就 RocksDB 的工作原理进行概要式讲解。</p>
@@ -627,7 +630,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p><a target="_blank" rel="noopener" href="https://research.facebook.com/publications/velox-metas-unified-execution-engine/">Facebook Velox</a> 是一个针对 SQL 运行时的 C++ 库，旨在统一 Facebook 各种计算流，包括 Spark 和 Presto，使用推的模式、支持向量计算。</p>
+          <h2 id="概述">概述</h2>
+<p><a target="_blank" rel="noopener" href="https://research.facebook.com/publications/velox-metas-unified-execution-engine/">Facebook Velox</a> 是一个针对 SQL 运行时的 C++ 库，旨在统一 Facebook 各种计算流，包括 Spark 和 Presto，使用推的模式、支持向量计算。</p>
 <p>Velox 接受一棵<strong>优化过的</strong> <code>PlanNode</code> Tree，然后将其切成一个个的线性的 <code>Pipeline</code>，<code>Task</code> 负责这个转变过程，每个 Task 针对一个 PlanTree Segment。大多数算子是一对一翻译的，但是有一些特殊的算子，通常出现在多个 Pipeline 的<strong>切口</strong>处，通常来说，这些切口对应计划树的<strong>分叉处</strong>，如 <code>HashJoinNode</code>，<code>CrossJoinNode</code>， <code>MergeJoinNode</code> ，通常会翻译成 XXProbe 和 XXBuild。但也有一些例外，比如 <code>LocalPartitionNode</code> 和 <code>LocalMergeNode</code> 。</p>
           <!--noindex-->
             <div class="post-button">
@@ -798,7 +802,9 @@
           <blockquote>
 <p>知乎上有个问题：如何实现一个数据库？手痒忍不住又水了一篇。以计算机中最常用的分析、理解问题的思想，我们可以从两个维度：<strong>逻辑</strong>和<strong>物理</strong>，来思考如何实现一个数据库。</p>
 </blockquote>
-<h2 id="逻辑维度"><a href="#逻辑维度" class="headerlink" title="逻辑维度"></a>逻辑维度</h2><h3 id="数据模型（对外，面向用户）"><a href="#数据模型（对外，面向用户）" class="headerlink" title="数据模型（对外，面向用户）"></a>数据模型（对外，面向用户）</h3><p>想要实现一个数据库，首先你得定义给给用户什么样的<strong>数据模型</strong>？在前些年，这些可能不是个问题，彼时，数据库约等于关系型数据，约等于 Oracle&#x2F;SQLServer&#x2F;MySQL&#x2F;PostgreSQL 。但随着数据量的不断增大、用户需求的不断细化，关系模型已经不能一招鲜、吃遍天。</p>
+<h2 id="逻辑维度">逻辑维度</h2>
+<h3 id="数据模型（对外，面向用户）">数据模型（对外，面向用户）</h3>
+<p>想要实现一个数据库，首先你得定义给给用户什么样的<strong>数据模型</strong>？在前些年，这些可能不是个问题，彼时，数据库约等于关系型数据，约等于 Oracle/SQLServer/MySQL/PostgreSQL 。但随着数据量的不断增大、用户需求的不断细化，关系模型已经不能一招鲜、吃遍天。</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2022/12/11/how-to-build-a-database/#more" rel="contents">
@@ -886,7 +892,8 @@
 
       
           <blockquote>
-<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">这里</a>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。另外，我的公众号：“木鸟杂记”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注<br>本书第一部分讲单机数据系统，第二部分讲多机数据系统。</p>
+<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">这里</a>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。另外，我的公众号：“木鸟杂记”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注<br>
+本书第一部分讲单机数据系统，第二部分讲多机数据系统。</p>
 </blockquote>
 <p><strong>冗余（Replication）</strong> 是指将同一份数据复制多份，放到通过网络互联的多个机器上去。其好处有：</p>
 <ol>
@@ -982,7 +989,8 @@
           <blockquote>
 <p>知乎上有个问题，如何辨别一个程序员水平的高低？就这几年 Review 代码的体感，忍不住就工程素养这个话题吐两句槽，正好作为好好写代码系列的第二篇。</p>
 </blockquote>
-<h2 id="思维体系"><a href="#思维体系" class="headerlink" title="思维体系"></a>思维体系</h2><p>水平差的程序员往往在“<strong>抽象</strong>”上做的不好。</p>
+<h2 id="思维体系">思维体系</h2>
+<p>水平差的程序员往往在“<strong>抽象</strong>”上做的不好。</p>
 <p>什么是抽象能力呢？简言之，就是分门别类、触类旁通的能力。通过大量实践和书籍输入，将所解决过的问题进行正交分解，分解过的<strong>元知识</strong>多具有很好地复用性；再利用这些元知识，进行组合推演，创造性的解决新遇到的问题。即归纳和演绎。</p>
           <!--noindex-->
             <div class="post-button">
@@ -1070,7 +1078,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概述：流控为啥重要"><a href="#概述：流控为啥重要" class="headerlink" title="概述：流控为啥重要"></a>概述：流控为啥重要</h2><p>上云的好处在于池化资源，让多租户共享，然后按需分配，从而降低成本。但进行：</p>
+          <h2 id="概述：流控为啥重要">概述：流控为啥重要</h2>
+<p>上云的好处在于池化资源，让多租户共享，然后按需分配，从而降低成本。但进行：</p>
 <ol>
 <li><strong>多租户隔离</strong>：用户要求可以使用其买到的流量，并且不会被其他租户影响。</li>
 <li><strong>资源共享</strong>：资源只能逻辑隔开，不能物理隔开，否则无法充分动态分配（超发）。</li>
@@ -1399,12 +1408,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -1415,6 +1418,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

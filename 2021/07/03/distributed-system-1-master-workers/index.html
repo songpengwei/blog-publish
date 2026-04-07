@@ -278,35 +278,39 @@
 <p>分布式系统有很多经典的套路，也即设计模式。每个设计模式可以解决经典的一类问题，积累的多了，便可以稍加变化，进行取舍，设计出贴合需求的架构组织。但似乎大家在这方面经验分享的不太多，因此之后打算总结一些工作和学习的经验，既是备忘，也希望对大家有些助益。篇幅所限、能力所囿，难以面面俱到，又或疏于精确。不当之处，欢迎指正。</p>
 <p>每篇将以概述背景、架构模块、总结延伸来分别解析，本篇是第一篇：Master-Workers 架构。</p>
 </blockquote>
-<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>Master-Workers 架构（粗译为<strong>主从架构</strong>）是分布式系统中常见的一种组织方式，如 GFS 中的 Master、ChunkServers；MapReduce 中的 Master、Workers。面对分布式系统中一堆分离的机器资源，主从架构是一种最自然、直白的组织方式——就像一群人，有个说了算 leader 进行组织、协调，才能最大化这群人的对外输出能力。</p>
+<h2 id="概述">概述</h2>
+<p>Master-Workers 架构（粗译为<strong>主从架构</strong>）是分布式系统中常见的一种组织方式，如 GFS 中的 Master、ChunkServers；MapReduce 中的 Master、Workers。面对分布式系统中一堆分离的机器资源，主从架构是一种最自然、直白的组织方式——就像一群人，有个说了算 leader 进行组织、协调，才能最大化这群人的对外输出能力。</p>
 <p>这也是计算机系统中常见的一种分而治之思想的体现。即将一个复杂的系统，拆解成几个相对高内聚、低耦合的子模块，定义清楚其<strong>功能边界</strong>和<strong>交互接口</strong>，使得系统易于理解、维护和扩展。对于主从架构来说，<strong>主（Master）</strong> 通常会维护集群元信息、进而依靠这些元信息进行调度，<strong>从（Workers）</strong> 通常负责具体<strong>数据切片</strong>（存储系统）的读写或者作为<strong>子任务</strong>（计算系统）的执行单元。</p>
 <span id="more"></span>
-
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2021/07/03/distributed/system/1/master/worekrs">https://www.qtmuniao.com/2021/07/03/distributed/system/1/master/worekrs</a>, 转载请注明出处</em></p>
-<h2 id="架构模块"><a href="#架构模块" class="headerlink" title="架构模块"></a>架构模块</h2><p>主从架构系统，通常由单个 Master ，多个 Worker 组成。插一句，这里<strong>从</strong>英文翻译没有用 Slave 的原因是，我觉得 Worker 更中性一些。当然，单个 Master 会有性能瓶颈和可用性问题，通常也有多种解决方案，后面详说。但单个 Master 的好处是显而易见的：Master 作为一个控制节点，而不用处理由多副本带来的一致性问题，大大降低实现难度。</p>
+<h2 id="架构模块">架构模块</h2>
+<p>主从架构系统，通常由单个 Master ，多个 Worker 组成。插一句，这里<strong>从</strong>英文翻译没有用 Slave 的原因是，我觉得 Worker 更中性一些。当然，单个 Master 会有性能瓶颈和可用性问题，通常也有多种解决方案，后面详说。但单个 Master 的好处是显而易见的：Master 作为一个控制节点，而不用处理由多副本带来的一致性问题，大大降低实现难度。</p>
 <p>以我更熟悉一点的<strong>存储系统</strong>架构为例，其架构图通常长这样。</p>
 <p><img src="https://i.loli.net/2021/07/03/tkfQJ4KMydGbjZU.png" alt="master-workers-architecture.png"></p>
-<p>除了系统内部的 Master 和 Worker 外，还有使用系统的外部用户。我们通常称之为<strong>客户端（Client），</strong>Client 通过系统暴露的接口（如 RPC、HTTP）与系统进行交互。</p>
-<h3 id="Master"><a href="#Master" class="headerlink" title="Master"></a>Master</h3><p>Master 通常会存储系统的<strong>元信息</strong>，什么是元信息呢？可以理解为集群组织信息在 Master 脑中的一个倒影，或者说视图（View）：比如集群有多少 Worker、每个 Worker 有多少剩余容量、负载如何、哪些 Worker 存储了哪些数据等等。</p>
+<p>除了系统内部的 Master 和 Worker 外，还有使用系统的外部用户。我们通常称之为**客户端（Client），**Client 通过系统暴露的接口（如 RPC、HTTP）与系统进行交互。</p>
+<h3 id="Master">Master</h3>
+<p>Master 通常会存储系统的<strong>元信息</strong>，什么是元信息呢？可以理解为集群组织信息在 Master 脑中的一个倒影，或者说视图（View）：比如集群有多少 Worker、每个 Worker 有多少剩余容量、负载如何、哪些 Worker 存储了哪些数据等等。</p>
 <p>那元信息是怎么收集的呢？主要分两种情况：</p>
 <ol>
 <li><strong>配置</strong>。可以理解为集群<strong>静态信息</strong>，比如系统初始有多少个 Worker、Worker 的物理拓扑、每个 Worker 的容量等等，Master 会在启动时加载这些配置信息。</li>
-<li><strong>汇报</strong>。主要是集群<strong>动态信息</strong>，Worker 在运行时，主动将自身状态汇报给 Master，比如 Worker 是否存活、Worker 负载信息、Worker 存了哪些数据等等。在系统运行中，Worker 会定时地通过<strong>心跳（Heartbeat）</strong>等方式，持续给 Master 汇报。</li>
+<li><strong>汇报</strong>。主要是集群<strong>动态信息</strong>，Worker 在运行时，主动将自身状态汇报给 Master，比如 Worker 是否存活、Worker 负载信息、Worker 存了哪些数据等等。在系统运行中，Worker 会定时地通过**心跳（Heartbeat）**等方式，持续给 Master 汇报。</li>
 </ol>
 <p>有了这些元信息，Master 就可以对整个集群情况有个掌握，从而做出一系列的决策，试举几例：</p>
 <ol>
 <li><strong>调度（Schedule）</strong>。一个新的写数据请求来了，要分配给哪个 Worker 负责？通常会选择一个负载小的。</li>
 <li><strong>均衡（Balance）</strong>。随着 Worker 变动、数据增删，数据在不同机器中分布可能不再均匀，在某些机器形成读写热点、在另一些机器却存在资源浪费，从而影响系统整体性能。因此需要实时监测，适时迁移。</li>
-<li><strong>路由（Locate&#x2F;Route）</strong>。一个读写请求来了，不知道去找哪个 Worker？Master 便会查询元信息，给出对应数据的 Worker 信息。</li>
+<li><strong>路由（Locate/Route）</strong>。一个读写请求来了，不知道去找哪个 Worker？Master 便会查询元信息，给出对应数据的 Worker 信息。</li>
 </ol>
-<h3 id="Master-的可用性"><a href="#Master-的可用性" class="headerlink" title="Master 的可用性"></a>Master 的可用性</h3><p>可以看出整个系统的可用性全系 Master 一身。业界也有很多解决办法，比如：</p>
+<h3 id="Master-的可用性">Master 的可用性</h3>
+<p>可以看出整个系统的可用性全系 Master 一身。业界也有很多解决办法，比如：</p>
 <ol>
 <li><strong>使用主备</strong>。即给 Master 做个分身，备 Master 所有元信息要时刻跟主 Master 保持一致，一旦主 Master 挂掉，分身立刻跟上。Hadoop 后来这么干过。</li>
 <li><strong>使用共识算法</strong>（<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQ29uc2Vuc3VzXyhjb21wdXRlcl9zY2llbmNlKQ==">consensus<i class="fa fa-external-link-alt"></i></span> algorithm）。简单来说，就是由一堆 Master 机器来组成<em>委员会</em>，每个状态变更都要通过某种算法达成共识。Google 的 <span class="exturl" data-url="aHR0cHM6Ly9zdGF0aWMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL21lZGlhL3Jlc2VhcmNoLmdvb2dsZS5jb20vemgtQ04vL2FyY2hpdmUvc3Bhbm5lci1vc2RpMjAxMi5wZGY=">Spanner<i class="fa fa-external-link-alt"></i></span> 就是这么干的。</li>
 <li><strong>无主</strong>。系统中不再有 Master，人人平等，然后通过某种策略，比如说一致性哈希（<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQ29uc2lzdGVudF9oYXNoaW5n">consistent hash<i class="fa fa-external-link-alt"></i></span>），来分活干。Amazon 的 <a href="https://www.qtmuniao.com/2020/06/13/dynamo/">Dynamo</a> 是这么干的。</li>
 </ol>
 <p>每种策略都是比较大的主题，以后可以分别单开一篇，本文限于篇幅不再展开。</p>
-<h3 id="Workers"><a href="#Workers" class="headerlink" title="Workers"></a>Workers</h3><p>在存储系统中，Workers 会存储实际数据，并对外提供数据 IO 服务。</p>
+<h3 id="Workers">Workers</h3>
+<p>在存储系统中，Workers 会存储实际数据，并对外提供数据 IO 服务。</p>
 <p><strong>从单机视角来看</strong>，Worker 需要设计一个贴合业务需求的单机引擎，高效的存储数据。单机引擎设计也是一个很大的话题，这里简要提一嘴：</p>
 <ol>
 <li><strong>索引设计</strong>：比如 B+ 树、LSM-tree、哈希索引等等。</li>
@@ -318,7 +322,8 @@
 <li><strong>运维的自动化</strong>。机器不可用后要自动剔除，修好后要便捷上线。</li>
 <li><strong>数据的冗余化</strong>。机器故障后数据不能丢，因此每份数据要多副本存放、使用 EC 算法做冗余。</li>
 </ol>
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>Master-Workers 架构是分布式系统中最常用的一种组织方式。该架构类似于人类社群的组织方式，将系统的职责进行拆解，Master 收集元信息，并据此进行任务调度；Workers 负责实际工作负载，需要设计高效的单机引擎，并配合全局做冗余。该架构简单直接，但威力强大。</p>
+<h2 id="小结">小结</h2>
+<p>Master-Workers 架构是分布式系统中最常用的一种组织方式。该架构类似于人类社群的组织方式，将系统的职责进行拆解，Master 收集元信息，并据此进行任务调度；Workers 负责实际工作负载，需要设计高效的单机引擎，并配合全局做冗余。该架构简单直接，但威力强大。</p>
 
          <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
 <div>
@@ -355,13 +360,13 @@
       <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
@@ -524,12 +529,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -540,6 +539,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

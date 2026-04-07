@@ -284,12 +284,13 @@
 <p>第一章是很容易被跳过的一章，因为概念较多，容易泛泛而谈。但其给出的三个概念，确实是构建系统避不开的三个重点方向。</p>
 <p>ps. <span class="exturl" data-url="aHR0cDovL2RkaWEudm9ubmcuY29tLw==">开源中文版本<i class="fa fa-external-link-alt"></i></span>有些地方翻译的不是很地道，读起来可能会有些难受，不过这是所有翻译难免的。</p>
 <span id="more"></span>
-
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/02/19/ddia-reading-chapter1">https://www.qtmuniao.com/2022/02/19/ddia-reading-chapter1</a> 转载请注明出处</em></p>
-<h2 id="本书为什么以数据系统为主题"><a href="#本书为什么以数据系统为主题" class="headerlink" title="本书为什么以数据系统为主题"></a>本书为什么以数据系统为主题</h2><p><strong>数据系统</strong>（data system）是一种模糊的统称。在信息社会中，一切皆可信息化，或者，某种程度上来说——数字化。这些数据的采集、存储和使用，是构成信息社会的基础。我们常见的绝大部分应用背后都有一套数据系统支撑，比如微信、京东、微博等等。</p>
+<h2 id="本书为什么以数据系统为主题">本书为什么以数据系统为主题</h2>
+<p><strong>数据系统</strong>（data system）是一种模糊的统称。在信息社会中，一切皆可信息化，或者，某种程度上来说——数字化。这些数据的采集、存储和使用，是构成信息社会的基础。我们常见的绝大部分应用背后都有一套数据系统支撑，比如微信、京东、微博等等。</p>
 <p><img src="https://s2.loli.net/2022/02/19/XJczNiq9SbhHLuy.png" alt="data-society.png"></p>
 <p>因此，作为 IT 从业人员，有必要系统性的了解一下现代的、分布式的数据系统。学习本书，能够学习到数据系统的背后的原理、了解其常见的实践、进而将其应用到我们工作的系统设计中。</p>
-<h2 id="常见的数据系统有哪些"><a href="#常见的数据系统有哪些" class="headerlink" title="常见的数据系统有哪些"></a>常见的数据系统有哪些</h2><ul>
+<h2 id="常见的数据系统有哪些">常见的数据系统有哪些</h2>
+<ul>
 <li>存储数据，以便之后再次使用——<strong>数据库</strong></li>
 <li>记住一些非常“重”的操作结果，方便之后加快读取速度——<strong>缓存</strong></li>
 <li>允许用户以各种关键字搜索、以各种条件过滤数据——<strong>搜索引擎</strong></li>
@@ -298,7 +299,8 @@
 <li>进行消息的传送与分发——<strong>消息队列</strong></li>
 </ul>
 <p>这些概念如此耳熟能详以至于我们在设计系统时拿来就用，而不用去想其实现细节，更不用从头进行实现。当然，这也侧面说明这些概念抽象的多么成功。</p>
-<h2 id="数据系统的日益复杂化"><a href="#数据系统的日益复杂化" class="headerlink" title="数据系统的日益复杂化"></a>数据系统的日益复杂化</h2><p>但这些年来，随着应用需求的进一步复杂化，出现了很多新型的数据采集、存储和处理系统，它们不拘泥于单一的功能，也难以生硬的归到某个类别。随便举几个例子：</p>
+<h2 id="数据系统的日益复杂化">数据系统的日益复杂化</h2>
+<p>但这些年来，随着应用需求的进一步复杂化，出现了很多新型的数据采集、存储和处理系统，它们不拘泥于单一的功能，也难以生硬的归到某个类别。随便举几个例子：</p>
 <ol>
 <li><strong>Kafka</strong>：可以作为存储持久化一段时间日志数据、可以作为消息队列对数据进行分发、可以作为流式处理组件对数据反复蒸馏等等。</li>
 <li><strong>Spark</strong>：可以对数据进行批处理、也可以化小批为流，对数据进行流式处理。</li>
@@ -316,19 +318,23 @@
 </ol>
 <p>因此，有必要从根本上思考下如何评价一个好数据系统，如何构建一个好的数据系统，有哪些可以遵循的设计模式？有哪些通常需要考虑的方面？</p>
 <p>书中用了三个词来回答：<em><strong>可靠性（Reliability）、可伸缩性（Scalability）、可维护性（Maintainability）</strong></em></p>
-<h2 id="可靠性（Reliability）"><a href="#可靠性（Reliability）" class="headerlink" title="可靠性（Reliability）"></a>可靠性（Reliability）</h2><p>如何衡量可靠性？</p>
+<h2 id="可靠性（Reliability）">可靠性（Reliability）</h2>
+<p>如何衡量可靠性？</p>
 <ul>
-<li><p><strong>功能上</strong></p>
+<li>
+<p><strong>功能上</strong></p>
 <ol>
 <li>正常情况下，应用行为满足 API 给出的行为</li>
-<li>在用户误输入&#x2F;误操作时，能够正常处理</li>
+<li>在用户误输入/误操作时，能够正常处理</li>
 </ol>
 </li>
-<li><p><strong>性能上</strong></p>
-<p>  在给定硬件和数据量下，能够满足承诺的性能指标。</p>
+<li>
+<p><strong>性能上</strong></p>
+<p>在给定硬件和数据量下，能够满足承诺的性能指标。</p>
 </li>
-<li><p><strong>安全上</strong></p>
-<p>  能够阻止未授权、恶意破坏。</p>
+<li>
+<p><strong>安全上</strong></p>
+<p>能够阻止未授权、恶意破坏。</p>
 </li>
 </ul>
 <p>可用性也是可靠性的一个侧面，云服务通常以多少个 9 来衡量可用性。</p>
@@ -336,7 +342,8 @@
 <p>两个易混淆的概念：<strong>Fault（系统出现问题）</strong> and <strong>Failure（系统不能提供服务）</strong></p>
 <p>不能进行 Fault-tolerance 的系统，积累的 fault 多了，就很容易 Failure。</p>
 <p>如何预防？混沌测试：如 Netflix 的 <span class="exturl" data-url="aHR0cHM6Ly9uZXRmbGl4LmdpdGh1Yi5pby9jaGFvc21vbmtleS8=">chaosmonkey<i class="fa fa-external-link-alt"></i></span>。</p>
-<h3 id="硬件故障"><a href="#硬件故障" class="headerlink" title="硬件故障"></a>硬件故障</h3><p>在一个大型数据中心中，这是常态：</p>
+<h3 id="硬件故障">硬件故障</h3>
+<p>在一个大型数据中心中，这是常态：</p>
 <ol>
 <li>网络抖动、不通</li>
 <li>硬盘老化坏道</li>
@@ -346,8 +353,9 @@
 </ol>
 <p>数据系统中常见的需要考虑的硬件指标：</p>
 <ul>
-<li><p><strong>MTTF mean time to failure</strong></p>
-<p>  单块盘 平均故障时间 5 ~10 年，如果你有 1w+ 硬盘，则均匀期望下，每天都有坏盘出现。当然事实是硬盘会一波一波坏。</p>
+<li>
+<p><strong>MTTF mean time to failure</strong></p>
+<p>单块盘 平均故障时间 5 ~10 年，如果你有 1w+ 硬盘，则均匀期望下，每天都有坏盘出现。当然事实是硬盘会一波一波坏。</p>
 </li>
 </ul>
 <p>解决办法，增加冗余度：</p>
@@ -355,7 +363,8 @@
 <p>对于数据：</p>
 <p><strong>单机</strong>：可以做RAID 冗余。如：EC 编码。</p>
 <p><strong>多机</strong>：多副本 or  EC 编码。</p>
-<h3 id="软件错误"><a href="#软件错误" class="headerlink" title="软件错误"></a>软件错误</h3><p>相比硬件故障的随机性，软件错误的相关性更高：</p>
+<h3 id="软件错误">软件错误</h3>
+<p>相比硬件故障的随机性，软件错误的相关性更高：</p>
 <ol>
 <li>不能处理特定输入，导致系统崩溃。</li>
 <li>失控进程（如循环未释放资源）耗尽 CPU、内存、网络资源。</li>
@@ -363,22 +372,26 @@
 <li>级联故障。</li>
 </ol>
 <p>在设计软件时，我们通常有一些<strong>环境假设</strong>，和一些<strong>隐性约束</strong>。随着时间的推移、系统的持续运行，如果这些假设不能够继续被满足；如果这些约束被后面维护者增加功能时所破坏；都有可能让一开始正常运行的系统，突然崩溃。</p>
-<h3 id="人为问题"><a href="#人为问题" class="headerlink" title="人为问题"></a>人为问题</h3><p>系统中最不稳定的是人，因此要在设计层面尽可能消除人对系统影响。依据软件的生命周期，分几个阶段来考虑：</p>
+<h3 id="人为问题">人为问题</h3>
+<p>系统中最不稳定的是人，因此要在设计层面尽可能消除人对系统影响。依据软件的生命周期，分几个阶段来考虑：</p>
 <ul>
-<li><p><strong>设计编码</strong></p>
+<li>
+<p><strong>设计编码</strong></p>
 <ol>
 <li>尽可能消除所有不必要的假设，提供合理的抽象，仔细设计 API</li>
 <li>进程间进行隔离，对尤其容易出错的模块使用沙箱机制</li>
 <li>对服务依赖进行熔断设计</li>
 </ol>
 </li>
-<li><p><strong>测试阶段</strong></p>
+<li>
+<p><strong>测试阶段</strong></p>
 <ol>
 <li>尽可能引入第三方成员测试，尽量将测试平台自动化</li>
 <li>单元测试、集成测试、e2e 测试、混沌测试</li>
 </ol>
 </li>
-<li><p><strong>运行阶段</strong></p>
+<li>
+<p><strong>运行阶段</strong></p>
 <ol>
 <li>详细的仪表盘</li>
 <li>持续自检</li>
@@ -386,14 +399,18 @@
 <li>问题预案</li>
 </ol>
 </li>
-<li><p><strong>针对组织</strong></p>
-<p>  科学的培训和管理</p>
+<li>
+<p><strong>针对组织</strong></p>
+<p>科学的培训和管理</p>
 </li>
 </ul>
-<h3 id="可靠性有多重要？"><a href="#可靠性有多重要？" class="headerlink" title="可靠性有多重要？"></a>可靠性有多重要？</h3><p>事关用户数据安全，事关企业声誉，企业存活和做大的基石。</p>
-<h2 id="可伸缩性（Scalability）"><a href="#可伸缩性（Scalability）" class="headerlink" title="可伸缩性（Scalability）"></a>可伸缩性（Scalability）</h2><p>可伸缩性，即系统应对负载增长的能力。它很重要，但在实践中又很难做好，因为存在一个基本矛盾：<strong>只有能存活下来的产品才有资格谈伸缩，而过早为伸缩设计往往活不下去</strong>。</p>
+<h3 id="可靠性有多重要？">可靠性有多重要？</h3>
+<p>事关用户数据安全，事关企业声誉，企业存活和做大的基石。</p>
+<h2 id="可伸缩性（Scalability）">可伸缩性（Scalability）</h2>
+<p>可伸缩性，即系统应对负载增长的能力。它很重要，但在实践中又很难做好，因为存在一个基本矛盾：<strong>只有能存活下来的产品才有资格谈伸缩，而过早为伸缩设计往往活不下去</strong>。</p>
 <p>但仍是可以了解一些基本的概念，来应对<strong>可能会</strong>暴增的负载。</p>
-<h3 id="衡量负载"><a href="#衡量负载" class="headerlink" title="衡量负载"></a>衡量负载</h3><p>应对负载之前，要先找到合适的方法来衡量负载，如<strong>负载参数（load parameters）</strong>：</p>
+<h3 id="衡量负载">衡量负载</h3>
+<p>应对负载之前，要先找到合适的方法来衡量负载，如<strong>负载参数（load parameters）</strong>：</p>
 <ul>
 <li>应用日活月活</li>
 <li>每秒向Web服务器发出的请求</li>
@@ -403,7 +420,7 @@
 <p>书中以 Twitter 2012年11 披露的信息为例进行了说明：</p>
 <ol>
 <li>识别主营业务：发布推文、首页 Feed 流。</li>
-<li>确定其请求量级：发布推文（平均 4.6k请求&#x2F;秒，峰值超过 12k请求&#x2F;秒），查看其他人推文（300k请求&#x2F;秒）</li>
+<li>确定其请求量级：发布推文（平均 4.6k请求/秒，峰值超过 12k请求/秒），查看其他人推文（300k请求/秒）</li>
 </ol>
 <p><img src="https://s2.loli.net/2022/02/19/TY4N7gA39hFtxcH.png" alt="twitter-table.png"></p>
 <p>单就这个数据量级来说，无论怎么设计都问题不大。但 Twitter 需要根据用户之间的关注与被关注关系来对数据进行多次处理。常见的有推拉两种方式：</p>
@@ -415,25 +432,29 @@
 <p>前者是 Lazy 的，用户只有查看时才会去拉取，不会有无效计算和请求，但每次需要现算，呈现速度较慢。而且流量一大也扛不住。</p>
 <p>后者实现算出视图，而不管用户看不看，呈现速度较快，但会引入很多无效请求。</p>
 <p>最终，使用的是一种推拉结合的方式，这也是外国一道经典的系统设计考题。</p>
-<h3 id="描述性能"><a href="#描述性能" class="headerlink" title="描述性能"></a>描述性能</h3><p>注意和系统负载区分，系统负载是从用户视角来审视系统，是一种<strong>客观指标</strong>。而系统性能则是描述的系统的一种<strong>实际能力</strong>。比如：</p>
+<h3 id="描述性能">描述性能</h3>
+<p>注意和系统负载区分，系统负载是从用户视角来审视系统，是一种<strong>客观指标</strong>。而系统性能则是描述的系统的一种<strong>实际能力</strong>。比如：</p>
 <ol>
-<li><strong>吞吐量（throughput）：</strong>每秒可以处理的单位数据量，通常记为 QPS。</li>
-<li><strong>响应时间（response time）：</strong>从用户侧观察到的发出请求到收到回复的时间。</li>
+<li>**吞吐量（throughput）：**每秒可以处理的单位数据量，通常记为 QPS。</li>
+<li>**响应时间（response time）：**从用户侧观察到的发出请求到收到回复的时间。</li>
 <li><strong>延迟（latency）</strong>：日常中，延迟经常和响应时间混用指代响应时间；但严格来说，延迟只是只请求过程中排队等休眠时间，虽然其在响应时间中一般占大头；但只有我们把请求真正处理耗时认为是瞬时，延迟才能等同于响应时间。</li>
 </ol>
 <p>响应时间通常以百分位点来衡量，比如 p95，p99和 p999，它们意味着95％，99％或 99.9％ 的请求都能在该阈值内完成。在实际中，通常使用滑动窗口滚动计算最近一段时间的响应时间分布，并通常以折线图或者柱状图进行呈现。</p>
-<h3 id="应对负载"><a href="#应对负载" class="headerlink" title="应对负载"></a>应对负载</h3><p>在有了描述和定义负载、性能的手段之后，终于来到正题，如何应对负载的不断增长，即使系统具有可伸缩性。</p>
+<h3 id="应对负载">应对负载</h3>
+<p>在有了描述和定义负载、性能的手段之后，终于来到正题，如何应对负载的不断增长，即使系统具有可伸缩性。</p>
 <ol>
 <li><strong>纵向伸缩（scaling up）or 垂直伸缩（vertical scaling）</strong>：换具有更强大性能的机器。e.g.  大型机机器学习训练。</li>
 <li><strong>横向伸缩（scaling out）or 水平伸缩（horizontal scaling）</strong>：“并联”很多廉价机，分摊负载。 e.g. 马斯克造火箭。</li>
 </ol>
 <p>负载伸缩的两种方式：</p>
 <ul>
-<li><p><strong>自动</strong></p>
-<p>  如果负载不好预测且多变，则自动较好。坏处在于不易跟踪负载，容易抖动，造成资源浪费。</p>
+<li>
+<p><strong>自动</strong></p>
+<p>如果负载不好预测且多变，则自动较好。坏处在于不易跟踪负载，容易抖动，造成资源浪费。</p>
 </li>
-<li><p><strong>手动</strong></p>
-<p>  如果负载容易预测且不长变化，最好手动。设计简单，且不容易出错。</p>
+<li>
+<p><strong>手动</strong></p>
+<p>如果负载容易预测且不长变化，最好手动。设计简单，且不容易出错。</p>
 </li>
 </ul>
 <p>针对不同应用场景：</p>
@@ -442,28 +463,35 @@
 <p>最后，实在不行再考虑自行设计可伸缩的分布式架构。</p>
 <p>两种服务类型：</p>
 <ul>
-<li><p><strong>无状态服务</strong></p>
-<p>  比较简单，多台机器，外层罩一个 gateway 就行。</p>
+<li>
+<p><strong>无状态服务</strong></p>
+<p>比较简单，多台机器，外层罩一个 gateway 就行。</p>
 </li>
-<li><p><strong>有状态服务</strong></p>
-<p>  根据需求场景，如读写负载、存储量级、数据复杂度、响应时间、访问模式，来进行取舍，设计合乎需求的架构。</p>
+<li>
+<p><strong>有状态服务</strong></p>
+<p>根据需求场景，如读写负载、存储量级、数据复杂度、响应时间、访问模式，来进行取舍，设计合乎需求的架构。</p>
 </li>
 </ul>
-<p><strong>不可能啥都要，没有万金油架构！</strong>但同时：万变不离其宗，组成不同架构的原子设计模式是有限的，这也是本书稍后要论述的重点。</p>
-<h2 id="可维护性（Maintainability）"><a href="#可维护性（Maintainability）" class="headerlink" title="可维护性（Maintainability）"></a>可维护性（Maintainability）</h2><p>从软件的整个生命周期来看，维护阶段绝对占大头。</p>
+<p>**不可能啥都要，没有万金油架构！**但同时：万变不离其宗，组成不同架构的原子设计模式是有限的，这也是本书稍后要论述的重点。</p>
+<h2 id="可维护性（Maintainability）">可维护性（Maintainability）</h2>
+<p>从软件的整个生命周期来看，维护阶段绝对占大头。</p>
 <p>但大部分人都喜欢挖坑，不喜欢填坑。因此有必要，在刚开就把坑开的足够好。有三个原则：</p>
 <ul>
-<li><p><em><strong>可维护性（Operability）</strong></em></p>
-<p>  便于运维团队无痛接手。</p>
+<li>
+<p><em><strong>可维护性（Operability）</strong></em></p>
+<p>便于运维团队无痛接手。</p>
 </li>
-<li><p><em><strong>简洁性（Simplicity）</strong></em></p>
-<p>  便于新手开发平滑上手：这需要一个合理的抽象，并尽量消除各种复杂度。如，层次化抽象。</p>
+<li>
+<p><em><strong>简洁性（Simplicity）</strong></em></p>
+<p>便于新手开发平滑上手：这需要一个合理的抽象，并尽量消除各种复杂度。如，层次化抽象。</p>
 </li>
-<li><p><strong><em>可演化性（</em>Evolvability</strong><em><strong>）</strong></em></p>
-<p>  便于后面需求快速适配：避免耦合过紧，将代码绑定到某种实现上。也称为<strong>可扩展性（extensibility）</strong>，<strong>可修改性（modifiability）</strong> 或<strong>可塑性（plasticity）</strong>。</p>
+<li>
+<p><em><strong>可演化性（<em>Evolvability</em></strong></em>*）***</p>
+<p>便于后面需求快速适配：避免耦合过紧，将代码绑定到某种实现上。也称为<strong>可扩展性（extensibility）</strong>，<strong>可修改性（modifiability）</strong> 或<strong>可塑性（plasticity）</strong>。</p>
 </li>
 </ul>
-<h3 id="可运维性（Operability）：人生苦短，关爱运维"><a href="#可运维性（Operability）：人生苦短，关爱运维" class="headerlink" title="可运维性（Operability）：人生苦短，关爱运维"></a><strong>可运维性（Operability）：人生苦短，关爱运维</strong></h3><p>有效的运维绝对是个高技术活：</p>
+<h3 id="可运维性（Operability）：人生苦短，关爱运维"><strong>可运维性（Operability）：人生苦短，关爱运维</strong></h3>
+<p>有效的运维绝对是个高技术活：</p>
 <ol>
 <li>紧盯系统状态，出问题时快速恢复。</li>
 <li>恢复后，复盘问题，定位原因。</li>
@@ -482,7 +510,8 @@
 <li>将维护过程尽可能的自动化。</li>
 <li>避免单点依赖，无论是机器还是人。</li>
 </ol>
-<h3 id="简洁性（Simplicity）：复杂度管理"><a href="#简洁性（Simplicity）：复杂度管理" class="headerlink" title="简洁性（Simplicity）：复杂度管理"></a><strong>简洁性（Simplicity）：复杂度管理</strong></h3><p><img src="https://s2.loli.net/2022/02/19/zfFMc8RXsW6iTok.png" alt="recommand-book.png"></p>
+<h3 id="简洁性（Simplicity）：复杂度管理"><strong>简洁性（Simplicity）：复杂度管理</strong></h3>
+<p><img src="https://s2.loli.net/2022/02/19/zfFMc8RXsW6iTok.png" alt="recommand-book.png"></p>
 <p>推荐一本书：**<span class="exturl" data-url="aHR0cHM6Ly9ib29rLmRvdWJhbi5jb20vc3ViamVjdC8zMDIxODA0Ni8=">A Philosophy of Software Design<i class="fa fa-external-link-alt"></i></span> ，**讲述在软件设计中如何定义、识别和降低复杂度。</p>
 <p>复杂度表现：</p>
 <ol>
@@ -492,7 +521,8 @@
 <li>为了提升性能的 hack。</li>
 <li>随处可见的补丁（ workaround）。</li>
 </ol>
-<p>需求很简单，但不妨碍你实现的很复杂 😉：过多的引入了<strong>额外复杂度（<em>accidental</em> complexity<br>）——</strong>非问题本身决定的，而由实现所引入的复杂度。</p>
+<p>需求很简单，但不妨碍你实现的很复杂 😉：过多的引入了**额外复杂度（<em>accidental</em> complexity<br>
+）——**非问题本身决定的，而由实现所引入的复杂度。</p>
 <p>通常是问题理解的不够本质，写出了“<strong>流水账</strong>”（没有任何<strong>抽象，abstraction</strong>）式的代码。</p>
 <p>如果你为一个问题找到了合适的抽象，那么问题就解决了一半，如：</p>
 <ol>
@@ -506,7 +536,8 @@
 </ol>
 <p>总之，一个合适的抽象，要么是<strong>符合直觉</strong>的；要么是和你的读者<strong>共享上下文</strong>的。</p>
 <p>本书之后也会给出很多分布式系统中常用的抽象。</p>
-<h3 id="可演化性：降低改变门槛"><a href="#可演化性：降低改变门槛" class="headerlink" title="可演化性：降低改变门槛"></a>可演化性：降低改变门槛</h3><p>系统需求没有变化，说明这个行业死了。</p>
+<h3 id="可演化性：降低改变门槛">可演化性：降低改变门槛</h3>
+<p>系统需求没有变化，说明这个行业死了。</p>
 <p>否则，需求一定是不断在变，引起变化的原因多种多样：</p>
 <ol>
 <li>对问题阈了解更全面</li>
@@ -519,14 +550,17 @@
 </ol>
 <p>应对之道：</p>
 <ul>
-<li><p>项目管理上</p>
-<p>  敏捷开发</p>
+<li>
+<p>项目管理上</p>
+<p>敏捷开发</p>
 </li>
-<li><p>系统设计上</p>
-<p>  依赖前两点。合理抽象，合理封装，对修改关闭，对扩展开放。</p>
+<li>
+<p>系统设计上</p>
+<p>依赖前两点。合理抽象，合理封装，对修改关闭，对扩展开放。</p>
 </li>
 </ul>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<h2 id="参考">参考</h2>
+<ol>
 <li><span class="exturl" data-url="aHR0cHM6Ly9kYXRhaW50ZW5zaXZlLm5ldC8=">https://dataintensive.net/<i class="fa fa-external-link-alt"></i></span></li>
 <li><span class="exturl" data-url="aHR0cDovL2RkaWEudm9ubmcuY29tLyMvY2gx">http://ddia.vonng.com/#/ch1<i class="fa fa-external-link-alt"></i></span></li>
 </ol>
@@ -561,19 +595,19 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter2/" rel="bookmark">DDIA 读书笔记（二）：数据模型和查询语言</a></div>
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter2/" rel="bookmark">DDIA 读书笔记（二）：数据模型和查询语言</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="bookmark">DDIA 读书笔记（三）： TP AP 和列存</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA 读书笔记（五）：冗余</a></div>
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
+      <div class="popular-posts-title"><a href="/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA 读书笔记（五）：冗余</a></div>
     </li>
   </ul>
 
@@ -733,12 +767,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -749,6 +777,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

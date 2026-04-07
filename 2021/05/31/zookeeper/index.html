@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="Zookeeper本篇要介绍 Patrick Hunt 等人在 2010 年发表的、至今仍然广泛使用的、定位于分布式系统协调组件的论文 —— ZooKeeper: Wait-free coordination for Internet-scale systems。我们在多线程、多进程编程时，免不了进行同步和互斥，常见手段有共享内存、消息队列、锁、信号量等等。而在分布式系统中，不同组件间必然也需要类">
+  <meta name="description" content="Zookeeper 本篇要介绍 Patrick Hunt 等人在 2010 年发表的、至今仍然广泛使用的、定位于分布式系统协调组件的论文 —— ZooKeeper: Wait-free coordination for Internet-scale systems。我们在多线程、多进程编程时，免不了进行同步和互斥，常见手段有共享内存、消息队列、锁、信号量等等。而在分布式系统中，不同组件间必然也需要">
 <meta property="og:type" content="article">
 <meta property="og:title" content="分布式系统协调内核——Zookeeper">
 <meta property="og:url" content="https://www.qtmuniao.com/2021/05/31/zookeeper/index.html">
 <meta property="og:site_name" content="木鸟杂记">
-<meta property="og:description" content="Zookeeper本篇要介绍 Patrick Hunt 等人在 2010 年发表的、至今仍然广泛使用的、定位于分布式系统协调组件的论文 —— ZooKeeper: Wait-free coordination for Internet-scale systems。我们在多线程、多进程编程时，免不了进行同步和互斥，常见手段有共享内存、消息队列、锁、信号量等等。而在分布式系统中，不同组件间必然也需要类">
+<meta property="og:description" content="Zookeeper 本篇要介绍 Patrick Hunt 等人在 2010 年发表的、至今仍然广泛使用的、定位于分布式系统协调组件的论文 —— ZooKeeper: Wait-free coordination for Internet-scale systems。我们在多线程、多进程编程时，免不了进行同步和互斥，常见手段有共享内存、消息队列、锁、信号量等等。而在分布式系统中，不同组件间必然也需要">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://i.loli.net/2021/05/31/HzoQubUVN14Pc5T.png">
 <meta property="og:image" content="https://i.loli.net/2021/05/31/HMBh9nmPE3w1oDx.png">
@@ -275,7 +275,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="Zookeeper"><a href="#Zookeeper" class="headerlink" title="Zookeeper"></a>Zookeeper</h1><p>本篇要介绍 Patrick Hunt 等人在 2010 年发表的、至今仍然广泛使用的、定位于<strong>分布式系统协调组件</strong>的论文 —— Z<span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9sZWdhY3kvZXZlbnQvYXRjMTAvdGVjaC9mdWxsX3BhcGVycy9IdW50LnBkZg==">ooKeeper: Wait-free coordination for Internet-scale systems<i class="fa fa-external-link-alt"></i></span>。我们在多线程、多进程编程时，免不了进行同步和互斥，常见手段有共享内存、消息队列、锁、信号量等等。而在分布式系统中，不同组件间必然也需要类似的协调手段，于是 Zookeeper 应运而生。配合客户端库，Zookeeper 可以提供动态参数配置（configuration metadata）、分布式锁、共享寄存器（shared register）、服务发现、集群关系（group membership）、多节点选主（leader election）等一系列分布式系统的协调服务。</p>
+        <h1>Zookeeper</h1>
+<p>本篇要介绍 Patrick Hunt 等人在 2010 年发表的、至今仍然广泛使用的、定位于<strong>分布式系统协调组件</strong>的论文 —— Z<span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9sZWdhY3kvZXZlbnQvYXRjMTAvdGVjaC9mdWxsX3BhcGVycy9IdW50LnBkZg==">ooKeeper: Wait-free coordination for Internet-scale systems<i class="fa fa-external-link-alt"></i></span>。我们在多线程、多进程编程时，免不了进行同步和互斥，常见手段有共享内存、消息队列、锁、信号量等等。而在分布式系统中，不同组件间必然也需要类似的协调手段，于是 Zookeeper 应运而生。配合客户端库，Zookeeper 可以提供动态参数配置（configuration metadata）、分布式锁、共享寄存器（shared register）、服务发现、集群关系（group membership）、多节点选主（leader election）等一系列分布式系统的协调服务。</p>
 <p>总体来看，Zookeeper 有以下特点：</p>
 <ol>
 <li>Zookeeper 是一个分布式协调内核，本身功能比较内聚，以保持 API 的简洁与高效。</li>
@@ -285,10 +286,11 @@
 </ol>
 <p>本文依从论文顺序，简要介绍下 Zookeeper 的服务接口设计与模块粗略实现。更多细节请参考<span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9sZWdhY3kvZXZlbnQvYXRjMTAvdGVjaC9mdWxsX3BhcGVycy9IdW50LnBkZg==">论文<i class="fa fa-external-link-alt"></i></span>和<span class="exturl" data-url="aHR0cHM6Ly96b29rZWVwZXIuYXBhY2hlLm9yZy8=">开源项目主页<i class="fa fa-external-link-alt"></i></span>。</p>
 <span id="more"></span>
-
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2021/05/31/zookeeper">https://www.qtmuniao.com/2021/05/31/zookeeper</a>, 转载请注明出处</em></p>
-<h2 id="服务设计"><a href="#服务设计" class="headerlink" title="服务设计"></a>服务设计</h2><p>我们在设计服务接口的时候，首先要抽象出服务组织和交互所涉及到的基本概念，进而才能厘清围绕这些基本概念的动作集合。对于 Zookeeper 来说，这些基本概念称为<strong>术语</strong>（Terminology），动作集合称为<strong>服务接口</strong>（API）。</p>
-<h3 id="术语集"><a href="#术语集" class="headerlink" title="术语集"></a>术语集</h3><ol>
+<h2 id="服务设计">服务设计</h2>
+<p>我们在设计服务接口的时候，首先要抽象出服务组织和交互所涉及到的基本概念，进而才能厘清围绕这些基本概念的动作集合。对于 Zookeeper 来说，这些基本概念称为<strong>术语</strong>（Terminology），动作集合称为<strong>服务接口</strong>（API）。</p>
+<h3 id="术语集">术语集</h3>
+<ol>
 <li><strong>客户端</strong>：client，使用 Zookeeper 服务的用户。</li>
 <li><strong>服务器</strong>：server，提供 Zookeeper 服务的进程。</li>
 <li><strong>数据树</strong>：data tree，Zookeeper 中所有的数据以树形结构进行组织。</li>
@@ -296,7 +298,8 @@
 <li><strong>会话</strong>：session，客户端与服务器会新建一个会话来标识一个连接，之后客户端每次请求都会通过该会话句柄来进行。Watch 事件的生命周期也是和会话绑定的。</li>
 </ol>
 <p>后面行文中，对应术语的中英文可能会交杂使用。</p>
-<h3 id="数据组织"><a href="#数据组织" class="headerlink" title="数据组织"></a>数据组织</h3><p>Zookeeper 对所存数据进行类似文件系统的树形层次化组织，可以提供给使用者更强大的灵活性。比如可以很自然的表示<strong>命名阈</strong>（namespace），比如使用同一父节点的所有孩子表示<strong>成员关系</strong>（membership）。一个路径（Path）可以定位到一个唯一的数据节点，进而能够唯一标识一个基本数据单元。</p>
+<h3 id="数据组织">数据组织</h3>
+<p>Zookeeper 对所存数据进行类似文件系统的树形层次化组织，可以提供给使用者更强大的灵活性。比如可以很自然的表示<strong>命名阈</strong>（namespace），比如使用同一父节点的所有孩子表示<strong>成员关系</strong>（membership）。一个路径（Path）可以定位到一个唯一的数据节点，进而能够唯一标识一个基本数据单元。</p>
 <p><img src="https://i.loli.net/2021/05/31/HzoQubUVN14Pc5T.png" alt="zookeeper 层次化的命名空间组织"></p>
 <p>树中支持两种类型的 znode：</p>
 <ol>
@@ -306,17 +309,18 @@
 <p>此外，Zookeeper 允许客户端在创建 znode 时，附加一个 <em><strong>sequential</strong></em> 标志。Zookeeper 便会自动给节点名字添加一个全局自增的计数作为后缀。</p>
 <p>Zookeeper 使用<em><strong>推</strong></em>的方式实现订阅机制，即用户在订阅（<strong>watch</strong>）了某个节点后，当该节点发生变化时，客户端会收到一次通知（边缘触发），一个订阅是绑定到会话上的，因此会话销毁后，订阅的事件也会消失。</p>
 <p><strong>会话机制（session）</strong>。可以看到，Zookeeper 使用会话机制管理客户端一次连接的生命周期。在实现时，会话会关联一个超时间隔（timeout）。如果客户端死掉或者与 Zookeeper 断开连接，超时时限内客户端未进行心跳，Zookeeper 会在服务器端销毁该会话。</p>
-<p><strong>数据模型（Data model）</strong>。Zookeeper 本质上提供树形组织的 KV 模型。除存储键值对数据外，Zookeeper 更多的是以其空间结构和生命周期管理作为表达能力，来提供协调语义。当然，Zookeeper 也允许客户端为节点附加一些<strong>元信息（meta-data）</strong>和<strong>配置信息</strong>（<strong>configuration</strong>），并且提供版本和时间戳支持，从而提供更强大的表达能力。</p>
-<h3 id="API-细节"><a href="#API-细节" class="headerlink" title="API 细节"></a>API 细节</h3><p>下面是以伪码的形式列出 Zookeeper 对客户端提供的 API 细节和注释。所有操作对象都是路径（ path） 所对应的数据节点（znode）。</p>
+<p><strong>数据模型（Data model）</strong>。Zookeeper 本质上提供树形组织的 KV 模型。除存储键值对数据外，Zookeeper 更多的是以其空间结构和生命周期管理作为表达能力，来提供协调语义。当然，Zookeeper 也允许客户端为节点附加一些<strong>元信息（meta-data）<strong>和</strong>配置信息</strong>（<strong>configuration</strong>），并且提供版本和时间戳支持，从而提供更强大的表达能力。</p>
+<h3 id="API-细节">API 细节</h3>
+<p>下面是以伪码的形式列出 Zookeeper 对客户端提供的 API 细节和注释。所有操作对象都是路径（ path） 所对应的数据节点（znode）。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在路径 path 处创建一个 znode，存入数据 data</span></span><br><span class="line"><span class="comment">// 并设置 regular, ephemeral, sequential 等 flags 标志。</span></span><br><span class="line"><span class="comment">// 返回值：znode 名字</span></span><br><span class="line"><span class="built_in">create</span>(path, data, flags) </span><br><span class="line"></span><br><span class="line"><span class="comment">// 如果 path 处的 znode 与预期 version 相同，</span></span><br><span class="line"><span class="comment">// 则删除该 znode。</span></span><br><span class="line"><span class="comment">// 指定 version 一般是为了并发安全。</span></span><br><span class="line"><span class="built_in">delete</span>(path, version)</span><br><span class="line"></span><br><span class="line"><span class="comment">// watch 让客户端在此 path 上添加一个监听</span></span><br><span class="line"><span class="comment">// 返回值：路径对应的 znode，存在时返回 true</span></span><br><span class="line"><span class="comment">// 不存在返回 false</span></span><br><span class="line"><span class="built_in">exists</span>(path, watch)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取路径 path 对应的 znode 的数据和元信息</span></span><br><span class="line"><span class="comment">// 当 znode 存在时，允许设置 watch 来监听</span></span><br><span class="line"><span class="comment">// znode 数据变化</span></span><br><span class="line"><span class="built_in">getData</span>(path, watch)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 当 version 匹配时，将数据 data 写入</span></span><br><span class="line"><span class="comment">// path 对应的 znode</span></span><br><span class="line"><span class="built_in">setData</span>(path, data, version)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取路径 path 对应的 znode 的所有孩子</span></span><br><span class="line"><span class="built_in">getChildren</span>(path, watch)</span><br><span class="line"></span><br><span class="line"><span class="comment">// 同步最新数据，通常放在 getData 前面</span></span><br><span class="line"><span class="built_in">sync</span>(path)</span><br></pre></td></tr></table></figure>
-
 <p>上面的 API 有以下特点：</p>
 <ol>
-<li><strong>异步支持</strong>。所有接口都有<strong>同步（synchronous）</strong>和<strong>异步（asynchronous）</strong>版本。异步版本以回调函数方式进行执行，客户端可以根据业务需求，选择阻塞等待以获取重要更新，或者异步调用以获得更好性能。</li>
+<li><strong>异步支持</strong>。所有接口都有**同步（synchronous）<strong>和</strong>异步（asynchronous）**版本。异步版本以回调函数方式进行执行，客户端可以根据业务需求，选择阻塞等待以获取重要更新，或者异步调用以获得更好性能。</li>
 <li><strong>路径而非句柄</strong>。为了简化接口设计，并减少服务端维护的状态， Zookeeper 使用路径而非 znode 句柄的形式来提供对 znode 的操作接口。毕竟，句柄类似于 session，是有状态的，会增加分布式系统的实现复杂度。使用路径，可以配合版本信息做成类似幂等的接口，在处理多客户端并发时，更容易实现。</li>
-<li><strong>版本信息</strong>。所有的<strong>更新操作（set&#x2F;delete）</strong>都需要指明对应数据的版本号，版本号不匹配则终止更新并返回异常。但可以通过指定特殊版本号 -1 ，跳过版本号检查。</li>
+<li><strong>版本信息</strong>。所有的**更新操作（set/delete）**都需要指明对应数据的版本号，版本号不匹配则终止更新并返回异常。但可以通过指定特殊版本号 -1 ，跳过版本号检查。</li>
 </ol>
-<h3 id="语义保证"><a href="#语义保证" class="headerlink" title="语义保证"></a>语义保证</h3><p>在处理多个客户端向 Zookeeper 发出的并发请求时， API 有两个基本顺序的保证：</p>
+<h3 id="语义保证">语义保证</h3>
+<p>在处理多个客户端向 Zookeeper 发出的并发请求时， API 有两个基本顺序的保证：</p>
 <ol>
 <li><strong>线性化写（Linearizable writes）</strong>。所有 Zookeeper 状态的更新请求会被串行化执行。</li>
 <li><strong>客户端内的先入先出（FIFO client order）</strong>。给定客户端的请求会按其发送的顺序进行执行。</li>
@@ -327,20 +331,26 @@
 <li><strong>可用性（liveness）</strong>：Zookeeper 集群中过半数节点可用，则可对外正常提供服务。</li>
 <li><strong>持久性（durability）</strong>：任何被成功返回给客户端的修改请求，都会作用到 Zookeeper 状态机中。即使不断有节点故障重启，只要 Zookeeper 能正常提供服务，就不会影响这一特性。</li>
 </ol>
-<h2 id="Zookeeper-架构"><a href="#Zookeeper-架构" class="headerlink" title="Zookeeper 架构"></a>Zookeeper 架构</h2><p>为了提供高可靠性，Zookeeper 使用多台服务器对数据进行冗余存取。然后使用 Zab 共识协议处理所有的更新请求，然后写入 WAL，进而应用到本地内存状态机（data tree）。</p>
+<h2 id="Zookeeper-架构">Zookeeper 架构</h2>
+<p>为了提供高可靠性，Zookeeper 使用多台服务器对数据进行冗余存取。然后使用 Zab 共识协议处理所有的更新请求，然后写入 WAL，进而应用到本地内存状态机（data tree）。</p>
 <p>在 Zab 协议中，所有节点分为两种角色，Leader 和 Followers，前者只有一个，剩余的都是 Followers。但后来实践中，可能有 Observers。</p>
 <p><img src="https://i.loli.net/2021/05/31/HMBh9nmPE3w1oDx.png" alt="zookeeper 组件与请求流程"></p>
 <p>如上图所示，当 Server 收到一个请求时，首先进行预处理（Request Processor），如果是写请求，则通过 Zab 协议（Atomic Broadcast）达成一致，然后各自提交到本地数据库（Replicated Database）。对于读请求，直接读取本地数据库中状态后返回。</p>
-<h3 id="请求处理（Request-Processor）"><a href="#请求处理（Request-Processor）" class="headerlink" title="请求处理（Request Processor）"></a>请求处理（Request Processor）</h3><p>所有更新请求都会被转为<strong>幂等（idempotent）</strong>的事务（txn），具体方法为获取当前状态、计算出目标状态，封装为事务，即可使用类似 <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQ29tcGFyZS1hbmQtc3dhcA==">CAS<i class="fa fa-external-link-alt"></i></span> 的方式处理并发请求。因此，只要保证所有事务按固定顺序执行，就能避免不同服务器上的数据副本分裂。</p>
-<h3 id="原子广播（Atomic-Broadcast）"><a href="#原子广播（Atomic-Broadcast）" class="headerlink" title="原子广播（Atomic Broadcast）"></a>原子广播（Atomic Broadcast）</h3><p>所有更新请求都会被转给 Zookeeper 的 Leader，Leader 首先将事务追加到本地 WAL，然后将变动使用 Zab 协议广播到各个节点，收到过半成功回复之后，Leader 将变动提交（Commit）到本地内存数据库，并广播该 Commit 给 Followers。</p>
+<h3 id="请求处理（Request-Processor）">请求处理（Request Processor）</h3>
+<p>所有更新请求都会被转为**幂等（idempotent）**的事务（txn），具体方法为获取当前状态、计算出目标状态，封装为事务，即可使用类似 <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQ29tcGFyZS1hbmQtc3dhcA==">CAS<i class="fa fa-external-link-alt"></i></span> 的方式处理并发请求。因此，只要保证所有事务按固定顺序执行，就能避免不同服务器上的数据副本分裂。</p>
+<h3 id="原子广播（Atomic-Broadcast）">原子广播（Atomic Broadcast）</h3>
+<p>所有更新请求都会被转给 Zookeeper 的 Leader，Leader 首先将事务追加到本地 WAL，然后将变动使用 Zab 协议广播到各个节点，收到过半成功回复之后，Leader 将变动提交（Commit）到本地内存数据库，并广播该 Commit 给 Followers。</p>
 <p>由于 Zab 使用多数票原则，因此 2k+1 个节点的集群最多可以容忍 k 个节点的故障（failures）。</p>
 <p>为了提高系统吞吐，Zookeeper 使用流水线（pipelined）方式优化多个请求处理过程。</p>
-<h3 id="复制状态机（Replicated-Database）"><a href="#复制状态机（Replicated-Database）" class="headerlink" title="复制状态机（Replicated Database）"></a>复制状态机（Replicated Database）</h3><p>每个服务器都会在本机内存中维护一个 Zookeeper 中所有状态的副本（replica），为了应对宕机重启，ZooKeeper 会定期将状态做快照。不同于普通快照，Zookeeper 称其快照为 <em>fuzzy</em> <em>snapshots</em>，即在做快照时并不上锁，通过 DFS 的方式遍历文件树 Dump 到本地。之后由于异常宕机重启时，只需加最新快照，然后重新执行最新快照之后几条 WAL 即可。由于 WAL 中记录的事务的幂等性特点，即使快照和 WAL 的时间点不完全对应，也不会影响副本间的一致性。</p>
-<h3 id="客户端服务器交互事宜（Client-Server-Interactions）"><a href="#客户端服务器交互事宜（Client-Server-Interactions）" class="headerlink" title="客户端服务器交互事宜（Client-Server Interactions）"></a>客户端服务器交互事宜（Client-Server Interactions）</h3><p><strong>串行写</strong>。无论是在全局范围还是具体到一个 Server 本地，所有更新操作都是串行的。在执行某个 Path 数据更新时，该 Server 会触发所有与之连接的 Client 所订阅的 Watch 事件。需要注意，这些事件只保存在 Server 本地，因为他们是和会话关联的，如果 Client 与该 Server 断开连接，会话便会销毁，这些事件也随之消亡。</p>
+<h3 id="复制状态机（Replicated-Database）">复制状态机（Replicated Database）</h3>
+<p>每个服务器都会在本机内存中维护一个 Zookeeper 中所有状态的副本（replica），为了应对宕机重启，ZooKeeper 会定期将状态做快照。不同于普通快照，Zookeeper 称其快照为 <em>fuzzy</em> <em>snapshots</em>，即在做快照时并不上锁，通过 DFS 的方式遍历文件树 Dump 到本地。之后由于异常宕机重启时，只需加最新快照，然后重新执行最新快照之后几条 WAL 即可。由于 WAL 中记录的事务的幂等性特点，即使快照和 WAL 的时间点不完全对应，也不会影响副本间的一致性。</p>
+<h3 id="客户端服务器交互事宜（Client-Server-Interactions）">客户端服务器交互事宜（Client-Server Interactions）</h3>
+<p><strong>串行写</strong>。无论是在全局范围还是具体到一个 Server 本地，所有更新操作都是串行的。在执行某个 Path 数据更新时，该 Server 会触发所有与之连接的 Client 所订阅的 Watch 事件。需要注意，这些事件只保存在 Server 本地，因为他们是和会话关联的，如果 Client 与该 Server 断开连接，会话便会销毁，这些事件也随之消亡。</p>
 <p><strong>本地读</strong>。为了获取极致性能，Zookeeper 的 Server 直接在本地处理读请求。但这有可能造成客户端拿到陈旧数据（比如其他客户端在另外的 Server 更新了同一 Path）。于是 Zookeeper 设计出了 Sync 操作，会将调用 Sync 时刻的最新提交数据同步到与该 Client 连接的 Server 上，然后将最新数据返回给 Client。即，Zookeeper 将<strong>性能</strong>与<strong>时效性</strong>的选择权交给了用户，方法是是否调用 Sync。</p>
 <p><strong>一致性视图</strong>。Zookeeper 全局会维持一个事务自增标识：zxid，它本质上是个逻辑时钟，可以标识 Zookeeper 一个时刻的数据视图。Client 在故障重启后重新连接到一个新的 Server 时，如果该 Server 未执行到客户端所存 zxid，则要么 Server 执行到该 zxid 后再回复 Client，要么 Client 换一个更新的 Server 进行连接。如此，可以保证 Client 不会看到回退的视图。</p>
 <p><strong>会话过期</strong>。会话在 Zookeeper 中本质上标识一个 Client 到 Server 的连接。会话有超时时间，如果 Client 长时间（大于超时间隔）不发<strong>请求</strong>或者<strong>心跳</strong>，Server 便会删除该会话。</p>
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>Zookeeper 使用目录树组织数据、使用 Zab 协议同步数据、使用非阻塞方式提供接口，构建了一个表达能力强大的分布式协调性内核。可以用于分布式系统的控制面以进行协调、调度和控制。近年来基于 Raft 的 Etcd 也是类似地位。</p>
+<h2 id="小结">小结</h2>
+<p>Zookeeper 使用目录树组织数据、使用 Zab 协议同步数据、使用非阻塞方式提供接口，构建了一个表达能力强大的分布式协调性内核。可以用于分布式系统的控制面以进行协调、调度和控制。近年来基于 Raft 的 Etcd 也是类似地位。</p>
 <hr>
 
          <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
@@ -378,16 +388,16 @@
       <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
     </li>
   </ul>
 
@@ -486,7 +496,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Zookeeper"><span class="nav-number">1.</span> <span class="nav-text">Zookeeper</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.1.</span> <span class="nav-text">服务设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD%E9%9B%86"><span class="nav-number">1.1.1.</span> <span class="nav-text">术语集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%84%E7%BB%87"><span class="nav-number">1.1.2.</span> <span class="nav-text">数据组织</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#API-%E7%BB%86%E8%8A%82"><span class="nav-number">1.1.3.</span> <span class="nav-text">API 细节</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%AD%E4%B9%89%E4%BF%9D%E8%AF%81"><span class="nav-number">1.1.4.</span> <span class="nav-text">语义保证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Zookeeper-%E6%9E%B6%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">Zookeeper 架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%B7%E6%B1%82%E5%A4%84%E7%90%86%EF%BC%88Request-Processor%EF%BC%89"><span class="nav-number">1.2.1.</span> <span class="nav-text">请求处理（Request Processor）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E5%AD%90%E5%B9%BF%E6%92%AD%EF%BC%88Atomic-Broadcast%EF%BC%89"><span class="nav-number">1.2.2.</span> <span class="nav-text">原子广播（Atomic Broadcast）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%88%B6%E7%8A%B6%E6%80%81%E6%9C%BA%EF%BC%88Replicated-Database%EF%BC%89"><span class="nav-number">1.2.3.</span> <span class="nav-text">复制状态机（Replicated Database）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%9C%8D%E5%8A%A1%E5%99%A8%E4%BA%A4%E4%BA%92%E4%BA%8B%E5%AE%9C%EF%BC%88Client-Server-Interactions%EF%BC%89"><span class="nav-number">1.2.4.</span> <span class="nav-text">客户端服务器交互事宜（Client-Server Interactions）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">1.3.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">Zookeeper</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E8%AE%BE%E8%AE%A1"><span class="nav-number">1.1.</span> <span class="nav-text">服务设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%AF%E8%AF%AD%E9%9B%86"><span class="nav-number">1.1.1.</span> <span class="nav-text">术语集</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%84%E7%BB%87"><span class="nav-number">1.1.2.</span> <span class="nav-text">数据组织</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#API-%E7%BB%86%E8%8A%82"><span class="nav-number">1.1.3.</span> <span class="nav-text">API 细节</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%AD%E4%B9%89%E4%BF%9D%E8%AF%81"><span class="nav-number">1.1.4.</span> <span class="nav-text">语义保证</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Zookeeper-%E6%9E%B6%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">Zookeeper 架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%B7%E6%B1%82%E5%A4%84%E7%90%86%EF%BC%88Request-Processor%EF%BC%89"><span class="nav-number">1.2.1.</span> <span class="nav-text">请求处理（Request Processor）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8E%9F%E5%AD%90%E5%B9%BF%E6%92%AD%EF%BC%88Atomic-Broadcast%EF%BC%89"><span class="nav-number">1.2.2.</span> <span class="nav-text">原子广播（Atomic Broadcast）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E5%88%B6%E7%8A%B6%E6%80%81%E6%9C%BA%EF%BC%88Replicated-Database%EF%BC%89"><span class="nav-number">1.2.3.</span> <span class="nav-text">复制状态机（Replicated Database）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%9C%8D%E5%8A%A1%E5%99%A8%E4%BA%A4%E4%BA%92%E4%BA%8B%E5%AE%9C%EF%BC%88Client-Server-Interactions%EF%BC%89"><span class="nav-number">1.2.4.</span> <span class="nav-text">客户端服务器交互事宜（Client-Server Interactions）</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">1.3.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -547,12 +557,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -563,6 +567,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

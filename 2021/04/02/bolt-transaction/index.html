@@ -38,8 +38,8 @@
 <meta property="article:modified_time" content="2024-03-04T01:18:28.351Z">
 <meta property="article:author" content="木鸟杂记">
 <meta property="article:tag" content="存储">
-<meta property="article:tag" content="golang">
 <meta property="article:tag" content="go">
+<meta property="article:tag" content="golang">
 <meta property="article:tag" content="boltdb">
 <meta property="article:tag" content="transaction">
 <meta name="twitter:card" content="summary">
@@ -283,7 +283,8 @@
 <p>为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。</p>
 <p>本系列计划分成三篇文章，依次围绕<a href="https://www.qtmuniao.com/2020/11/29/bolt-data-organised/"><strong>数据组织</strong></a>、<a href="https://www.qtmuniao.com/2020/12/14/bolt-index-design/"><strong>索引设计</strong></a>、<strong>事务实现</strong>等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第三篇， boltdb 事务实现。</p>
 </blockquote>
-<h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>在分析 boltd 的事务之前，我们有必要对事务概念做一个界定，以此来明确我们的讨论范围。<strong>数据库事务</strong>（简称：<strong>事务</strong>）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU2JTk1JUIwJUU2JThEJUFFJUU1JUJBJTkz">数据库<i class="fa fa-external-link-alt"></i></span>操作序列构成<a href="%E7%BB%B4%E5%9F%BA%E7%99%BE%E7%A7%91%E4%BA%8B%E5%8A%A1%EF%BC%9Ahttps://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1">^1</a>。wiki 上的定义有点拗口，理解时只需抓住几个关键点即可：</p>
+<h2 id="引子">引子</h2>
+<p>在分析 boltd 的事务之前，我们有必要对事务概念做一个界定，以此来明确我们的讨论范围。<strong>数据库事务</strong>（简称：<strong>事务</strong>）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU2JTk1JUIwJUU2JThEJUFFJUU1JUJBJTkz">数据库<i class="fa fa-external-link-alt"></i></span>操作序列构成<a href="%E7%BB%B4%E5%9F%BA%E7%99%BE%E7%A7%91%E4%BA%8B%E5%8A%A1%EF%BC%9Ahttps://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1">^1</a>。wiki 上的定义有点拗口，理解时只需抓住几个关键点即可：</p>
 <ol>
 <li>执行：计算层面</li>
 <li>逻辑单位：意味着不可分割</li>
@@ -292,41 +293,45 @@
 <p>那为什么要有事务呢？事务出现于上世纪七十年代，是为了解放数据库用户的心智而出现的：事务帮助用户组织一组操作、并在出错时自动进行扫尾。后来，NoSQL 和一些分布式存储为了高性能而舍弃了完整事务的支持。然而，历史是螺旋上升的，事务的便利性让 NewSQL 等新一代分布式数据库又将其重新请回。</p>
 <p>提起事务，最脍炙人口的便是 ACID 四大特性。 其实 ACID 更像一种易于记忆的口号而非严格的描述，因为他们在概念上并不怎么对称，而且依赖于一些上下文阐释。本文仍然会按照这四个方面对 boltdb 对事务的支持进行剖析，但在每个小结开始，会先参考 Martin Kleppmann 的演讲[^2]，试着从不同角度先阐释其内涵；然后在再分析 boltdb 对其实现。</p>
 <span id="more"></span>
-
 <p><em>作者：木鸟杂记  <a href="https://www.qtmuniao.com/2021/04/02/bolt-transaction/">https://www.qtmuniao.com/2021/04/02/bolt-transaction/</a> , 转载请注明出处</em></p>
 <p><img src="https://i.loli.net/2021/04/10/vpQ6KmdieFGyAjV.png" alt="transaction.png"></p>
 <p>boltdb 只支持一写多读的事务，即同时至多有一个<strong>读写</strong>事务，而可以有多个<strong>只读</strong>事务，算是一种弱化的事务模型，好处在于容易实现，坏处在于牺牲了写并发的性能。也因此，boltdb 适合读多写少的应用。</p>
 <p>boltdb 事务实现的主要代码在 <code>tx.go</code> 中，但这个源文件大抵算一个事务实现入口，事务提交时的一些行为，主要在数据库索引逻辑中实现，可以参考<a href="https://www.qtmuniao.com/2020/12/14/bolt-index-design/">之前文章</a>。</p>
-<h2 id="持久性（Durability）"><a href="#持久性（Durability）" class="headerlink" title="持久性（Durability）"></a>持久性（Durability）</h2><p>在早期，数据库将数据刷到<strong>磁带</strong>上，即获得持久性，断电重启后数据不会丢失。后来磁带变成<strong>磁盘</strong>，再后来到分布式系统时代，海量磁盘场景下单盘不可靠，便又衍生出<strong>多副本</strong>等冗余策略。虽然策略一直在演变，但其目大抵相同：事务一旦提交，对应更改便会无视各种<strong>常见</strong>故障，而进行长久保持。</p>
+<h2 id="持久性（Durability）">持久性（Durability）</h2>
+<p>在早期，数据库将数据刷到<strong>磁带</strong>上，即获得持久性，断电重启后数据不会丢失。后来磁带变成<strong>磁盘</strong>，再后来到分布式系统时代，海量磁盘场景下单盘不可靠，便又衍生出<strong>多副本</strong>等冗余策略。虽然策略一直在演变，但其目大抵相同：事务一旦提交，对应更改便会无视各种<strong>常见</strong>故障，而进行长久保持。</p>
 <p>boltdb 是一个单机数据库引擎，因此暂不必考虑磁盘故障，数据刷到磁盘上即可认为完成了持久化。其实现代码在函数 <code>func (tx *Tx) Commit() error</code> 中。需要说明的是，boltdb 中只有读写事务才须提交，只读事务提交会报错，但只读事务需要在结束时调用 <code>tx.Rollback</code> 以释放资源（比如锁）。这个设定有点反直觉，毕竟对于只读事务来说，明明是关闭，却叫 <code>Rollback</code>。</p>
 <p>读写事务提交时，为了保证事务的持久性，boltdb 主要做了两方面的工作：</p>
 <ol>
 <li>改动数据刷盘</li>
 <li>元信息刷盘</li>
 </ol>
-<h3 id="改动数据刷盘"><a href="#改动数据刷盘" class="headerlink" title="改动数据刷盘"></a>改动数据刷盘</h3><p>在一个读写事务中，所有用户的直接改动（增加、删除、改动）都发生在<strong>叶子节点</strong>，但为了维持 B+ 树的性质，会在 <code>Commit</code> 前进行调整，会引起<strong>中间节点</strong>的级联变动。所有这些节点（Node）在 <code>spill</code> 阶段通过 <code>node.write(p)</code> 转化为页（Page），所有变动的页（包括复用 freelist 中的和新申请的）称为<strong>脏页</strong>（dirty pages）。在 <code>spill</code>  为 page 后，boltdb 会通过 <code>func (tx *Tx) write() error</code> 将这些脏页进行刷盘，大体逻辑为：</p>
+<h3 id="改动数据刷盘">改动数据刷盘</h3>
+<p>在一个读写事务中，所有用户的直接改动（增加、删除、改动）都发生在<strong>叶子节点</strong>，但为了维持 B+ 树的性质，会在 <code>Commit</code> 前进行调整，会引起<strong>中间节点</strong>的级联变动。所有这些节点（Node）在 <code>spill</code> 阶段通过 <code>node.write(p)</code> 转化为页（Page），所有变动的页（包括复用 freelist 中的和新申请的）称为<strong>脏页</strong>（dirty pages）。在 <code>spill</code>  为 page 后，boltdb 会通过 <code>func (tx *Tx) write() error</code> 将这些脏页进行刷盘，大体逻辑为：</p>
 <ol>
 <li>将脏页按 page id 排序后逐个遍历</li>
-<li>将 page id 转化为 offset </li>
+<li>将 page id 转化为 offset</li>
 <li>通过 <code>db.ops.writeAt</code> 将脏页在 offset 处刷盘</li>
-<li>通过 page pool 复用 page size &#x3D; 1 的脏页，以备 allocate 时复用</li>
+<li>通过 page pool 复用 page size = 1 的脏页，以备 allocate 时复用</li>
 </ol>
 <p>需要注意的是，这个过程中有个可配置项 <code>db.NoSync</code>。如果 <code>db.Nosync = true</code> ，每次 Commit 时不会立即刷盘，只是写到操作系统的缓冲区，由操作系统决定真正落盘时机，性能较好。但是意外宕机会导致缓冲区数据丢失，从而不能保证严格持久性。</p>
-<h3 id="元信息刷盘"><a href="#元信息刷盘" class="headerlink" title="元信息刷盘"></a>元信息刷盘</h3><p>元信息包括 freelist 表和整个 db 的元信息页刷盘，刷盘过程不再赘述。需要注意的是元信息页刷盘一定在最后，以保证事务所有改动生效的原子性，这个点在后面也会强调。</p>
-<h2 id="一致性（Consistency）"><a href="#一致性（Consistency）" class="headerlink" title="一致性（Consistency）"></a>一致性（Consistency）</h2><p>此处的一致性要和分布式系统中的一致性区分开来。在分布式系统中，一致性主要指多副本间的数据一致性。而此处的 C，更像是为了让 ACID 念着顺口来凑数的，他的官方表述是：在事务开始之前和事务结束以后，数据库能够保持某些不变性（invariants）。这表示写入的数据必须完全符合所有的预设<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU2JTk1JUIwJUU2JThEJUFFJUU1JUFFJThDJUU2JTk1JUI0JUU2JTgwJUE3">约束<i class="fa fa-external-link-alt"></i></span>、<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU4JUE3JUE2JUU1JThGJTkxJUU1JTk5JUE4XyglRTYlOTUlQjAlRTYlOEQlQUUlRTUlQkElOTMp">触发器<i class="fa fa-external-link-alt"></i></span>、<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU3JUJBJUE3JUU4JTgxJTk0JUU1JTlCJTlFJUU2JUJCJTlB">级联回滚<i class="fa fa-external-link-alt"></i></span>等[^3]。举个例子来说，A 给 B 转账，转账前后，A 和 B 的账户总额应该保持不变。</p>
+<h3 id="元信息刷盘">元信息刷盘</h3>
+<p>元信息包括 freelist 表和整个 db 的元信息页刷盘，刷盘过程不再赘述。需要注意的是元信息页刷盘一定在最后，以保证事务所有改动生效的原子性，这个点在后面也会强调。</p>
+<h2 id="一致性（Consistency）">一致性（Consistency）</h2>
+<p>此处的一致性要和分布式系统中的一致性区分开来。在分布式系统中，一致性主要指多副本间的数据一致性。而此处的 C，更像是为了让 ACID 念着顺口来凑数的，他的官方表述是：在事务开始之前和事务结束以后，数据库能够保持某些不变性（invariants）。这表示写入的数据必须完全符合所有的预设<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU2JTk1JUIwJUU2JThEJUFFJUU1JUFFJThDJUU2JTk1JUI0JUU2JTgwJUE3">约束<i class="fa fa-external-link-alt"></i></span>、<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU4JUE3JUE2JUU1JThGJTkxJUU1JTk5JUE4XyglRTYlOTUlQjAlRTYlOEQlQUUlRTUlQkElOTMp">触发器<i class="fa fa-external-link-alt"></i></span>、<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU3JUJBJUE3JUU4JTgxJTk0JUU1JTlCJTlFJUU2JUJCJTlB">级联回滚<i class="fa fa-external-link-alt"></i></span>等[^3]。举个例子来说，A 给 B 转账，转账前后，A 和 B 的账户总额应该保持不变。</p>
 <p>该性质描述侧重于应用层面，而非数据库本身。boltdb 是一个简单的 KV 引擎，不支持用户自定义约束，这里不再展开。</p>
-<h2 id="原子性（Atomicity）"><a href="#原子性（Atomicity）" class="headerlink" title="原子性（Atomicity）"></a>原子性（Atomicity）</h2><p>原子性，从字面意义上来理解是将事务所包含的一组操作打包为一个逻辑单元。但这个角度很容易和并发编程中的原子性相混淆。在事务中，原子性其实更侧重于出现问题时的<strong>可回滚性</strong>（<code>rollback</code>），或者说<strong>可丢弃性</strong>（<code>abortability</code>），即事务中的操作不能部分执行，要么都成功执行，要么都未执行。</p>
+<h2 id="原子性（Atomicity）">原子性（Atomicity）</h2>
+<p>原子性，从字面意义上来理解是将事务所包含的一组操作打包为一个逻辑单元。但这个角度很容易和并发编程中的原子性相混淆。在事务中，原子性其实更侧重于出现问题时的<strong>可回滚性</strong>（<code>rollback</code>），或者说<strong>可丢弃性</strong>（<code>abortability</code>），即事务中的操作不能部分执行，要么都成功执行，要么都未执行。</p>
 <p>那么 boltdb 是如何实现原子性的呢？可以从主动和被动两个方面来分析。</p>
 <p><strong>主动方面</strong>。用户遇到一些问题，可以主动调用 <code>tx.Rollback</code> 进行回滚，undo 该事务到目前为止的所有操作。其主要逻辑包括回滚使用的 freelist，释放一些资源（如锁和节点内存引用）。只读事务结束时必须要调用回滚函数，以关闭事务，防止对读写事务的阻塞，之前文章分析过原因（主要是争抢 remap 时候的锁）。</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Rollback 关闭事务，并且放弃之前的更新. 只读事务结束时必须调用 Rollback。</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tx *Tx)</span></span> rollback() &#123;</span><br><span class="line">  <span class="keyword">if</span> tx.db == <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> tx.writable &#123;</span><br><span class="line">    tx.db.freelist.rollback(tx.meta.txid)</span><br><span class="line">    tx.db.freelist.reload(tx.db.page(tx.db.meta().freelist))</span><br><span class="line">  &#125;</span><br><span class="line">  tx.<span class="built_in">close</span>()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tx *Tx)</span></span> <span class="built_in">close</span>() &#123;</span><br><span class="line">  <span class="comment">// ... </span></span><br><span class="line">  </span><br><span class="line">  <span class="keyword">if</span> tx.writable &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 释放锁</span></span><br><span class="line">    tx.db.rwtx = <span class="literal">nil</span></span><br><span class="line">    tx.db.rwlock.Unlock()</span><br><span class="line">    tx.db.statlock.Unlock()</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// 删除读事务</span></span><br><span class="line">    tx.db.removeTx(tx)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 清除引用，释放相关内存.</span></span><br><span class="line">  tx.db = <span class="literal">nil</span></span><br><span class="line">  tx.meta = <span class="literal">nil</span></span><br><span class="line">  tx.root = Bucket&#123;tx: tx&#125;</span><br><span class="line">  tx.pages = <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p><strong>被动方面</strong>。在读写事务进行到一半时，如果 boltdb 实例意外挂掉重启后，boltdb 如何保证事务的原子性？这个不体现在某些具体细节的代码中，而是体现在 boltdb 整体的设计里：</p>
 <ol>
 <li>读写事务执行过程中，所有的改动都是增量改动，不影响其他只读事务</li>
 <li>最后提交时，元信息页落盘成功，才会使得所有增量改动对用户可见</li>
 </ol>
 <p>也就是说，使用元信息页作为“全局指针”，以该指针的写入原子性来保证事务的原子性。如果宕机时，元信息页没有写入完成，所有改动便不会生效，达到了自动回滚的效果。</p>
-<h2 id="隔离性（Isolation）"><a href="#隔离性（Isolation）" class="headerlink" title="隔离性（Isolation）"></a>隔离性（Isolation）</h2><p>隔离性在数据库系统中是一块重要内容。说起隔离性，一般会提到四个隔离级别：</p>
+<h2 id="隔离性（Isolation）">隔离性（Isolation）</h2>
+<p>隔离性在数据库系统中是一块重要内容。说起隔离性，一般会提到四个隔离级别：</p>
 <ol>
 <li>读未提交（Read uncommitted）</li>
 <li>读已提交（Read committed）</li>
@@ -339,14 +344,18 @@
 <p><img src="https://i.loli.net/2021/04/10/SzeTKMk1glF5Pwu.png" alt="isolation-levels.png"></p>
 <p>下面依次简单介绍下四种隔离级别：</p>
 <ol>
-<li><p>读未提交 ：对应<strong>脏读</strong>，在本事务的线段内，会读到其他线段的中间状态。</p>
+<li>
+<p>读未提交 ：对应<strong>脏读</strong>，在本事务的线段内，会读到其他线段的中间状态。</p>
 </li>
-<li><p>读已提交：对应<strong>不可重复读</strong>，比上个好一些。该级别下不能读到其他事务的未提交状态。但如上图，如果事务 t2 在执行时，多次读某个记录 x 的状态，在事务 t1 未启动前，发现 x &#x3D; 2，在事务 t1 提交后，发现 x &#x3D; 3，这便出现了不一致。</p>
+<li>
+<p>读已提交：对应<strong>不可重复读</strong>，比上个好一些。该级别下不能读到其他事务的未提交状态。但如上图，如果事务 t2 在执行时，多次读某个记录 x 的状态，在事务 t1 未启动前，发现 x = 2，在事务 t1 提交后，发现 x = 3，这便出现了不一致。</p>
 </li>
-<li><p>可重复读：如上图，事务 t2 在整个执行期间，多次读取数据库 x 的状态，无论他事务（如 t1）是否改变 x 状态并提交，事务 t2 都不会感觉到。但是会存在<strong>幻读</strong>的风险。怎么理解呢？最关键的原因在于<strong>写</strong>并发。因为读不到，不代表其他事务的影响不存在。比如事务 t2 开始时，通过查询发现 <code>id = &quot;qtmuniao&quot;</code> 的记录为空，于是创建了 <code>id=&quot;qtmuniao&quot;</code> 的记录，然而在提交时，发现报错说该 id 已经存在。这可能是因为有一个开始的比较晚的事务 t2，也创建了一个 <code>id=&quot;qtmuniao&quot;</code> 的记录，但是先提交了。于是用户就郁闷了，明明你说没有，但我写又报错，难道我出现幻觉了？这就太扯淡了，但是此级别就只能做到这样了。反而，因为兼顾了性能和隔离性，他是大多数据库的默认级别。</p>
+<li>
+<p>可重复读：如上图，事务 t2 在整个执行期间，多次读取数据库 x 的状态，无论他事务（如 t1）是否改变 x 状态并提交，事务 t2 都不会感觉到。但是会存在<strong>幻读</strong>的风险。怎么理解呢？最关键的原因在于<strong>写</strong>并发。因为读不到，不代表其他事务的影响不存在。比如事务 t2 开始时，通过查询发现 <code>id = &quot;qtmuniao&quot;</code> 的记录为空，于是创建了 <code>id=&quot;qtmuniao&quot;</code> 的记录，然而在提交时，发现报错说该 id 已经存在。这可能是因为有一个开始的比较晚的事务 t2，也创建了一个 <code>id=&quot;qtmuniao&quot;</code> 的记录，但是先提交了。于是用户就郁闷了，明明你说没有，但我写又报错，难道我出现幻觉了？这就太扯淡了，但是此级别就只能做到这样了。反而，因为兼顾了性能和隔离性，他是大多数据库的默认级别。</p>
 <p><img src="https://i.loli.net/2021/04/10/3S7jYQwvKfGJO46.png" alt="phantom-problem.png"></p>
 </li>
-<li><p>序列化：最简单的实现办法就是一把锁来串行化所有的事务。在此基础上如果能提高并发，就需要做很多优化。</p>
+<li>
+<p>序列化：最简单的实现办法就是一把锁来串行化所有的事务。在此基础上如果能提高并发，就需要做很多优化。</p>
 </li>
 </ol>
 <p>对于 boltdb 来说，因为不允许并发写，可重复读和序列化在此含义就是一样的。总结来说，boltdb 实现隔离性的方法是：</p>
@@ -355,7 +364,9 @@
 <li>穿透读磁盘。</li>
 </ol>
 <p>读写事务的变动都在内存中，而只读事务通过 mmap 直接读取的磁盘上的内容，因此读写事务的改动不会为只读事务所见。多个读写事务是串行的，也不会互相影响。而每个只读事务期间所看到的状态，就是该只读事务开始执行时的状态。</p>
-<h2 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h2><p>[^2]: “Transactions: myths, surprises and opportunities” by Martin Kleppmann：<span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj01WmpoTlRNOFhVOA==">https://www.youtube.com/watch?v=5ZjhNTM8XU8<i class="fa fa-external-link-alt"></i></span><br>[^3]: 维基百科ACID：<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvQUNJRA==">https://zh.wikipedia.org/wiki/ACID<i class="fa fa-external-link-alt"></i></span></p>
+<h2 id="引用">引用</h2>
+<p>[^2]: “Transactions: myths, surprises and opportunities” by Martin Kleppmann：<span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj01WmpoTlRNOFhVOA==">https://www.youtube.com/watch?v=5ZjhNTM8XU8<i class="fa fa-external-link-alt"></i></span><br>
+[^3]: 维基百科ACID：<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvQUNJRA==">https://zh.wikipedia.org/wiki/ACID<i class="fa fa-external-link-alt"></i></span></p>
 
          <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
 <div>
@@ -386,22 +397,22 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/12/14/bolt-index-design/" rel="bookmark">Boltdb 源码导读（二）：Boltdb 索引设计</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/12/07/bazel-build-golang/" rel="bookmark">Bazel 构建 Golang 项目</a></div>
+      <div class="popular-posts-title"><a href="/2020/12/14/bolt-index-design/" rel="bookmark">Boltdb 源码导读（二）：Boltdb 索引设计</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/01/06/go-value-pointer-method/" rel="bookmark">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/07/12/go-context/" rel="bookmark">Golang 笔记（二）：Context 源码剖析</a></div>
+      <div class="popular-posts-title"><a href="/2019/12/07/bazel-build-golang/" rel="bookmark">Bazel 构建 Golang 项目</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2021/01/09/go-slice/" rel="bookmark">Golang 笔记（三）：一种理解 Slice 的模型</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/07/12/go-context/" rel="bookmark">Golang 笔记（二）：Context 源码剖析</a></div>
     </li>
   </ul>
 
@@ -424,8 +435,8 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
-              <a href="/tags/golang/" rel="tag"># golang</a>
               <a href="/tags/go/" rel="tag"># go</a>
+              <a href="/tags/golang/" rel="tag"># golang</a>
               <a href="/tags/boltdb/" rel="tag"># boltdb</a>
               <a href="/tags/transaction/" rel="tag"># transaction</a>
           </div>
@@ -563,12 +574,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -579,6 +584,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

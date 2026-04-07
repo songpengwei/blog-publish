@@ -418,7 +418,8 @@
 
       
           <blockquote>
-<p><a target="_blank" rel="noopener" href="https://princeton-cos597r.github.io/"><strong>Princeton COS 597R “Deep Dive into Large Language Models”</strong></a> 是普林斯顿大学的一门研究生课程，系统探讨了大语言模型原理、准备和训练、架构演进及其在多模态、对齐、工具使用等前沿方向中的应用与一些问题。注意，该课程侧重概念的理解上，而非工程的实现上。<br>我之前是在分布式系统和数据库内核方向，但这两年转到一家大模型公司做数据。本笔记主要是我对课程论文的梳理和精要。不同的是，我会结合在工作中解决实际问题的一些体感，给出一点转行人不同视角的思考，希望能对同样想从工程入门算法的同学一点帮助。</p>
+<p><a target="_blank" rel="noopener" href="https://princeton-cos597r.github.io/"><strong>Princeton COS 597R “Deep Dive into Large Language Models”</strong></a> 是普林斯顿大学的一门研究生课程，系统探讨了大语言模型原理、准备和训练、架构演进及其在多模态、对齐、工具使用等前沿方向中的应用与一些问题。注意，该课程侧重概念的理解上，而非工程的实现上。<br>
+我之前是在分布式系统和数据库内核方向，但这两年转到一家大模型公司做数据。本笔记主要是我对课程论文的梳理和精要。不同的是，我会结合在工作中解决实际问题的一些体感，给出一点转行人不同视角的思考，希望能对同样想从工程入门算法的同学一点帮助。</p>
 <p>本文来自我的付费专栏《<a target="_blank" rel="noopener" href="https://xiaobot.net/p/system-thinking">系统日知录</a>》，欢迎订阅查看更多大模型解析文章，文末有优惠券信息。</p>
 </blockquote>
 <p>本篇主要关注大模型的奠基之作——Transformer。</p>
@@ -504,7 +505,7 @@
 
       
           <p>随着云基础设施的不断成熟，新兴的公司为了快速实现业务目标，一般都会让基础设施上云。而在云上进行开发与传统上直接使用物理机开发其实有很大不同。云上更强调<strong>共享</strong>和<strong>弹性</strong>，此外，规模变大又会带来<strong>隔离性</strong>。这些改变也倒逼我们在进行开发时做出一些改变。在云上进行大规模数据处理，我主要有一些 spark 和 ray 的经验，使用的语言主要是 python；从这些技术栈出发，谈谈一些还算行之有效开发实践。</p>
-<p>使用 ray 在云上进行大规模数据处理，一个基本的思路是：构建最小可并行单元，进行功能测试和性能测试，然后再利用 <a target="_blank" rel="noopener" href="http://ray.data/">ray.data</a> （比如 <a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map.html">map</a>，<a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html">map_batches</a> ）进行 scale。使用 spark 时，会稍有不同；相比 ray，spark 虽然灵活性稍差一些，但抽象封装更好，可以从数据集整体的角度来考虑数据处理，spark 会通过你设置的分区数和并行度，自动地扩展和容错。</p>
+<p>使用 ray 在云上进行大规模数据处理，一个基本的思路是：构建最小可并行单元，进行功能测试和性能测试，然后再利用 <a target="_blank" rel="noopener" href="http://ray.data">ray.data</a> （比如 <a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map.html">map</a>，<a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html">map_batches</a> ）进行 scale。使用 spark 时，会稍有不同；相比 ray，spark 虽然灵活性稍差一些，但抽象封装更好，可以从数据集整体的角度来考虑数据处理，spark 会通过你设置的分区数和并行度，自动地扩展和容错。</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2025/06/04/data-processing-on-cloud/#more" rel="contents">
@@ -597,7 +598,8 @@
 </ol>
 <p>当然，如果你还想要低延迟、高并发、深度定制等需求，那对不起，这是 streamlit 被 tradeoff 出去的那一部分。但对于面向内部少数人使用的小工具来说，streamlit 简直是利器。可以说这个小生态位被它卡的太好了，所以能在 2022 年以 8 亿美金卖给 Snowflake。</p>
 <p>本文我们就一块来看看其基本设计哲学和一些简单实践。</p>
-<h1 id="设计哲学"><a href="#设计哲学" class="headerlink" title="设计哲学"></a>设计哲学</h1><p>其基本设计哲学可以概括为：</p>
+<h1>设计哲学</h1>
+<p>其基本设计哲学可以概括为：</p>
 <ol>
 <li>用后端语言写前端</li>
 <li>收到新事件会重新构建</li>
@@ -679,9 +681,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h1><p>在某些工作负载中，随着时间的推移，内存的使用会逐渐增长，直到 OOM。后面发现是内存碎片问题，而将系统默认的内存分配器（<a target="_blank" rel="noopener" href="https://github.com/lattera/glibc/blob/master/malloc/malloc.c">glibc malloc</a>）换成 <a target="_blank" rel="noopener" href="https://jemalloc.net/">jemalloc</a> ，能有效控制内存的增长上界。</p>
+          <h1>引子</h1>
+<p>在某些工作负载中，随着时间的推移，内存的使用会逐渐增长，直到 OOM。后面发现是内存碎片问题，而将系统默认的内存分配器（<a target="_blank" rel="noopener" href="https://github.com/lattera/glibc/blob/master/malloc/malloc.c">glibc malloc</a>）换成 <a target="_blank" rel="noopener" href="https://jemalloc.net/">jemalloc</a> ，能有效控制内存的增长上界。</p>
 <p>为了解其背后原理，便找来 jemalloc 最初的论文：<a target="_blank" rel="noopener" href="https://www.bsdcan.org/2006/papers/jemalloc.pdf">A Scalable Concurrent malloc(3) Implementation for FreeBSD</a> 来一探究竟。当然，相比 2006 年论文发表时，当前的 jemalloc 可能已经发生了很大改变，因此本文只对当时论文内容负责。更多 jemalloc 机制，大家可以去其 <a target="_blank" rel="noopener" href="https://github.com/jemalloc/jemalloc">github 仓库</a>查看文档和源码。</p>
-<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>在探讨论文的主要思路之前，我们先简单回顾下<strong>内存分配器</strong>（memory allocator）的<em>作用</em>和<em>边界</em>。简言之：</p>
+<h1>背景</h1>
+<p>在探讨论文的主要思路之前，我们先简单回顾下<strong>内存分配器</strong>（memory allocator）的<em>作用</em>和<em>边界</em>。简言之：</p>
 <ol>
 <li>对下，向操作系统申请<strong>大块</strong>内存（使用 <code>sbrk</code>、<code>mmap</code> 等系统调用）</li>
 <li>对上，处理应用层的各种尺寸的内存申请请求（<code>malloc(size)</code>），并在应用层“表示”不用（<code>free</code>）后进行释放</li>
@@ -774,7 +778,7 @@
           <blockquote>
 <p>Snowflake 由甲骨文的两位员工在 2012 年出来创办，一开始就瞄准云原生数仓，因此架构设计（在当时看来）非常“激进”。超前的视野带来超额的回报，Snowflake 在 2020 年正式上市，市值一度高达 700 亿美金，创造了史上规模最大的软件 IPO 记录。</p>
 <p>本文我们综合两篇论文：<a target="_blank" rel="noopener" href="https://dl.acm.org/doi/pdf/10.1145/2882903.2903741">The Snowflake Elastic Data Warehouse</a> 和 <a target="_blank" rel="noopener" href="https://www.usenix.org/system/files/nsdi20-paper-vuppalapati.pdf">Building An Elastic Query Engine on Disaggregated Storage</a>  来大致聊聊其架构设计。</p>
-<p> 本文来自我的专栏《<a target="_blank" rel="noopener" href="https://xiaobot.net/p/system-thinking">系统日知录</a>》，如果你觉得文章还不错，欢迎订阅支持我。</p>
+<p>本文来自我的专栏《<a target="_blank" rel="noopener" href="https://xiaobot.net/p/system-thinking">系统日知录</a>》，如果你觉得文章还不错，欢迎订阅支持我。</p>
 </blockquote>
 <p>这篇文章我早就想写了，但上次在看论文时卡住了——论文信息太多，地毯式的阅读，很快就淹没在细节中，当时也只看了三分之二，就搁置了。上周（20240707）在文章 <a target="_blank" rel="noopener" href="https://xiaobot.net/post/93d3e9ad-90f2-47ec-a942-ff95c351cba1">Spark：如何在云上做缩容</a>时提到了存算分离的 snowflake ，有读者要求写下，于是便重新捡起来。</p>
 <p>相比上次 push 的方式，本次采用 pull 的方式：即不是被动的读论文，而是先思考，如果让我设计这么一个云原生数仓，我要怎么设计，会有哪些问题等等。带着这些问题，我再去从论文中找答案，发现效率一下高了很多，也便让这篇文章没有再次难产。</p>
@@ -862,7 +866,8 @@
 <p>缘于某个播客提了一嘴，便找来书在通勤时听了。这版是傅雷翻在 1939 年译的版本，有一股淡淡的老式白话风。小书不长，几天便听完。我喜欢在走路的时候听东西，所听入耳、所观入眼，哲人的凝言练语、街头的风物百态，总能在心里发生奇妙的化学反应，偶在三伏天都一激灵。</p>
 <p>最近心绪颇为起伏，在上下班踱步听这本书时，数次给我宽慰平和，书中指出的快乐和不快乐之因，都命中了我的某些缺点和特点，因此听完觉得还是要写点东西。</p>
 </blockquote>
-<h1 id="罗素《幸福之路》"><a href="#罗素《幸福之路》" class="headerlink" title="罗素《幸福之路》"></a>罗素《幸福之路》</h1><p>人类从狩猎时代进入农耕时代后，虽获得了生活的相对安稳，却也失掉了向外的探索和冒险。到工业时代，城市化加剧，进一步脱离了自然的“蓝领白领”亦是如此。只有少数的企业家才仍然保持着丛林式的生活方式。</p>
+<h1>罗素《幸福之路》</h1>
+<p>人类从狩猎时代进入农耕时代后，虽获得了生活的相对安稳，却也失掉了向外的探索和冒险。到工业时代，城市化加剧，进一步脱离了自然的“蓝领白领”亦是如此。只有少数的企业家才仍然保持着丛林式的生活方式。</p>
 <p>选择安稳意味着有大量的“烦闷”（Boredom）需要排遣。但多数人过度的将注意力集中在自己的身上，比如畏罪狂（纠结于行为不符合少时的成见或社会的规训）、自溺狂（过度期待外界称许的虚荣）、自大狂（过度的权力欲望），则使得这种烦闷愈加在幻想中野蛮式的生长，直至占满人们的内心。</p>
           <!--noindex-->
             <div class="post-button">
@@ -951,12 +956,15 @@
 
       
           <blockquote>
-<p><a target="_blank" rel="noopener" href="http://ray.data/">ray.data</a> 是基于 ray core 的一层封装。依赖 ray.data，用户用简单的代码，就可以实现数据大规模的异构处理（主要指同时使用 CPU 和 GPU）。一句话总结：很简单好用，同时也有很多坑。<br>在 <a target="_blank" rel="noopener" href="https://xiaobot.net/post/55c2d455-3319-4c7f-9e5e-4eb118a482d7">上一篇</a>中，我们从用户接口出发，浅浅地梳理了一下 <a target="_blank" rel="noopener" href="http://ray.data/">ray.data</a> 的主要接口。本篇，我们从宏观的角度，大概串一下 ray.data 的基本原理。之后，我们再用几篇，结合代码细节和使用经验，探讨下比较重要的几块内容：执行调度、数据格式和避坑指南。<br> 本文来自我的专栏《<a target="_blank" rel="noopener" href="https://xiaobot.net/p/system-thinking">系统日知录</a>》，如果你觉得文章还不错，欢迎订阅支持我。</p>
+<p><a target="_blank" rel="noopener" href="http://ray.data">ray.data</a> 是基于 ray core 的一层封装。依赖 ray.data，用户用简单的代码，就可以实现数据大规模的异构处理（主要指同时使用 CPU 和 GPU）。一句话总结：很简单好用，同时也有很多坑。<br>
+在 <a target="_blank" rel="noopener" href="https://xiaobot.net/post/55c2d455-3319-4c7f-9e5e-4eb118a482d7">上一篇</a>中，我们从用户接口出发，浅浅地梳理了一下 <a target="_blank" rel="noopener" href="http://ray.data">ray.data</a> 的主要接口。本篇，我们从宏观的角度，大概串一下 ray.data 的基本原理。之后，我们再用几篇，结合代码细节和使用经验，探讨下比较重要的几块内容：执行调度、数据格式和避坑指南。<br>
+本文来自我的专栏《<a target="_blank" rel="noopener" href="https://xiaobot.net/p/system-thinking">系统日知录</a>》，如果你觉得文章还不错，欢迎订阅支持我。</p>
 </blockquote>
-<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>从高层来理解，ray.data 的一次数据处理任务大致可以分成前后相继的三阶段：</p>
+<h1>概述</h1>
+<p>从高层来理解，ray.data 的一次数据处理任务大致可以分成前后相继的三阶段：</p>
 <ol>
 <li><strong>数据加载</strong>：将数据从系统外部读到 ray 的 Object Store 中 （如 read_parquet）</li>
-<li><strong>数据变换</strong>：利用各种算子在 Object Store 中对数据进行变换（如 map&#x2F;filter&#x2F;repartition）</li>
+<li><strong>数据变换</strong>：利用各种算子在 Object Store 中对数据进行变换（如 map/filter/repartition）</li>
 <li><strong>数据写回</strong>：将 Object Store 中的数据写回外部存储（如 write_parquet）</li>
 </ol>
           <!--noindex-->
@@ -1139,7 +1147,8 @@
 <li>对于应用层来说，TCP 层交付的是顺序的数据。</li>
 </ol>
 <p>这个题有意思的点在于，借用了 TCP 的上下文之后，就可以先和候选人讨论一些 TCP 的基础知识，然后话锋一转，引出这道题。这样既可以考察一些基础知识，也可以考察工程代码能力。</p>
-<h1 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h1><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Packet</span> &#123;</span><br><span class="line">    <span class="type">size_t</span> offset;</span><br><span class="line">    <span class="type">size_t</span> length;</span><br><span class="line">    <span class="type">uint8_t</span> *data;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现一个“顺序交付”语义</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TCP</span> &#123;</span><br><span class="line">  <span class="comment">// 应用层调用：按顺序读取不超过 count 的字节数到 buf 中，并返回实际读到的字节数</span></span><br><span class="line">  <span class="function"><span class="type">size_t</span> <span class="title">read</span><span class="params">(<span class="type">void</span> *buf, <span class="type">size_t</span> count)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：得到一些随机顺序的 IP 层封包</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">receive</span><span class="params">(Packet* p)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：数据发完，连接关闭</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">finish</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h1>题目</h1>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Packet</span> &#123;</span><br><span class="line">    <span class="type">size_t</span> offset;</span><br><span class="line">    <span class="type">size_t</span> length;</span><br><span class="line">    <span class="type">uint8_t</span> *data;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现一个“顺序交付”语义</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TCP</span> &#123;</span><br><span class="line">  <span class="comment">// 应用层调用：按顺序读取不超过 count 的字节数到 buf 中，并返回实际读到的字节数</span></span><br><span class="line">  <span class="function"><span class="type">size_t</span> <span class="title">read</span><span class="params">(<span class="type">void</span> *buf, <span class="type">size_t</span> count)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：得到一些随机顺序的 IP 层封包</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">receive</span><span class="params">(Packet* p)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：数据发完，连接关闭</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">finish</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2024/05/05/infra-interview-tcp/#more" rel="contents">
@@ -1216,7 +1225,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>说的就是我的大规模数据系统专栏《系统日知录》—— 有人问，在读了你的专栏文章后，可能很久之后<del>才可能会用到</del>都不会用到，那为啥要买呢？何况，雨伞在雨天可是刚需，这专栏在面试的时候可不是。所以这实在不是一门好“生意”——<strong>受众狭窄、场景低频</strong>，两者乘数，便是我这惨淡销量了。</p>
+          <p>说的就是我的大规模数据系统专栏《系统日知录》—— 有人问，在读了你的专栏文章后，可能很久之后<s>才可能会用到</s>都不会用到，那为啥要买呢？何况，雨伞在雨天可是刚需，这专栏在面试的时候可不是。所以这实在不是一门好“生意”——<strong>受众狭窄、场景低频</strong>，两者乘数，便是我这惨淡销量了。</p>
 <p>这也是为什么成功的专栏动辄上万次购买，而我只卖了个二百五，也敢把经历拿出来说一说了。万一你有类似的危险想法，也可以参考一二。</p>
           <!--noindex-->
             <div class="post-button">
@@ -1358,12 +1367,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -1374,6 +1377,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

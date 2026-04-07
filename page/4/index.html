@@ -261,7 +261,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>在<a target="_blank" rel="noopener" href="https://io.google/2022/">Google I&#x2F;O 2022</a> 大会上，Google Cloud 发布了兼容 PostgreSQL 标准的云原生数据库 AlloyDB（注：Alloy 意为合金），号称比 Amazon 的同类产品（Aurora？）快两倍，这个口号，对老用户来说，应该不足以让其迁移，但对于新用户来说，确有一些吸引力。</p>
+          <p>在<a target="_blank" rel="noopener" href="https://io.google/2022/">Google I/O 2022</a> 大会上，Google Cloud 发布了兼容 PostgreSQL 标准的云原生数据库 AlloyDB（注：Alloy 意为合金），号称比 Amazon 的同类产品（Aurora？）快两倍，这个口号，对老用户来说，应该不足以让其迁移，但对于新用户来说，确有一些吸引力。</p>
 <p>由于笔者主要做存储，下面基于谷歌这篇介绍 AlloyDB 存储层<a target="_blank" rel="noopener" href="https://cloud.google.com/blog/products/databases/alloydb-for-postgresql-intelligent-scalable-storage">博文</a>，剖析下 AlloyDB 存储层架构，看看其设计有何亮色。</p>
 <blockquote>
 <p><strong>整体架构</strong></p>
@@ -361,7 +361,8 @@
           <p><strong>来源</strong>：<a target="_blank" rel="noopener" href="https://engineering.fb.com/2022/05/04/data-infrastructure/delta/">https://engineering.fb.com/2022/05/04/data-infrastructure/delta/</a></p>
 <p><strong>导读</strong>：偶然看到群里同学分享的 <a target="_blank" rel="noopener" href="https://engineering.fb.com/">Meta 博客</a>新公开的高可用、强一致、链式复制的对象存储。由于我也做过一段时间的对象存储，也分享过 Facebook 家的小文件存储：<a href="https://www.qtmuniao.com/2019/03/24/haystack/">Haystack</a>（做 batch） 和 <a href="https://www.qtmuniao.com/2019/03/30/f4/">F4</a>（冷热分开、EC）， 顿时来了兴致，好奇这次 Meta 又带来了什么干货。</p>
 <p>看完之后觉得的确有点意思，下面简单梳理下文章要点，感兴趣的同学可以去看看博客原文，还有华人小姐姐解说的相关视频哦。</p>
-<h3 id="Delta-是什么？"><a href="#Delta-是什么？" class="headerlink" title="Delta 是什么？"></a>Delta 是什么？</h3><p>Delta 是简单、可靠、可扩展、低依赖的对象存储，只提供四个基本操作：put、get、delete 和 list。在架构设计上，Delta 牺牲了<strong>读写延迟</strong>和<strong>存储效率</strong>，来换取架构的<strong>简单性</strong>和<strong>可靠性</strong>。</p>
+<h3 id="Delta-是什么？">Delta 是什么？</h3>
+<p>Delta 是简单、可靠、可扩展、低依赖的对象存储，只提供四个基本操作：put、get、delete 和 list。在架构设计上，Delta 牺牲了<strong>读写延迟</strong>和<strong>存储效率</strong>，来换取架构的<strong>简单性</strong>和<strong>可靠性</strong>。</p>
 <p>Delta 不是：</p>
 <ol>
 <li><strong>通用存储系统</strong>。Delta 只追求弹性、可靠和最小依赖。</li>
@@ -635,7 +636,8 @@
           <blockquote>
 <p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">这里</a>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。</p>
 </blockquote>
-<h1 id="事务型还是分析型"><a href="#事务型还是分析型" class="headerlink" title="事务型还是分析型"></a>事务型还是分析型</h1><p>术语 <strong>OL</strong>（Online）主要是指交互式的查询。</p>
+<h1>事务型还是分析型</h1>
+<p>术语 <strong>OL</strong>（Online）主要是指交互式的查询。</p>
 <p>术语<strong>事务</strong>（ transaction ）由来有一些历史原因。早期的数据库使用方多为商业交易（commercial ），比如买卖、发工资等等。但是随着数据库应用不断扩大，交易\事务作为名词保留了下来。</p>
 <blockquote>
 <p>事务不一定具有 ACID 特性，事务型处理多是随机的以较低的延迟进行读写，与之相反，分析型处理多为定期的批处理，延迟较高。</p>
@@ -729,7 +731,8 @@
           <blockquote>
 <p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">这里</a>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。</p>
 </blockquote>
-<p>第二章讲了上层抽象：数据模型和查询语言。<br>本章下沉一些，聚焦数据库底层如何处理查询和存储。这其中，有个<strong>逻辑链条</strong>：</p>
+<p>第二章讲了上层抽象：数据模型和查询语言。<br>
+本章下沉一些，聚焦数据库底层如何处理查询和存储。这其中，有个<strong>逻辑链条</strong>：</p>
 <blockquote>
 <p>使用场景→ 查询类型 → 存储格式。</p>
 </blockquote>
@@ -822,7 +825,8 @@
           <blockquote>
 <p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">这里</a>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。</p>
 </blockquote>
-<h2 id="概要"><a href="#概要" class="headerlink" title="概要"></a>概要</h2><p>本节围绕两个主要概念来展开。</p>
+<h2 id="概要">概要</h2>
+<p>本节围绕两个主要概念来展开。</p>
 <p>如何分析一个<strong>数据模型</strong>：</p>
 <ol>
 <li>基本考察点：数据基本元素，和元素之间的对应关系（一对多，多对多）</li>
@@ -920,7 +924,9 @@
 <p>计算下推其实是常见的思想：<strong>将计算推到数据旁</strong>。由于在数据库中，逻辑上，计算常在存储层之上，因此将一部分算子推到存储层去做，称为计算下推。其在分布式数据库中尤为重要。</p>
 <p>下面是 CockroachDB 和 TiDB 的解决方案，内容来自于文档和博客，因此可能和最新代码的逻辑并不一致。</p>
 </blockquote>
-<h2 id="CockroachDB"><a href="#CockroachDB" class="headerlink" title="CockroachDB"></a>CockroachDB</h2><h3 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h3><p>CockroachDB 中相应的模块叫 <a target="_blank" rel="noopener" href="https://github.com/cockroachdb/cockroach/blob/master/docs/RFCS/20160421_distributed_sql.md">DistSQL</a>，其思想来源于<a target="_blank" rel="noopener" href="http://research.google.com/archive/sawzall.html">Sawzall</a>，有点类似 <a target="_blank" rel="noopener" href="https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf">MapReduce</a>。支持的算子叫做 <strong>aggregator</strong>，本质上是对 SQL 聚合算子的一种泛化。</p>
+<h2 id="CockroachDB">CockroachDB</h2>
+<h3 id="基本概念">基本概念</h3>
+<p>CockroachDB 中相应的模块叫 <a target="_blank" rel="noopener" href="https://github.com/cockroachdb/cockroach/blob/master/docs/RFCS/20160421_distributed_sql.md">DistSQL</a>，其思想来源于<a target="_blank" rel="noopener" href="http://research.google.com/archive/sawzall.html">Sawzall</a>，有点类似 <a target="_blank" rel="noopener" href="https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf">MapReduce</a>。支持的算子叫做 <strong>aggregator</strong>，本质上是对 SQL 聚合算子的一种泛化。</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2022/04/05/crdb-tidb-dist-sql/#more" rel="contents">
@@ -1096,7 +1102,7 @@
       
           <blockquote>
 <p>（贾）岛初赴举京师，一日驴上得句云：“鸟宿池边树，僧敲月下门”。始欲着“推”字，又欲着“敲”字，练之未定，遂于驴上吟哦，时时引手作推敲之势。</p>
-<p> —— 宋·胡仔《苕溪渔隐丛话》卷十九引《刘公嘉话》</p>
+<p>—— 宋·胡仔《苕溪渔隐丛话》卷十九引《刘公嘉话》</p>
 </blockquote>
 <p>命名，是编码中最为紧要的事情，其之于程序，便如脸面之于少女。好的命名，能清晰的传达代码的意图，甚而，有一种韵律的美感。而懒散随意的起名，则令人如堕云雾，不忍卒读，会一遍遍地消耗维护者的精气神儿。此外，混乱的命名体系，能轻巧的掩藏 BUG，贻祸千里。</p>
 <p>因此，我们在写代码时，有必要花一点时间，对关键命名进行推敲，与人方便，与己方便。对于生命周期越长的项目，其益处便越明显。那么该如何推敲呢？结合自己写代码、看代码、Review 代码的一些经验，聊聊我的一些体会。</p>
@@ -1187,7 +1193,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="引子"><a href="#引子" class="headerlink" title="引子"></a>引子</h2><p>哈希的本质是从一个较大空间映射到一个较小的空间，因此在插入数据足够多之后，根据鸽巢原理，一定会存在位置冲突。常见的<strong>哈希表（Hash Table 或者字典，dictionary）</strong>会通过<strong>链表</strong>、<strong>开放地址探测</strong>等方式来处理冲突。单桶多函数的布谷鸟哈希，便是开放地址法处理冲突的一种哈希表，只不过有冲突后，不是通过线性寻找新的位置，而是通过额外哈希函数来寻找。</p>
+          <h2 id="引子">引子</h2>
+<p>哈希的本质是从一个较大空间映射到一个较小的空间，因此在插入数据足够多之后，根据鸽巢原理，一定会存在位置冲突。常见的<strong>哈希表（Hash Table 或者字典，dictionary）<strong>会通过</strong>链表</strong>、<strong>开放地址探测</strong>等方式来处理冲突。单桶多函数的布谷鸟哈希，便是开放地址法处理冲突的一种哈希表，只不过有冲突后，不是通过线性寻找新的位置，而是通过额外哈希函数来寻找。</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/12/07/cuckoo-hash-and-cuckoo-filter/#more" rel="contents">
@@ -1277,7 +1284,8 @@
           <blockquote>
 <p>最近有兴致，想看点中国经济的书，受朋友推荐知道这本书。在微信读书上用差不多一周的时间赶着读完，虽然囫囵吞枣，倒也酣畅淋漓。以前看过吴晓波《激荡三十年》的一些章节，本书算是后传，风格一致，但是读起来会更有共鸣，因为这也正是初代九零后我们的人生中的黄金十年。作为“渐有意识”的亲历者，回放感很强。</p>
 </blockquote>
-<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>吴晓波很擅长宏大叙事和情绪铺垫，在本书中全景式的再现了 2008~2018 这十年间中国经济和企业的波澜起伏。书名“水大鱼大”乍一看很俗，看完后细想，倒也形象。市场和企业的关系，正是鱼和水的关系——水大容纳了鱼的成长厮杀，鱼大成就了水的鲜活壮阔。</p>
+<h2 id="概述">概述</h2>
+<p>吴晓波很擅长宏大叙事和情绪铺垫，在本书中全景式的再现了 2008~2018 这十年间中国经济和企业的波澜起伏。书名“水大鱼大”乍一看很俗，看完后细想，倒也形象。市场和企业的关系，正是鱼和水的关系——水大容纳了鱼的成长厮杀，鱼大成就了水的鲜活壮阔。</p>
 <p>这十年也是我从懵懂少年到步入青年的一个人生阶段。作为这段经济史的亲身经历者，对于其间的很多现象，有的没太留意，有的不得其解。作者以类似编年体的方式，以更高维的视角，紧扣时空二象，将各种线头有机的组织在一块，并带出了一些当时不广为人知的秘辛。通过这些冰山之下的暗线，让我们在重新审视这段历史时，隐隐然摸到了一些脉络。</p>
           <!--noindex-->
             <div class="post-button">
@@ -1419,12 +1427,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -1435,6 +1437,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

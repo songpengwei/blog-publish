@@ -346,7 +346,8 @@
 <p><a target="_blank" rel="noopener" href="https://memgraph.com/">Memgraph</a> 是一个内存型图数据库，使用 OpenCypher 作为查询语言，主打小数据量、低延迟的图场景。由于 Memgraph 是开源的（repo 在<a target="_blank" rel="noopener" href="https://github.com/memgraph/memgraph">这</a>，使用 C++ 实现）我们可以一窥其实现。根据<a target="_blank" rel="noopener" href="https://github.com/memgraph/memgraph/blob/master/src/storage/v2/storage.hpp#L57">这行注释</a>，我们可以看出，其内存结构实现灵感主要来自论文：<a target="_blank" rel="noopener" href="https://db.in.tum.de/~muehlbau/papers/mvcc.pdf">Fast Serializable Multi-Version Concurrency Control for Main-Memory Database Systems</a>。</p>
 <p>本系列主要分为两大部分，<strong>论文解读</strong>和<strong>代码串讲</strong>，每一部分会根据情况拆成几篇。本篇，是论文解读（一），主要讲论文概述以及如何使用链表巧妙的存储了多版本、控制了可见性。论文解析（二）和（三），会讲如何实现可串行化以及回收多版本数据。</p>
 </blockquote>
-<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>从论文题目可以看出，本论文旨在实现一种针对<strong>内存型</strong>数据库的、基于<strong>多版本</strong>（MVCC）实现的、支持可<strong>串行化</strong>隔离级别的高性能数据结构。其基本思想是：</p>
+<h2 id="概述">概述</h2>
+<p>从论文题目可以看出，本论文旨在实现一种针对<strong>内存型</strong>数据库的、基于<strong>多版本</strong>（MVCC）实现的、支持可<strong>串行化</strong>隔离级别的高性能数据结构。其基本思想是：</p>
 <ol>
 <li>使用列存</li>
 <li>复用 Undo Buffer 数据结构</li>
@@ -518,12 +519,16 @@
 
       
           <blockquote>
-<p><a target="_blank" rel="noopener" href="https://www.ycombinator.com/">Y Combinator</a>（YC）是一家知名的美国创业加速器，自2005年成立以来致力于推动初创企业成功。作为初创企业界的领军人物，YC 的特点是，不仅提供资金，还提供指导、资源和网络，以帮助初创企业在竞争激烈的市场中脱颖而出。YC 的成功案例包括 Airbnb、Dropbox 和 Reddit 等，这些公司现在都是各自领域的巨头。<br>YC 发布的“创业公司征集请求”（<a target="_blank" rel="noopener" href="https://www.ycombinator.com/rfs">RFS</a>）是其基于对市场趋势、技术进步和全球挑战的深入理解，对全球创业社区的发出的一种前瞻性呼吁，相信能够对创业者和想选择创业公司的小伙伴们有诸多启发。2024 年的 RFS 一共有 20 个方向，这是上篇，包括前十个。如果看的人多，我再继续翻译后面 10 条。以下是正文。</p>
+<p><a target="_blank" rel="noopener" href="https://www.ycombinator.com/">Y Combinator</a>（YC）是一家知名的美国创业加速器，自2005年成立以来致力于推动初创企业成功。作为初创企业界的领军人物，YC 的特点是，不仅提供资金，还提供指导、资源和网络，以帮助初创企业在竞争激烈的市场中脱颖而出。YC 的成功案例包括 Airbnb、Dropbox 和 Reddit 等，这些公司现在都是各自领域的巨头。<br>
+YC 发布的“创业公司征集请求”（<a target="_blank" rel="noopener" href="https://www.ycombinator.com/rfs">RFS</a>）是其基于对市场趋势、技术进步和全球挑战的深入理解，对全球创业社区的发出的一种前瞻性呼吁，相信能够对创业者和想选择创业公司的小伙伴们有诸多启发。2024 年的 RFS 一共有 20 个方向，这是上篇，包括前十个。如果看的人多，我再继续翻译后面 10 条。以下是正文。</p>
 </blockquote>
-<h1 id="引言"><a href="#引言" class="headerlink" title="引言"></a><strong>引言</strong></h1><p>虽然，我们投资过的最棒创业 idea，往往并不是一开始我们想找的，反而是那些无心插柳的。</p>
+<h1><strong>引言</strong></h1>
+<p>虽然，我们投资过的最棒创业 idea，往往并不是一开始我们想找的，反而是那些无心插柳的。</p>
 <p>但仍然，我们对几类创业公司非常期待。以下是我们最新的 2024 版本的<strong>创业公司征集请求</strong>（Requests for Startups，RFS），简述了下我们关注一些创业方向。</p>
 <blockquote>
-<p>但并非说创业只有选择这些方向，才能够申请 Y Combinator。其实我们的多数投资仍然集中在过于一直关注的互联网和移动端。所以如果在阅读本文前，你已经有相关方向的创业想法，请继续做下去。<br>同样的，也不是说我们列了这些方向，你就要据此创立一家公司。RFS 的目的在于，如果你正好已经有一个类似的想法，那欢迎向我们申请。<br>另外，如果你想知道我们在寻求投资哪些类型的非盈利组织，可以看<a target="_blank" rel="noopener" href="https://www.ycombinator.com/blog/what-y-combinator-looks-for-in-nonprofits/">这篇文章</a>。</p>
+<p>但并非说创业只有选择这些方向，才能够申请 Y Combinator。其实我们的多数投资仍然集中在过于一直关注的互联网和移动端。所以如果在阅读本文前，你已经有相关方向的创业想法，请继续做下去。<br>
+同样的，也不是说我们列了这些方向，你就要据此创立一家公司。RFS 的目的在于，如果你正好已经有一个类似的想法，那欢迎向我们申请。<br>
+另外，如果你想知道我们在寻求投资哪些类型的非盈利组织，可以看<a target="_blank" rel="noopener" href="https://www.ycombinator.com/blog/what-y-combinator-looks-for-in-nonprofits/">这篇文章</a>。</p>
 </blockquote>
           <!--noindex-->
             <div class="post-button">
@@ -1027,7 +1032,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1 id="数据库面试的几个常见误区"><a href="#数据库面试的几个常见误区" class="headerlink" title="数据库面试的几个常见误区"></a>数据库面试的几个常见误区</h1><p>由于业务的需要，最近面试了很多数据库候选人。发现很多候选人在面试准备时会有一些普遍的误区，借此机会展开聊聊我作为面试官的一些建议。这次主要讲四个误区：代码基础差、工程素养弱、沟通思维无、知识框架碎。</p>
+          <h1>数据库面试的几个常见误区</h1>
+<p>由于业务的需要，最近面试了很多数据库候选人。发现很多候选人在面试准备时会有一些普遍的误区，借此机会展开聊聊我作为面试官的一些建议。这次主要讲四个误区：代码基础差、工程素养弱、沟通思维无、知识框架碎。</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2023/08/21/database-interview-myth/#more" rel="contents">
@@ -1110,7 +1116,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1 id=""><a href="#" class="headerlink" title=""></a></h1><blockquote>
+          <h1></h1>
+<blockquote>
 <p>我们在工程实践中，有些构建代码的小技巧，其背后所体现的思想，生活中也常常可见。本系列便是这样一组跨越生活和工程的奇怪联想。这是第一篇：多轮次拆解，也即，<strong>很多我们习惯一遍完成的事情，有时候拆成多个轮次完成，会简单、高效很多</strong>。</p>
 </blockquote>
 <p>我在进行 code review 时，常看到一些新手同学在一个 for 循环中干太多事情。常会引起多层嵌套，或者 for 循环内容巨大无比。此时，如果不损失太多性能，我通常建议同学将要干的事情拆成多少个步骤，每个步骤一个 for 循环。甚至，可以每个步骤一个函数。</p>
@@ -1339,12 +1346,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -1355,6 +1356,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第三节课笔记，GFS。  概述存储">
+  <meta name="description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第三节课笔记，GFS。  概述 存">
 <meta property="og:type" content="article">
 <meta property="og:title" content="MIT 6.824 2020 视频笔记三：GFS">
 <meta property="og:url" content="https://www.qtmuniao.com/2020/03/14/6-824-vidoe-notes-3-gfs/index.html">
 <meta property="og:site_name" content="木鸟杂记">
-<meta property="og:description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第三节课笔记，GFS。  概述存储">
+<meta property="og:description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第三节课笔记，GFS。  概述 存">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png">
 <meta property="article:published_time" content="2020-03-14T06:35:12.000Z">
@@ -278,31 +278,41 @@
 <p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
 <p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vY2hhbm5lbC9VQ183V3JiWlRDT0R1MW9fa2ZVTXE4OGcvdmlkZW9z">Youtube<i class="fa fa-external-link-alt"></i></span>，<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL2F2OTA5MTU1MjY=">B站<i class="fa fa-external-link-alt"></i></span>。课程资料：<span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvc2NoZWR1bGUuaHRtbA==">6.824主页<i class="fa fa-external-link-alt"></i></span>。本篇是第三节课笔记，GFS。</p>
 </blockquote>
-<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>存储（Storage）是一个非常关键的抽象，用途广泛。</p>
+<h2 id="概述">概述</h2>
+<p>存储（Storage）是一个非常关键的抽象，用途广泛。</p>
 <p>GFS 论文还提到了很多关于容错、备份和一致性的问题。</p>
 <p>GFS 本身是 Google 内部一个很成功的实用系统，其关键点被很好的组织到一块发表成为了学术论文，从硬件到软件，涵盖了很多问题，值得我们学习。</p>
 <p>想详细了解 GFS，也可以看我之前的 <a href="https://www.qtmuniao.com/2019/05/26/gfs/">GFS 论文笔记</a>。</p>
 <span id="more"></span>
-
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2020/03/14/6-824-vidoe-notes-3-gfs/">https://www.qtmuniao.com/2020/03/14/6-824-vidoe-notes-3-gfs/</a>, 转载请注明出处</em></p>
-<h2 id="为什么难"><a href="#为什么难" class="headerlink" title="为什么难"></a>为什么难</h2><ol>
-<li><p>性能（High Performance）–&gt; 分片（sharding）</p>
+<h2 id="为什么难">为什么难</h2>
+<ol>
+<li>
+<p>性能（High Performance）–&gt; 分片（sharding）</p>
 <p>分布式系统，自然想利用大量的机器提供成比例的性能，于是通常将数据分散到不同的机器上，以并行读取。我们称之为：分片（Sharding）。但分片一多，故障率就上来了。</p>
 </li>
-<li><p>故障（Faults）—&gt; 容错（tolerance）</p>
+<li>
+<p>故障（Faults）—&gt; 容错（tolerance）</p>
 <p>故障多了，就需要进行自动容错。最简单直接、通常也最有效的容错方法就是：备份（Replication，或译为冗余、副本）。如果副本是可修改的，就需要定期同步，这就引出了一致性的问题。</p>
 </li>
-<li><p>副本（Replication）—&gt; 一致性（Consistency）</p>
+<li>
+<p>副本（Replication）—&gt; 一致性（Consistency）</p>
 <p>当然，通过精心的设计，可以维持系统的一致性，但这就意味着你需要损失性能。</p>
 </li>
-<li><p>一致性（Consistency）—&gt; 低性能（Low Performance）</p>
+<li>
+<p>一致性（Consistency）—&gt; 低性能（Low Performance）</p>
 </li>
 </ol>
 <p>这有点类似于反证法，最后推出了矛盾，说明了构建分布式存储系统这件事的难点所在。在实践中，在<strong>给定场景性</strong>下，我们有更多的取舍余地，也就让设计一个合理的系统成为可能。</p>
-<h2 id="一致性"><a href="#一致性" class="headerlink" title="一致性"></a>一致性</h2><h3 id="强一致性"><a href="#强一致性" class="headerlink" title="强一致性"></a>强一致性</h3><p>即，尽管存储系统中有很多副本、很多机器，但是对外表现的行为却像单机一样：所有客户端都能够读到其他客户端之前所写内容。这个行为，或者说保证，看起来很简单、自然，但在分布式环境中，这确非易事。这部分想详细了解的可以看我翻译的一篇关于 CAP 的<a href="https://www.qtmuniao.com/2020/02/16/not-cp-or-ap/">经典文章</a>。</p>
-<h3 id="糟糕设计"><a href="#糟糕设计" class="headerlink" title="糟糕设计"></a>糟糕设计</h3><p>为了使得所有副本保持一致性，可以在在客户端做同步：每次写操作，都并行的写多个备份。每个备份服务器接收到的写操作顺序可能并不一致，从而造成备份的不一致性。</p>
-<h2 id="GFS"><a href="#GFS" class="headerlink" title="GFS"></a>GFS</h2><p>在谷歌三篇著名论文（MapReduce，GFS，Bigtable）出来之前，一些分布式的理论大多停留在学术界中，谷歌由于面临海量数据（youtube 视频、网页索引等等）的处理、存储和访问需求，最早开发出了实用的大规模的分布式框架。</p>
-<h3 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h3><ol>
+<h2 id="一致性">一致性</h2>
+<h3 id="强一致性">强一致性</h3>
+<p>即，尽管存储系统中有很多副本、很多机器，但是对外表现的行为却像单机一样：所有客户端都能够读到其他客户端之前所写内容。这个行为，或者说保证，看起来很简单、自然，但在分布式环境中，这确非易事。这部分想详细了解的可以看我翻译的一篇关于 CAP 的<a href="https://www.qtmuniao.com/2020/02/16/not-cp-or-ap/">经典文章</a>。</p>
+<h3 id="糟糕设计">糟糕设计</h3>
+<p>为了使得所有副本保持一致性，可以在在客户端做同步：每次写操作，都并行的写多个备份。每个备份服务器接收到的写操作顺序可能并不一致，从而造成备份的不一致性。</p>
+<h2 id="GFS">GFS</h2>
+<p>在谷歌三篇著名论文（MapReduce，GFS，Bigtable）出来之前，一些分布式的理论大多停留在学术界中，谷歌由于面临海量数据（youtube 视频、网页索引等等）的处理、存储和访问需求，最早开发出了实用的大规模的分布式框架。</p>
+<h3 id="特点">特点</h3>
+<ol>
 <li>体量大，速度快（Big，Fast）：海量数据的快速存取</li>
 <li>全球部署（Global）：不同 site 的数据访问和共享</li>
 <li>分片（Sharding）：多客户端并发访问，增大吞吐</li>
@@ -319,35 +329,43 @@
 <li>为了保证数据访问不出错，需要提供强一致性保证（GFS 仅提供某种弱一致性）</li>
 <li>为了系统的可靠性，用多机来保证主节点的可靠性（GFS 使用了单点 Master）</li>
 </ol>
-<h3 id="系统角色"><a href="#系统角色" class="headerlink" title="系统角色"></a>系统角色</h3><p>Clients：客户端，通过接口访问系统。</p>
+<h3 id="系统角色">系统角色</h3>
+<p>Clients：客户端，通过接口访问系统。</p>
 <p>Master：保存命名空间以及元信息</p>
 <p>ChunkServer：存储节点。</p>
-<h3 id="Master-数据结构"><a href="#Master-数据结构" class="headerlink" title="Master 数据结构"></a>Master 数据结构</h3><p>Master 数据：</p>
+<h3 id="Master-数据结构">Master 数据结构</h3>
+<p>Master 数据：</p>
 <p>主要有以下两张表（Map）：</p>
 <ol>
-<li><p>文件名到 chunk 句柄的映射：filename –&gt; array of chunk handles（nv）</p>
+<li>
+<p>文件名到 chunk 句柄的映射：filename --&gt; array of chunk handles（nv）</p>
 </li>
-<li><p>chunk 句柄到 chunk元信息的映射（包括副本位置，chunk 版本号，主 chunk，租约过期时间）：chunk handle —&gt; list of chunk servers(v)&#x2F;version(nv)&#x2F; Primary(v) &#x2F; lease expire time(v)</p>
+<li>
+<p>chunk 句柄到 chunk元信息的映射（包括副本位置，chunk 版本号，主 chunk，租约过期时间）：chunk handle —&gt; list of chunk servers(v)/version(nv)/ Primary(v) / lease expire time(v)</p>
 <p>这两个数据结构都存在内存（RAM）中。但为了宕机恢复，需要把一些信息（标记为 nv：non-volatile）写到硬盘上，即：</p>
 </li>
-<li><p>读取，从内存中读即可。</p>
+<li>
+<p>读取，从内存中读即可。</p>
 </li>
-<li><p>写入，修改内存同时在磁盘上记操作日志（ LOG）+ 快照（CheckPoint）。</p>
+<li>
+<p>写入，修改内存同时在磁盘上记操作日志（ LOG）+ 快照（CheckPoint）。</p>
 <p>对于另外一些信息（标记为v：volatile），根据从 chunkserver 来的心跳构建即可。</p>
 </li>
 </ol>
 <p>使用日志（Log）而不是数据库（DB）来记录操作信息，是因为在磁盘上，前者更快。但如果操作特别多，恢复起来会很慢。能不能压缩？因此有了快照（snapshot）：将操作日志所对应的内存状态通过某种格式（比如说B-tree）做一个快照。两者结合：将历史息用快照存储、最近一段信息用操作日志存储。这样既提高了空间利用率，也降低了操作延迟。</p>
-<h3 id="读写流程"><a href="#读写流程" class="headerlink" title="读写流程"></a>读写流程</h3><p><strong>读取 READS</strong>：</p>
+<h3 id="读写流程">读写流程</h3>
+<p><strong>读取 READS</strong>：</p>
 <ol>
-<li>文件名、偏移量 –请求-&gt; Master</li>
-<li>Master –回应–&gt; Chunk 句柄，Chunk 副本地址列表（Client 会缓存该信息）</li>
+<li>文件名、偏移量 --请求-&gt; Master</li>
+<li>Master --回应–&gt; Chunk 句柄，Chunk 副本地址列表（Client 会缓存该信息）</li>
 <li>客户端向某个副本（比如物理最近）所在的 chunk sever 请求数据，chunk server 返回相应数据</li>
 </ol>
 <p>Q&amp;A：</p>
 <ol>
 <li>待访问数据跨 chunk 怎么办？GFS 会提供客户端 lib，自动将其拆成多次请求。客户端不需要关心这些细节。</li>
 </ol>
-<p><strong>写入 WRITES</strong>：<br>这里只讲一下 Record Appends，分两种情况，</p>
+<p><strong>写入 WRITES</strong>：<br>
+这里只讲一下 Record Appends，分两种情况，</p>
 <ul>
 <li>Master 上没有主副本信息（No Primary）</li>
 </ul>
@@ -375,7 +393,8 @@
 <li>当发生网络分区时，Primary 和 Client 可以正常连接，但是与 Master 失联。租约到期时，没有收到Primary 心跳（Primary 通过向 Master 心跳来续约），Master 就会认为 Primary 宕机，从而重新选择一个 Primary。此时就会形成 split brain。这种情况就比较难办了。一个解决办法是，Master 等旧 Primary 租约过期（旧 Primary 也知道自己的租约过期时间，没有正常续约时，会自动失去 Primary 身份）后再去选择一个新 Primary。</li>
 <li>如果要 Append 的某个文件还不存在怎么办？Master 会初始化一个版本号，然后随机选定一个 Primary 和几个 secondaries，然后回复给 Client。</li>
 </ol>
-<h3 id="一些问题"><a href="#一些问题" class="headerlink" title="一些问题"></a>一些问题</h3><p>为了实现一致性，可能需要类似两阶段提交的协议，但无疑会降低性能。</p>
+<h3 id="一些问题">一些问题</h3>
+<p>为了实现一致性，可能需要类似两阶段提交的协议，但无疑会降低性能。</p>
 <p>随着数据量的增大，元信息变多，Master 的内存可能会装不下，也就是 GFS 的单点瓶颈问题。</p>
 <p>Master 恢复需要人工接入，导致系统宕机恢复可能需要数十分钟。</p>
 
@@ -411,13 +430,13 @@
       <div class="popular-posts-title"><a href="/2020/02/29/6-824-video-notes-1/" rel="bookmark">MIT 6.824 2020 视频笔记一：绪论</a></div>
     </li>
     <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="bookmark">MIT 6.824 2020 视频笔记五：Go Concurrency</a></div>
+    </li>
+    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/03/06/6-824-video-notes-2/" rel="bookmark">MIT 6.824 2020 视频笔记二：RPC和线程</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/04/01/6-824-video-notes-4-vm-ft/" rel="bookmark">MIT 6.824 2020 视频笔记四：VM-FT</a></div>
-    </li>
-    <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="bookmark">MIT 6.824 2020 视频笔记五：Go Concurrency</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/" rel="bookmark">MIT 6.824 2020 视频笔记六：Fault Tolerate Raft 1</a></div>
@@ -583,12 +602,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -599,6 +612,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

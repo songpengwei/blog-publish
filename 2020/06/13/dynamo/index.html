@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="概览Dynamo 是一个高可用的 KV 存储系统。为了保证高可用和高性能，Dynamo 采用了最终一致性模型，它对开发人员提供一种新型 API，使用了版本机制，并通过用户侧辅助解决冲突。Dynamo 目标是提供不间断的服务，同时保证性能和可扩展性。由于亚马逊大量采用了去中心化、高度解耦微服务架构，因此对微服务状态的存储系统的可用性要求尤其高。 S3 （Simple Storage Service）">
+  <meta name="description" content="概览 Dynamo 是一个高可用的 KV 存储系统。为了保证高可用和高性能，Dynamo 采用了最终一致性模型，它对开发人员提供一种新型 API，使用了版本机制，并通过用户侧辅助解决冲突。Dynamo 目标是提供不间断的服务，同时保证性能和可扩展性。由于亚马逊大量采用了去中心化、高度解耦微服务架构，因此对微服务状态的存储系统的可用性要求尤其高。 S3 （Simple Storage Service">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Amazon 针对小对象的分布式键值存储——Dynamo">
 <meta property="og:url" content="https://www.qtmuniao.com/2020/06/13/dynamo/index.html">
 <meta property="og:site_name" content="木鸟杂记">
-<meta property="og:description" content="概览Dynamo 是一个高可用的 KV 存储系统。为了保证高可用和高性能，Dynamo 采用了最终一致性模型，它对开发人员提供一种新型 API，使用了版本机制，并通过用户侧辅助解决冲突。Dynamo 目标是提供不间断的服务，同时保证性能和可扩展性。由于亚马逊大量采用了去中心化、高度解耦微服务架构，因此对微服务状态的存储系统的可用性要求尤其高。 S3 （Simple Storage Service）">
+<meta property="og:description" content="概览 Dynamo 是一个高可用的 KV 存储系统。为了保证高可用和高性能，Dynamo 采用了最终一致性模型，它对开发人员提供一种新型 API，使用了版本机制，并通过用户侧辅助解决冲突。Dynamo 目标是提供不间断的服务，同时保证性能和可扩展性。由于亚马逊大量采用了去中心化、高度解耦微服务架构，因此对微服务状态的存储系统的可用性要求尤其高。 S3 （Simple Storage Service">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://i.loli.net/2020/06/21/HdFhQBOPjX52vl3.png">
 <meta property="og:image" content="https://i.loli.net/2020/06/21/kOE3iGgo5dWLpvI.png">
@@ -282,7 +282,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="概览"><a href="#概览" class="headerlink" title="概览"></a>概览</h2><p>Dynamo 是一个高可用的 KV 存储系统。为了保证高可用和高性能，Dynamo 采用了最终一致性模型，它对开发人员提供一种新型 API，使用了版本机制，并通过用户侧辅助解决冲突。Dynamo 目标是提供不间断的服务，同时保证性能和可扩展性。由于亚马逊大量采用了去中心化、高度解耦微服务架构，因此对微服务状态的存储系统的可用性要求尤其高。</p>
+        <h2 id="概览">概览</h2>
+<p>Dynamo 是一个高可用的 KV 存储系统。为了保证高可用和高性能，Dynamo 采用了最终一致性模型，它对开发人员提供一种新型 API，使用了版本机制，并通过用户侧辅助解决冲突。Dynamo 目标是提供不间断的服务，同时保证性能和可扩展性。由于亚马逊大量采用了去中心化、高度解耦微服务架构，因此对微服务状态的存储系统的可用性要求尤其高。</p>
 <p>S3 （Simple Storage Service）是 Amazon 另一款有名的存储服务，虽然也可以理解为 KV 存储，但它和 Dynamo 的目标场景并不一致。S3 是面向大文件的对象存储服务，主要存储二进制文件，不提供跨对象的事务。而 Dynamo 是一款面向小文件的文档存储服务，主要存储结构化数据（如 json），并且可以对数据设置索引，且支持跨数据条目的事务。</p>
 <p>相对于传统的关系型数据库，Dynamo 可以认为是只提供主键索引，从而获取更高的性能和更好的扩展性。</p>
 <p>为了实现可扩展性和高可用性，并保证最终一致性，Dynamo 综合使用了以下技术：</p>
@@ -299,29 +300,35 @@
 <li>使用哈希值进行数据分片，组织数据分布，均衡数据负载。</li>
 </ol>
 <span id="more"></span>
-
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2020/06/13/dynamo/">https://www.qtmuniao.com/2020/06/13/dynamo/</a>, 转载请注明出处</em></p>
-<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><h3 id="目标和假设"><a href="#目标和假设" class="headerlink" title="目标和假设"></a>目标和假设</h3><p>不同的设计假设和要求会导致完全不同的设计，Dynamo 的设计目标有以下几个：</p>
+<h2 id="背景">背景</h2>
+<h3 id="目标和假设">目标和假设</h3>
+<p>不同的设计假设和要求会导致完全不同的设计，Dynamo 的设计目标有以下几个：</p>
 <p><strong>查询模型</strong>。使用 Dynamo 只会使用主键进行查询，一般没有跨数据条目，因此不需要关系模型。此外，Dynamo 假设其存储的数据都相对较小，通常小于 1M。</p>
 <p><strong>ACID 特性</strong>。传统关系型数据库（<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvREJNUw==">DBMS<i class="fa fa-external-link-alt"></i></span>）为了保证事务的正确性和可靠性，通常需要具备 ACID 特性。但对 ACID 的支持会极大降低数据的性能，为了高可用性，Dynamo 只提供弱一致性（C），不提供隔离性（I），不允许单个 key 的并发更新。</p>
 <p><strong>效率</strong>。Amazon 中大部分服务对延迟有着严格的要求，为了能够满足此类服务的 SLA，Dynamo 须可配置，让用户自己在性能、效率、可用性和持久化间进行选择。</p>
 <p><strong>其他</strong>。Dynamo 只用在 Amazon 内部服务中，因此可以不考虑安全性。此外，很多服务会使用独立的 Dynamo 实例，因此最初针对可扩展性的目标在百台机器级别。</p>
-<h3 id="SLA"><a href="#SLA" class="headerlink" title="SLA"></a>SLA</h3><p>由于采用微服务架构，Amazon 购物网站的每个页面的渲染通常会涉及到上百个服务。为了保证用户体验，必须对每个服务的延迟做严格限制。Amazon 采用三个九（99.9% 的请求需要小于 300ms）的 SLA。而服务的状态存储环节则是提供该 SLA 的关键节点，为此 Dynamo 的一个关键设计是让服务可按需定制持久化和一致性等参数，以在性能、成本和正确性间进行抉择。</p>
-<h3 id="设计考量"><a href="#设计考量" class="headerlink" title="设计考量"></a>设计考量</h3><p>对于多副本系统，高可用性和强一致性是一对矛盾。传统商用系统多为了保证强一致性而牺牲部分可用性，但Dynamo 为高可用而生，因此选择了异步同步策略。但是由于网络和服务器故障的频发特性，系统必须处理这些故障所导致的不一致，或者说是冲突。这些冲突如何解决，主要包括两方面：在什么时候解决，以及，谁来解决。</p>
-<p><strong>何时解决</strong>。传统存储系统为了简化读取，通常在写入侧解决冲突，即当存在冲突的时候，拒绝写入。但 Dynamo 为了保证商城业务对用户任意时刻可用（比如随时能将商品加购物车，毕竟类似过程的体验稍微一下降，就会影响大把的收入），需要提供”永远可写”（always writable）的保证，因此需要将解决冲突的复杂度推迟到<strong>读取</strong>时刻。</p>
-<p><strong>谁来解决</strong>。是由 Dynamo 来解决，还是应用侧来解决。如果是 Dynamo 系统来解决，通常会无脑选择”后者胜(last write win)”，即使用较新的更改覆盖偏旧的更改。如果交由应用来解决，则可以依据应用需求便宜行事，比如可以合并多次多次加购物车操作返回给用户。当然，这个是可选的，毕竟很多应用使用通用策略（”last write win”）就足够了。</p>
+<h3 id="SLA">SLA</h3>
+<p>由于采用微服务架构，Amazon 购物网站的每个页面的渲染通常会涉及到上百个服务。为了保证用户体验，必须对每个服务的延迟做严格限制。Amazon 采用三个九（99.9% 的请求需要小于 300ms）的 SLA。而服务的状态存储环节则是提供该 SLA 的关键节点，为此 Dynamo 的一个关键设计是让服务可按需定制持久化和一致性等参数，以在性能、成本和正确性间进行抉择。</p>
+<h3 id="设计考量">设计考量</h3>
+<p>对于多副本系统，高可用性和强一致性是一对矛盾。传统商用系统多为了保证强一致性而牺牲部分可用性，但Dynamo 为高可用而生，因此选择了异步同步策略。但是由于网络和服务器故障的频发特性，系统必须处理这些故障所导致的不一致，或者说是冲突。这些冲突如何解决，主要包括两方面：在什么时候解决，以及，谁来解决。</p>
+<p><strong>何时解决</strong>。传统存储系统为了简化读取，通常在写入侧解决冲突，即当存在冲突的时候，拒绝写入。但 Dynamo 为了保证商城业务对用户任意时刻可用（比如随时能将商品加购物车，毕竟类似过程的体验稍微一下降，就会影响大把的收入），需要提供&quot;永远可写&quot;（always writable）的保证，因此需要将解决冲突的复杂度推迟到<strong>读取</strong>时刻。</p>
+<p><strong>谁来解决</strong>。是由 Dynamo 来解决，还是应用侧来解决。如果是 Dynamo 系统来解决，通常会无脑选择&quot;后者胜(last write win)&quot;，即使用较新的更改覆盖偏旧的更改。如果交由应用来解决，则可以依据应用需求便宜行事，比如可以合并多次多次加购物车操作返回给用户。当然，这个是可选的，毕竟很多应用使用通用策略（“last write win”）就足够了。</p>
 <p>其他关键设计原则还有：</p>
 <p><strong>增量扩展</strong>（incremental scalability）。支持节点的动态增删，而最小化对系统和运维的影响。</p>
 <p><strong>对称性</strong>（Symmetry）。系统中的每个节点职责相同，没有特殊节点，以简化构建和维护成本。</p>
 <p><strong>去中心化</strong>（Decentralization）。没有中心控制节点，使用点对点的技术以使系统高可用、易扩展。</p>
 <p><strong>异构性</strong>（Heterogeneity）。系统需要能够充分利用资源异构的节点，来按节点容量进行负载分配。</p>
-<h2 id="系统架构"><a href="#系统架构" class="headerlink" title="系统架构"></a>系统架构</h2><p>围绕分区算法、备份策略、版本机制、成员组织，错误处理和可扩展性等分布式技术进行展开。</p>
+<h2 id="系统架构">系统架构</h2>
+<p>围绕分区算法、备份策略、版本机制、成员组织，错误处理和可扩展性等分布式技术进行展开。</p>
 <p><img src="https://i.loli.net/2020/06/21/HdFhQBOPjX52vl3.png" alt="tech summary"></p>
-<h3 id="系统接口"><a href="#系统接口" class="headerlink" title="系统接口"></a>系统接口</h3><p>Dynamo 暴露两个接口：<code>put()</code> 和 <code>get()</code>:</p>
+<h3 id="系统接口">系统接口</h3>
+<p>Dynamo 暴露两个接口：<code>put()</code> 和 <code>get()</code>:</p>
 <p><code>get(key)  </code>：返回 key 对应的单个 object，或者有有版本冲突的 object 列表。</p>
 <p><code>put(key, context, object)</code>：根据 key 选出 object 要放的副本机器，并将数据落盘。context 会包含一些对调用者透明的系统元信息，比如 object 的版本号信息。context 会和 object 一块存储以验证 put 请求的合法性。</p>
 <p>Dynamo 将 key 和 value 都视为字节数组，并且对 key 进行 MD5 算法以生成一个 128 位的标识符，以进行存储节点的选择。</p>
-<h3 id="分区算法-Partitioning-algorithm"><a href="#分区算法-Partitioning-algorithm" class="headerlink" title="分区算法(Partitioning algorithm)"></a>分区算法(Partitioning algorithm)</h3><p>为了支持增量式扩容，Dynamo 使用一致性哈希算法进行负载分配。但基本版的一致性哈希算法有两个缺点：</p>
+<h3 id="分区算法-Partitioning-algorithm">分区算法(Partitioning algorithm)</h3>
+<p>为了支持增量式扩容，Dynamo 使用一致性哈希算法进行负载分配。但基本版的一致性哈希算法有两个缺点：</p>
 <ol>
 <li>不能够均匀的分摊负载。</li>
 <li>照顾不到不同节点的资源差异。</li>
@@ -339,34 +346,42 @@
 <p>为了照顾节点的增删、备份的方便，Dynamo 先后使用了三种 Partition 策略：</p>
 <p><img src="https://i.loli.net/2020/06/21/9lNkWXtychiO7wH.png" alt="dynamo partition schema"></p>
 <ol>
-<li><p><em>每个节点分配 T 个随机的数值编号（token），每个虚拟节点一个 token，哈希环中相邻两个虚拟节点的 token 所卡出的区间即为一个 partition。</em></p>
+<li>
+<p><em>每个节点分配 T 个随机的数值编号（token），每个虚拟节点一个 token，哈希环中相邻两个虚拟节点的 token 所卡出的区间即为一个 partition。</em></p>
 <p>这种最初的策略有以下几个缺点：</p>
 <ul>
-<li><p><strong>迁移扫描</strong>。当有新节点加入系统时，需要从其他节点偷过来一些数据。这需要扫描新增虚拟节点后继几个节点中所有数据条目以得到需要迁移的数据（猜测为了 serve  get 请求，节点上的数据一般是按用户 key 进行索引组织的，而不是 key 的 hash 值，因此要获取某个 hash 值段的数据，需要全盘扫描）。这个操作挺重的，为了保证可用性需要降低迁移进程的运行权重，但这会使得迁移过程持续很久。</p>
+<li>
+<p><strong>迁移扫描</strong>。当有新节点加入系统时，需要从其他节点偷过来一些数据。这需要扫描新增虚拟节点后继几个节点中所有数据条目以得到需要迁移的数据（猜测为了 serve  get 请求，节点上的数据一般是按用户 key 进行索引组织的，而不是 key 的 hash 值，因此要获取某个 hash 值段的数据，需要全盘扫描）。这个操作挺重的，为了保证可用性需要降低迁移进程的运行权重，但这会使得迁移过程持续很久。</p>
 </li>
-<li><p><strong>Merkle Tree 重新计算</strong>。Merkle Tree 下面会讲到，可粗理解为以分区为单位对数据进行层次化签名。当有节点加入&#x2F;离开集群时，会导致 key range 的拆分&#x2F;合并，进而引起对应 Merkle Tree 的重新计算，这也是一个计算密集型操作，会导致很重的额外负载，在线上系统中不能忍受。</p>
+<li>
+<p><strong>Merkle Tree 重新计算</strong>。Merkle Tree 下面会讲到，可粗理解为以分区为单位对数据进行层次化签名。当有节点加入/离开集群时，会导致 key range 的拆分/合并，进而引起对应 Merkle Tree 的重新计算，这也是一个计算密集型操作，会导致很重的额外负载，在线上系统中不能忍受。</p>
 </li>
-<li><p><strong>难以全局快照</strong>。由于数据在物理节点中的分布是按 key 的哈希值进行切分的，因此在 key 空间中是散乱的，很难在 key 空间中做全局快照，因为这要求所有节点上的数据进行全局归并排序，效率低下。</p>
+<li>
+<p><strong>难以全局快照</strong>。由于数据在物理节点中的分布是按 key 的哈希值进行切分的，因此在 key 空间中是散乱的，很难在 key 空间中做全局快照，因为这要求所有节点上的数据进行全局归并排序，效率低下。</p>
 </li>
 </ul>
 <p>可以看出，这种策略的根本问题在于，数据分区（partition）和数据归置（placement）是耦合在一块的。这样我们就无法单独的对节点进行增删而不影响数据分区。因此，一个很自然的改进想法是，将数据分区与数据归置独立开来。</p>
 </li>
-<li><p><em>每个节点仍随机分配 T 个编号，但是将<strong>哈希空间</strong>等分作为分区</em>。</p>
+<li>
+<p><em>每个节点仍随机分配 T 个编号，但是将<strong>哈希空间</strong>等分作为分区</em>。</p>
 <p>在此策略下，节点的编号（token）只是用来构建虚拟节点的哈希环，而不再用来切分分区。我们将哈希空间等分为 Q 份，Q &gt;&gt; S*T，其中 S 是物理节点数。也就是说每个虚拟节点可以放很多分区。这种策略可以从另一种角度来理解，即节点 host 的最小单位不再是 key，而是一个分区，每次节点增删时，分区会整体进行移动。这样就解决了在节点增删时，迁移扫描和 Merkle Tree 重新计算的问题。</p>
 <p>对于 key 的放置策略为，每次 key 进行路由时，首先算出其哈希值，依据哈希值所在分区（key range）的最后一个哈希值，在哈希环中查找。顺时针遇到的前 N 个物理节点作为偏好列表。</p>
 </li>
-<li><p><em>每个节点 Q&#x2F;S 个随机编号，哈希空间等分作为分区。</em></p>
-<p>这种策略在上一种的基础上，强制每个物理节点拥有等量的分区。由于 Q 数量，甚至每个节点承载的分区数 （Q&#x2F;S） 的数量远大于节点数（S），因此在节点离开时，很容易将其承载的节点数分配给其他节点，而仍然能维持该性质；当有节点加入时，每个节点给他匀点也容易。</p>
+<li>
+<p><em>每个节点 Q/S 个随机编号，哈希空间等分作为分区。</em></p>
+<p>这种策略在上一种的基础上，强制每个物理节点拥有等量的分区。由于 Q 数量，甚至每个节点承载的分区数 （Q/S） 的数量远大于节点数（S），因此在节点离开时，很容易将其承载的节点数分配给其他节点，而仍然能维持该性质；当有节点加入时，每个节点给他匀点也容易。</p>
 </li>
 </ol>
-<h3 id="备份策略-Replication"><a href="#备份策略-Replication" class="headerlink" title="备份策略(Replication)"></a>备份策略(Replication)</h3><p>Dynamo 会将每条数据在 N 个节点上进行备份，其中 N 是可以配置的。对于每个 key，会有一个协调节点（coordinator）来负责其在多个节点的备份。具体来说，协调节点会负责一个键区段 （key range）。</p>
+<h3 id="备份策略-Replication">备份策略(Replication)</h3>
+<p>Dynamo 会将每条数据在 N 个节点上进行备份，其中 N 是可以配置的。对于每个 key，会有一个协调节点（coordinator）来负责其在多个节点的备份。具体来说，协调节点会负责一个键区段 （key range）。</p>
 <p>在进行备份时，协调节点会选择一致性哈希环上，顺时针方向的后继 N - 1 节点，连同其本身，对数据条目进行 N副本存储，如图二所示。这 N 个节点被称为<em>偏好列表</em>（preference list）。其中：</p>
 <ol>
 <li>key 到节点的映射根据上述三种不同的分区策略而不同。</li>
 <li>节点可能会宕机重启，偏好列表有时候可能会多于 N 个节点。</li>
 <li>由于使用的是虚拟节点，如果不加干涉，这 N 个节点可能会对应小于 N 个物理机。为此，我们在选择节点的时候需要进行跳选，以保证 N 个节点处于 N 台物理机上。</li>
 </ol>
-<h3 id="版本机制-Data-Versioning"><a href="#版本机制-Data-Versioning" class="headerlink" title="版本机制(Data Versioning)"></a>版本机制(Data Versioning)</h3><p>Dynamo 提供最终一致性保证，从而允许多副本进行异步同步，提高可用性。如果没有机器和网络故障，多副本将会在有限时间内同步完毕；如果出现故障，可能有些副本（replica）将永远无法正常完成同步。</p>
+<h3 id="版本机制-Data-Versioning">版本机制(Data Versioning)</h3>
+<p>Dynamo 提供最终一致性保证，从而允许多副本进行异步同步，提高可用性。如果没有机器和网络故障，多副本将会在有限时间内同步完毕；如果出现故障，可能有些副本（replica）将永远无法正常完成同步。</p>
 <p>Dynamo 提供任意时刻的可用性，如果最新的数据不能用，需要提供次新的。为了提供这种保证，Dynamo 将每个修改视为一个新版本、不可变数据。它允许多个版本的数据并存，大多数情况下，新版本数据能够对旧版本的进行覆盖，从而让系统可以自动的挑选出权威版本（syntactic reconciliation，语法和解）。但当发生故障或者存在并行操作时，可能会出现互相冲突的版本分支，此时系统无法自动进行合并，就须交由客户端来进行合并（collapse）多个版本数据（语义和解，semantic reconciliation）。</p>
 <p>Dynamo 使用一种叫做<em>矢量时钟</em>（<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvVmVjdG9yX2Nsb2Nr">vector clock<i class="fa fa-external-link-alt"></i></span>）的逻辑时钟来表达同一数据多个版本间的因果关系（causality）。矢量时钟由一组 <em>&lt;节点， 计数&gt;</em> 序列组成，分别对应同一数据的同步版本。可以通多个数据版本的矢量时钟来确定这些数据版本间的关系：是并行发生（parallel branches）还是存在因果（casual ordering）：</p>
 <ol>
@@ -380,26 +395,31 @@
 <li>每个服务器节点维护一个自增的计数器，当其处理更改请求前，更新计数器的值。</li>
 <li>为了防止矢量时钟的尺寸无限增长，尤其是出现网络分区或者服务器失败时，Dynamo 的策略是，矢量时钟序列超过一定阈值时（比如说 10），将序列中最早的一个时钟对丢弃。</li>
 </ol>
-<h3 id="get-和-put"><a href="#get-和-put" class="headerlink" title="get() 和 put()"></a>get() 和 put()</h3><p>本小节描述系统不产生故障时的交互。主要分为两个过程：</p>
+<h3 id="get-和-put">get() 和 put()</h3>
+<p>本小节描述系统不产生故障时的交互。主要分为两个过程：</p>
 <ol>
 <li>用某种方式选择一个 coordinator。</li>
 <li>coordinator 使用 quorum 机制进行数据多副本同步。</li>
 </ol>
-<h4 id="选择-coordinator"><a href="#选择-coordinator" class="headerlink" title="选择 coordinator"></a>选择 coordinator</h4><p>Dynamo 通过 HTTP 方式对外暴露服务，主要有两种策略来进行 coordinator 的选择：</p>
+<h4 id="选择-coordinator">选择 coordinator</h4>
+<p>Dynamo 通过 HTTP 方式对外暴露服务，主要有两种策略来进行 coordinator 的选择：</p>
 <ol>
 <li>使用一个负载均衡器来选出一个负载较轻的节点。</li>
 <li>使用可以进行分区感知的客户端，直接路由到负责该 key 的相应 coordinator （即偏好列表中的第一个）。</li>
 </ol>
 <p>第一种方式客户端不用保存服务器节点信息，第二种方式不需要转发，延迟更低。</p>
 <p>对于第一种方式，如果是 <code>put()</code> 请求，选出的节点 S 不在首选列表 N 个节点中，S 会将请求转发到偏好列表中一个机器作为 coordinator。如果是 <code>get()</code> 请求，不管 S 在不在偏好列表中，都可以直接作为 coordinator。</p>
-<h4 id="Quorum-机制"><a href="#Quorum-机制" class="headerlink" title="Quorum 机制"></a>Quorum 机制</h4><p>Quorum 读写机制是一种有意思的读写方式，有两个关键配置参数 R 和 W，通常 R 和 W 需要满足1.R + W &gt; N 2. W &gt; N&#x2F;2，其中 N 是集群备份数。理解时可以从两个角度理解，一个是类比读写锁，即系统不能同时有多个写写、读写，但是 R 设置的小一些可以同时有多个读；另一个是需要半数以上写成功，以满足数据的持久化特性。但是在 Dynamo 这些都没有硬性要求，用户可以根据需求灵活配置。</p>
+<h4 id="Quorum-机制">Quorum 机制</h4>
+<p>Quorum 读写机制是一种有意思的读写方式，有两个关键配置参数 R 和 W，通常 R 和 W 需要满足1.R + W &gt; N 2. W &gt; N/2，其中 N 是集群备份数。理解时可以从两个角度理解，一个是类比读写锁，即系统不能同时有多个写写、读写，但是 R 设置的小一些可以同时有多个读；另一个是需要半数以上写成功，以满足数据的持久化特性。但是在 Dynamo 这些都没有硬性要求，用户可以根据需求灵活配置。</p>
 <p>当一个 <code>put()</code> 请求到达时，coordinator 为新数据生成一个新的 vector clock 版本信息，并将其写入本地，然后将数据发给 N 个偏好的 replica 节点，等到 W-1 节点回复，即可认为请求成功。</p>
-<p>当一个 <code>get()</code> 请求到达时，coodinator 向保有该 key  N 个首选节点（包括&#x2F;不包括它自己）发送请求，等到其中 R 个节点返回时，将多版本结果列表返回给用户。然后通过 vector clock 规则进行语法和解，并将和解后的版本写回。</p>
-<h3 id="故障处理：Hinted-Handoff"><a href="#故障处理：Hinted-Handoff" class="headerlink" title="故障处理：Hinted Handoff"></a>故障处理：Hinted Handoff</h3><p>如果使用严格的 Quorum 机制处理读写，那么即使只有少量节点宕机或者网络分区也会使得系统不可用，因此 Dynamo 使用一种”粗略仲裁”（sloppy quorum）算法，可以选择一致性哈希环中首选列表的前 N 个健康节点。</p>
+<p>当一个 <code>get()</code> 请求到达时，coodinator 向保有该 key  N 个首选节点（包括/不包括它自己）发送请求，等到其中 R 个节点返回时，将多版本结果列表返回给用户。然后通过 vector clock 规则进行语法和解，并将和解后的版本写回。</p>
+<h3 id="故障处理：Hinted-Handoff">故障处理：Hinted Handoff</h3>
+<p>如果使用严格的 Quorum 机制处理读写，那么即使只有少量节点宕机或者网络分区也会使得系统不可用，因此 Dynamo 使用一种&quot;粗略仲裁&quot;（sloppy quorum）算法，可以选择一致性哈希环中首选列表的前 N 个健康节点。</p>
 <p>并且当首选 coordinator （比如说 A）故障时，请求在路由到其他节点（D）时，会在元信息中带上第一选择（A 的信息），D 后台会有个常驻线程，检测到 A 重新上线时，会将这些有标记的数据移到对应机器上，并且删除本机相应副本。Dynamo 通过这种 hinted handoff 的方式，保证有节点或网络故障时，也能正常完成请求。</p>
 <p>当然，服务为了高可用，可以将 W 设置 1，这样首选列表中任何节点可用，都可以写成功。但在实践中为了保证持久化，一般都不会设这么低。后面章节将会详述 N，R 和 W 的配置问题。</p>
 <p>此外，为了处理数据中心级别的故障，Dynamo 通过配置使得首选节点列表跨越不同中心，以进行容灾。</p>
-<h3 id="永久故障处理：副本同步"><a href="#永久故障处理：副本同步" class="headerlink" title="永久故障处理：副本同步"></a>永久故障处理：副本同步</h3><p>Hinted Handoff 只能处理偶然的、临时的节点宕机问题。为了处理其他更严重的故障带来的一致性问题，Dynamo 使用了去中心化的反熵算法（anti-entropy）来进行分片副本间的数据同步。</p>
+<h3 id="永久故障处理：副本同步">永久故障处理：副本同步</h3>
+<p>Hinted Handoff 只能处理偶然的、临时的节点宕机问题。为了处理其他更严重的故障带来的一致性问题，Dynamo 使用了去中心化的反熵算法（anti-entropy）来进行分片副本间的数据同步。</p>
 <p>为了快速检测副本间数据是否一致、并且能够精确定位到不一样的区域，Dynamo 使用 Merkle Tree （也叫哈希树，区块链中也用）来以分片为单位对分片中所有数据进行层层签名。所有叶子节点是真实数据的 hash 值，而所有中间节点是其孩子节点的哈希值。这样的树有两个好处：</p>
 <ol>
 <li>只要比对根节点，就可以知道分片的两个副本数据是否一致。</li>
@@ -409,15 +429,18 @@
 <p><img src="https://i.loli.net/2020/06/21/hWz3jksmct9ZwRu.png" alt="merkle tree"></p>
 <p>Dynamo 对每个数据分片（key range or shard，shard 是最小的逻辑存储单位）维护一个 Merkle Tree，借助Merkle Tree 的性质，Dynamo 可以很快比较两个数据分片的副本数据是否一致。如果不一致，可以通过定位不一致位置，最少化数据传输。</p>
 <p>这样做的缺点是，如果有节点加入或者离开集群，会引起大量的 key range 的变动，从而需要对变化的 key range 重新计算 Merkle Tree。当然，前面也讨论了，改进后的分区策略改进了这个问题。</p>
-<h3 id="成员关系和故障检测"><a href="#成员关系和故障检测" class="headerlink" title="成员关系和故障检测"></a>成员关系和故障检测</h3><p><strong>显式管理成员关系</strong>。在 Amazon 的环境中，由于故障或人为失误造成的节点离开集群通常很少，或者不会持续太长时间。如果每次有节点下线都立即自动调整数据分片的放置位置，会引起不必要的数据震荡迁移。因此 Dynamo 采用显式管理成员的方式，提供相应接口给管理员对物理节点进行上下线。即，由于故障导致节点下线不会引起数据分片的移动。</p>
+<h3 id="成员关系和故障检测">成员关系和故障检测</h3>
+<p><strong>显式管理成员关系</strong>。在 Amazon 的环境中，由于故障或人为失误造成的节点离开集群通常很少，或者不会持续太长时间。如果每次有节点下线都立即自动调整数据分片的放置位置，会引起不必要的数据震荡迁移。因此 Dynamo 采用显式管理成员的方式，提供相应接口给管理员对物理节点进行上下线。即，由于故障导致节点下线不会引起数据分片的移动。</p>
 <p><strong>类 Gossip 算法广播元信息</strong>。成员关系变动首先由处理成员增删请求的节点感知到，持久化到本地，然后利用类 Gossip 算法进行广播，每次随机选择一个节点进行传播，最终使得所有成员对此达成共识。此外，该算法也用于节点在刚启动时交换数据分片信息和数据分布信息。</p>
 <p>每个节点刚启动时，只知道自己的节点信息和 token 信息，随着各个节点渐次启动，并通过算法互相交换信息，增量的在每个节点分别构建出整个哈希环的拓扑（key range 到虚拟节点，虚拟节点到物理节点的映射）。从而，当某个请求到来的时候，可以直接转发到对应的处理节点。</p>
 <p><strong>种子节点避免逻辑分区</strong>。引入功能性的种子节点做服务发现，每个节点都会直连种子节点，以使得每个加入的节点快速为其他节点所知，避免由于同时加入集群，互不知晓，出现逻辑分区。</p>
-<p><strong>故障检测</strong>。为了避免将 put&#x2F;get 请求和同步元信息请求持续转发到不可达节点，仅使用局部的故障检测就足够了。即如果 A 发向 B 的请求得到不到回应，A 就将 B 标记为故障，然后开启心跳，以感知其恢复。如果 A 收到应该转向 B 的请求，并且发现 B 故障，就会在该 key 对应的首选节点列表中选择一个替代节点。</p>
+<p><strong>故障检测</strong>。为了避免将 put/get 请求和同步元信息请求持续转发到不可达节点，仅使用局部的故障检测就足够了。即如果 A 发向 B 的请求得到不到回应，A 就将 B 标记为故障，然后开启心跳，以感知其恢复。如果 A 收到应该转向 B 的请求，并且发现 B 故障，就会在该 key 对应的首选节点列表中选择一个替代节点。</p>
 <p>可以看出，Dynamo 将节点的<em>永久离开</em>和<em>暂时离开</em>分开处理。使用显示接口来增删永久成员，并将成员拓扑通过 gossip 算法进行广播；使用简单标记和心跳来处理偶发故障，合理进行流量转发。在故障较少的环境里，如此分而治之，能大大提高达成一致的效率，最大限度避免节点偶发故障和网络阵法抖动引起的不必要的数据搬迁。</p>
-<h3 id="增删节点"><a href="#增删节点" class="headerlink" title="增删节点"></a>增删节点</h3><p>如下图，考虑三副本（N&#x3D;3）并且采用最简单的分区策略的情况下，当在在节点 A 和 B 间加入一个节点 X 时，X 将会负责 Key Range： (F,G]，(G, A]，(A, X] ，同时 B 将不再负责 (F,G]，C 将不再负责(G, A]，D 将不再负责 (A, X] ，Dynamo 通过 B，C，D 主动向 X 推送相关 Key Range 的方式来适应 X 的加入。在推送前有个等待 X 确认阶段，以避免重复推送。</p>
+<h3 id="增删节点">增删节点</h3>
+<p>如下图，考虑三副本（N=3）并且采用最简单的分区策略的情况下，当在在节点 A 和 B 间加入一个节点 X 时，X 将会负责 Key Range： (F,G]，(G, A]，(A, X] ，同时 B 将不再负责 (F,G]，C 将不再负责(G, A]，D 将不再负责 (A, X] ，Dynamo 通过 B，C，D 主动向 X 推送相关 Key Range 的方式来适应 X 的加入。在推送前有个等待 X 确认阶段，以避免重复推送。</p>
 <p><img src="https://i.loli.net/2020/06/21/e9nJWTS6BtoEXhy.png" alt="add member"></p>
-<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p> Dynamo 中每个节点主要包括四个组件：请求协调（request coordination），成员管理（membership），故障检测（failure detection）和一个本地的持久化引擎（local persistence engine）。所有组件都是用 Java 实现的。</p>
+<h2 id="实现">实现</h2>
+<p>Dynamo 中每个节点主要包括四个组件：请求协调（request coordination），成员管理（membership），故障检测（failure detection）和一个本地的持久化引擎（local persistence engine）。所有组件都是用 Java 实现的。</p>
 <p>Dynamo 的本地持久化组件，允许选择多种引擎，包括 Berkeley Database（BDB），MySQL 和一个基于内存+持久化的存储。用户可以根据业务场景进行选择，大部分的生产环境使用 BDB 。</p>
 <p>请求协调组件使用 Java NIO 通道实现，采用事件驱动模型，将一个消息的处理过程被分为多个阶段。对于每个到来的读写请求都会初始化一个状态机来处理。比如对于读请求来说，实现了以下状态机：</p>
 <ol>
@@ -429,7 +452,8 @@
 </ol>
 <p>在读的过程中，如果发现某些副本数据过期了，会顺带将其更新，这叫做<em>读修复</em>（read repair）。</p>
 <p>对于写请求，将会由首选 N 个节点中的一个作为协调者进行协调，通常是第一个。但为了提高吞吐，均衡负载，通常这 N 个节点都可以作为协调者。尤其是，大部分数据在读取之后，通常会紧跟着写入（读取获取版本，然后使用对应版本进行写入），因此常将写入调度到上次读取中回复最快的节点，该节点保存了读取时的上下文信息，从而能更快响应，提高吞吐。</p>
-<h2 id="引用"><a href="#引用" class="headerlink" title="引用"></a>引用</h2><p>s3和 Dynamo 对比：<span class="exturl" data-url="aHR0cHM6Ly9zZXJ2ZXJsZXNzLnB1Yi9zMy1vci1keW5hbW9kYi8=">https://serverless.pub/s3-or-dynamodb/<i class="fa fa-external-link-alt"></i></span></p>
+<h2 id="引用">引用</h2>
+<p>s3和 Dynamo 对比：<span class="exturl" data-url="aHR0cHM6Ly9zZXJ2ZXJsZXNzLnB1Yi9zMy1vci1keW5hbW9kYi8=">https://serverless.pub/s3-or-dynamodb/<i class="fa fa-external-link-alt"></i></span></p>
 <p>乐观复制：<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvT3B0aW1pc3RpY19yZXBsaWNhdGlvbg==">https://en.wikipedia.org/wiki/Optimistic_replication<i class="fa fa-external-link-alt"></i></span></p>
 
          <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
@@ -461,10 +485,10 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
@@ -473,10 +497,10 @@
       <div class="popular-posts-title"><a href="/2020/03/19/wisckey/" rel="bookmark">WiscKey —— SSD 介质下的 LSM-Tree 优化</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2021/05/16/distributed-system-material/" rel="bookmark">分布式系统学习资料汇总</a></div>
+      <div class="popular-posts-title"><a href="/2021/04/17/storage-interview/" rel="bookmark">分布式存储面试经验</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2021/04/17/storage-interview/" rel="bookmark">分布式存储面试经验</a></div>
+      <div class="popular-posts-title"><a href="/2021/05/16/distributed-system-material/" rel="bookmark">分布式系统学习资料汇总</a></div>
     </li>
   </ul>
 
@@ -639,12 +663,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -655,6 +673,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

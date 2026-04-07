@@ -76,7 +76,8 @@
     <summary type="html">
     
       &lt;blockquote&gt;
-&lt;p&gt;&lt;a href=&quot;https://princeton-cos597r.github.io/&quot;&gt;&lt;strong&gt;Princeton COS 597R “Deep Dive into Large Language Models”&lt;/strong&gt;&lt;/a&gt; 是普林斯顿大学的一门研究生课程，系统探讨了大语言模型原理、准备和训练、架构演进及其在多模态、对齐、工具使用等前沿方向中的应用与一些问题。注意，该课程侧重概念的理解上，而非工程的实现上。&lt;br&gt;我之前是在分布式系统和数据库内核方向，但这两年转到一家大模型公司做数据。本笔记主要是我对课程论文的梳理和精要。不同的是，我会结合在工作中解决实际问题的一些体感，给出一点转行人不同视角的思考，希望能对同样想从工程入门算法的同学一点帮助。&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://princeton-cos597r.github.io/&quot;&gt;&lt;strong&gt;Princeton COS 597R “Deep Dive into Large Language Models”&lt;/strong&gt;&lt;/a&gt; 是普林斯顿大学的一门研究生课程，系统探讨了大语言模型原理、准备和训练、架构演进及其在多模态、对齐、工具使用等前沿方向中的应用与一些问题。注意，该课程侧重概念的理解上，而非工程的实现上。&lt;br&gt;
+我之前是在分布式系统和数据库内核方向，但这两年转到一家大模型公司做数据。本笔记主要是我对课程论文的梳理和精要。不同的是，我会结合在工作中解决实际问题的一些体感，给出一点转行人不同视角的思考，希望能对同样想从工程入门算法的同学一点帮助。&lt;/p&gt;
 &lt;p&gt;本文来自我的付费专栏《&lt;a href=&quot;https://xiaobot.net/p/system-thinking&quot;&gt;系统日知录&lt;/a&gt;》，欢迎订阅查看更多大模型解析文章，文末有优惠券信息。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;本篇主要关注大模型的奠基之作——Transformer。&lt;/p&gt;
@@ -105,7 +106,7 @@
     <summary type="html">
     
       &lt;p&gt;随着云基础设施的不断成熟，新兴的公司为了快速实现业务目标，一般都会让基础设施上云。而在云上进行开发与传统上直接使用物理机开发其实有很大不同。云上更强调&lt;strong&gt;共享&lt;/strong&gt;和&lt;strong&gt;弹性&lt;/strong&gt;，此外，规模变大又会带来&lt;strong&gt;隔离性&lt;/strong&gt;。这些改变也倒逼我们在进行开发时做出一些改变。在云上进行大规模数据处理，我主要有一些 spark 和 ray 的经验，使用的语言主要是 python；从这些技术栈出发，谈谈一些还算行之有效开发实践。&lt;/p&gt;
-&lt;p&gt;使用 ray 在云上进行大规模数据处理，一个基本的思路是：构建最小可并行单元，进行功能测试和性能测试，然后再利用 &lt;a href=&quot;http://ray.data/&quot;&gt;ray.data&lt;/a&gt; （比如 &lt;a href=&quot;https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map.html&quot;&gt;map&lt;/a&gt;，&lt;a href=&quot;https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html&quot;&gt;map_batches&lt;/a&gt; ）进行 scale。使用 spark 时，会稍有不同；相比 ray，spark 虽然灵活性稍差一些，但抽象封装更好，可以从数据集整体的角度来考虑数据处理，spark 会通过你设置的分区数和并行度，自动地扩展和容错。&lt;/p&gt;
+&lt;p&gt;使用 ray 在云上进行大规模数据处理，一个基本的思路是：构建最小可并行单元，进行功能测试和性能测试，然后再利用 &lt;a href=&quot;http://ray.data&quot;&gt;ray.data&lt;/a&gt; （比如 &lt;a href=&quot;https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map.html&quot;&gt;map&lt;/a&gt;，&lt;a href=&quot;https://docs.ray.io/en/latest/data/api/doc/ray.data.Dataset.map_batches.html&quot;&gt;map_batches&lt;/a&gt; ）进行 scale。使用 spark 时，会稍有不同；相比 ray，spark 虽然灵活性稍差一些，但抽象封装更好，可以从数据集整体的角度来考虑数据处理，spark 会通过你设置的分区数和并行度，自动地扩展和容错。&lt;/p&gt;
     
     </summary>
     
@@ -143,7 +144,8 @@
 &lt;/ol&gt;
 &lt;p&gt;当然，如果你还想要低延迟、高并发、深度定制等需求，那对不起，这是 streamlit 被 tradeoff 出去的那一部分。但对于面向内部少数人使用的小工具来说，streamlit 简直是利器。可以说这个小生态位被它卡的太好了，所以能在 2022 年以 8 亿美金卖给 Snowflake。&lt;/p&gt;
 &lt;p&gt;本文我们就一块来看看其基本设计哲学和一些简单实践。&lt;/p&gt;
-&lt;h1 id=&quot;设计哲学&quot;&gt;&lt;a href=&quot;#设计哲学&quot; class=&quot;headerlink&quot; title=&quot;设计哲学&quot;&gt;&lt;/a&gt;设计哲学&lt;/h1&gt;&lt;p&gt;其基本设计哲学可以概括为：&lt;/p&gt;
+&lt;h1&gt;设计哲学&lt;/h1&gt;
+&lt;p&gt;其基本设计哲学可以概括为：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;用后端语言写前端&lt;/li&gt;
 &lt;li&gt;收到新事件会重新构建&lt;/li&gt;
@@ -172,9 +174,11 @@
     
     <summary type="html">
     
-      &lt;h1 id=&quot;引子&quot;&gt;&lt;a href=&quot;#引子&quot; class=&quot;headerlink&quot; title=&quot;引子&quot;&gt;&lt;/a&gt;引子&lt;/h1&gt;&lt;p&gt;在某些工作负载中，随着时间的推移，内存的使用会逐渐增长，直到 OOM。后面发现是内存碎片问题，而将系统默认的内存分配器（&lt;a href=&quot;https://github.com/lattera/glibc/blob/master/malloc/malloc.c&quot;&gt;glibc malloc&lt;/a&gt;）换成 &lt;a href=&quot;https://jemalloc.net/&quot;&gt;jemalloc&lt;/a&gt; ，能有效控制内存的增长上界。&lt;/p&gt;
+      &lt;h1&gt;引子&lt;/h1&gt;
+&lt;p&gt;在某些工作负载中，随着时间的推移，内存的使用会逐渐增长，直到 OOM。后面发现是内存碎片问题，而将系统默认的内存分配器（&lt;a href=&quot;https://github.com/lattera/glibc/blob/master/malloc/malloc.c&quot;&gt;glibc malloc&lt;/a&gt;）换成 &lt;a href=&quot;https://jemalloc.net/&quot;&gt;jemalloc&lt;/a&gt; ，能有效控制内存的增长上界。&lt;/p&gt;
 &lt;p&gt;为了解其背后原理，便找来 jemalloc 最初的论文：&lt;a href=&quot;https://www.bsdcan.org/2006/papers/jemalloc.pdf&quot;&gt;A Scalable Concurrent malloc(3) Implementation for FreeBSD&lt;/a&gt; 来一探究竟。当然，相比 2006 年论文发表时，当前的 jemalloc 可能已经发生了很大改变，因此本文只对当时论文内容负责。更多 jemalloc 机制，大家可以去其 &lt;a href=&quot;https://github.com/jemalloc/jemalloc&quot;&gt;github 仓库&lt;/a&gt;查看文档和源码。&lt;/p&gt;
-&lt;h1 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;headerlink&quot; title=&quot;背景&quot;&gt;&lt;/a&gt;背景&lt;/h1&gt;&lt;p&gt;在探讨论文的主要思路之前，我们先简单回顾下&lt;strong&gt;内存分配器&lt;/strong&gt;（memory allocator）的&lt;em&gt;作用&lt;/em&gt;和&lt;em&gt;边界&lt;/em&gt;。简言之：&lt;/p&gt;
+&lt;h1&gt;背景&lt;/h1&gt;
+&lt;p&gt;在探讨论文的主要思路之前，我们先简单回顾下&lt;strong&gt;内存分配器&lt;/strong&gt;（memory allocator）的&lt;em&gt;作用&lt;/em&gt;和&lt;em&gt;边界&lt;/em&gt;。简言之：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;对下，向操作系统申请&lt;strong&gt;大块&lt;/strong&gt;内存（使用 &lt;code&gt;sbrk&lt;/code&gt;、&lt;code&gt;mmap&lt;/code&gt; 等系统调用）&lt;/li&gt;
 &lt;li&gt;对上，处理应用层的各种尺寸的内存申请请求（&lt;code&gt;malloc(size)&lt;/code&gt;），并在应用层“表示”不用（&lt;code&gt;free&lt;/code&gt;）后进行释放&lt;/li&gt;
@@ -208,7 +212,7 @@
       &lt;blockquote&gt;
 &lt;p&gt;Snowflake 由甲骨文的两位员工在 2012 年出来创办，一开始就瞄准云原生数仓，因此架构设计（在当时看来）非常“激进”。超前的视野带来超额的回报，Snowflake 在 2020 年正式上市，市值一度高达 700 亿美金，创造了史上规模最大的软件 IPO 记录。&lt;/p&gt;
 &lt;p&gt;本文我们综合两篇论文：&lt;a href=&quot;https://dl.acm.org/doi/pdf/10.1145/2882903.2903741&quot;&gt;The Snowflake Elastic Data Warehouse&lt;/a&gt; 和 &lt;a href=&quot;https://www.usenix.org/system/files/nsdi20-paper-vuppalapati.pdf&quot;&gt;Building An Elastic Query Engine on Disaggregated Storage&lt;/a&gt;  来大致聊聊其架构设计。&lt;/p&gt;
-&lt;p&gt; 本文来自我的专栏《&lt;a href=&quot;https://xiaobot.net/p/system-thinking&quot;&gt;系统日知录&lt;/a&gt;》，如果你觉得文章还不错，欢迎订阅支持我。&lt;/p&gt;
+&lt;p&gt;本文来自我的专栏《&lt;a href=&quot;https://xiaobot.net/p/system-thinking&quot;&gt;系统日知录&lt;/a&gt;》，如果你觉得文章还不错，欢迎订阅支持我。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;p&gt;这篇文章我早就想写了，但上次在看论文时卡住了——论文信息太多，地毯式的阅读，很快就淹没在细节中，当时也只看了三分之二，就搁置了。上周（20240707）在文章 &lt;a href=&quot;https://xiaobot.net/post/93d3e9ad-90f2-47ec-a942-ff95c351cba1&quot;&gt;Spark：如何在云上做缩容&lt;/a&gt;时提到了存算分离的 snowflake ，有读者要求写下，于是便重新捡起来。&lt;/p&gt;
 &lt;p&gt;相比上次 push 的方式，本次采用 pull 的方式：即不是被动的读论文，而是先思考，如果让我设计这么一个云原生数仓，我要怎么设计，会有哪些问题等等。带着这些问题，我再去从论文中找答案，发现效率一下高了很多，也便让这篇文章没有再次难产。&lt;/p&gt;
@@ -220,9 +224,9 @@
       <category term="论文解读" scheme="https://www.qtmuniao.com/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/"/>
     
     
-      <category term="数据库" scheme="https://www.qtmuniao.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
-    
       <category term="云原生" scheme="https://www.qtmuniao.com/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/"/>
+    
+      <category term="数据库" scheme="https://www.qtmuniao.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
     
       <category term="snowflake" scheme="https://www.qtmuniao.com/tags/snowflake/"/>
     
@@ -241,7 +245,8 @@
 &lt;p&gt;缘于某个播客提了一嘴，便找来书在通勤时听了。这版是傅雷翻在 1939 年译的版本，有一股淡淡的老式白话风。小书不长，几天便听完。我喜欢在走路的时候听东西，所听入耳、所观入眼，哲人的凝言练语、街头的风物百态，总能在心里发生奇妙的化学反应，偶在三伏天都一激灵。&lt;/p&gt;
 &lt;p&gt;最近心绪颇为起伏，在上下班踱步听这本书时，数次给我宽慰平和，书中指出的快乐和不快乐之因，都命中了我的某些缺点和特点，因此听完觉得还是要写点东西。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h1 id=&quot;罗素《幸福之路》&quot;&gt;&lt;a href=&quot;#罗素《幸福之路》&quot; class=&quot;headerlink&quot; title=&quot;罗素《幸福之路》&quot;&gt;&lt;/a&gt;罗素《幸福之路》&lt;/h1&gt;&lt;p&gt;人类从狩猎时代进入农耕时代后，虽获得了生活的相对安稳，却也失掉了向外的探索和冒险。到工业时代，城市化加剧，进一步脱离了自然的“蓝领白领”亦是如此。只有少数的企业家才仍然保持着丛林式的生活方式。&lt;/p&gt;
+&lt;h1&gt;罗素《幸福之路》&lt;/h1&gt;
+&lt;p&gt;人类从狩猎时代进入农耕时代后，虽获得了生活的相对安稳，却也失掉了向外的探索和冒险。到工业时代，城市化加剧，进一步脱离了自然的“蓝领白领”亦是如此。只有少数的企业家才仍然保持着丛林式的生活方式。&lt;/p&gt;
 &lt;p&gt;选择安稳意味着有大量的“烦闷”（Boredom）需要排遣。但多数人过度的将注意力集中在自己的身上，比如畏罪狂（纠结于行为不符合少时的成见或社会的规训）、自溺狂（过度期待外界称许的虚荣）、自大狂（过度的权力欲望），则使得这种烦闷愈加在幻想中野蛮式的生长，直至占满人们的内心。&lt;/p&gt;
     
     </summary>
@@ -267,12 +272,15 @@
     <summary type="html">
     
       &lt;blockquote&gt;
-&lt;p&gt;&lt;a href=&quot;http://ray.data/&quot;&gt;ray.data&lt;/a&gt; 是基于 ray core 的一层封装。依赖 ray.data，用户用简单的代码，就可以实现数据大规模的异构处理（主要指同时使用 CPU 和 GPU）。一句话总结：很简单好用，同时也有很多坑。&lt;br&gt;在 &lt;a href=&quot;https://xiaobot.net/post/55c2d455-3319-4c7f-9e5e-4eb118a482d7&quot;&gt;上一篇&lt;/a&gt;中，我们从用户接口出发，浅浅地梳理了一下 &lt;a href=&quot;http://ray.data/&quot;&gt;ray.data&lt;/a&gt; 的主要接口。本篇，我们从宏观的角度，大概串一下 ray.data 的基本原理。之后，我们再用几篇，结合代码细节和使用经验，探讨下比较重要的几块内容：执行调度、数据格式和避坑指南。&lt;br&gt; 本文来自我的专栏《&lt;a href=&quot;https://xiaobot.net/p/system-thinking&quot;&gt;系统日知录&lt;/a&gt;》，如果你觉得文章还不错，欢迎订阅支持我。&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://ray.data&quot;&gt;ray.data&lt;/a&gt; 是基于 ray core 的一层封装。依赖 ray.data，用户用简单的代码，就可以实现数据大规模的异构处理（主要指同时使用 CPU 和 GPU）。一句话总结：很简单好用，同时也有很多坑。&lt;br&gt;
+在 &lt;a href=&quot;https://xiaobot.net/post/55c2d455-3319-4c7f-9e5e-4eb118a482d7&quot;&gt;上一篇&lt;/a&gt;中，我们从用户接口出发，浅浅地梳理了一下 &lt;a href=&quot;http://ray.data&quot;&gt;ray.data&lt;/a&gt; 的主要接口。本篇，我们从宏观的角度，大概串一下 ray.data 的基本原理。之后，我们再用几篇，结合代码细节和使用经验，探讨下比较重要的几块内容：执行调度、数据格式和避坑指南。&lt;br&gt;
+本文来自我的专栏《&lt;a href=&quot;https://xiaobot.net/p/system-thinking&quot;&gt;系统日知录&lt;/a&gt;》，如果你觉得文章还不错，欢迎订阅支持我。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h1 id=&quot;概述&quot;&gt;&lt;a href=&quot;#概述&quot; class=&quot;headerlink&quot; title=&quot;概述&quot;&gt;&lt;/a&gt;概述&lt;/h1&gt;&lt;p&gt;从高层来理解，ray.data 的一次数据处理任务大致可以分成前后相继的三阶段：&lt;/p&gt;
+&lt;h1&gt;概述&lt;/h1&gt;
+&lt;p&gt;从高层来理解，ray.data 的一次数据处理任务大致可以分成前后相继的三阶段：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;strong&gt;数据加载&lt;/strong&gt;：将数据从系统外部读到 ray 的 Object Store 中 （如 read_parquet）&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;数据变换&lt;/strong&gt;：利用各种算子在 Object Store 中对数据进行变换（如 map&amp;#x2F;filter&amp;#x2F;repartition）&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;数据变换&lt;/strong&gt;：利用各种算子在 Object Store 中对数据进行变换（如 map/filter/repartition）&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;数据写回&lt;/strong&gt;：将 Object Store 中的数据写回外部存储（如 write_parquet）&lt;/li&gt;
 &lt;/ol&gt;
     
@@ -333,7 +341,8 @@
 &lt;li&gt;对于应用层来说，TCP 层交付的是顺序的数据。&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;这个题有意思的点在于，借用了 TCP 的上下文之后，就可以先和候选人讨论一些 TCP 的基础知识，然后话锋一转，引出这道题。这样既可以考察一些基础知识，也可以考察工程代码能力。&lt;/p&gt;
-&lt;h1 id=&quot;题目&quot;&gt;&lt;a href=&quot;#题目&quot; class=&quot;headerlink&quot; title=&quot;题目&quot;&gt;&lt;/a&gt;题目&lt;/h1&gt;&lt;figure class=&quot;highlight cpp&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;14&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;15&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title class_&quot;&gt;Packet&lt;/span&gt; &amp;#123;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; offset;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; length;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;type&quot;&gt;uint8_t&lt;/span&gt; *data;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&amp;#125;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;// 实现一个“顺序交付”语义&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;title class_&quot;&gt;TCP&lt;/span&gt; &amp;#123;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;comment&quot;&gt;// 应用层调用：按顺序读取不超过 count 的字节数到 buf 中，并返回实际读到的字节数&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;(&lt;span class=&quot;type&quot;&gt;void&lt;/span&gt; *buf, &lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; count)&lt;/span&gt;&lt;/span&gt;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;comment&quot;&gt;// TCP 层回调：得到一些随机顺序的 IP 层封包&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;type&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;receive&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;(Packet* p)&lt;/span&gt;&lt;/span&gt;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;comment&quot;&gt;// TCP 层回调：数据发完，连接关闭&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;type&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;()&lt;/span&gt;&lt;/span&gt;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&amp;#125;;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;h1&gt;题目&lt;/h1&gt;
+&lt;figure class=&quot;highlight cpp&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;12&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;13&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;14&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;15&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title class_&quot;&gt;Packet&lt;/span&gt; &amp;#123;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; offset;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; length;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;    &lt;span class=&quot;type&quot;&gt;uint8_t&lt;/span&gt; *data;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&amp;#125;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;comment&quot;&gt;// 实现一个“顺序交付”语义&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;title class_&quot;&gt;TCP&lt;/span&gt; &amp;#123;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;comment&quot;&gt;// 应用层调用：按顺序读取不超过 count 的字节数到 buf 中，并返回实际读到的字节数&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;(&lt;span class=&quot;type&quot;&gt;void&lt;/span&gt; *buf, &lt;span class=&quot;type&quot;&gt;size_t&lt;/span&gt; count)&lt;/span&gt;&lt;/span&gt;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;comment&quot;&gt;// TCP 层回调：得到一些随机顺序的 IP 层封包&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;type&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;receive&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;(Packet* p)&lt;/span&gt;&lt;/span&gt;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;comment&quot;&gt;// TCP 层回调：数据发完，连接关闭&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;  &lt;span class=&quot;function&quot;&gt;&lt;span class=&quot;type&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;params&quot;&gt;()&lt;/span&gt;&lt;/span&gt;;&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;&amp;#125;;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
     
     </summary>
     
@@ -359,7 +368,7 @@
     
     <summary type="html">
     
-      &lt;p&gt;说的就是我的大规模数据系统专栏《系统日知录》—— 有人问，在读了你的专栏文章后，可能很久之后&lt;del&gt;才可能会用到&lt;/del&gt;都不会用到，那为啥要买呢？何况，雨伞在雨天可是刚需，这专栏在面试的时候可不是。所以这实在不是一门好“生意”——&lt;strong&gt;受众狭窄、场景低频&lt;/strong&gt;，两者乘数，便是我这惨淡销量了。&lt;/p&gt;
+      &lt;p&gt;说的就是我的大规模数据系统专栏《系统日知录》—— 有人问，在读了你的专栏文章后，可能很久之后&lt;s&gt;才可能会用到&lt;/s&gt;都不会用到，那为啥要买呢？何况，雨伞在雨天可是刚需，这专栏在面试的时候可不是。所以这实在不是一门好“生意”——&lt;strong&gt;受众狭窄、场景低频&lt;/strong&gt;，两者乘数，便是我这惨淡销量了。&lt;/p&gt;
 &lt;p&gt;这也是为什么成功的专栏动辄上万次购买，而我只卖了个二百五，也敢把经历拿出来说一说了。万一你有类似的危险想法，也可以参考一二。&lt;/p&gt;
     
     </summary>
@@ -410,7 +419,8 @@
 &lt;p&gt;&lt;a href=&quot;https://memgraph.com/&quot;&gt;Memgraph&lt;/a&gt; 是一个内存型图数据库，使用 OpenCypher 作为查询语言，主打小数据量、低延迟的图场景。由于 Memgraph 是开源的（repo 在&lt;a href=&quot;https://github.com/memgraph/memgraph&quot;&gt;这&lt;/a&gt;，使用 C++ 实现）我们可以一窥其实现。根据&lt;a href=&quot;https://github.com/memgraph/memgraph/blob/master/src/storage/v2/storage.hpp#L57&quot;&gt;这行注释&lt;/a&gt;，我们可以看出，其内存结构实现灵感主要来自论文：&lt;a href=&quot;https://db.in.tum.de/~muehlbau/papers/mvcc.pdf&quot;&gt;Fast Serializable Multi-Version Concurrency Control for Main-Memory Database Systems&lt;/a&gt;。&lt;/p&gt;
 &lt;p&gt;本系列主要分为两大部分，&lt;strong&gt;论文解读&lt;/strong&gt;和&lt;strong&gt;代码串讲&lt;/strong&gt;，每一部分会根据情况拆成几篇。本篇，是论文解读（一），主要讲论文概述以及如何使用链表巧妙的存储了多版本、控制了可见性。论文解析（二）和（三），会讲如何实现可串行化以及回收多版本数据。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h2 id=&quot;概述&quot;&gt;&lt;a href=&quot;#概述&quot; class=&quot;headerlink&quot; title=&quot;概述&quot;&gt;&lt;/a&gt;概述&lt;/h2&gt;&lt;p&gt;从论文题目可以看出，本论文旨在实现一种针对&lt;strong&gt;内存型&lt;/strong&gt;数据库的、基于&lt;strong&gt;多版本&lt;/strong&gt;（MVCC）实现的、支持可&lt;strong&gt;串行化&lt;/strong&gt;隔离级别的高性能数据结构。其基本思想是：&lt;/p&gt;
+&lt;h2 id=&quot;概述&quot;&gt;概述&lt;/h2&gt;
+&lt;p&gt;从论文题目可以看出，本论文旨在实现一种针对&lt;strong&gt;内存型&lt;/strong&gt;数据库的、基于&lt;strong&gt;多版本&lt;/strong&gt;（MVCC）实现的、支持可&lt;strong&gt;串行化&lt;/strong&gt;隔离级别的高性能数据结构。其基本思想是：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;使用列存&lt;/li&gt;
 &lt;li&gt;复用 Undo Buffer 数据结构&lt;/li&gt;
@@ -466,12 +476,16 @@
     <summary type="html">
     
       &lt;blockquote&gt;
-&lt;p&gt;&lt;a href=&quot;https://www.ycombinator.com/&quot;&gt;Y Combinator&lt;/a&gt;（YC）是一家知名的美国创业加速器，自2005年成立以来致力于推动初创企业成功。作为初创企业界的领军人物，YC 的特点是，不仅提供资金，还提供指导、资源和网络，以帮助初创企业在竞争激烈的市场中脱颖而出。YC 的成功案例包括 Airbnb、Dropbox 和 Reddit 等，这些公司现在都是各自领域的巨头。&lt;br&gt;YC 发布的“创业公司征集请求”（&lt;a href=&quot;https://www.ycombinator.com/rfs&quot;&gt;RFS&lt;/a&gt;）是其基于对市场趋势、技术进步和全球挑战的深入理解，对全球创业社区的发出的一种前瞻性呼吁，相信能够对创业者和想选择创业公司的小伙伴们有诸多启发。2024 年的 RFS 一共有 20 个方向，这是上篇，包括前十个。如果看的人多，我再继续翻译后面 10 条。以下是正文。&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.ycombinator.com/&quot;&gt;Y Combinator&lt;/a&gt;（YC）是一家知名的美国创业加速器，自2005年成立以来致力于推动初创企业成功。作为初创企业界的领军人物，YC 的特点是，不仅提供资金，还提供指导、资源和网络，以帮助初创企业在竞争激烈的市场中脱颖而出。YC 的成功案例包括 Airbnb、Dropbox 和 Reddit 等，这些公司现在都是各自领域的巨头。&lt;br&gt;
+YC 发布的“创业公司征集请求”（&lt;a href=&quot;https://www.ycombinator.com/rfs&quot;&gt;RFS&lt;/a&gt;）是其基于对市场趋势、技术进步和全球挑战的深入理解，对全球创业社区的发出的一种前瞻性呼吁，相信能够对创业者和想选择创业公司的小伙伴们有诸多启发。2024 年的 RFS 一共有 20 个方向，这是上篇，包括前十个。如果看的人多，我再继续翻译后面 10 条。以下是正文。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h1 id=&quot;引言&quot;&gt;&lt;a href=&quot;#引言&quot; class=&quot;headerlink&quot; title=&quot;引言&quot;&gt;&lt;/a&gt;&lt;strong&gt;引言&lt;/strong&gt;&lt;/h1&gt;&lt;p&gt;虽然，我们投资过的最棒创业 idea，往往并不是一开始我们想找的，反而是那些无心插柳的。&lt;/p&gt;
+&lt;h1&gt;&lt;strong&gt;引言&lt;/strong&gt;&lt;/h1&gt;
+&lt;p&gt;虽然，我们投资过的最棒创业 idea，往往并不是一开始我们想找的，反而是那些无心插柳的。&lt;/p&gt;
 &lt;p&gt;但仍然，我们对几类创业公司非常期待。以下是我们最新的 2024 版本的&lt;strong&gt;创业公司征集请求&lt;/strong&gt;（Requests for Startups，RFS），简述了下我们关注一些创业方向。&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;但并非说创业只有选择这些方向，才能够申请 Y Combinator。其实我们的多数投资仍然集中在过于一直关注的互联网和移动端。所以如果在阅读本文前，你已经有相关方向的创业想法，请继续做下去。&lt;br&gt;同样的，也不是说我们列了这些方向，你就要据此创立一家公司。RFS 的目的在于，如果你正好已经有一个类似的想法，那欢迎向我们申请。&lt;br&gt;另外，如果你想知道我们在寻求投资哪些类型的非盈利组织，可以看&lt;a href=&quot;https://www.ycombinator.com/blog/what-y-combinator-looks-for-in-nonprofits/&quot;&gt;这篇文章&lt;/a&gt;。&lt;/p&gt;
+&lt;p&gt;但并非说创业只有选择这些方向，才能够申请 Y Combinator。其实我们的多数投资仍然集中在过于一直关注的互联网和移动端。所以如果在阅读本文前，你已经有相关方向的创业想法，请继续做下去。&lt;br&gt;
+同样的，也不是说我们列了这些方向，你就要据此创立一家公司。RFS 的目的在于，如果你正好已经有一个类似的想法，那欢迎向我们申请。&lt;br&gt;
+另外，如果你想知道我们在寻求投资哪些类型的非盈利组织，可以看&lt;a href=&quot;https://www.ycombinator.com/blog/what-y-combinator-looks-for-in-nonprofits/&quot;&gt;这篇文章&lt;/a&gt;。&lt;/p&gt;
 &lt;/blockquote&gt;
     
     </summary>

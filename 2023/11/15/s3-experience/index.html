@@ -279,24 +279,28 @@
 <p><img src="https://s2.loli.net/2023/11/16/rgiQNFkLyhPqpZJ.png" alt="S3-metrics.png"></p>
 <p>即，</p>
 <ul>
-<li><strong>容量和吞吐</strong>：超过 280 万亿个对象，QPS 平均超过 1 亿 &#x2F; s</li>
+<li><strong>容量和吞吐</strong>：超过 280 万亿个对象，QPS 平均超过 1 亿 / s</li>
 <li><strong>事件</strong>：<strong>每天</strong> S3 会向 serverless 应用发送超过 <strong>1250 亿个事件</strong></li>
 <li><strong>冗余</strong>：<strong>每周</strong>超过 <strong>100 PB</strong> 的数据冗余</li>
 <li><strong>冷存储检索</strong>：<strong>每天</strong>都要至少从 S3 归档存储中回复 <strong>1 PB 数据</strong></li>
 <li><strong>数据完整性校验</strong>：<strong>每秒</strong>进行 <strong>40 亿次</strong>完整性校验计算</li>
 </ul>
 <p>对这个量级有了直观的感受之后，我们来看看 Andy Warfield 分享的经验。为了方便叙述，下面都用第一人称——我们，意指 S3 团队。</p>
-<h1 id="HDD-对-S3-设计的影响"><a href="#HDD-对-S3-设计的影响" class="headerlink" title="HDD 对 S3 设计的影响"></a>HDD 对 S3 设计的影响</h1><p>虽然 SSD 在价格上已经越来越便宜，但对于 S3 如此量级的存储来说，仍然大量采用 HDD。其中一个重要原因仍然是成本优势（存储密度和寿命都很棒）。相对其最初诞生时期，HDD 体积缩小了 5k+ 倍、单字节成本更是便宜了 60亿倍！然而，受制于机械特性，其随机访问延迟只降低了 150+ 倍左右。</p>
+<h1>HDD 对 S3 设计的影响</h1>
+<p>虽然 SSD 在价格上已经越来越便宜，但对于 S3 如此量级的存储来说，仍然大量采用 HDD。其中一个重要原因仍然是成本优势（存储密度和寿命都很棒）。相对其最初诞生时期，HDD 体积缩小了 5k+ 倍、单字节成本更是便宜了 60亿倍！然而，受制于机械特性，其随机访问延迟只降低了 150+ 倍左右。</p>
 <p>S3 刚上线时，HDD 的满载 IOPS 大概是 120，这个数值在这么多年间基本没有变过。HDD 这种存储密度越来越高，但访问延迟却一直停滞的特点，给 S3 的设计带来了很大影响—— 必须想方设法将流量均摊到不同硬盘上去，避免单块盘的 IO 过载。</p>
-<h1 id="热度管控：数据放置和性能"><a href="#热度管控：数据放置和性能" class="headerlink" title="热度管控：数据放置和性能"></a>热度管控：数据放置和性能</h1><p>基于上述原因，S3 在不断 scale 的同时，所面临的最主要和有意思的问题之一就是：<strong>如何在如此多的 HDD 上管理和均衡 IO 流量</strong>。我们称该问题为——<strong>热度管控</strong>（heat management）。</p>
+<h1>热度管控：数据放置和性能</h1>
+<p>基于上述原因，S3 在不断 scale 的同时，所面临的最主要和有意思的问题之一就是：<strong>如何在如此多的 HDD 上管理和均衡 IO 流量</strong>。我们称该问题为——<strong>热度管控</strong>（heat management）。</p>
 <p>所谓<strong>热度</strong>（heat）：就是任意时间点，某个磁盘承受的 IO 请求。如果管控不当，造成不同磁盘间流量的严重倾斜，就会造成数据局部访问<strong>热点</strong>（hotspot），从而造成<strong>长尾效应</strong>（“stragglers”）。这些长尾请求通过 S3 的<strong>存储软件栈</strong>（software storage stack）层层放大之后，可能大范围影响请求性能。为了解决这个问题，我们需要仔细考虑<strong>数据放置</strong>策略（data placement）。</p>
 <p>通常来说，由于无法在数据<strong>写入时</strong>（即进行放置决策时）预知其之后的访问模式，我们很难用一个策略消除所有用户的访问热点。但由于 S3 的量级以及多租户机制，我们可以进行完全不同的设计。</p>
 <p>我们发现一个特点：在 S3 上运行的工作负载越多，不同对象请求间的<strong>去相关性</strong>（decorrelated）就越强。对于用户的单个存储单元来说（比如一组 Object，或者一个 Bucket），其通常的访问模式是：长时间沉寂后，突然一个远高于平均值访问高峰。但是当我们<strong>聚合了百万计</strong>的请求之后，非常有趣的事情发生了：聚合请求总量的变化曲线变的非常平缓，且出现了某种内在可预测的规律。可以看<span class="exturl" data-url="aHR0cHM6Ly93d3cuYWxsdGhpbmdzZGlzdHJpYnV0ZWQuY29tL3ZpZGVvcy9mYXN0LWFnZy1ncmFwaC1jb21wcmVzc2VkLXNtYWxsLm1wNA==">这个视频<i class="fa fa-external-link-alt"></i></span>直观感受下。</p>
 <p><img src="https://s2.loli.net/2023/11/16/brs62GiUCyt5acA.png" alt="S3-aggreate.png"></p>
 <p>这其实也符合直觉，在成千上万的<strong>不相干</strong>访问流汇聚成海后，单个流的突发很难影响整体趋势。因此我们的问题就变成了：<strong>如何将这种聚合后总体上相对平坦的请求速率均摊到所有磁盘上，变成每个磁盘上相对平滑的 IO 访问速率</strong>。</p>
-<h1 id="数据复制：数据放置和持久性"><a href="#数据复制：数据放置和持久性" class="headerlink" title="数据复制：数据放置和持久性"></a>数据复制：数据放置和持久性</h1><p>在存储系统里，总是会用数据冗余来保护数据免于硬件故障。但冗余，同样可以用来管控热度。在多机上有多个副本，给了我们在流量过来时选择机器的自由度。从存储容量（capacity）的视角来看，数据冗余推高了成本；但从 IO （至少是读取）的角度来看，数据冗余提升了性能。</p>
+<h1>数据复制：数据放置和持久性</h1>
+<p>在存储系统里，总是会用数据冗余来保护数据免于硬件故障。但冗余，同样可以用来管控热度。在多机上有多个副本，给了我们在流量过来时选择机器的自由度。从存储容量（capacity）的视角来看，数据冗余推高了成本；但从 IO （至少是读取）的角度来看，数据冗余提升了性能。</p>
 <p>除了多副本冗余外，S3 自然也是用了 EC （erasure coding）方式来降低冗余。其具体原理我们在 <a href="https://www.qtmuniao.com/2019/03/30/f4/">Facebook F4</a> 中介绍过，这里不再赘述。</p>
-<h1 id="数据尺度对放置策略的影响"><a href="#数据尺度对放置策略的影响" class="headerlink" title="数据尺度对放置策略的影响"></a>数据尺度对放置策略的影响</h1><p>除了使用数据冗余来均摊流量外，我们下一步可做的是：<strong>将新写入的对象数据尽可能大范围地摊到硬盘池中</strong>。将同一个桶的对象摊到不同的硬盘后，同一个用户的访问流量便也随之打到了不同硬盘集合。这样做有两个好处：</p>
+<h1>数据尺度对放置策略的影响</h1>
+<p>除了使用数据冗余来均摊流量外，我们下一步可做的是：<strong>将新写入的对象数据尽可能大范围地摊到硬盘池中</strong>。将同一个桶的对象摊到不同的硬盘后，同一个用户的访问流量便也随之打到了不同硬盘集合。这样做有两个好处：</p>
 <ol>
 <li><strong>负载隔离</strong>：如果每个用户的数据在单块磁盘上都只会占一小块地方，因此很难靠单个用户的访问来“掀起波浪”，造成该盘的访问热点。</li>
 <li><strong>热点摊平</strong>：对于任意的突发流量，我们可以利用超常规尺度的磁盘池来将其摊平。这对于小存储集群来说是非常昂贵且难以想象的。</li>
@@ -304,7 +308,8 @@
 <p><img src="https://s2.loli.net/2023/11/16/6yuNbMjU4IZXzcP.png" alt="S3-flow-avg.png"></p>
 <p>如上图，可能是基因研究用户在使用 lambda 函数计算进行大规模的并行数据分析，IOPS 一度达到 2.3M IOPS，但我们使用数百万张磁盘可以轻松满足这种需求（上面计算可以看出 2w 张盘满载可以满足，那么有百万张盘，每个只用百分之一就可以满足）。</p>
 <p>这种尺度的请求处理在 S3 中并不算夸张，当下 S3 集群至少有<strong>上万用户</strong>的存储桶的数据横跨超过<strong>百万张盘</strong>。正是 S3 如此体量的用户和用户数据，让这种构建方式成为可能。</p>
-<h1 id="人的因素对-S3-的影响"><a href="#人的因素对-S3-的影响" class="headerlink" title="人的因素对 S3 的影响"></a>人的因素对 S3 的影响</h1><p>本文来自我的专栏《<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">系统日知录 2023<i class="fa fa-external-link-alt"></i></span>》，还有一部分在专栏文章中。你的订阅是我持续创作优质文章的最大动力，目前专栏有 82 篇文章，涵盖数据库、存储、系统等主题，如果你对大规模数据系统内容感兴趣，目前处于完结前的打折期，不容错过。</p>
+<h1>人的因素对 S3 的影响</h1>
+<p>本文来自我的专栏《<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">系统日知录 2023<i class="fa fa-external-link-alt"></i></span>》，还有一部分在专栏文章中。你的订阅是我持续创作优质文章的最大动力，目前专栏有 82 篇文章，涵盖数据库、存储、系统等主题，如果你对大规模数据系统内容感兴趣，目前处于完结前的打折期，不容错过。</p>
 
          <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
 <div>
@@ -426,7 +431,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#HDD-%E5%AF%B9-S3-%E8%AE%BE%E8%AE%A1%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">1.</span> <span class="nav-text">HDD 对 S3 设计的影响</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%83%AD%E5%BA%A6%E7%AE%A1%E6%8E%A7%EF%BC%9A%E6%95%B0%E6%8D%AE%E6%94%BE%E7%BD%AE%E5%92%8C%E6%80%A7%E8%83%BD"><span class="nav-number">2.</span> <span class="nav-text">热度管控：数据放置和性能</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%A4%8D%E5%88%B6%EF%BC%9A%E6%95%B0%E6%8D%AE%E6%94%BE%E7%BD%AE%E5%92%8C%E6%8C%81%E4%B9%85%E6%80%A7"><span class="nav-number">3.</span> <span class="nav-text">数据复制：数据放置和持久性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%B0%BA%E5%BA%A6%E5%AF%B9%E6%94%BE%E7%BD%AE%E7%AD%96%E7%95%A5%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">4.</span> <span class="nav-text">数据尺度对放置策略的影响</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%BA%E7%9A%84%E5%9B%A0%E7%B4%A0%E5%AF%B9-S3-%E7%9A%84%E5%BD%B1%E5%93%8D"><span class="nav-number">5.</span> <span class="nav-text">人的因素对 S3 的影响</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">HDD 对 S3 设计的影响</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">热度管控：数据放置和性能</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">3.</span> <span class="nav-text">数据复制：数据放置和持久性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">4.</span> <span class="nav-text">数据尺度对放置策略的影响</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">5.</span> <span class="nav-text">人的因素对 S3 的影响</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -487,12 +492,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -503,6 +502,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>

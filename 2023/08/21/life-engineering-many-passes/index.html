@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="我们在工程实践中，有些构建代码的小技巧，其背后所体现的思想，生活中也常常可见。本系列便是这样一组跨越生活和工程的奇怪联想。这是第一篇：多轮次拆解，也即，很多我们习惯一遍完成的事情，有时候拆成多个轮次完成，会简单、高效很多。  我在进行 code review 时，常看到一些新手同学在一个 for 循环中干太多事情。常会引起多层嵌套，或者 for 循环内容巨大无比。此时，如果不损失太多性能，我通常">
+  <meta name="description" content="我们在工程实践中，有些构建代码的小技巧，其背后所体现的思想，生活中也常常可见。本系列便是这样一组跨越生活和工程的奇怪联想。这是第一篇：多轮次拆解，也即，很多我们习惯一遍完成的事情，有时候拆成多个轮次完成，会简单、高效很多。  我在进行 code review 时，常看到一些新手同学在一个 for 循环中干太多事情。常会引起多层嵌套，或者 for 循环内容巨大无比。此时，如果不损失太多性能，我通">
 <meta property="og:type" content="article">
 <meta property="og:title" content="生活工程学（一）：多轮次拆解">
 <meta property="og:url" content="https://www.qtmuniao.com/2023/08/21/life-engineering-many-passes/index.html">
 <meta property="og:site_name" content="木鸟杂记">
-<meta property="og:description" content="我们在工程实践中，有些构建代码的小技巧，其背后所体现的思想，生活中也常常可见。本系列便是这样一组跨越生活和工程的奇怪联想。这是第一篇：多轮次拆解，也即，很多我们习惯一遍完成的事情，有时候拆成多个轮次完成，会简单、高效很多。  我在进行 code review 时，常看到一些新手同学在一个 for 循环中干太多事情。常会引起多层嵌套，或者 for 循环内容巨大无比。此时，如果不损失太多性能，我通常">
+<meta property="og:description" content="我们在工程实践中，有些构建代码的小技巧，其背后所体现的思想，生活中也常常可见。本系列便是这样一组跨越生活和工程的奇怪联想。这是第一篇：多轮次拆解，也即，很多我们习惯一遍完成的事情，有时候拆成多个轮次完成，会简单、高效很多。  我在进行 code review 时，常看到一些新手同学在一个 for 循环中干太多事情。常会引起多层嵌套，或者 for 循环内容巨大无比。此时，如果不损失太多性能，我通">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://pic.imgdb.cn/item/64e31ef4661c6c8e54aa6e71.png">
 <meta property="article:published_time" content="2023-08-21T08:19:43.000Z">
@@ -269,7 +269,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id=""><a href="#" class="headerlink" title=""></a></h1><blockquote>
+        <h1></h1>
+<blockquote>
 <p>我们在工程实践中，有些构建代码的小技巧，其背后所体现的思想，生活中也常常可见。本系列便是这样一组跨越生活和工程的奇怪联想。这是第一篇：多轮次拆解，也即，<strong>很多我们习惯一遍完成的事情，有时候拆成多个轮次完成，会简单、高效很多</strong>。</p>
 </blockquote>
 <p>我在进行 code review 时，常看到一些新手同学在一个 for 循环中干太多事情。常会引起多层嵌套，或者 for 循环内容巨大无比。此时，如果不损失太多性能，我通常建议同学将要干的事情拆成多少个步骤，每个步骤一个 for 循环。甚至，可以每个步骤一个函数。</p>
@@ -278,9 +279,8 @@
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2023/08/21/life-engineering-many-passes">https://www.qtmuniao.com/2023/08/21/life-engineering-many-passes</a> 转载请注明出处</em></p>
 <p>这种理念，其实在”函数式“编程中也随处可见，即对一个数据集操作时，我们会链式的应用一系列变换函数，从而让数据流清晰的展示出来。在大数据处理中，这种范式就更常见了，比如 spark 论文中提到的：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">errors.<span class="built_in">filter</span>(_.<span class="built_in">contains</span>(<span class="string">&quot;HDFS&quot;</span>))</span><br><span class="line">      .<span class="built_in">map</span>(_.<span class="built_in">split</span>(’\t’)(<span class="number">3</span>))</span><br><span class="line">      .<span class="built_in">collect</span>()</span><br></pre></td></tr></table></figure>
-
-<p> SQL 查询引擎在实现时也是用的类似机制，即将一个查询语句，转换成对一个行列组成的二维数据集，施加<strong>多轮次的算子变换</strong>。如下图所示。</p>
-<p><img src="https://pic.imgdb.cn/item/64e31ef4661c6c8e54aa6e71.png"></p>
+<p>SQL 查询引擎在实现时也是用的类似机制，即将一个查询语句，转换成对一个行列组成的二维数据集，施加<strong>多轮次的算子变换</strong>。如下图所示。</p>
+<p><img src="https://pic.imgdb.cn/item/64e31ef4661c6c8e54aa6e71.png" alt=""></p>
 <p>图源：CMU15445，<span class="exturl" data-url="aHR0cHM6Ly8xNTQ0NS5jb3Vyc2VzLmNzLmNtdS5lZHUvZmFsbDIwMjIvbm90ZXMvMTItcXVlcnlleGVjdXRpb24xLnBkZg==">查询引擎讲义<i class="fa fa-external-link-alt"></i></span>。</p>
 <p>我高中时学过一点点素描，虽然没有入门，但其多轮次的做图技法给我印象很深：先勾轮廓，再逐层完善。打线的时候也是一层层的打，而非一个地方画完再画另一个地方。我最近常常翻译文章，开始时，我总是务求一遍翻译好。但结果就是非常慢，且很容易放弃。后面开始使用多轮次、逐层打磨法。一开始用 ChatGPT 帮忙翻译一遍，然后自己再对照原文订正语义，最后扫一遍调换语序理顺词句等等。常言道，好文章是改出来的，应该也是这个道理。</p>
 <p>滑铁卢大学教授 Srinivasan Keshav 在其 ”<span class="exturl" data-url="aHR0cDovL2Njci5zaWdjb21tLm9yZy9vbmxpbmUvZmlsZXMvcDgzLWtlc2hhdkEucGRm">How to Read a Paper<i class="fa fa-external-link-alt"></i></span>“ 中阐述了经典的”三遍（three-pas approach）读论文“方法，也是类似的思想：</p>
@@ -550,12 +550,6 @@
           <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
         </li>
         <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly95YW5iaW4uYmxvZw==" title="https:&#x2F;&#x2F;yanbin.blog">隔叶黄莺</span>
-        </li>
-        <li class="links-of-blogroll-item">
-          <span class="exturl" data-url="aHR0cHM6Ly9nZWVrdHV0dS5jb20=" title="https:&#x2F;&#x2F;geektutu.com">极客兔兔</span>
-        </li>
-        <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
         </li>
         <li class="links-of-blogroll-item">
@@ -566,6 +560,9 @@
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
         </li>
         <li class="links-of-blogroll-item">
           <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
