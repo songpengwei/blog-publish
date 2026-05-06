@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="概览 首先说下 BLOB 的意思， 英文全称是 Binary Large OBjects，可以理解为任意二进制格式的大对象；在 Facebook 的语境下，也就是用户在账户里上传的的图片，视频以及文档等数据，这些数据具有一次创建，多次读取，不会修改，偶尔删除 的特点。 之前简单翻译了 Facebook 的前驱之作 —— Haystack，随着业务量发展，数据量进一步增大，过去玩法又不转了，如果所">
@@ -38,11 +40,11 @@
 <meta property="og:image" content="https://i.loli.net/2020/02/09/yUSnKop1hGH6QEj.png">
 <meta property="article:published_time" content="2019-03-30T01:07:16.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:15:18.510Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="distributed system">
 <meta property="article:tag" content="分布式系统">
-<meta property="article:tag" content="storage">
 <meta property="article:tag" content="存储">
+<meta property="article:tag" content="storage">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png">
 
@@ -58,6 +60,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="distributed system,分布式系统,存储,storage">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "f4：Facebook’s Warm BLOB Storage System",
+    "description": "概览 首先说下 BLOB 的意思， 英文全称是 Binary Large OBjects，可以理解为任意二进制格式的大对象；在 Facebook 的语境下，也就是用户在账户里上传的的图片，视频以及文档等数据，这些数据具有一次创建，多次读取，不会修改，偶尔删除 的特点。 之前简单翻译了 Facebook 的前驱之作 —— Haystack，随着业务量发展，数据量进一步增大，过去玩法又不转了，如果所有 BLOG 都用 Haystack 存，由于其三备份的实现，在这个量级下，性价比很低。但是完全用网络挂载+传统磁盘+Unix-like（POSIX）文件系统等冷存储，读取跟不上。于是计算机科学中最常用的分而治之的思想登场了。 他们首先统计了 BLOBs 的访问频次与创建时间的关系，然后提出了随着时间推移 BLOB 访问出现的冷热分布概念（和长尾效应差不多）。并据此提出了热、温分开的访问策略：用 HayStack 当做热存储去应对那些频繁访问的流量，然后用 F4 去响应剩下的不那么频繁访问的 BLOB流量，在此假设（F4只存储那些基本不怎么变动，访问量相对不大的数据）前提下，可以大大简化 F4 的设计。当然有个专门的路由层于两者之上进行了屏蔽，并进行决策和路由。 对于 Haystack 来说，从其论文出来时，已经过去了七年（07~14）。相对于当时，做了少许更新，比如说去掉了 Flag 位，在 data file，Index file 之外，增加了 journal file，专门用来记录被删除的 BLOB 条目。 对于 F4 来说，主要设计目的在于保证容错的前提下尽可能的减小有效冗余倍数（effective-replication-factor），以应对日益增长的温数据 存取需求。此外更加模块化，可扩展性更好，即能以加机器方式平滑扩展应对数据的不断增长。 我总结一下，本论文主要高光点就是温热分开，冗余编码，异地取或。",
+    "url": "https://www.qtmuniao.com/2019/03/30/f4/",
+    "datePublished": "2019-03-30T09:07:16+08:00",
+    "dateModified": "2024-03-04T09:15:18+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2019/03/30/f4/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>f4：Facebook’s Warm BLOB Storage System | 木鸟杂记</title>
   
@@ -131,7 +205,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -219,8 +293,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -279,7 +353,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png" alt="over BLOB Storage Architecture"></p>
+        <p><img data-src="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png" alt="over BLOB Storage Architecture"><span class="image-caption">over BLOB Storage Architecture</span></p>
 <h2 id="概览">概览</h2>
 <p>首先说下 BLOB 的意思， 英文全称是 <em>Binary Large OBjects</em>，可以理解为任意二进制格式的大对象；在 Facebook 的语境下，也就是用户在账户里上传的的图片，视频以及文档等数据，这些数据具有<em>一次创建，多次读取，不会修改，偶尔删除</em> 的特点。</p>
 <p>之前简单翻译了 Facebook 的前驱之作 —— Haystack，随着业务量发展，数据量进一步增大，过去玩法又不转了，如果所有 BLOG 都用 Haystack 存，由于其三备份的实现，在这个量级下，性价比很低。但是完全用网络挂载+传统磁盘+Unix-like（POSIX）文件系统等冷存储，读取跟不上。于是计算机科学中最常用的<strong>分而治之</strong>的思想登场了。</p>
@@ -298,7 +372,7 @@
 <p>热数据总是那些头部数据，相对来说增长较慢。但是历史数据，也就是<strong>温数据</strong>是随着时间推移而尾巴越来越长，这势必要求存储架构进行相应的调整。</p>
 <h2 id="存储系统总体架构">存储系统总体架构</h2>
 <p>设计原则是让每个组件尽可能简单、内聚并且高度契合其要承担的工作。这是从 UNIX 以来就一直在强调的一个原则。下图是总体架构图，包括创建（C1-C2，由 Haystack 负责），删除（D1-D2，大部分是 Haystack 负责，少部分是 f4 负责）和读取（R1-R4 由 Haystack 和 f4 共同负责）。</p>
-<p><img src="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png" alt="over BLOB Storage Architecture"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png" alt="over BLOB Storage Architecture"><span class="image-caption">over BLOB Storage Architecture</span></p>
 <p>如前述论文 Haystack 所述，我们将一批 BLOG 集结为<strong>逻辑卷</strong>，尽可能减少 meta 信息，从而减少IO次数。每个逻辑卷我们设计了 100G 左右的容量，在满之前是为 <em>未锁定</em> （<em>unlocked</em>） 的状态，一旦达到容量，就变为<em>锁定</em> （<em>locked</em>）状态，只允许读取和删除。</p>
 <p>每个卷包含三个文件，一个数据文件，一个索引文件和一个备忘文件（journal file）。和 Haystack 论文提到的一样，数据文件就是记录 BLOG 本身和其原信息，索引文件就是内存中的查找结构的快照。备忘文件是新增的，它通过记录所有被删除的 BLOG 的记录来进行删除操作。而原 Haystack 论文中，删除文件是通过直接修改索引文件和数据文件来实现的。在<strong>未锁定</strong>阶段，三个文件均可读写，在<strong>锁定</strong>阶段，只有备忘文件可以读写，其他两个文件都会变成只读的。</p>
 <h3 id="控制模块（Controller）">控制模块（Controller）</h3>
@@ -332,10 +406,10 @@
 <h3 id="单个-f4-cell（Individual-f4-Cell）">单个 f4 cell（Individual f4 Cell）</h3>
 <p>每个 f4 数据单元（cell） 只处理锁定的卷（Volume），也就是只用支持读取和删除操作。数据文件和索引文件都是只读的，Haystack 中的备忘文件在 f4 中是不存在的。我们用了另一种方式来达到“删除”的效用，将每个 BLOB 进行加密后存储，将用于加密的秘钥（key）存在一个外部数据库中。响应删除请求时，<strong>只需要将 BLOB 对应的秘钥删掉就行</strong>（有点绝，对用户提供了隐私保证，而且将删除操作的延时降到很低）。</p>
 <p>索引文件由于比较小，直接用了三副本存储来保证可靠性，可以省去编解码带来的额外复杂度。数据文件用 n=10, k = 4 的里所码进行编码。具体来说，将每个数据文件切分为 n 个连续的数据块（block），每个具有固定尺寸 b（最后一个块不满，而又写不进去一个新 BLOB 的情况下，在结尾补零，<em><strong>类似这种打 padding 也是数据对齐常用的手法</strong></em>）；对于每 n 个这样的块，生成 k 个同样尺寸的<em>奇偶校验块</em>（parity block），这样 n+k 个数据块构成一个逻辑上的 <em>条带</em>（stripe）。同一条带上的任意两个块互称为<strong>兄弟块</strong>（companion block）。正常读取时，可以直接从数据块中读（我猜是那n个块，不用额外进行计算还原，有待考证，还得看里所码原理以及具体实现）。如果某些块不可用了，就会在同一条带上任取 n 块，解码后还原；此外还有个性质，就是读取 n 个 block 上对应的 n 截数据（比如某个 BLOB），也可以进行解码（这两个性质都是编码决定的，类似于 n 元线性方程组，有 k 个冗余方程）。</p>
-<p><img src="https://i.loli.net/2020/02/09/laNjLhZgwp5e8Yz.png" alt="BLOBs in Block in Stripes in Volumes"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/laNjLhZgwp5e8Yz.png" alt="BLOBs in Block in Stripes in Volumes"><span class="image-caption">BLOBs in Block in Stripes in Volumes</span></p>
 <p>通常 b 为 1G，即每个数据块（Block）选取 1G 大小（这有个疑问，看起来每个Block仍在Volume中，而不是单独拿出来，那么定位一个物理block是不是就得通过 volume 文件打开句柄 + offset + length），选这么大有两方面的考虑，一个是尽量减小 BLOB 的跨块概率，以减少读取一个 BLOB 还得多次 IO 的频率；另一个是降低 block 所需要维护的总元信息数量。不选更大的是因为重建起来会付出更大代价（但为什么就是 1G 呢？）。</p>
 <p>下图是架构图，接下来逐一介绍下各个模块。</p>
-<p><img src="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png" alt="overall architecture"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png" alt="overall architecture"><span class="image-caption">overall architecture</span></p>
 <h3 id="名字节点（Name-Node）">名字节点（Name Node）</h3>
 <p>name node 维护了<em>数据块</em>、<em>奇偶校验块</em> 到实际存储这些块的存储节点（也就是下一节的存储节点）之间的映射；这些映射（利用标准技术？还说参考了GFS，这没大看懂，留个坑回头读 GFS 填上）分配到存储节点中。名字节点使用主从备份策略进行容错。</p>
 <h3 id="存储节点（Storage-Nodes）">存储节点（Storage Nodes）</h3>
@@ -356,7 +430,7 @@
 <p>如之前提到的，一个数据条带上的不同数据块需要被分散放置于不同的数据容错区域内以最大化可靠性。然而，在经过故障，重建和替换后，肯定会有一些不符合上述原则的情况，比如两个同条带上的数据块被放在了同一个数据容错区域中。协调节点会运行一个平衡摆放位置的进程去检查一个数据单元中的数据块分布。和重建操作一样，也会给存储节点带来相当大的额外硬盘和网络负载，因此协调节点也会进行自我限流以减小对正常请求的影响。</p>
 <h2 id="地理备份">地理备份</h2>
 <p>单个 f4 的数据单元都存在一个数据中心中，因此难以抵御数据中心的故障。于是在开始的时候，我们将两份同样的数据单元放在不同的数据中心中，这样一个损坏仍然可以利用另一个对请求进行响应。这样将有效冗余因子从 Haystack 的 3.6 降低到了 2.8 。</p>
-<p><img src="https://i.loli.net/2020/02/09/yUSnKop1hGH6QEj.png" alt="geo replicated xor coding"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/yUSnKop1hGH6QEj.png" alt="geo replicated xor coding"><span class="image-caption">geo replicated xor coding</span></p>
 <p>考虑到数据中心级别的故障还是很稀少的，我们找到了一种可以进一步减小有效冗余因子的方案——当然，也减小了吞吐率。不过，现在XOR方案可以将有效冗余因子进一步做到 2.1。</p>
 <p>地理备份异或编码（XOR coding）方案通过将两个不同的卷（Volume，大小一样）做异或后的结果放在第三个数据中心的方式，提供了数据中心级别的容错。如图9一样，每个数据卷中的数据块和奇偶校验块被与等量的其他数据块或者奇偶校验块（称为<em>哥们块</em>，buddy block）被拿来做异或运算，得到其异或块（XOR block）。这些异或模块的索引也是简单的三备份存储。</p>
 <p>一旦某个 datacenter出现问题导致整个 volume 不可用，读取请求会被路由到一个叫做 geo-bakoff node ，然后会从两个 buddy node 和 XOR node 所在数据中心去取对应 BLOB 数据，进行损坏 BLOB的重建。选择XOR编码，当然是简单又能满足需求。</p>
@@ -417,19 +491,19 @@
       <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
     </li>
   </ul>
 
@@ -441,7 +515,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -453,8 +527,8 @@
           <div class="post-tags">
               <a href="/tags/distributed-system/" rel="tag"># distributed system</a>
               <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
-              <a href="/tags/storage/" rel="tag"># storage</a>
               <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
+              <a href="/tags/storage/" rel="tag"># storage</a>
           </div>
 
         
@@ -535,10 +609,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -641,7 +715,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -682,6 +756,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

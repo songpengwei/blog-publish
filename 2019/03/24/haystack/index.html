@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="概览 Haystack 的基本思想就是将索引信息放在内存中，避免额外的IO。为了做到这一点，主要进行了两方面的设计：  将小文件集合成大文件，减少文件数，从而减少了元信息的数目。 精简文件元信息，去掉一切在 Facebook 场景中不需要的 POSIX 语义中元信息。  这样就可以将数据元信息减小到一个内存可以放的下的量级，基本上每次每次数据访问同一个一次 IO 就可以完成，而非以前的好几次。">
@@ -38,11 +40,11 @@
 <meta property="og:image" content="https://i.loli.net/2020/02/09/9AKPDpN7OwBgTVM.png">
 <meta property="article:published_time" content="2019-03-24T14:53:08.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:15:13.280Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="分布式系统">
-<meta property="article:tag" content="存储">
 <meta property="article:tag" content="haystack">
 <meta property="article:tag" content="distributed storage">
+<meta property="article:tag" content="存储">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png">
 
@@ -58,6 +60,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="分布式系统,haystack,distributed storage,存储">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Finding a Needle in Haystack：Facebook's Photo Storage",
+    "description": "概览 Haystack 的基本思想就是将索引信息放在内存中，避免额外的IO。为了做到这一点，主要进行了两方面的设计： 将小文件集合成大文件，减少文件数，从而减少了元信息的数目。 精简文件元信息，去掉一切在 Facebook 场景中不需要的 POSIX 语义中元信息。 这样就可以将数据元信息减小到一个内存可以放的下的量级，基本上每次每次数据访问同一个一次 IO 就可以完成，而非以前的好几次。",
+    "url": "https://www.qtmuniao.com/2019/03/24/haystack/",
+    "datePublished": "2019-03-24T22:53:08+08:00",
+    "dateModified": "2024-03-04T09:15:13+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2019/03/24/haystack/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>Finding a Needle in Haystack：Facebook's Photo Storage | 木鸟杂记</title>
   
@@ -131,7 +205,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -219,8 +293,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -279,7 +353,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png" alt="serving a photo"></p>
+        <p><img data-src="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png" alt="serving a photo"><span class="image-caption">serving a photo</span></p>
 <h2 id="概览">概览</h2>
 <p>Haystack 的基本思想就是将索引信息放在内存中，避免额外的IO。为了做到这一点，主要进行了两方面的设计：</p>
 <ol>
@@ -331,9 +405,9 @@
 </ol>
 <p>一个典型的要访问CDN的图片请求URL长这样：http://⟨CDN⟩/⟨Cache⟩/⟨Machine id⟩/⟨Logical volume, Photo⟩</p>
 <p>在CDN，Cache，Machine，层如果命中就返回，否则剥离该层次地址，然后将请求转发到下一层。</p>
-<p><img src="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png" alt="serving a photo"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png" alt="serving a photo"><span class="image-caption">serving a photo</span></p>
 <p>上传一个图片的时候，首先请求被打到 web server 中；然后 server 从 Directory 中选择一个可写的逻辑卷（logic volume）。最后，webserver 给该图片一个 id，并且将图片上传到选定的逻辑卷对应的几个物理卷中。</p>
-<p><img src="https://i.loli.net/2020/02/09/f5ZAatgdiFNDWUI.png" alt="up loading a photo"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/f5ZAatgdiFNDWUI.png" alt="up loading a photo"><span class="image-caption">up loading a photo</span></p>
 <p>这里我有两个问题：1. 如何选择逻辑卷？和图片请求的大区相关吗？ 2. 明显有可能造成不一致。即从 Directory 选择逻辑卷后，写的时候发现全满了或者网络问题写失败怎么办？试看paper接下来怎么说。</p>
 <h3 id="Haystack-Directory">Haystack Directory</h3>
 <p>Directory 负责四方面的功能：</p>
@@ -365,9 +439,9 @@
 <p>Haystack 的主要设计就在于 Store 的组织上。</p>
 <p>每个物理卷在物理上是一个大文件，每个 Store 机器和通过一个逻辑卷id + offset 来迅速定位一个图片。Heystack 一个关键设计就在于此：不用硬盘访问就可以获取某个图片的文件名，偏移量和大小。因为Store 的每个物理节点一直在内存中维护着每个物理卷对应文件的描述符和图片 id 到其元信息的映射。</p>
 <p>具体组织上来说，每个物理卷就是一个包含一个超级块（superblock）和一系列 needles。每个needle保存图片元信息和图片本身。其中 flag 是为了标记该图片是否被删除，cookie 是在上传图片时随机生成，为了防止猜 url ，而 alternate key 是为了保存同一个图片的不同分辨率的文件而增加的。Data Checksum 进行数据校验，而 padding 可能是为了硬盘块对齐。</p>
-<p><img src="https://i.loli.net/2020/02/09/JBYr8FL4O53Cz6Q.png" alt="layout of haystack store file"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/JBYr8FL4O53Cz6Q.png" alt="layout of haystack store file"><span class="image-caption">layout of haystack store file</span></p>
 <p>为了加快图片的访问，物理机在内存中维护所有图片的基本元信息，如下图，只剩下了最简单的几项信息。为了加快机器重启后内存中元信息的构建，物理机会将内存中的这些元信息定期做 snapshot 即 index file；其顺序和 store file 保持一致。</p>
-<p><img src="https://i.loli.net/2020/02/09/9AKPDpN7OwBgTVM.png" alt="layout of haystack index file"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/9AKPDpN7OwBgTVM.png" alt="layout of haystack index file"><span class="image-caption">layout of haystack index file</span></p>
 <p>根据上述物理结构，我们来过一遍 Haystack 每个 API 对应的实际流程：</p>
 <h4 id="Photo-Read">Photo Read</h4>
 <p>一个来自 Cache 的读请求会携带 volume id, key, alternate key 和 cookie，Store 物理机会在内存中查找图片相关的元信息，找到（文件描述符，offset 和 size）， 从而读出该图片文件及其元信息；然后进行 cookie 比对和 checksum 校验，通过后返回图片数据。</p>
@@ -419,10 +493,10 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+      <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/03/19/wisckey/" rel="bookmark">WiscKey —— SSD 介质下的 LSM-Tree 优化</a></div>
@@ -446,7 +520,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -457,9 +531,9 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
-              <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
               <a href="/tags/haystack/" rel="tag"># haystack</a>
               <a href="/tags/distributed-storage/" rel="tag"># distributed storage</a>
+              <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
           </div>
 
         
@@ -540,10 +614,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -646,7 +720,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -687,6 +761,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

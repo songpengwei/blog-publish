@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="概览 Kafka （该论文发表于2011年6月**[1]**）是日志处理和消息队列系统的集大成者。较低的延迟、极高的容量和吞吐，使其可以应用于在线服务和离线业务。为了兼顾性能和可扩展性，Kafka 做了一些看起来反直觉但是却很实用的设计。例行总结一下其设计特点：   面向存储的消息队列：意味在近实时的情况下能够将传统消息队列的存储增加几个数量级。实现原理是充分利用了磁盘的顺序写和操作系统自身的缓存">
@@ -36,7 +38,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/02/09/KIBHRzNQStClj6m.jpg">
 <meta property="article:published_time" content="2019-12-21T17:07:10.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:15:46.628Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="分布式系统">
 <meta property="article:tag" content="Kafka">
 <meta property="article:tag" content="日志系统">
@@ -56,6 +58,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="分布式系统,Kafka,日志系统,消息队列">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Kafka —— 弥合日志系统和消息队列的鸿沟",
+    "description": "概览 Kafka （该论文发表于2011年6月**[1]**）是日志处理和消息队列系统的集大成者。较低的延迟、极高的容量和吞吐，使其可以应用于在线服务和离线业务。为了兼顾性能和可扩展性，Kafka 做了一些看起来反直觉但是却很实用的设计。例行总结一下其设计特点： 面向存储的消息队列：意味在近实时的情况下能够将传统消息队列的存储增加几个数量级。实现原理是充分利用了磁盘的顺序写和操作系统自身的缓存；此外为了提高访盘、传输效率，使用了文件分段、段首索引、零拷贝和批量拉取等技术。 灵活的生产消费方式：总体而言是基于主题粒度的发布订阅式架构，并且既支持组内多消费者互斥消费，也支持不同消费者组间的重复消费。这里面涉及到消息队列的两个核心设计选择：pull 式消费以及客户端侧存储消费进度。拉式消费可能会导致空轮询以及稍微的延迟，好处在于灵活；客户端存储消费进度可以使的 broker 无状态，以进行灵活伸缩和容错。为了简化实现，消费时，每个分区最多为一个消费者所消费。 Zookeeper 存储元信息：利用分布式一致性组件 Zookeeper 以注册表的形式存储系统元信息，包括 broker 和消费者的存活信息、消费者和分区间的对应关系、每个分区的消费进度等等。Zookeeper 作为一个前缀树形式组织 KV、支持发布订阅的高可用组件，可以满足 Kafka 进行消费协调和进度保存的协作需求。 分区级别的多副本设计：这一点在论文中还没实现，应该是后来系统开源演进时加上的。利用该条可以实现对 broker 的容错。 简洁强大的消费接口：Kafka 的客户端一般提供两层接口抽象。包括无需关注分区和偏移量信息的高层（high-level）简单读写接口，以及可以灵活控制分区组织和消费进度的低层（low-level）接口。论文中只提到了前者，以表现其简洁。",
+    "url": "https://www.qtmuniao.com/2019/12/22/kafka/",
+    "datePublished": "2019-12-22T01:07:10+08:00",
+    "dateModified": "2024-03-04T09:15:46+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2019/12/22/kafka/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>Kafka —— 弥合日志系统和消息队列的鸿沟 | 木鸟杂记</title>
   
@@ -129,7 +203,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -217,8 +291,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -352,14 +426,14 @@
 <p>消费者通过创建一个或多个流来订阅 topic，被发布到相应 topic 的消息会渐次进入这些消费者创建的订阅流。接口就这么简单，至于 Kafka 如何来实现，卖个关子，稍后讨论。在语言层面，我们将每个消息流抽象为一个迭代器（Iterator）， 消费者利用该迭代器取出一条条消息的消息体以进行处理。和一般的迭代器不同，我们的迭代器永不停止，当无新消息到来时，迭代器就会一直阻塞。我们同时支持两种消费模式，既可以一组消费者对某个 topic 进行<strong>互斥</strong>消费，也可以每个消费者对同一个主题进行<strong>独立</strong>消费。</p>
 <h3 id="架构图">架构图</h3>
 <p>Kafka 的架构图如下：</p>
-<p><img src="https://i.loli.net/2020/02/09/6dbS1ypqo79Pigm.png" alt="kafka-architecture.png"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/6dbS1ypqo79Pigm.png" alt="kafka-architecture.png"><span class="image-caption">kafka-architecture.png</span></p>
 <p>Kafka 是分布式系统，因此一个 Kafka 集群中会包含多个 broker 机器。为了均摊负载，每个 topic 被切分成多个分片（Partition），每个 broker 机器持有其中的一个或多个分片。多个生产者和消费者可以同时进行消息的生产和消费。在 3.1 节，我们会介绍 broker 上的单个分片的布局，讨论为了使单个分片高效的被消费的一些设计上的推敲和选择。3.2 节，会描述生产者和消费者如何在分布式环境中与多个 broker 进行交互。最后在 3.3 节，会讨论 Kafka 的数据交付保证。</p>
 <h3 id="单个分区的效率">单个分区的效率</h3>
 <p>我们做了一系列的设计上的决策来保证系统的高效性。</p>
 <p><strong>极简的存储设计</strong>。一个 topic 的每个分区就是逻辑上的一段日志。具体到物理上，为了防止分区文件过大，我们会将其进一步分成数据段（segment）。每次数据往最新的数据段中写，写到设定容量（比如说 1G）后，就会新建一个段文件继续写。此外，为了提高写入性能，我们会将日志记录在内存中进行缓存，只有日志数量达到设定值或者缓存数据的大小达到设定值时，才会将数据刷到外存中。为了保证可靠性，只有数据刷到了外存后，才会将其暴露给消费者。</p>
 <p>和传统的消息系统不同，Kafka 存储的每条消息没有<strong>显式</strong>的消息 ID，而仅通过该条消息在分片中的偏移量（offset）来定位。这样我们省却了为了随机查找而建立的索引的额外开销。值得一提的是，我们的偏移量并不是连续的，而是类似于 TCP 中的 SEQ 的字节 offset——为了计算下一条消息的偏移量，我们需要将当前消息偏移量加上当前消息长度。下面可能会 ID 与偏移量混用，但是说的都是一个东西。</p>
 <p>每个消费者总是<strong>顺序的</strong>去消费每个分区的数据，如果消费者每<strong>确认</strong>（ack）一个偏移量，就意味着该偏移量前面的所有消息都被消费过了。实现上来说，消费者端的库代码会向 broker 发一系列请求来拉取数据到消费者的缓冲区中供应用代码来消费**[3]<strong>。每个拉取请求包含了起始便宜地址和可以接受的字节尺寸。每个 Broker 在内存中维护了数据段首偏移量到数据段物理地址的映射（应该是用查找树组织的，因为需要范围定位）。当一个读取请求到来时，broker 根据</strong>请求偏移量<strong>来定位到相应的段，然后根据</strong>请求尺寸**来读出指定的数据量，然后返回给消费者。消费者收到消息后，计算出下一条消息的偏移量，以进行下一次拉取请求。Kafka 中硬盘中日志和内存中索引的布局如下图（每个框框中数据即表示某条消息的偏移量）：</p>
-<p><img src="https://i.loli.net/2020/02/09/ZdGU4QYE9Iaz7OW.jpg" alt="kafka-log.jpg"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/ZdGU4QYE9Iaz7OW.jpg" alt="kafka-log.jpg"><span class="image-caption">kafka-log.jpg</span></p>
 <p><strong>高效的传输优化</strong>。由于网络传输开销会比较高，因此我们小心的设计了 Kafka 和外界数据交互的流程。如前所述，对于<strong>生产者</strong>，我们在 API 层面允许一次发送一批消息。对于消费者，虽然在 API 层面看起来是逐条消息进行消费，但在底层也是会批量拉取，比如每次都一次拉取数百 KB。</p>
 <p>另一个与众不同的设计决策在于，我们不在 Kafka 系统层面进行<strong>显式</strong>的消息缓存。也就是说，我们仅仅利用文件系统层面的页缓存（page cache）来实现加速硬盘读写的目的。这样做好处有二：</p>
 <ol>
@@ -420,7 +494,7 @@
 <p>当一个 broker 宕机时，其上面所有消息将会变为不可用。进一步，如果 broker 的存储系统完全坏掉，其上面的未消费消息将永远丢失。将来，我们计划提供内置的多机冗余备份，以容忍单个 broker 节点偶然出现问题（当然现在2019也早已经实现了）。</p>
 <h2 id="LinkedIn-中-Kafka-的使用">LinkedIn 中 Kafka 的使用</h2>
 <p>在本节，简要说明一下 LinkedIn 中是如何使用 Kafka 的。下图是一个我们的简化部署图：</p>
-<p><img src="https://i.loli.net/2020/02/09/KIBHRzNQStClj6m.jpg" alt="kafka-deployment.jpg"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/KIBHRzNQStClj6m.jpg" alt="kafka-deployment.jpg"><span class="image-caption">kafka-deployment.jpg</span></p>
 <p>我们在每个数据中心部署了一套服务于用户业务的 Kafka 集群，前端业务将产生的各种日志数据批量发送到 Kafka 集群中。我们使用硬件（load balancer）将流量尽量均匀的分发到各个 broker 上去。为了减少网络开销，我们将在线消费者业务和 Kafka 部署在一个物理集群中。</p>
 <p>我们还在靠近 Hadoop 集群等其他数据仓库基件的另一个数据中心部署了一套负责离线数据分析的 Kafka 集群。一方面，该Kafka 集群中内置了一组消费者进程，会定期的去从在线 Kafka 集群拉取数据，写入本集群中。另一方面，该集群运行着数据加载作业，定期地从 Kafka 集群中拉取数据，处理后载入 Hadoop 集群和数据仓库中以进行汇总和分析工作。我们还将此集群用来进行原型建模以及一些即时查询分析工作。在不用特别调优的情况下，端到端大概能有 10s 左右的平均延迟，这对我们的需求来说够用了。</p>
 <p>当前，我们的 Kafka 集群中每天会产生数以亿计的日志消息，总量大约在数百G字节。一旦我们将现有系统全部转向 Kafka，可以预见到，Kafka 中的数据量级将会迎来一个更显著的增长，并且需要适配更多的数据类型。当运维人员由于软硬件原因将 broker 停机时，再平衡（re-balance）进程能够自动的将消费在多个 broker 中进行重新平衡。</p>
@@ -465,13 +539,10 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
@@ -480,7 +551,10 @@
       <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
     </li>
   </ul>
 
@@ -492,7 +566,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -586,10 +660,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -692,7 +766,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -733,6 +807,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第六节课笔记，是 Raft 论文讲解">
@@ -37,7 +39,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/05/14/krIQ9gYb5So8fD6.png">
 <meta property="article:published_time" content="2020-05-09T15:12:20.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:16:35.360Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="分布式系统">
 <meta property="article:tag" content="6.824">
 <meta property="article:tag" content="笔记">
@@ -56,6 +58,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="分布式系统,6.824,笔记">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "MIT 6.824 2020 视频笔记六：Fault Tolerate Raft 1",
+    "description": "MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第六节课笔记，是 Raft 论文讲解的第一部分，主要总结了容错的几种类型以及 Raft 中的 Leader 选举相关内容。",
+    "url": "https://www.qtmuniao.com/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/",
+    "datePublished": "2020-05-09T23:12:20+08:00",
+    "dateModified": "2024-03-04T09:16:35+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>MIT 6.824 2020 视频笔记六：Fault Tolerate Raft 1 | 木鸟杂记</title>
   
@@ -129,7 +203,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -217,8 +291,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -277,7 +351,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
+        <p><img data-src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"><span class="image-caption">6.824-schedule.png</span></p>
 <p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vY2hhbm5lbC9VQ183V3JiWlRDT0R1MW9fa2ZVTXE4OGcvdmlkZW9z">Youtube<i class="fa fa-external-link-alt"></i></span>，<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL2F2OTA5MTU1MjY=">B站<i class="fa fa-external-link-alt"></i></span>。课程资料：<span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvc2NoZWR1bGUuaHRtbA==">6.824主页<i class="fa fa-external-link-alt"></i></span>。本篇是第六节课笔记，是 Raft 论文讲解的第一部分，主要总结了容错的几种类型以及 Raft 中的 Leader 选举相关内容。</p>
 <span id="more"></span>
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/">https://www.qtmuniao.com/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/</a>, 转载请注明出处</em></p>
@@ -300,7 +374,7 @@
 <li>如果 S2 真的宕机了，系统应当在 S2 缺席的情况下正常工作，否则系统就不能称之为是容错的（fault-tolerance）。</li>
 <li>如果 S2 没有宕机，但是和 C1 失联了。则系统不能够给 C1 提供服务，因为 S2 可能正在给 C2 提供服务，如果让 S1 同时给 C1 服务，则会造成系统状态不一致，从而使服务出错：C1 和 C2 同时获取到锁。</li>
 </ol>
-<p><img src="https://i.loli.net/2020/05/15/2HrYAaSULhckRDT.png" alt="split-brain"></p>
+<p><img data-src="https://i.loli.net/2020/05/15/2HrYAaSULhckRDT.png" alt="split-brain"><span class="image-caption">split-brain</span></p>
 <p>在此种情况下，我们面临一种选择的困境：</p>
 <ol>
 <li>要么不提供容错保证，尽管我们使用了双备份服务器。</li>
@@ -316,7 +390,7 @@
 <p>上世纪九十年代左右，出现了两个算法 Paxos 和 View-Stamped Replication （VSR，MIT提出的），使用多数票原则来解决 Split-brain 问题。虽然现在前者更广为人知，但是后者在思想上与 Raft 更为接近。</p>
 <h2 id="Raft-概览">Raft 概览</h2>
 <p>Raft 一般表现为库的形式，运行在在每个副本（replica）服务器上，对<strong>多副本状态机</strong> （replicated state machine） 进行管理，主要负责对操作日志的同步。基于此，我们可以进一步构建可靠的 KV 存储层，主要负责状态的存储。</p>
-<p><img src="https://i.loli.net/2020/05/14/WQUBHvNSe6O72zF.png" alt="raft-replicated-kv-service"></p>
+<p><img data-src="https://i.loli.net/2020/05/14/WQUBHvNSe6O72zF.png" alt="raft-replicated-kv-service"><span class="image-caption">raft-replicated-kv-service</span></p>
 <p>上图表现了一个典型的客户端与键值对服务的交互流程：</p>
 <ol>
 <li>客户端发送 “Put/Get” 请求到 Leader 的 k/v 层</li>
@@ -430,7 +504,7 @@
 </ol>
 <h3 id="日志分歧">日志分歧</h3>
 <p>当系统一切运作正常时，情况很简单，Followers 只需要单方面的接受 Leader 同步给他的日志条目即可。但是当出现了异常，比如 Leader 只给集群中的部分机器同步了日志，然后宕机了，此时系统该如何往下进行？</p>
-<p><img src="https://i.loli.net/2020/05/14/krIQ9gYb5So8fD6.png" alt="log-and-crash"></p>
+<p><img data-src="https://i.loli.net/2020/05/14/krIQ9gYb5So8fD6.png" alt="log-and-crash"><span class="image-caption">log-and-crash</span></p>
 <p>当然，在上图 a 中，第 11 条日志可能被老 Leader 提交了，也可能没有。但是新的 Leader 如果无从得知，就只等根据多数票原则（有半数以上的服务器有该日志条目）当做其提交了。</p>
 <h2 id="参考">参考</h2>
 <ol>
@@ -467,22 +541,22 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/02/29/6-824-video-notes-1/" rel="bookmark">MIT 6.824 2020 视频笔记一：绪论</a></div>
+      <div class="popular-posts-title"><a href="/2020/03/06/6-824-video-notes-2/" rel="bookmark">MIT 6.824 2020 视频笔记二：RPC和线程</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/03/14/6-824-vidoe-notes-3-gfs/" rel="bookmark">MIT 6.824 2020 视频笔记三：GFS</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="bookmark">MIT 6.824 2020 视频笔记五：Go Concurrency</a></div>
+      <div class="popular-posts-title"><a href="/2020/02/29/6-824-video-notes-1/" rel="bookmark">MIT 6.824 2020 视频笔记一：绪论</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/03/06/6-824-video-notes-2/" rel="bookmark">MIT 6.824 2020 视频笔记二：RPC和线程</a></div>
+      <div class="popular-posts-title"><a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="bookmark">MIT 6.824 2020 视频笔记五：Go Concurrency</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/04/01/6-824-video-notes-4-vm-ft/" rel="bookmark">MIT 6.824 2020 视频笔记四：VM-FT</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
   </ul>
 
@@ -494,7 +568,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -587,10 +661,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -693,7 +767,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -734,6 +808,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

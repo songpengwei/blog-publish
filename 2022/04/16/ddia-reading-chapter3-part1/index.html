@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。  第二章讲了上层抽象：数据模型和查询语言。 本章下沉一些，聚焦数据库底层如何处理">
@@ -41,7 +43,7 @@
 <meta property="og:image" content="https://s2.loli.net/2022/04/16/K4gXhrzf9wySko7.png">
 <meta property="article:published_time" content="2022-04-16T01:37:46.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:22:48.727Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="DDIA">
 <meta property="article:tag" content="读书笔记">
 <meta property="article:tag" content="设计数据密集型应用">
@@ -60,6 +62,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="DDIA,读书笔记,设计数据密集型应用">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "DDIA 读书笔记（三）：B-Tree 和 LSM-Tree",
+    "description": "DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。 第二章讲了上层抽象：数据模型和查询语言。 本章下沉一些，聚焦数据库底层如何处理查询和存储。这其中，有个逻辑链条： 使用场景→ 查询类型 → 存储格式。",
+    "url": "https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part1/",
+    "datePublished": "2022-04-16T09:37:46+08:00",
+    "dateModified": "2024-03-04T09:22:48+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part1/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>DDIA 读书笔记（三）：B-Tree 和 LSM-Tree | 木鸟杂记</title>
   
@@ -133,7 +207,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -221,8 +295,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -381,7 +455,7 @@
 <li>Key 是查询 Key</li>
 <li>Value 是 KV 条目的起始位置和长度。</li>
 </ol>
-<p><img src="https://s2.loli.net/2022/04/16/iXVWtdGLxb6RDqB.png" alt="ddia-3-1-hash-map-csv.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/iXVWtdGLxb6RDqB.png" alt="ddia-3-1-hash-map-csv.png"><span class="image-caption">ddia-3-1-hash-map-csv.png</span></p>
 <p>看来很简单，但这正是 <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnJpYWsuY29tL3JpYWsva3YvMi4yLjMvc2V0dXAvcGxhbm5pbmcvYmFja2VuZC9iaXRjYXNrL2luZGV4Lmh0bWw=">Bitcask<i class="fa fa-external-link-alt"></i></span> 的基本设计，但关键是，他 Work（在小数据量时，即所有 key 都能存到内存中时）：能提供很高的读写性能：</p>
 <ol>
 <li>写：文件追加写。</li>
@@ -392,7 +466,7 @@
 <p>但有个很重要问题，单个文件越来越大，磁盘空间不够怎么办？</p>
 <p>在文件到达一定尺寸后，就新建一个文件，将原文件变为只读。同时为了回收多个 key 多次写入的造成的空间浪费，可以将只读文件进行紧缩（ compact ），将旧文件进行重写，挤出“水分”（被覆写的数据）以进行垃圾回收。</p>
 </blockquote>
-<p><img src="https://s2.loli.net/2022/04/16/OUVfroWha34L8i7.png" alt="ddia-3-3-compaction-sim.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/OUVfroWha34L8i7.png" alt="ddia-3-3-compaction-sim.png"><span class="image-caption">ddia-3-3-compaction-sim.png</span></p>
 <p>当然，如果我们想让其<strong>工业可用</strong>，还有很多问题需要解决：</p>
 <ol>
 <li><strong>文件格式</strong>。对于<strong>日志</strong>来说，CSV 不是一种紧凑的数据格式，有很多空间浪费。比如，可以用 length + record bytes 。</li>
@@ -427,9 +501,9 @@
 <p>假设加一个限制，让这些文件按 key 有序。我们称这种格式为：SSTable（Sorted String Table）。</p>
 <p>这种文件格式有什么优点呢？</p>
 <p><strong>高效的数据文件合并</strong>。即有序文件的归并外排，顺序读，顺序写。不同文件出现相同 Key 怎么办？</p>
-<p><img src="https://s2.loli.net/2022/04/16/A3dwMLfSs4Imgnj.png" alt="ddia-3-4-merge-sst.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/A3dwMLfSs4Imgnj.png" alt="ddia-3-4-merge-sst.png"><span class="image-caption">ddia-3-4-merge-sst.png</span></p>
 <p><strong>不需要在内存中保存所有数据的索引</strong>。仅需要记录下每个文件界限（以区间表示：[startKey, endKey]，当然实际会记录的更细）即可。查找某个 Key 时，去所有包含该 Key 的区间对应的文件二分查找即可。</p>
-<p><img src="https://s2.loli.net/2022/04/16/j8tM6IUk1QrJXuw.png" alt="ddia-3-5-sst-index.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/j8tM6IUk1QrJXuw.png" alt="ddia-3-5-sst-index.png"><span class="image-caption">ddia-3-5-sst-index.png</span></p>
 <p><strong>分块压缩，节省空间，减少 IO</strong>。相邻 Key 共享前缀，既然每次都要批量取，那正好一组 key batch 到一块，称为 block，且只记录 block 的索引。</p>
 <h3 id="构建和维护-SSTables">构建和维护 SSTables</h3>
 <p>SSTables 格式听起来很美好，但须知数据是乱序的来的，我们如何得到有序的数据文件呢？</p>
@@ -452,14 +526,14 @@
 <p><strong>该方案的问题</strong>：如果出现宕机，内存中的数据结构将会消失。 解决方法也很经典：WAL。</p>
 <h3 id="从-SSTables-到-LSM-Tree">从 SSTables 到 LSM-Tree</h3>
 <p>将前面几节的一些碎片有机的组织起来，便是时下流行的存储引擎 LevelDB 和 RocksDB 后面的存储结构：LSM-Tree：</p>
-<p><img src="https://s2.loli.net/2022/04/16/pHgxdn4TPwCoil6.png" alt="ddia-3-leveldb-architecture.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/pHgxdn4TPwCoil6.png" alt="ddia-3-leveldb-architecture.png"><span class="image-caption">ddia-3-leveldb-architecture.png</span></p>
 <p>这种数据结构是 Patrick O’Neil 等人，在 1996 年提出的：<span class="exturl" data-url="aHR0cHM6Ly93d3cuY3MudW1iLmVkdS9+cG9uZWlsL2xzbXRyZWUucGRm">The Log-Structured Merge-Tree<i class="fa fa-external-link-alt"></i></span>。</p>
 <p>Elasticsearch 和 Solr 的索引引擎 Lucene，也使用类似 LSM-Tree 存储结构。但其数据模型不是 KV，但类似：word → document list。</p>
 <h3 id="性能优化">性能优化</h3>
 <p>如果想让一个引擎工程上可用，还会做大量的性能优化。对于 LSM-Tree 来说，包括：</p>
 <p>**优化 SSTable 的查找。**常用 <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/"><strong>Bloom Filter</strong></a>。该数据结构可以使用较少的内存为每个 SSTable 做一些指纹，起到一些初筛的作用。</p>
 <p><strong>层级化组织 SSTable</strong>。以控制 Compaction 的顺序和时间。常见的有 size-tiered 和 leveled compaction。LevelDB 便是支持后者而得名。前者比较简单粗暴，后者性能更好，也因此更为常见。</p>
-<p><img src="https://s2.loli.net/2022/04/16/yBxIZR8CusbQrPO.png" alt="ddia-sized-tierd-compact.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/yBxIZR8CusbQrPO.png" alt="ddia-sized-tierd-compact.png"><span class="image-caption">ddia-sized-tierd-compact.png</span></p>
 <p>对于 RocksDB 来说，工程上的优化和使用上的优化就更多了。在其 <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2ZhY2Vib29rL3JvY2tzZGIvd2lraQ==">Wiki<i class="fa fa-external-link-alt"></i></span> 上随便摘录几点：</p>
 <ol>
 <li>Column Family</li>
@@ -476,9 +550,9 @@
 <li>以页（在磁盘上叫 page，在内存中叫 block，通常为 4k）为单位进行组织。</li>
 <li>页之间以页 ID 来进行逻辑引用，从而组织成一颗磁盘上的树。</li>
 </ol>
-<p><img src="https://s2.loli.net/2022/04/16/ZuLcBm6HKd2AQra.png" alt="ddia-3-6-b-tree-lookup.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/ZuLcBm6HKd2AQra.png" alt="ddia-3-6-b-tree-lookup.png"><span class="image-caption">ddia-3-6-b-tree-lookup.png</span></p>
 <p><strong>查找</strong>。从根节点出发，进行二分查找，然后加载新的页到内存中，继续二分，直到命中或者到叶子节点。 查找复杂度，树的高度—— O(lgn)，影响树高度的因素：分支因子（分叉数，通常是几百个）。</p>
-<p><img src="https://s2.loli.net/2022/04/16/K4gXhrzf9wySko7.png" alt="ddia-3-7-b-tree-grow-by-split.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/K4gXhrzf9wySko7.png" alt="ddia-3-7-b-tree-grow-by-split.png"><span class="image-caption">ddia-3-7-b-tree-grow-by-split.png</span></p>
 <p><strong>插入 or 更新</strong>。和查找过程一样，定位到原 Key 所在页，插入或者更新后，将页完整写回。如果页剩余空间不够，则分裂后写入。</p>
 <p><strong>分裂 or 合并</strong>。级联分裂和合并。</p>
 <ul>
@@ -628,6 +702,9 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+    </li>
+    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter2/" rel="bookmark">DDIA 读书笔记（二）：数据模型和查询语言</a></div>
     </li>
     <li class="popular-posts-item">
@@ -635,9 +712,6 @@
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
-    </li>
-    <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA 读书笔记（五）：冗余</a></div>
@@ -652,7 +726,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -745,10 +819,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -851,7 +925,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -892,6 +966,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

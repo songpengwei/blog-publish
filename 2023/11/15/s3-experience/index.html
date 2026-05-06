@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="本文来自 Amazon S3 VP  Andy Warfield 在 FAST 23 上的主旨演讲的文字稿，总结了他们在构架和维护如此量级的对象存储 —— S3 的一些经验。我们知道，Amazon S3 是云时代最重要的存储基础设施之一，现在各家云厂商的对象存储基本都兼容 S3 接口，所有云原生的基础设施，比如云原生数据库，其最终存储都要落到对象存储上。">
@@ -36,7 +38,7 @@
 <meta property="og:image" content="https://s2.loli.net/2023/11/16/6yuNbMjU4IZXzcP.png">
 <meta property="article:published_time" content="2023-11-15T13:29:38.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:23:33.620Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="s3">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://s2.loli.net/2023/11/16/rgiQNFkLyhPqpZJ.png">
@@ -53,6 +55,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="s3">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "构建和维护星球最强对象存储系统的一点微小经验",
+    "description": "本文来自 Amazon S3 VP Andy Warfield 在 FAST 23 上的主旨演讲的文字稿，总结了他们在构架和维护如此量级的对象存储 —— S3 的一些经验。我们知道，Amazon S3 是云时代最重要的存储基础设施之一，现在各家云厂商的对象存储基本都兼容 S3 接口，所有云原生的基础设施，比如云原生数据库，其最终存储都要落到对象存储上。",
+    "url": "https://www.qtmuniao.com/2023/11/15/s3-experience/",
+    "datePublished": "2023-11-15T21:29:38+08:00",
+    "dateModified": "2024-03-04T09:23:33+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2023/11/15/s3-experience/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>构建和维护星球最强对象存储系统的一点微小经验 | 木鸟杂记</title>
   
@@ -126,7 +200,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -214,8 +288,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -276,7 +350,7 @@
 <span id="more"></span>
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2023/11/15/s3-experience">https://www.qtmuniao.com/2023/11/15/s3-experience</a> 转载请注明出处</em></p>
 <p>截至 2023 年，Amazon S3 自 2006 年上线以来，已经 17 岁了。在开始之前，我们首先看下Andy Warfield 给出的一组数据，来感受下星球最强的对象存储已经到了什么量级：</p>
-<p><img src="https://s2.loli.net/2023/11/16/rgiQNFkLyhPqpZJ.png" alt="S3-metrics.png"></p>
+<p><img data-src="https://s2.loli.net/2023/11/16/rgiQNFkLyhPqpZJ.png" alt="S3-metrics.png"><span class="image-caption">S3-metrics.png</span></p>
 <p>即，</p>
 <ul>
 <li><strong>容量和吞吐</strong>：超过 280 万亿个对象，QPS 平均超过 1 亿 / s</li>
@@ -294,7 +368,7 @@
 <p>所谓<strong>热度</strong>（heat）：就是任意时间点，某个磁盘承受的 IO 请求。如果管控不当，造成不同磁盘间流量的严重倾斜，就会造成数据局部访问<strong>热点</strong>（hotspot），从而造成<strong>长尾效应</strong>（“stragglers”）。这些长尾请求通过 S3 的<strong>存储软件栈</strong>（software storage stack）层层放大之后，可能大范围影响请求性能。为了解决这个问题，我们需要仔细考虑<strong>数据放置</strong>策略（data placement）。</p>
 <p>通常来说，由于无法在数据<strong>写入时</strong>（即进行放置决策时）预知其之后的访问模式，我们很难用一个策略消除所有用户的访问热点。但由于 S3 的量级以及多租户机制，我们可以进行完全不同的设计。</p>
 <p>我们发现一个特点：在 S3 上运行的工作负载越多，不同对象请求间的<strong>去相关性</strong>（decorrelated）就越强。对于用户的单个存储单元来说（比如一组 Object，或者一个 Bucket），其通常的访问模式是：长时间沉寂后，突然一个远高于平均值访问高峰。但是当我们<strong>聚合了百万计</strong>的请求之后，非常有趣的事情发生了：聚合请求总量的变化曲线变的非常平缓，且出现了某种内在可预测的规律。可以看<span class="exturl" data-url="aHR0cHM6Ly93d3cuYWxsdGhpbmdzZGlzdHJpYnV0ZWQuY29tL3ZpZGVvcy9mYXN0LWFnZy1ncmFwaC1jb21wcmVzc2VkLXNtYWxsLm1wNA==">这个视频<i class="fa fa-external-link-alt"></i></span>直观感受下。</p>
-<p><img src="https://s2.loli.net/2023/11/16/brs62GiUCyt5acA.png" alt="S3-aggreate.png"></p>
+<p><img data-src="https://s2.loli.net/2023/11/16/brs62GiUCyt5acA.png" alt="S3-aggreate.png"><span class="image-caption">S3-aggreate.png</span></p>
 <p>这其实也符合直觉，在成千上万的<strong>不相干</strong>访问流汇聚成海后，单个流的突发很难影响整体趋势。因此我们的问题就变成了：<strong>如何将这种聚合后总体上相对平坦的请求速率均摊到所有磁盘上，变成每个磁盘上相对平滑的 IO 访问速率</strong>。</p>
 <h1>数据复制：数据放置和持久性</h1>
 <p>在存储系统里，总是会用数据冗余来保护数据免于硬件故障。但冗余，同样可以用来管控热度。在多机上有多个副本，给了我们在流量过来时选择机器的自由度。从存储容量（capacity）的视角来看，数据冗余推高了成本；但从 IO （至少是读取）的角度来看，数据冗余提升了性能。</p>
@@ -305,7 +379,7 @@
 <li><strong>负载隔离</strong>：如果每个用户的数据在单块磁盘上都只会占一小块地方，因此很难靠单个用户的访问来“掀起波浪”，造成该盘的访问热点。</li>
 <li><strong>热点摊平</strong>：对于任意的突发流量，我们可以利用超常规尺度的磁盘池来将其摊平。这对于小存储集群来说是非常昂贵且难以想象的。</li>
 </ol>
-<p><img src="https://s2.loli.net/2023/11/16/6yuNbMjU4IZXzcP.png" alt="S3-flow-avg.png"></p>
+<p><img data-src="https://s2.loli.net/2023/11/16/6yuNbMjU4IZXzcP.png" alt="S3-flow-avg.png"><span class="image-caption">S3-flow-avg.png</span></p>
 <p>如上图，可能是基因研究用户在使用 lambda 函数计算进行大规模的并行数据分析，IOPS 一度达到 2.3M IOPS，但我们使用数百万张磁盘可以轻松满足这种需求（上面计算可以看出 2w 张盘满载可以满足，那么有百万张盘，每个只用百分之一就可以满足）。</p>
 <p>这种尺度的请求处理在 S3 中并不算夸张，当下 S3 集群至少有<strong>上万用户</strong>的存储桶的数据横跨超过<strong>百万张盘</strong>。正是 S3 如此体量的用户和用户数据，让这种构建方式成为可能。</p>
 <h1>人的因素对 S3 的影响</h1>
@@ -346,7 +420,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -437,10 +511,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -543,7 +617,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -584,6 +658,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

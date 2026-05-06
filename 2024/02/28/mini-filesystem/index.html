@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="本文主要“编译”自书籍《Operating Systems: Three Easy Pieces》第 40 章，这是一本非常深入浅出的书，推荐给所有对操作系统感到迷茫的同学。本文件系统基于一个非常小的硬盘空间，以数据结构和读写流程为主线，从零到一的推导出各个基本环节，可以帮你快速建立起对文件系统的直觉。  文件系统基本都是构建于块存储之上的。但当然，现在的一些分布式文件系统，如 JuiceFS，">
@@ -44,7 +46,7 @@
 <meta property="og:image" content="https://s2.loli.net/2024/02/28/1lmRPWpMtF8qaeC.png">
 <meta property="article:published_time" content="2024-02-28T02:22:16.000Z">
 <meta property="article:modified_time" content="2024-02-29T01:07:32.460Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="文件系统">
 <meta property="article:tag" content="文件">
 <meta name="twitter:card" content="summary">
@@ -62,6 +64,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="文件系统,文件">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "螺蛳壳里做道场：实现一个256KB的迷你文件系统",
+    "description": "本文主要“编译”自书籍《Operating Systems: Three Easy Pieces》第 40 章，这是一本非常深入浅出的书，推荐给所有对操作系统感到迷茫的同学。本文件系统基于一个非常小的硬盘空间，以数据结构和读写流程为主线，从零到一的推导出各个基本环节，可以帮你快速建立起对文件系统的直觉。 文件系统基本都是构建于块存储之上的。但当然，现在的一些分布式文件系统，如 JuiceFS，底层是基于对象存储的。但无论块存储还是对象存储，其本质都是按 “数据块” 进行寻址和数据交换的。 我们首先会探讨一个完整的文件系统在硬盘上的数据结构，也即布局；然后再通过打开关闭、读写流程将各个子模块串起来，从而完成对一个文件系统要点的覆盖。",
+    "url": "https://www.qtmuniao.com/2024/02/28/mini-filesystem/",
+    "datePublished": "2024-02-28T10:22:16+08:00",
+    "dateModified": "2024-02-29T09:07:32+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2024/02/28/mini-filesystem/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>螺蛳壳里做道场：实现一个256KB的迷你文件系统 | 木鸟杂记</title>
   
@@ -135,7 +209,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -223,8 +297,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -288,14 +362,14 @@
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2024/02/28/mini-filesystem">https://www.qtmuniao.com/2024/02/28/mini-filesystem</a> 转载请注明出处</em></p>
 <blockquote>
 <p>本文来自我的大规模数据系统专栏《<span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">系统日知录<i class="fa fa-external-link-alt"></i></span>》，专注存储、数据库、分布式系统、AI Infra 和计算机基础知识。欢迎订阅支持，解锁更多文章。你的支持，是我前行的最大动力。<br>
-<img src="https://s2.loli.net/2024/02/28/GrZPSV15EXOAhbQ.png" alt="海报.png"></p>
+<img data-src="https://s2.loli.net/2024/02/28/GrZPSV15EXOAhbQ.png" alt="海报.png"><span class="image-caption">海报.png</span></p>
 </blockquote>
 <h1>总体布局</h1>
 <p>假设我们的块大小是 4KB，然后有一块非常小的硬盘，只有 64 个块（则总大小为 64 * 4KB = 256KB），且该硬盘只给文件系统用。由于硬盘是按块进行寻址的，则地址空间为 0~63 。</p>
-<p><img src="https://s2.loli.net/2024/02/28/bywIskmS9r4aAgt.png" alt="filesystem-empty.png"></p>
+<p><img data-src="https://s2.loli.net/2024/02/28/bywIskmS9r4aAgt.png" alt="filesystem-empty.png"><span class="image-caption">filesystem-empty.png</span></p>
 <p>基于此迷你硬盘，我们一起来逐步推导下这个极简文件系统。</p>
 <p>文件系统的首要目的肯定是存储用户数据，为此我们在磁盘留出一块<strong>数据区</strong>（Data Region）。假设我们使用后面 56 个块作为数据区。为什么是 56 个呢？从后面就可以知道，其实是可以算出来的——我们可以大致算出元信息和真正数据的比例，进而可以确定两部分大小。</p>
-<p><img src="https://s2.loli.net/2024/02/28/jSclXgo3GHEnPb4.png" alt="filesystem-data-region.png"></p>
+<p><img data-src="https://s2.loli.net/2024/02/28/jSclXgo3GHEnPb4.png" alt="filesystem-data-region.png"><span class="image-caption">filesystem-data-region.png</span></p>
 <p>接下来，我们需要为系统中的<strong>每个文件</strong>保存一些元信息，比如：</p>
 <ol>
 <li>文件名</li>
@@ -305,23 +379,23 @@
 <li>创建、修改时间</li>
 </ol>
 <p>等等。保存这些元信息的数据块，我们通常称为 <strong>inode</strong> （index node）。如下，我们给 inode 分配 5 个 block。</p>
-<p><img src="https://s2.loli.net/2024/02/28/D4N1Jh8qSVlb5yz.png" alt="filesystem-inodes.png"></p>
+<p><img data-src="https://s2.loli.net/2024/02/28/D4N1Jh8qSVlb5yz.png" alt="filesystem-inodes.png"><span class="image-caption">filesystem-inodes.png</span></p>
 <p>元信息所占空间相对较小，比如 128B 或者 256B，我们这里假设每个 inode 占用 256B。则每个 4KB 块能容纳 16 个 inode，则我们的文件系统最多可以支持 5 * 16 = 80 个 inode，也即我们的迷你文件系统最多可以支持 80 个文件，但由于目录也要占 inode，所以实际可用文件数要少于 80。</p>
 <p>现在我们有了数据区，有了文件元信息区，但在一个正常使用的文件系统中，还需要追踪哪些数据块被用了，哪些还没有被使用。这种数据结构我们称之为<strong>分配结构</strong>（allocation structures）。业界常用的方法有<strong>空闲链表</strong>（free list），即把所有空闲块按链表的方式串起来。但为了简单，这里使用一种更简单的数据结构：<strong>位图</strong>（bitmap），数据区用一个，称<strong>数据位图</strong>（data bitmap）；inode 表用一个，称 <strong>inode 位图</strong>（inode bitmap）。</p>
 <p>位图的思想很简单，即为每一个 inode 或者数据块使用一个数据位，来标记是否空闲：0 表示空闲，1 表示有数据。一个 4KB 的 bitmap 最多能追踪 32K 的对象。为了方便，我们给 inode 表和数据池各分配一个完整的块（虽然用不完），于是便有了下图。</p>
-<p><img src="https://s2.loli.net/2024/02/28/Nea5XHfkJdBcqCh.png" alt="filesystem-bitmap.png"></p>
+<p><img data-src="https://s2.loli.net/2024/02/28/Nea5XHfkJdBcqCh.png" alt="filesystem-bitmap.png"><span class="image-caption">filesystem-bitmap.png</span></p>
 <p>可以看出，我们的基本思路是从后往前进行数据布局，最后还剩一个块。该块我们是故意留的，用以充当文件系统的<strong>超级块</strong>（superblock）。超级块作为一个文件系统的<strong>入口</strong>，通常会保存一些文件系统级别的元信息，比如本文件系统中有多少个 inode 和数据块（80 和 56），inode 表的起始块偏移量（3），等等。</p>
-<p><img src="https://s2.loli.net/2024/02/28/tnqOKpyTjroDfMG.png" alt="filesystem-superblock.png"></p>
+<p><img data-src="https://s2.loli.net/2024/02/28/tnqOKpyTjroDfMG.png" alt="filesystem-superblock.png"><span class="image-caption">filesystem-superblock.png</span></p>
 <p>则当文件系统被<strong>装载</strong>（ mount ）时，操作系统会首先读取超级块（所以放最前面），并据此初始化一系列参数，并将其作为数据卷挂载到文件系统树中。有了这些基本信息，当该卷中的文件被访问到时，就能逐步找出其位置，也就是我们之后要讲的读写流程。</p>
 <p>但在讲读写流程之前，需要先放大一些关键数据结构看看其内在布局。</p>
 <h2 id="索引节点（Inode）">索引节点（Inode）</h2>
 <p>inode 是<strong>索引节点</strong>（index node）的简称，是对文件和文件夹的索引节点。为了简单，我们使用<strong>数组</strong>来组织索引节点，每个 inode 会关联一个<strong>编号</strong>（inumber），也即其在数组中的<strong>下标</strong>（偏移量）。</p>
-<p><img src="https://s2.loli.net/2024/02/28/lMaDRH9oNuj8wFr.png" alt="filesystem-inode-table.png"></p>
+<p><img data-src="https://s2.loli.net/2024/02/28/lMaDRH9oNuj8wFr.png" alt="filesystem-inode-table.png"><span class="image-caption">filesystem-inode-table.png</span></p>
 <p>上面提到过一嘴，每个 inode 占 256B。则给定一个 inumber，我们就可以计算出其在硬盘中的偏移量（<code>12KB + inumber * 256</code>），但由于内外存交换是按块来的，我们可以据此进而计算出其所在磁盘块。</p>
 <p>inode 主要保存文件名、一些元信息（权限控制、各种事件、一些标记位）和<strong>数据块索引</strong>。数据块索引其实也是元信息，单拎出来说是因为它很重要。</p>
 <p>我们使用一种比较简单的索引方式：<strong>间接指针</strong>（<strong>indirect pointer</strong>）。即 inode 中保存的不是直接指向数据块的指针，而是指向一个指针块（也在数据区分配，但保存的都是二级指针）。如果文件足够大，可能还会引出三级指针（至于我们这个小系统是否用的着，大家可以估算下）。</p>
 <p>但我们统计发现，在大多数文件系统中，小文件占多数。小到什么地步呢？一个数据块就可以存下。</p>
-<p><img src="https://s2.loli.net/2024/02/28/l83ZrTzLtAOXcD5.png" alt="filesystem-statistic.png"></p>
+<p><img data-src="https://s2.loli.net/2024/02/28/l83ZrTzLtAOXcD5.png" alt="filesystem-statistic.png"><span class="image-caption">filesystem-statistic.png</span></p>
 <p>因此实践中，我们在 inode 中使用一种<strong>直接指针</strong>和<strong>间接指针</strong>混合的方式进行表示。在我们的文件系统中，就是使用 12 个直接指针和 1 个间接指针。所以只要文件尺寸不超过 12 个数据块，就可以直接用直接指针。只有过大时，才使用间接指针，并且在数据区新分配数据块，来存间接指针。</p>
 <p>我们的数据区很小，只有 56 个 block，假设使用 4byte 进行索引。则二级指针最多可支持 (12 + 1024) · 4K ，也就是 4144KB 大小的文件。</p>
 <blockquote>
@@ -330,7 +404,7 @@
 <h2 id="目录组织">目录组织</h2>
 <p>在我们的文件系统中，目录组织得很简单——即和文件一样，每个目录也占用一个 inode，但在 inode 指向的数据块不是存文件内容，而是存储该目录中所包含的所有文件和文件夹的信息，通常是用 <code>List&lt;entry name, inode number&gt;</code>  表示。当然要转为实际编码，还要存文件名长度等信息（因为文件名是变长的）。</p>
 <p>看一个简单例子，设我们有一个文件夹 dir （inode 编号是 5），里面有三个文件（foor，bar 和 foobar），其对应的 inode 编号分别是 12，13 和 24 。则在该文件夹的数据块中存储的信息如下：</p>
-<p><img src="https://s2.loli.net/2024/02/28/MDqE2O5X3FaKwRs.png" alt="filesystem-dir-content.png"></p>
+<p><img data-src="https://s2.loli.net/2024/02/28/MDqE2O5X3FaKwRs.png" alt="filesystem-dir-content.png"><span class="image-caption">filesystem-dir-content.png</span></p>
 <p>其中 <code>reclen</code> （record length）是文件名所占空间大小，<code>strlen</code> 是实际长度。点和点点是指向本文件夹和上级文件夹的两个指针。记录<code>reclen</code> 看着有点多此一举，但要考虑到文件删除问题（可以用特殊的 inum，比如 0 来标记删除）。如果文件夹下的某个文件或者目录被删除，存储就会出现空洞。<code>reclen</code> 的存在，可以让删除留下的空洞为之后新增的文件复用。</p>
 <p>需要说明的是，线性的组织一个目录中的文件是最简单的方式。实践中，还有其他方式。比如说在 XFS 中，如果目录中文件或者子文件夹特别多，会使用 B+ 树进行组织。从而在插入时，可以很快地知道是否有同名文件。</p>
 <h2 id="空闲空间管理">空闲空间管理</h2>
@@ -345,7 +419,7 @@
 <p>一旦文件被打开后，就可以继而发起 <code>read()</code> 的系统调用 ，真正的去读取数据。读取时，首先会根据文件的 inode 信息，找到第一个 block（除非读前实现用 <code>lseek()</code> 修改过偏移量），然后读取。同时，可能会更改 inode 的一些元信息，比如说访问时间。继而，更新进程中该文件描述符的偏移量，继续往下读，直到某个时刻，调用 <code>close()</code> 关闭该文件描述符。</p>
 <p>进程关闭文件时，所需工作要少得多，只需要释放文件描述符即可，并不会有真正的磁盘 IO。</p>
 <p>最后，我们再捋一下这个读文件过程。从根目录的 inode 编号开始，我们交替的读取 inode 和相应数据块，直到最终找到待查找文件。然后要进行数据读取，还要更新其 inode 的访问时间等元信息，进行写回。下表简单地总结了下这个过程，可以看出，读取路径全程不会涉及分配结构—— data bitmap 和 inode bitmap。</p>
-<p><img src="https://s2.loli.net/2024/02/28/7wE8cDb4BUkPYOX.png" alt="filesystem-read-timeline.png"></p>
+<p><img data-src="https://s2.loli.net/2024/02/28/7wE8cDb4BUkPYOX.png" alt="filesystem-read-timeline.png"><span class="image-caption">filesystem-read-timeline.png</span></p>
 <p>从<strong>深度上</strong>来说，如果我们的待查找路径层级非常多，这个过程会线性增长；从<strong>广度上</strong>来说，如果中间查找时涉及到的文件夹，其包含的目录子项特别多，即文件树“很宽”，则每次在目录中进行查找时，可能需要读取不止一个数据块。</p>
 <h2 id="写入硬盘">写入硬盘</h2>
 <p>写文件和读取文件的流程很类似，也是打开文件（从根目录一路找到对应文件）；然后开始写入，最后关闭。但与读取文件不同的是，写入需要分配新的数据块，这就需要涉及我们之前的 bitmap 了，通常来说，一次写入至少需要五次 IO：</p>
@@ -365,7 +439,7 @@
 <li>一次对父文件夹 inode 的读写（更新修改日期）</li>
 </ol>
 <p>如果父文件夹的数据块不够用，还得需要新分配空间，就又得读 data bitmap，和 data block。下图是创建 <code>/foo/bar</code> 文件的时间线上涉及到的 IO：</p>
-<p><img src="https://s2.loli.net/2024/02/28/1lmRPWpMtF8qaeC.png" alt="filesystem-write-timeline.png"></p>
+<p><img data-src="https://s2.loli.net/2024/02/28/1lmRPWpMtF8qaeC.png" alt="filesystem-write-timeline.png"><span class="image-caption">filesystem-write-timeline.png</span></p>
 <h2 id="缓存和缓冲">缓存和缓冲</h2>
 <p>从上面对读写流程的分析可以看出，即便如此简单的读写操作，都会涉及大量 IO，这在实践中是不可接受的。为了解决这个问题，大部分工业上的文件系统，会充分利用内存，将重要的（也就是频繁访问的）数据块缓存（cache）在内存中；与此同时，为了避免频繁刷盘，会将修改先应用到内存缓冲区（buffer）里，然后积攒后一块落盘。</p>
 <p>早期的文件系统引入了<strong>固定尺寸缓存</strong>（fixed-size cache），如果满了，会利用 LRU 等替换算法进行页面淘汰。其缺点在于当缓存不满的时候浪费空间，满了又可能频繁换页。我们称这种风格为<strong>静态分区</strong>（static partitioning）。大部分现代文件系统，都是用<strong>动态分区</strong>（dynamic partitioning）技术。比如，将虚拟内存页和文件系统页放到一个池子中，称为<strong>统一页面缓存</strong>（unified page cache），从而上两者分配和更加弹性。上了缓存之后，对于同一个目录中多个文件的读取，后面的读取就可以省下很多 IO。</p>
@@ -415,7 +489,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -507,10 +581,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -613,7 +687,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -654,6 +728,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

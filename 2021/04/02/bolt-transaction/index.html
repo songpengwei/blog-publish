@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="boltdb 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于 Howard Chu’s LMDB 项目 ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 bbolt。 为了方便，本系列">
@@ -36,10 +38,10 @@
 <meta property="og:image" content="https://i.loli.net/2021/04/10/3S7jYQwvKfGJO46.png">
 <meta property="article:published_time" content="2021-04-02T13:46:55.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:18:28.351Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="存储">
-<meta property="article:tag" content="go">
 <meta property="article:tag" content="golang">
+<meta property="article:tag" content="go">
 <meta property="article:tag" content="boltdb">
 <meta property="article:tag" content="transaction">
 <meta name="twitter:card" content="summary">
@@ -57,6 +59,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="存储,golang,go,boltdb,transaction">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Boltdb 源码导读（三）：Boltdb 事务实现",
+    "description": "boltdb 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于 Howard Chu’s LMDB 项目 ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 bbolt。 为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。 本系列计划分成三篇文章，依次围绕数据组织、索引设计、事务实现等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第三篇， boltdb 事务实现。 引子 在分析 boltd 的事务之前，我们有必要对事务概念做一个界定，以此来明确我们的讨论范围。数据库事务（简称：事务）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的数据库操作序列构成^1。wiki 上的定义有点拗口，理解时只需抓住几个关键点即可： 执行：计算层面 逻辑单位：意味着不可分割 操作序列有限：一般粒度不会太大 那为什么要有事务呢？事务出现于上世纪七十年代，是为了解放数据库用户的心智而出现的：事务帮助用户组织一组操作、并在出错时自动进行扫尾。后来，NoSQL 和一些分布式存储为了高性能而舍弃了完整事务的支持。然而，历史是螺旋上升的，事务的便利性让 NewSQL 等新一代分布式数据库又将其重新请回。 提起事务，最脍炙人口的便是 ACID 四大特性。 其实 ACID 更像一种易于记忆的口号而非严格的描述，因为他们在概念上并不怎么对称，而且依赖于一些上下文阐释。本文仍然会按照这四个方面对 boltdb 对事务的支持进行剖析，但在每个小结开始，会先参考 Martin Kleppmann 的演讲[^2]，试着从不同角度先阐释其内涵；然后在再分析 boltdb 对其实现。",
+    "url": "https://www.qtmuniao.com/2021/04/02/bolt-transaction/",
+    "datePublished": "2021-04-02T21:46:55+08:00",
+    "dateModified": "2024-03-04T09:18:28+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2021/04/02/bolt-transaction/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>Boltdb 源码导读（三）：Boltdb 事务实现 | 木鸟杂记</title>
   
@@ -130,7 +204,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -218,8 +292,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -294,7 +368,7 @@
 <p>提起事务，最脍炙人口的便是 ACID 四大特性。 其实 ACID 更像一种易于记忆的口号而非严格的描述，因为他们在概念上并不怎么对称，而且依赖于一些上下文阐释。本文仍然会按照这四个方面对 boltdb 对事务的支持进行剖析，但在每个小结开始，会先参考 Martin Kleppmann 的演讲[^2]，试着从不同角度先阐释其内涵；然后在再分析 boltdb 对其实现。</p>
 <span id="more"></span>
 <p><em>作者：木鸟杂记  <a href="https://www.qtmuniao.com/2021/04/02/bolt-transaction/">https://www.qtmuniao.com/2021/04/02/bolt-transaction/</a> , 转载请注明出处</em></p>
-<p><img src="https://i.loli.net/2021/04/10/vpQ6KmdieFGyAjV.png" alt="transaction.png"></p>
+<p><img data-src="https://i.loli.net/2021/04/10/vpQ6KmdieFGyAjV.png" alt="transaction.png"><span class="image-caption">transaction.png</span></p>
 <p>boltdb 只支持一写多读的事务，即同时至多有一个<strong>读写</strong>事务，而可以有多个<strong>只读</strong>事务，算是一种弱化的事务模型，好处在于容易实现，坏处在于牺牲了写并发的性能。也因此，boltdb 适合读多写少的应用。</p>
 <p>boltdb 事务实现的主要代码在 <code>tx.go</code> 中，但这个源文件大抵算一个事务实现入口，事务提交时的一些行为，主要在数据库索引逻辑中实现，可以参考<a href="https://www.qtmuniao.com/2020/12/14/bolt-index-design/">之前文章</a>。</p>
 <h2 id="持久性（Durability）">持久性（Durability）</h2>
@@ -341,7 +415,7 @@
 <p>从上到下，四个级别的隔离性依次变强，性能依次变差。我在初学这几个隔离级别时，看过好几次都没有记住。后来才了解到描述的不是是什么（概念特征），而是怎么做（实现细节），而且是上个世纪特定数据库的实现。只不过这些名词后来延续了下来，所以如果你也曾为这些名词而苦恼，不要自我怀疑，是这些概念本身有问题——他们英文名字就没起好，中文翻译就更差了。</p>
 <p>这里不会详细展开，只是粗略说下他们直觉上的理解，改天有时间单开一篇文章来说说，其中牵扯的东西还挺多。</p>
 <p>隔离性是由并发引起的，最好的隔离——序列化，性能最差。理解隔离性的关键，是要注意到，每个事务有起止时间，不是瞬间完成。我们可以把每个事务执行过程看作是时间维度上的一个线段，多个线段并发交错，就会引出各种隔离性问题。而隔离性越差，用户代码编写就越难受，需要自行处理各种不一致的情况。比如你开始读到的一个记录，在后面使用时，还得再次进行检查读出的值是否和数据库当前状态仍然一致。</p>
-<p><img src="https://i.loli.net/2021/04/10/SzeTKMk1glF5Pwu.png" alt="isolation-levels.png"></p>
+<p><img data-src="https://i.loli.net/2021/04/10/SzeTKMk1glF5Pwu.png" alt="isolation-levels.png"><span class="image-caption">isolation-levels.png</span></p>
 <p>下面依次简单介绍下四种隔离级别：</p>
 <ol>
 <li>
@@ -352,7 +426,7 @@
 </li>
 <li>
 <p>可重复读：如上图，事务 t2 在整个执行期间，多次读取数据库 x 的状态，无论他事务（如 t1）是否改变 x 状态并提交，事务 t2 都不会感觉到。但是会存在<strong>幻读</strong>的风险。怎么理解呢？最关键的原因在于<strong>写</strong>并发。因为读不到，不代表其他事务的影响不存在。比如事务 t2 开始时，通过查询发现 <code>id = &quot;qtmuniao&quot;</code> 的记录为空，于是创建了 <code>id=&quot;qtmuniao&quot;</code> 的记录，然而在提交时，发现报错说该 id 已经存在。这可能是因为有一个开始的比较晚的事务 t2，也创建了一个 <code>id=&quot;qtmuniao&quot;</code> 的记录，但是先提交了。于是用户就郁闷了，明明你说没有，但我写又报错，难道我出现幻觉了？这就太扯淡了，但是此级别就只能做到这样了。反而，因为兼顾了性能和隔离性，他是大多数据库的默认级别。</p>
-<p><img src="https://i.loli.net/2021/04/10/3S7jYQwvKfGJO46.png" alt="phantom-problem.png"></p>
+<p><img data-src="https://i.loli.net/2021/04/10/3S7jYQwvKfGJO46.png" alt="phantom-problem.png"><span class="image-caption">phantom-problem.png</span></p>
 </li>
 <li>
 <p>序列化：最简单的实现办法就是一把锁来串行化所有的事务。在此基础上如果能提高并发，就需要做很多优化。</p>
@@ -403,16 +477,16 @@
       <div class="popular-posts-title"><a href="/2020/12/14/bolt-index-design/" rel="bookmark">Boltdb 源码导读（二）：Boltdb 索引设计</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/01/06/go-value-pointer-method/" rel="bookmark">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/12/07/bazel-build-golang/" rel="bookmark">Bazel 构建 Golang 项目</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2021/01/09/go-slice/" rel="bookmark">Golang 笔记（三）：一种理解 Slice 的模型</a></div>
+      <div class="popular-posts-title"><a href="/2020/01/06/go-value-pointer-method/" rel="bookmark">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/07/12/go-context/" rel="bookmark">Golang 笔记（二）：Context 源码剖析</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/01/09/go-slice/" rel="bookmark">Golang 笔记（三）：一种理解 Slice 的模型</a></div>
     </li>
   </ul>
 
@@ -424,7 +498,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -435,8 +509,8 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
-              <a href="/tags/go/" rel="tag"># go</a>
               <a href="/tags/golang/" rel="tag"># golang</a>
+              <a href="/tags/go/" rel="tag"># go</a>
               <a href="/tags/boltdb/" rel="tag"># boltdb</a>
               <a href="/tags/transaction/" rel="tag"># transaction</a>
           </div>
@@ -519,10 +593,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -625,7 +699,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -666,6 +740,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

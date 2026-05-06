@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="计算下推其实是常见的思想：将计算推到数据旁。由于在数据库中，逻辑上，计算常在存储层之上，因此将一部分算子推到存储层去做，称为计算下推。其在分布式数据库中尤为重要。 下面是 CockroachDB 和 TiDB 的解决方案，内容来自于文档和博客，因此可能和最新代码的逻辑并不一致。  CockroachDB 基本概念 CockroachDB 中相应的模块叫 DistSQL，其思想来源于Sawzall">
@@ -36,7 +38,7 @@
 <meta property="og:image" content="https://s2.loli.net/2022/04/05/yRq4GOIvr8D13Qu.png">
 <meta property="article:published_time" content="2022-04-05T02:46:02.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:22:33.911Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="分布式系统">
 <meta property="article:tag" content="SQL">
 <meta property="article:tag" content="执行计划">
@@ -55,6 +57,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="分布式系统,SQL,执行计划">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "CockroachDB 和 TiDB 中 SQL 的分布式执行",
+    "description": "计算下推其实是常见的思想：将计算推到数据旁。由于在数据库中，逻辑上，计算常在存储层之上，因此将一部分算子推到存储层去做，称为计算下推。其在分布式数据库中尤为重要。 下面是 CockroachDB 和 TiDB 的解决方案，内容来自于文档和博客，因此可能和最新代码的逻辑并不一致。 CockroachDB 基本概念 CockroachDB 中相应的模块叫 DistSQL，其思想来源于Sawzall，有点类似 MapReduce。支持的算子叫做 aggregator，本质上是对 SQL 聚合算子的一种泛化。",
+    "url": "https://www.qtmuniao.com/2022/04/05/crdb-tidb-dist-sql/",
+    "datePublished": "2022-04-05T10:46:02+08:00",
+    "dateModified": "2024-03-04T09:22:33+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2022/04/05/crdb-tidb-dist-sql/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>CockroachDB 和 TiDB 中 SQL 的分布式执行 | 木鸟杂记</title>
   
@@ -128,7 +202,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -216,8 +290,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -303,7 +377,7 @@
 <li>遇到 shuffle 的 aggregator（比如 group by），就使用某种哈希策略，将输出数据送到对应机器。</li>
 <li>最后在 gateway 机器上执行 final aggregator。</li>
 </ol>
-<p><img src="https://s2.loli.net/2022/04/05/HoGzBbqNUyILDF5.png" alt="multi-aggregator.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/05/HoGzBbqNUyILDF5.png" alt="multi-aggregator.png"><span class="image-caption">multi-aggregator.png</span></p>
 <h3 id="单个-Processor">单个 Processor</h3>
 <p>每个逻辑 aggregator 在物理上对应一个 Processor，都可以分为三个步骤：</p>
 <ol>
@@ -311,7 +385,7 @@
 <li>数据处理。</li>
 <li>对输出按 group 分发到不同机器上。</li>
 </ol>
-<p><img src="https://s2.loli.net/2022/04/05/pWCvAZEfqiF14Q5.png" alt="single-aggregator.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/05/pWCvAZEfqiF14Q5.png" alt="single-aggregator.png"><span class="image-caption">single-aggregator.png</span></p>
 <h3 id="引用">引用</h3>
 <ol>
 <li>cockroachdb SQL layer query execution： <span class="exturl" data-url="aHR0cHM6Ly93d3cuY29ja3JvYWNobGFicy5jb20vZG9jcy9zdGFibGUvYXJjaGl0ZWN0dXJlL3NxbC1sYXllci5odG1sI3F1ZXJ5LWV4ZWN1dGlvbg==">https://www.cockroachlabs.com/docs/stable/architecture/sql-layer.html#query-execution<i class="fa fa-external-link-alt"></i></span></li>
@@ -334,7 +408,7 @@
 <li>计算层过多的数据计算对 CPU 的耗费。</li>
 </ol>
 <p>为了解决这个问题，并充分利用 TiKV 层的分布式特性，PingCAP 在 TiKV 层增加了 <strong><span class="exturl" data-url="aHR0cHM6Ly9waW5nY2FwLmNvbS96aC9ibG9nL3Rpa3Ytc291cmNlLWNvZGUtcmVhZGluZy0xNA==">Coprocessor<i class="fa fa-external-link-alt"></i></span></strong> ，即在 TiKV 层读取数据后进行计算的模块。在执行 SQL （主要是读取）时，将部分<strong>物理计划</strong>（即部分算子组成的 DAG）整个下推到 TiKV 层，由 Coprocessor 执行。</p>
-<p><img src="https://s2.loli.net/2022/04/05/yRq4GOIvr8D13Qu.png" alt="coprocessor.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/05/yRq4GOIvr8D13Qu.png" alt="coprocessor.png"><span class="image-caption">coprocessor.png</span></p>
 <h3 id="Executors">Executors</h3>
 <p>从 TiKV 的 protobuf <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3BpbmdjYXAvdGlwYi9ibG9iL21hc3Rlci9wcm90by9leGVjdXRvci5wcm90bw==">接口定义<i class="fa fa-external-link-alt"></i></span>中可以看出，当期 TiKV 支持的 Coprocessor 算子（TiKV 中又称 Executor）类型有：</p>
 <figure class="highlight protobuf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum </span><span class="title class_">ExecType</span> &#123;</span><br><span class="line">  TypeTableScan = <span class="number">0</span>;</span><br><span class="line">  TypeIndexScan = <span class="number">1</span>;</span><br><span class="line">  TypeSelection = <span class="number">2</span>;</span><br><span class="line">  TypeAggregation = <span class="number">3</span>; </span><br><span class="line">  TypeTopN = <span class="number">4</span>;</span><br><span class="line">  TypeLimit = <span class="number">5</span>;</span><br><span class="line">  TypeStreamAgg = <span class="number">6</span>;</span><br><span class="line">  TypeJoin = <span class="number">7</span>;</span><br><span class="line">  TypeKill = <span class="number">8</span>;</span><br><span class="line">  TypeExchangeSender = <span class="number">9</span>;</span><br><span class="line">  TypeExchangeReceiver = <span class="number">10</span>;</span><br><span class="line">  TypeProjection = <span class="number">11</span>;</span><br><span class="line">  TypePartitionTableScan = <span class="number">12</span>;</span><br><span class="line">  TypeSort = <span class="number">13</span>;</span><br><span class="line">  TypeWindow = <span class="number">14</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -383,13 +457,10 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
@@ -398,7 +469,10 @@
       <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
     </li>
   </ul>
 
@@ -410,7 +484,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -503,10 +577,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -609,7 +683,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -650,6 +724,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

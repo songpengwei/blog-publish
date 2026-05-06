@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。另外，我的公众号：“木鸟杂记”，有更多的分布式系统、存储和数据库相关的文章，欢迎关">
@@ -48,7 +50,7 @@
 <meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig14.png">
 <meta property="article:published_time" content="2022-10-17T15:20:33.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:23:57.117Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="DDIA">
 <meta property="article:tag" content="读书笔记">
 <meta property="article:tag" content="设计数据密集型应用">
@@ -67,6 +69,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="DDIA,读书笔记,设计数据密集型应用">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "DDIA 读书笔记（五）：冗余",
+    "description": "DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。另外，我的公众号：“木鸟杂记”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注 本书第一部分讲单机数据系统，第二部分讲多机数据系统。 冗余（Replication） 是指将同一份数据复制多份，放到通过网络互联的多个机器上去。其好处有： 降低延迟：可以在地理上同时接近不同地区的用户。 提高可用性：当系统部分故障时仍然能够正常提供服务。 提高读吞吐：平滑扩展可用于查询的机器。 本章假设我们的数据系统中所有数据能够存放到一台机器中，则本章只需考虑多机冗余的问题。如果数据超过单机尺度该怎么办？那是下一章要解决的事情。",
+    "url": "https://www.qtmuniao.com/2022/10/17/ddia-reading-chapter5/",
+    "datePublished": "2022-10-17T23:20:33+08:00",
+    "dateModified": "2024-03-04T09:23:57+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2022/10/17/ddia-reading-chapter5/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>DDIA 读书笔记（五）：冗余 | 木鸟杂记</title>
   
@@ -140,7 +214,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -228,8 +302,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -330,7 +404,7 @@
 <li>其他副本称为<strong>跟随者</strong>（follower），也称为<strong>只读副本</strong>（read replicas）、<strong>从副本</strong>（slaves）、<strong>次副本</strong>（secondaries）、<strong>热备</strong>（hot-standby）。主副本将改动写到本地后，将其发送给各个从副本，从副本收变动到后应用到自己状态机，这个过程称为<strong>日志同步</strong>（replication log）、<strong>变更流</strong>（change steam）。</li>
 <li>对于读取，客户端可以从主副本和从副本中读取；但写入，客户端只能将请求发到主副本。</li>
 </ol>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig01.png" alt="leader based replication"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig01.png" alt="leader based replication"><span class="image-caption">leader based replication</span></p>
 <p>根据我的习惯，下面通称主副本和从副本。</p>
 <p>有很多<strong>数据系统</strong>都用了此模式：</p>
 <ol>
@@ -344,7 +418,7 @@
 <li>如果等待某副本写完成后，则该副本为同步复制。</li>
 <li>如果不等待某副本写完成，则该副本为异步复制。</li>
 </ol>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig02.png" alt="leader based sync and async"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig02.png" alt="leader based sync and async"><span class="image-caption">leader based sync and async</span></p>
 <p>两者的对比如下：</p>
 <ol>
 <li>同步复制牺牲了<strong>响应延迟</strong>和<strong>部分可用性</strong>（在某些副本有问题时不能完成写入操作），换取了所有副本的一致性（但并不能严格保证）。</li>
@@ -473,7 +547,7 @@
 </blockquote>
 <p>对于这种最终一致的系统，在工程中，要考虑到由于副本滞后所带来的一致性问题。</p>
 <h2 id="读你所写">读你所写</h2>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig03.png" alt="read after write"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig03.png" alt="read after write"><span class="image-caption">read after write</span></p>
 <p>上图问题在于，在一个<strong>异步复制</strong>的分布式数据库里，同一个客户端，写入<strong>主副本</strong>后返回；稍后再去读一个落后的<strong>从副本</strong>，就会发现：读不到自己刚写的内容！</p>
 <p>为了避免这种反直觉的事情发生，我们引入一种新的一致性：<strong>读写一致性（read-after-write consistency）</strong>，或者 <strong>读你所写一致性（read-your-writes consistency）</strong>。</p>
 <p>若数据库提供这种一致性保证，对于<strong>单个客户端</strong>来说，就一定能够读到其所写变动。也即，这种一致性是从<strong>单个客户端</strong>角度来看的一种因果一致性。</p>
@@ -490,7 +564,7 @@
 </ol>
 <h2 id="单调读">单调读</h2>
 <p>异步复制可能带来的另外一个问题：对于一个客户端来说，系统可能会发生<strong>时光倒流（moving backward in time）</strong>。</p>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig04.png" alt="monotonic reads"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig04.png" alt="monotonic reads"><span class="image-caption">monotonic reads</span></p>
 <p>于是，我们再引入一种一致性保证：<strong>单调读（Monotonic reads）</strong>。</p>
 <ul>
 <li>
@@ -504,7 +578,7 @@
 <li>前面提到的时间戳机制。</li>
 </ol>
 <h2 id="一致前缀读">一致前缀读</h2>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig05.png" alt="lower partition"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig05.png" alt="lower partition"><span class="image-caption">lower partition</span></p>
 <p>异步复制所带来的第三个问题：有时候会违反因果关系。</p>
 <p>本质在于：如果数据库由多个分区（Partition）组成，而分区间的事件顺序无法保证。此时，如果有因果关系的两个事件落在了不同分区，则有可能会出现<strong>果在前，因在后</strong>。</p>
 <p>为了防止这种问题，我们又引入了一种一致性：<strong>一致前缀读（consistent prefix reads）</strong>。奇怪的名字。</p>
@@ -540,7 +614,7 @@
 </ol>
 <h3 id="多个数据中心">多个数据中心</h3>
 <p>假设一个数据库的副本，横跨多个数据中心，如果使用单主模型，在写入时的延迟会很大。那么每个数据中心能不能各配一个主副本？</p>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig06.png" alt="multi-leader across multiple data centers"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig06.png" alt="multi-leader across multiple data centers"><span class="image-caption">multi-leader across multiple data centers</span></p>
 <p>单主和多主，在多数据中心场景下的对比：</p>
 <table>
 <thead>
@@ -585,7 +659,7 @@
 <p>git 也是一个类似的协议。</p>
 <h2 id="处理写入冲突">处理写入冲突</h2>
 <p>多主模型最大的问题是：如何解决冲突。</p>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig07.png" alt="write conflict"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig07.png" alt="write conflict"><span class="image-caption">write conflict</span></p>
 <p>考虑 wiki 一个页面标题的修改：</p>
 <ol>
 <li>用户 1 将该页面标题从 A 修改到 B</li>
@@ -636,7 +710,7 @@
 <h2 id="多主复制拓扑">多主复制拓扑</h2>
 <p><strong>复制拓扑</strong>（replication topology）描述了数据写入从一个节点到另一个节点的传播路径。</p>
 <p>在只有两个主副本时，拓扑是确定的，如图 5-7。Leader1 和 Leader 都得把数据发给对方。但随着副本数的增多，数据复制拓扑就会有多种选择，如下图：</p>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig08.png" alt="multi-leader topologies"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig08.png" alt="multi-leader topologies"><span class="image-caption">multi-leader topologies</span></p>
 <p>上图表示了 ≥ 4 个主副本时，常见的复制拓扑：</p>
 <ol>
 <li><strong>环形拓扑</strong>。通信跳数少，但是在转发时需要带上拓扑中前驱节点信息。如果一个节点故障，则可能中断复制链路。</li>
@@ -645,7 +719,7 @@
 </ol>
 <p>对于环形拓扑和星型拓扑，为了防止广播风暴，需要对每个节点打上一个唯一标志（ID），在收到他人发来的自己的数据时，及时丢弃并终止传播。</p>
 <p>全连接拓扑也有自己问题：<strong>尤其是所有复制链路速度不一致时</strong>。考虑下面一个例子：</p>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig09.png" alt="writes wrong order"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig09.png" alt="writes wrong order"><span class="image-caption">writes wrong order</span></p>
 <p>两个有因果依赖的（先插入，后更新）的语句，在复制到 Leader 2 时，由于速度不同，导致其接收到的数据违反了因果一致性。</p>
 <p>要想对这些写入事件进行全局排序，仅用每个 Leader 的物理时钟是不够的，因为物理时钟：</p>
 <ol>
@@ -669,7 +743,7 @@
 <h2 id="有节点故障时的写入">有节点故障时的写入</h2>
 <p>基于主副本（leader-based）的模型，在有副本故障时，需要进行故障切换。</p>
 <p>但在无主模型中，简单忽略它就行。</p>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig10.png" alt="quorum write"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig10.png" alt="quorum write"><span class="image-caption">quorum write</span></p>
 <p>多数派写入，多数派读取，以及读时修复。</p>
 <p>由于写入时，简单的忽略了宕机副本；在读取时，就要多做些事情了：<strong>同时读取多个副本，选取最新<em>版本</em>的值</strong>。</p>
 <h3 id="读时修复和反熵">读时修复和反熵</h3>
@@ -681,7 +755,7 @@
 </ol>
 <h3 id="Quorum-读写">Quorum 读写</h3>
 <p>如果副本总数为 n，写入 w 个副本才认定写入成功，并且在查询时最少需要读取 r 个节点。只要满足 w + r &gt; n，我们就能读到最新的数据（<strong>鸽巢原理</strong>）。此时 r 和 w 的值称为 <strong>quorum 读写</strong>。即这个约束是保证数据有效所需的最低（法定）票数。</p>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig11.png" alt="w+r&gt;n"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig11.png" alt="w+r&gt;n"><span class="image-caption">w+r&gt;n</span></p>
 <p>在 Dynamo 流派的存储中，n、r 和 w 通常是可以配置的：</p>
 <ol>
 <li>n 越大冗余度就越高，也就越可靠。</li>
@@ -726,7 +800,7 @@
 <li>仍然接受写入，并且将新的写入暂时交给一些正常节点。</li>
 </ol>
 <p>后者被认为是一种<strong>宽松的法定数目</strong> （<strong>sloppy quorum</strong>）：写和读仍然需要 w 和 r 个成功返回，但是其所在节点集合可以发生变化。</p>
-<p><img src="ihttps://ddia.qtmuniao.com/img/ch05-sloppy-quorum.png" alt="sloppy quorum"></p>
+<p><img data-src="ihttps://ddia.qtmuniao.com/img/ch05-sloppy-quorum.png" alt="sloppy quorum"><span class="image-caption">sloppy quorum</span></p>
 <p>一旦问题得到解决，数据将会根据线索移回其应该在的节点（D—&gt; B），我们称之为<strong>提示移交</strong>（hinted handoff）。这个移交过程是由反熵 anti-entropy 后台进程完成的。</p>
 <p>这是一种典型的牺牲部分一致性，换取更高可用性的做法。在常见的 Dynamo 实现中，放松的法定人数是可选的。在 Riak 中，它们默认是启用的，而在 Cassandra 和 Voldemort 中它们默认是禁用的</p>
 <h3 id="多数据中心">多数据中心</h3>
@@ -739,7 +813,7 @@
 <h2 id="并发写入检测">并发写入检测</h2>
 <p>由于 Dynamo 允许多个客户端并发写入相同 Key，则即使使用严格的 Quorum 读写，也会产生冲突：<strong>对于时间间隔很短（并发）的相同 key 两个写入，不同副本上收到的顺序可能不一致</strong>。</p>
 <p>此外，读时修复和提示移交时，也可能产生冲突。</p>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig12.png" alt="dynamo style datastore"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig12.png" alt="dynamo style datastore"><span class="image-caption">dynamo style datastore</span></p>
 <p>如上图，如果每个节点不去检查顺序，而是简单的接受写入请求，就落到本地，不同副本间可能就会出现永久不一致：上图 Node1 和 Node3 上副本X 的值是 A，Node2 上副本 X 的值是 B。</p>
 <p>为了使所有副本最终一致，需要有一种手段来解决并发冲突。</p>
 <h3 id="后者胜（Last-Write-Win）">后者胜（Last-Write-Win）</h3>
@@ -770,7 +844,7 @@
 </blockquote>
 <h3 id="确定-Happens-Before-关系">确定 Happens-Before 关系</h3>
 <p>我们可以用某种算法来确定系统中任意两个事件，是否存在 happens-before 关系，还是并发关系。以一个两个 client 并发添加购物车例子来看：</p>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig13.png" alt="causal dependencies"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig13.png" alt="causal dependencies"><span class="image-caption">causal dependencies</span></p>
 <p>需要注意：</p>
 <ol>
 <li>不会主动读取，只有主动写入，通过写入的返回值读取数据库当前状态。</li>
@@ -778,7 +852,7 @@
 <li>对于并发，数据库不会覆盖，而是保留多个<strong>并发值</strong>（每个 client 一个）。</li>
 </ol>
 <p>上图中的数据流，如下图所示。箭头表示 happens-before 关系。本例中，客户端永远没办法完全获知服务器数据，因为总有另外的客户端进行并发操作。但是旧版本的值会被覆盖，并且不会丢失写入。</p>
-<p><img src="https://ddia.qtmuniao.com/img/ch05-fig14.png" alt="graph causal dependencies"></p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig14.png" alt="graph causal dependencies"><span class="image-caption">graph causal dependencies</span></p>
 <p>总结下，该算法如下：</p>
 <ol>
 <li>服务器为每个键分配一个版本号 V ，每次该键有写入时，将 V + 1，并将版本号与写入的值一块保存。</li>
@@ -828,7 +902,7 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter2/" rel="bookmark">DDIA 读书笔记（二）：数据模型和查询语言</a></div>
@@ -837,10 +911,10 @@
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="bookmark">DDIA 读书笔记（三）： TP AP 和列存</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
     </li>
   </ul>
 
@@ -852,7 +926,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -945,10 +1019,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -1051,7 +1125,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -1092,6 +1166,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

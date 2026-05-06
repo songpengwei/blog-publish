@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="引子 哈希的本质是从一个较大空间映射到一个较小的空间，因此在插入数据足够多之后，根据鸽巢原理，一定会存在位置冲突。常见的哈希表（Hash Table 或者字典，dictionary）会通过链表、开放地址探测等方式来处理冲突。单桶多函数的布谷鸟哈希，便是开放地址法处理冲突的一种哈希表，只不过有冲突后，不是通过线性寻找新的位置，而是通过额外哈希函数来寻找。">
@@ -36,7 +38,7 @@
 <meta property="og:image" content="https://s2.loli.net/2021/12/07/dNBWZwc43poO7CL.png">
 <meta property="article:published_time" content="2021-12-07T15:51:11.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:22:33.911Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="cuckoo hash">
 <meta property="article:tag" content="cuckoo filter">
 <meta name="twitter:card" content="summary">
@@ -54,6 +56,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="cuckoo hash,cuckoo filter">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "布谷鸟哈希和布谷鸟过滤器",
+    "description": "引子 哈希的本质是从一个较大空间映射到一个较小的空间，因此在插入数据足够多之后，根据鸽巢原理，一定会存在位置冲突。常见的哈希表（Hash Table 或者字典，dictionary）会通过链表、开放地址探测等方式来处理冲突。单桶多函数的布谷鸟哈希，便是开放地址法处理冲突的一种哈希表，只不过有冲突后，不是通过线性寻找新的位置，而是通过额外哈希函数来寻找。",
+    "url": "https://www.qtmuniao.com/2021/12/07/cuckoo-hash-and-cuckoo-filter/",
+    "datePublished": "2021-12-07T23:51:11+08:00",
+    "dateModified": "2024-03-04T09:22:33+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2021/12/07/cuckoo-hash-and-cuckoo-filter/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>布谷鸟哈希和布谷鸟过滤器 | 木鸟杂记</title>
   
@@ -127,7 +201,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -215,8 +289,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -297,7 +371,7 @@
 </ol>
 </li>
 </ol>
-<p><img src="https://s2.loli.net/2021/12/07/ifWcXxkJCNYbuph.png" alt="cuckoo-insert.png"></p>
+<p><img data-src="https://s2.loli.net/2021/12/07/ifWcXxkJCNYbuph.png" alt="cuckoo-insert.png"><span class="image-caption">cuckoo-insert.png</span></p>
 <p>布谷鸟（Cuckoo），即大杜鹃，喜欢在别的鸟窝里产蛋。布谷鸟幼鸟出生后，会将其他蛋踢出，借巢长大。布谷鸟哈希的关键设计正在于“踢出”（kicks out）这个动作，该设计和名字都堪称神来之笔。</p>
 <h2 id="变种">变种</h2>
 <p>布谷鸟哈希可以有很多变种，比如：</p>
@@ -305,7 +379,7 @@
 <li>使用两个哈希函数和<strong>一个</strong>哈希桶。</li>
 <li>使用两个哈希函数和<strong>四路</strong>哈希桶。</li>
 </ol>
-<p><img src="https://s2.loli.net/2021/12/07/hgCO7cPzUbxBlAZ.png" alt="cuckoo-hash.png"></p>
+<p><img data-src="https://s2.loli.net/2021/12/07/hgCO7cPzUbxBlAZ.png" alt="cuckoo-hash.png"><span class="image-caption">cuckoo-hash.png</span></p>
 <p>可以证明，后者的桶的利用率会更高，感兴趣可以去看原论文[3]查看论证过程。</p>
 <h2 id="应用">应用</h2>
 <p>cmu 大学的 Bin Fan 等人，在 2014 年发表了一篇名为：Cuckoo Filter: Practically Better Than Bloom [3] 的论文，基本思想是将布谷鸟哈希（key-value queries）的思想应用于集合（set membership）方向，可以替代工程中常用的 Bloom Filter，有以下优势：</p>
@@ -324,7 +398,7 @@
 <p>方法一：通过 <code>h2(finger(x))</code> 计算出另外一个位置。但这样在计算第二个位置时，相当于将原数据空间强行压缩到了指纹空间，会损失很多信息，加大碰撞概率。</p>
 <p>方法二：在值中记下另外一个位置， <code>pair(finger, the other position)</code>，但这样空间占用会大大增加。</p>
 <p>Cuckoo Filter 用了一个巧妙地做法，将<strong>位置</strong>（<code>h1(x)</code>）和<strong>对应值</strong>的哈希（<code>hash(finger(x))</code>）进行<strong>异或</strong>得到另外一个位置。我们指导，异或运算满足性质：三值中的任意两值异或都能得到第三值。在另一个位置 x 被踢出时，也能通过同样的方法得到原位置，如下图所示。</p>
-<p><img src="https://s2.loli.net/2021/12/07/dNBWZwc43poO7CL.png" alt="xor-position-val.png"></p>
+<p><img data-src="https://s2.loli.net/2021/12/07/dNBWZwc43poO7CL.png" alt="xor-position-val.png"><span class="image-caption">xor-position-val.png</span></p>
 <p>为什么不直接和<code>finger(x)</code>进行异或计算另外位置呢？因为 <code>finger(x)</code> 一般位数比较少，比如 8 bit。如果按照这种方法，从物理意义上理解，即是在原位置±2^8 = 256 的范围内找到另一个位置，因为异或只会改变低 8 bit 的值。这个范围太小了，不利于均衡散列。</p>
 <p>另外有两点需要注意。一是不借助额外信息， Cuckoo Filter 是不能扩容的，因为我们已经丢失了原值 x，则无法计算扩容后新的位置 <code>hash(x)</code>。当然，如果保存有相应的 key 集合，也可以扩容后，将原来的 key 集合重新插入一遍。二是，如果两个不同值 x 和 y，恰巧满足 <code>hash(x) == hash(y) &amp;&amp; finger(x) == finger(y)</code> 则会出现假阳性。理解假阳性，我们可以从哈希的本质出发。如开篇所述，哈希本质是从大空间映射到小空间，则小空间中一定会出现碰撞，出现碰撞的两个原值一个存在，便会让人以为另一个也存在。回到 Cuckoo Filter 上，如果 x 和 y 都存在于 Cuckoo Filter 中，删除 x 或者 y 时，删除两个相同 finger 中的任何一个即可。</p>
 <h2 id="实现">实现</h2>
@@ -380,7 +454,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -472,10 +546,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -578,7 +652,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -619,6 +693,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

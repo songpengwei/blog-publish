@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="boltdb 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于  Howard Chu’s LMDB 项目 ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 bbolt。 为了方便，本系">
@@ -38,10 +40,10 @@
 <meta property="og:image" content="https://i.loli.net/2020/12/05/6SPHqWmLXkwiusj.png">
 <meta property="article:published_time" content="2020-11-29T03:54:52.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:17:38.465Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="存储">
-<meta property="article:tag" content="go">
 <meta property="article:tag" content="golang">
+<meta property="article:tag" content="go">
 <meta property="article:tag" content="boltdb">
 <meta property="article:tag" content="kv engine">
 <meta property="article:tag" content="源码阅读">
@@ -60,6 +62,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="存储,golang,go,boltdb,kv engine,源码阅读">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Boltdb 源码导读（一）：Boltdb 数据组织",
+    "description": "boltdb 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于 Howard Chu’s LMDB 项目 ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 bbolt。 为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。 本系列计划分成三篇文章，依次围绕数据组织、索引设计、事务实现等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第一篇， boltdb 数据组织。 引子 一个存储引擎最底层的构成，就是处理数据在各种物理介质（比如在磁盘上、在内存里）上的组织。而这些数据组织也体现了该存储引擎在设计上的取舍哲学。 在文件系统上，boltdb 采用页（page）的组织方式，将一切数据都对齐到页；在内存中，boltdb 按 B+ 树组织数据，其基本单元是节点（node），一个内存中的树节点对应文件系统上一个或者多个连续的页。boltdb 就在数据组织上就只有这两种核心抽象，可谓设计简洁。当然，这种简洁必然是有代价的，后面文章会进行详细分析。 本文首先对节点和页的关系进行总体说明，然后逐一分析四种页的格式及其载入内存后的表示，最后按照 db 的生命周期串一下 db 文件的增长过程以及载入内存的策略。",
+    "url": "https://www.qtmuniao.com/2020/11/29/bolt-data-organised/",
+    "datePublished": "2020-11-29T11:54:52+08:00",
+    "dateModified": "2024-03-04T09:17:38+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2020/11/29/bolt-data-organised/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>Boltdb 源码导读（一）：Boltdb 数据组织 | 木鸟杂记</title>
   
@@ -133,7 +207,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -221,8 +295,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -329,17 +403,17 @@
 <p>boltdb 中的页分四种类型：元信息页、空闲列表页、分支节点页和叶子节点页。boltdb 使用常量枚举标记：</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> (</span><br><span class="line">  branchPageFlag   = <span class="number">0x01</span></span><br><span class="line">  leafPageFlag     = <span class="number">0x02</span></span><br><span class="line">  metaPageFlag     = <span class="number">0x04</span></span><br><span class="line">  freelistPageFlag = <span class="number">0x10</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
 <p>每个页都由定长 header 和数据部分组成：</p>
-<p><img src="https://i.loli.net/2020/11/29/scJkTp5GSdPlHW1.png" alt="boltdb 页结构"></p>
+<p><img data-src="https://i.loli.net/2020/11/29/scJkTp5GSdPlHW1.png" alt="boltdb 页结构"><span class="image-caption">boltdb 页结构</span></p>
 <p>其中 ptr 指向的是页的数据部分，为了避免载入内存和写入文件系统时的序列化和反序列化操作，boltdb 使用了大量的 go unsafe 包中的指针操作。</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> pgid <span class="type">uint64</span></span><br><span class="line"><span class="keyword">type</span> page <span class="keyword">struct</span> &#123;</span><br><span class="line">  id       pgid</span><br><span class="line">  flags    <span class="type">uint16</span>  <span class="comment">// 页类型，值为四种类型之一</span></span><br><span class="line">  count    <span class="type">uint16</span>  <span class="comment">// 对应的节点包含元素个数，比如说包含的 kv 对</span></span><br><span class="line">  overflow <span class="type">uint32</span>  <span class="comment">// 对应节点溢出页的个数，即使用 overflow+1 个页来保存对应节点</span></span><br><span class="line">  ptr      <span class="type">uintptr</span> <span class="comment">// 指向数据对应的 byte 数组，当 overlay&gt;0 时会跨越多个连续页；不过多个物理也在内存中也只会用一个 page 结构体来表示</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="元信息页（metaPage）">元信息页（metaPage）</h3>
 <p>boltdb 中有且仅有两个元信息页，保存在 db 文件的开头（pageid = 0 和 1）。但是在元信息页中，ptr 指向的内容并非元素列表，而是整个 db 的元信息的各个字段。</p>
-<p><img src="https://i.loli.net/2020/11/29/BjTF382uakiy4QA.png" alt="meta-page.png"></p>
+<p><img data-src="https://i.loli.net/2020/11/29/BjTF382uakiy4QA.png" alt="meta-page.png"><span class="image-caption">meta-page.png</span></p>
 <p>元信息页加载到内存后数据结构如下：</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> meta <span class="keyword">struct</span> &#123;</span><br><span class="line">  magic    <span class="type">uint32</span></span><br><span class="line">  version  <span class="type">uint32</span></span><br><span class="line">  pageSize <span class="type">uint32</span> <span class="comment">// 该 db 页大小，通过 syscall.Getpagesize() 获取，通常为 4k</span></span><br><span class="line">  flags    <span class="type">uint32</span> <span class="comment">// </span></span><br><span class="line">  root     bucket <span class="comment">// 各个子 bucket 根所组成的树</span></span><br><span class="line">  freelist pgid   <span class="comment">// 空闲列表所存储的起始页 id</span></span><br><span class="line">  pgid     pgid   <span class="comment">// 当前用到的最大 page id，也即用到 page 的数量</span></span><br><span class="line">  txid     txid   <span class="comment">// 事务版本号，用以实现事务相关</span></span><br><span class="line">  checksum <span class="type">uint64</span> <span class="comment">// 校验和，用于校验 meta 页是否写完整</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="空闲列表页（freelistPage）">空闲列表页（freelistPage）</h3>
 <p>空闲列表页是 db 文件中一组连续的页（一个或者多个），用于保存在 db 使用过程中由于修改操作而释放的页的 id 列表。</p>
-<p><img src="https://i.loli.net/2020/11/29/d84eqFEGwiLQZUu.png" alt="freelist-page.png"></p>
+<p><img data-src="https://i.loli.net/2020/11/29/d84eqFEGwiLQZUu.png" alt="freelist-page.png"><span class="image-caption">freelist-page.png</span></p>
 <p>在内存中表示时分为两部分，一部分是可以分配的空闲页列表 ids，另一部分是按事务 id 分别记录了在对应事务期间新增的空闲页列表。</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 表示当前已经释放的 page 列表</span></span><br><span class="line"><span class="comment">// 和写事务刚释放的 page</span></span><br><span class="line"><span class="keyword">type</span> freelist <span class="keyword">struct</span> &#123;</span><br><span class="line">  ids        []pgid            <span class="comment">// all free and available free page ids.</span></span><br><span class="line">  pending    <span class="keyword">map</span>[txid][]pgid   <span class="comment">// mapping of soon-to-be free page ids by tx.</span></span><br><span class="line">  cache      <span class="keyword">map</span>[pgid]<span class="type">bool</span>     <span class="comment">// fast lookup of all free and pending page ids.</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>其中 <code>pending</code> 部分需要单独记录主要是为了做 MVCC 的事务：</p>
@@ -368,7 +442,7 @@
 <p>对于前者来说，页中存储的基本元素为某个 bucket 中一条用户数据。对于后者来说，页中的一个元素为该 db 中的某个 subbucket 。</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// page ptr 指向的字节数组中的单个元素</span></span><br><span class="line"><span class="keyword">type</span> leafPageElement <span class="keyword">struct</span> &#123; </span><br><span class="line">  flags         <span class="type">uint32</span>    <span class="comment">// 普通 kv （flags=0）还是 subbucket（flags=bucketLeafFlag）</span></span><br><span class="line">  pos           <span class="type">uint16</span>    <span class="comment">// kv header 与对应 kv 的距离</span></span><br><span class="line">  ksize         <span class="type">uint32</span>    <span class="comment">// key 的字节数</span></span><br><span class="line">  vsize         <span class="type">uint32</span>    <span class="comment">// val 字节数</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>其详细结构如下：</p>
-<p><img src="https://i.loli.net/2020/11/29/4eGQqLtk5fmNvH7.png" alt="leaf-page-element.png"></p>
+<p><img data-src="https://i.loli.net/2020/11/29/4eGQqLtk5fmNvH7.png" alt="leaf-page-element.png"><span class="image-caption">leaf-page-element.png</span></p>
 <p>可以看出，leaf page 在组织数据时，将<strong>元素头</strong>（<code>leafPageElement</code>）和<strong>元素本身</strong>（<code>key value</code>）分开存储。这样的好处在于 <code>leafPageElement</code> 是定长的，可以按下标访问对应元素。在二分查找指定 key 时，只需按需加载相应页到内存（访问 page 时是通过 mmap 进行的，因此只有访问时才会真正将数据从文件系统中加载到内存）即可。</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">inodes := p.leafPageElements()</span><br><span class="line">index := sort.Search(<span class="type">int</span>(p.count), <span class="function"><span class="keyword">func</span><span class="params">(i <span class="type">int</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> bytes.Compare(inodes[i].key(), key) != <span class="number">-1</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
 <p>如果元素头和对应元素紧邻存储，则需将 <code>leafPageElement</code> 数组对应的所有页顺序读取，全部加载到内存，才能进行二分。</p>
@@ -376,7 +450,7 @@
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(n *branchPageElement)</span></span> key() []<span class="type">byte</span> &#123;</span><br><span class="line">  buf := (*[maxAllocSize]<span class="type">byte</span>)(unsafe.Pointer(n)) <span class="comment">// buf 是元素头起始地址</span></span><br><span class="line">  <span class="keyword">return</span> (*[maxAllocSize]<span class="type">byte</span>)(unsafe.Pointer(&amp;buf[n.pos]))[:n.ksize]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="分支节点页（branchPage）">分支节点页（branchPage）</h3>
 <p>分支节点页和叶子节点页的结构大体相同。不同之处在于，页中保存的数据的 value 是 page id，即该分支节点在哪些 key 上的分支分别指向的 page 。</p>
-<p><img src="https://i.loli.net/2020/12/05/6SPHqWmLXkwiusj.png" alt="branch-element.png"></p>
+<p><img data-src="https://i.loli.net/2020/12/05/6SPHqWmLXkwiusj.png" alt="branch-element.png"><span class="image-caption">branch-element.png</span></p>
 <p><code>branchPageElement</code> 中的 key 存的是其指向的页中的起始 key。</p>
 <h2 id="转换流程">转换流程</h2>
 <p>boltdb 使用 mmap 将 db 文件映射到内存空间。在构建树并且访问过程中，按需将对应的页加载到内存里，并且利用操作系统的页缓存策略进行替换。</p>
@@ -442,16 +516,16 @@
       <div class="popular-posts-title"><a href="/2021/04/02/bolt-transaction/" rel="bookmark">Boltdb 源码导读（三）：Boltdb 事务实现</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/01/06/go-value-pointer-method/" rel="bookmark">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/12/07/bazel-build-golang/" rel="bookmark">Bazel 构建 Golang 项目</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2021/01/09/go-slice/" rel="bookmark">Golang 笔记（三）：一种理解 Slice 的模型</a></div>
+      <div class="popular-posts-title"><a href="/2020/01/06/go-value-pointer-method/" rel="bookmark">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/07/12/go-context/" rel="bookmark">Golang 笔记（二）：Context 源码剖析</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/01/09/go-slice/" rel="bookmark">Golang 笔记（三）：一种理解 Slice 的模型</a></div>
     </li>
   </ul>
 
@@ -463,7 +537,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -474,8 +548,8 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
-              <a href="/tags/go/" rel="tag"># go</a>
               <a href="/tags/golang/" rel="tag"># golang</a>
+              <a href="/tags/go/" rel="tag"># go</a>
               <a href="/tags/boltdb/" rel="tag"># boltdb</a>
               <a href="/tags/kv-engine/" rel="tag"># kv engine</a>
               <a href="/tags/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" rel="tag"># 源码阅读</a>
@@ -559,10 +633,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -665,7 +739,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -706,6 +780,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

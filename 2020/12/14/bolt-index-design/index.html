@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="boltdb 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于  Howard Chu’s LMDB 项目 ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 bbolt。 为了方便，本系">
@@ -37,10 +39,10 @@
 <meta property="og:image" content="https://i.loli.net/2021/01/02/m4WE7fgn8OazSND.png">
 <meta property="article:published_time" content="2020-12-14T15:23:28.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:17:52.233Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="存储">
-<meta property="article:tag" content="go">
 <meta property="article:tag" content="golang">
+<meta property="article:tag" content="go">
 <meta property="article:tag" content="boltdb">
 <meta property="article:tag" content="kv engine">
 <meta property="article:tag" content="源码阅读">
@@ -59,6 +61,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="存储,golang,go,boltdb,kv engine,源码阅读">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Boltdb 源码导读（二）：Boltdb 索引设计",
+    "description": "boltdb 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于 Howard Chu’s LMDB 项目 ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 bbolt。 为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。 本系列计划分成三篇文章，依次围绕数据组织、索引设计、事务实现等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第一篇， boltdb 数据组织。 概览 数据库中常用的索引设计有两种，一个是 B+ 树，一个是 LSM-tree。B+ 树比较经典，比如说传统单机数据库 mysql 就是 B+ 树索引，它对快速读取和范围查询（range query）比较友好。 LSM-tree 是近年来比较流行的索引结构，Bigtable、LevelDB、RocksDB 都有它的影子；前面文章也有提到，LSM-tree 使用 WAL 和多级数据组织以牺牲部分读性能，换来强悍的随机写性能。因此，这也是一个经典的取舍问题。 BoltDB 在逻辑上以桶来组织数据，一个桶可以看做一个命名空间，是一组 KV 对的集合，和对象存储的桶概念类似。每个桶对应一棵 B+ 树，命名空间是可以嵌套的，因此 BoltDB 的 Bucket 间也是允许嵌套的。在实现上来说，子 bucket 的 root node 的 page id 保存在父 bucket 叶子节点上实现嵌套。 每个 db 文件，是一组树形组织的 B+ 树。我们知道对于 B+ 树来说，分支节点用于查找，叶子节点存数据。 顶层 B+ 树，比较特殊，称为 root bucket，其所有叶子节点保存的都是子 bucket B+ 树根的 page id 。 其他 B+ 树，不妨称之为 data bucket，其叶子节点可能是正常用户数据，也可能是子 bucket B+ 树根的 page id。 相比普通 B+ 树，boltdb 的 B+ 树有几点特殊之处： 节点的分支个数不是一个固定范围，而是依据其所存元素大小之和来限制的，这个上限即为页大小。 其分支节点（branch node）所存分支的 key，是其所指向分支的最小 key。 所有叶子节点并没有通过链表首尾相接起来。 没有保证所有的叶子节点都在同一层。 在代码组织上，boltdb 索引相关的源文件如下： bucket.go：对 bucket 操作的高层封装。包括kv 的增删改查、子bucket 的增删改查以及 B+ 树拆分和合并。 node.go：对 node 所存元素和 node 间关系的相关操作。节点内所存元素的增删、加载和落盘，访问孩子兄弟元素、拆分与合并的详细逻辑。 cursor.go：实现了类似迭代器的功能，可以在 B+ 树上的叶子节点上进行随意游走。 本文主要分三部分，由局部到整体来一步步揭示 BoltDB 是如何进行索引设计的。首先会拆解树的基本单元，其次剖析 bucket 的遍历实现，最后分析树的生长和平衡过程。",
+    "url": "https://www.qtmuniao.com/2020/12/14/bolt-index-design/",
+    "datePublished": "2020-12-14T23:23:28+08:00",
+    "dateModified": "2024-03-04T09:17:52+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2020/12/14/bolt-index-design/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>Boltdb 源码导读（二）：Boltdb 索引设计 | 木鸟杂记</title>
   
@@ -132,7 +206,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -220,8 +294,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -293,7 +367,7 @@
 <li>顶层 B+ 树，比较特殊，称为 root bucket，其所有叶子节点保存的都是子 bucket B+ 树根的 page id 。</li>
 <li>其他 B+ 树，不妨称之为 data bucket，其叶子节点可能是正常用户数据，也可能是子 bucket B+ 树根的 page id。</li>
 </ol>
-<p><img src="https://i.loli.net/2021/01/02/QBwKIpNOHkRqzrE.png" alt="boltdb-buckets-organised.png"></p>
+<p><img data-src="https://i.loli.net/2021/01/02/QBwKIpNOHkRqzrE.png" alt="boltdb-buckets-organised.png"><span class="image-caption">boltdb-buckets-organised.png</span></p>
 <p>相比普通 B+ 树，boltdb 的 B+ 树有几点特殊之处：</p>
 <ol start="2">
 <li>节点的分支个数不是一个固定范围，而是依据其所存元素大小之和来限制的，这个上限即为页大小。</li>
@@ -315,7 +389,7 @@
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// node 表示内存中一个反序列化后的 page</span></span><br><span class="line"><span class="keyword">type</span> node <span class="keyword">struct</span> &#123;</span><br><span class="line">  bucket     *Bucket   <span class="comment">// 其所在 bucket 的指针</span></span><br><span class="line">  isLeaf     <span class="type">bool</span>      <span class="comment">// 是否为叶子节点</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 调整、维持 B+ 树时使用</span></span><br><span class="line">  unbalanced <span class="type">bool</span>      <span class="comment">// 是否需要进行合并</span></span><br><span class="line">  spilled    <span class="type">bool</span>      <span class="comment">// 是否需要进行拆分和落盘</span></span><br><span class="line">  </span><br><span class="line">  key        []<span class="type">byte</span>    <span class="comment">// 所含第一个元素的 key</span></span><br><span class="line">  pgid       pgid      <span class="comment">// 对应的 page 的 id</span></span><br><span class="line">  </span><br><span class="line">  parent     *node     <span class="comment">// 父节点指针</span></span><br><span class="line">  children   nodes     <span class="comment">// 孩子节点指针（只包含加载到内存中的部分孩子）</span></span><br><span class="line">  </span><br><span class="line">  inodes     inodes    <span class="comment">// 所存元素的元信息；对于分支节点是 key+pgid 数组，对于叶子节点是 kv 数组</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="node-page-转换">node/page 转换</h3>
 <p>page 和 node 的对应关系为：文件系统中一组连续的物理 page，加载到内存成为一个逻辑 page ，进而转化为一个 node。下图为一个在文件系统上占用两个 pagesize 空间的一段连续数据 ，首先 mmap 到内存空间，转换为 <code>page</code> 类型，然后通过 <code>node.read</code> 转换为 <code>node</code> 的过程。</p>
-<p><img src="https://i.loli.net/2021/01/02/N7OqmibTklP5DLg.png" alt="boltdb-node-load-and-dump.png"></p>
+<p><img data-src="https://i.loli.net/2021/01/02/N7OqmibTklP5DLg.png" alt="boltdb-node-load-and-dump.png"><span class="image-caption">boltdb-node-load-and-dump.png</span></p>
 <p>其中 <code>node.read</code> 将 page 转换为 node 的代码如下：</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// read 函数通过 mmap 读取 page，并转换为 node</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(n *node)</span></span> read(p *page) &#123;</span><br><span class="line">  <span class="comment">// 初始化元信息</span></span><br><span class="line">  n.pgid = p.id</span><br><span class="line">  n.isLeaf = ((p.flags &amp; leafPageFlag) != <span class="number">0</span>)</span><br><span class="line">  n.inodes = <span class="built_in">make</span>(inodes, <span class="type">int</span>(p.count))</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 加载所包含元素 inodes</span></span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="type">int</span>(p.count); i++ &#123;</span><br><span class="line">    inode := &amp;n.inodes[i]</span><br><span class="line">    <span class="keyword">if</span> n.isLeaf &#123;</span><br><span class="line">      elem := p.leafPageElement(<span class="type">uint16</span>(i))</span><br><span class="line">      inode.flags = elem.flags</span><br><span class="line">      inode.key = elem.key()</span><br><span class="line">      inode.value = elem.value()</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      elem := p.branchPageElement(<span class="type">uint16</span>(i))</span><br><span class="line">      inode.pgid = elem.pgid</span><br><span class="line">      inode.key = elem.key()</span><br><span class="line">    &#125;</span><br><span class="line">    _assert(<span class="built_in">len</span>(inode.key) &gt; <span class="number">0</span>, <span class="string">&quot;read: zero-length inode key&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 用第一个元素的 key 作为该 node 的 key，以便父节点以此作为索引进行查找和路由</span></span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(n.inodes) &gt; <span class="number">0</span> &#123;</span><br><span class="line">    n.key = n.inodes[<span class="number">0</span>].key</span><br><span class="line">    _assert(<span class="built_in">len</span>(n.key) &gt; <span class="number">0</span>, <span class="string">&quot;read: zero-length node key&quot;</span>)</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    n.key = <span class="literal">nil</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="node-元素-inode">node 元素 inode</h3>
@@ -333,11 +407,11 @@
 </ol>
 <p>在和朋友讨论后，大致得出如下结论：为了避免在叶子节点最左侧插入一个很小的值时，引起祖先节点的 <code>node.key</code> 的链式更新，而将更新延迟到了最后 B+ 树调整阶段（<code>spill</code> 函数）进行统一处理 。此时，需要利用 <code>node.put</code> 函数将最左边的 <code>node.key</code> 更新为 <code>node.inodes[0].key</code>：</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 该代码片段在 node.spill 函数中</span></span><br><span class="line"><span class="keyword">if</span> node.parent != <span class="literal">nil</span> &#123; <span class="comment">// 如果不是根节点</span></span><br><span class="line">  <span class="keyword">var</span> key = node.key <span class="comment">// split 后，最左边 node</span></span><br><span class="line">  <span class="keyword">if</span> key == <span class="literal">nil</span> &#123;    <span class="comment">// split 后，非最左边 node</span></span><br><span class="line">    key = node.inodes[<span class="number">0</span>].key</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  node.parent.put(key, node.inodes[<span class="number">0</span>].key, <span class="literal">nil</span>, node.pgid, <span class="number">0</span>)</span><br><span class="line">  node.key = node.inodes[<span class="number">0</span>].key</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="https://i.loli.net/2021/01/02/woJQh7ZSOr3yGWq.png" alt="bolt-recursive-change.png"></p>
+<p><img data-src="https://i.loli.net/2021/01/02/woJQh7ZSOr3yGWq.png" alt="bolt-recursive-change.png"><span class="image-caption">bolt-recursive-change.png</span></p>
 <h2 id="节点遍历">节点遍历</h2>
 <p>由于 Golang 不支持 Python 中类似 <code>yield</code> 机制，boltdb 使用栈保存遍历上下文实现了一个树节点<strong>顺序遍历</strong>的迭代器：<code>cursor</code>。在逻辑上可以理解为对某 B+ 树<strong>叶子节点所存元素遍历</strong>的迭代器。之前提到，boltdb 的 B+ 树没有使用链表将所有叶子节点串起来，因此需要一些额外逻辑来进行遍历中各种细节的处理。</p>
 <p>这么实现增加了遍历的复杂度，但是减少了维持 B+ 树平衡性质的难度，也是一种取舍。当然，最重要的是为了通过 COW 实现事务时，避免链式更新所有前驱节点。</p>
-<p><img src="https://i.loli.net/2021/01/02/m4WE7fgn8OazSND.png" alt="cursor-implementation.png"></p>
+<p><img data-src="https://i.loli.net/2021/01/02/m4WE7fgn8OazSND.png" alt="cursor-implementation.png"><span class="image-caption">cursor-implementation.png</span></p>
 <p><code>cursor</code> 和某个 bucket 绑定，实现了以下功能，需要注意，当遍历到的元素为嵌套 bucket 时，<code>value = nil</code>。</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Cursor</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Cursor)</span></span> Bucket() *Bucket <span class="comment">// 返回绑定的 bucket</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Cursor)</span></span> Delete() <span class="type">error</span> <span class="comment">// 删除 cursor 指向的 key</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Cursor)</span></span> First() (key []<span class="type">byte</span>, value []<span class="type">byte</span>) <span class="comment">// 定位到并返回该 bucket 第一个 KV </span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Cursor)</span></span> Last() (key []<span class="type">byte</span>, value []<span class="type">byte</span>)  <span class="comment">// 定位到并返回该 bucket 最后一个 KV </span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Cursor)</span></span> Next() (key []<span class="type">byte</span>, value []<span class="type">byte</span>)  <span class="comment">// 定位到并返回该 bucket 下一个 KV</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Cursor)</span></span> Prev() (key []<span class="type">byte</span>, value []<span class="type">byte</span>)  <span class="comment">// 定位到并返回该 bucket 前一个 KV</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Cursor)</span></span> Seek(seek []<span class="type">byte</span>) (key []<span class="type">byte</span>, value []<span class="type">byte</span>) <span class="comment">// 定位到并返回该 bucket 内指定的 KV</span></span><br></pre></td></tr></table></figure>
 <p>由于 boltdb 中 B+ 树左右叶子节点并没有通过链表串起来，因此遍历时需要记下遍历<strong>路径</strong>以进行回溯。其结构体如下：</p>
@@ -474,16 +548,16 @@
       <div class="popular-posts-title"><a href="/2021/04/02/bolt-transaction/" rel="bookmark">Boltdb 源码导读（三）：Boltdb 事务实现</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/01/06/go-value-pointer-method/" rel="bookmark">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/12/07/bazel-build-golang/" rel="bookmark">Bazel 构建 Golang 项目</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2021/01/09/go-slice/" rel="bookmark">Golang 笔记（三）：一种理解 Slice 的模型</a></div>
+      <div class="popular-posts-title"><a href="/2020/01/06/go-value-pointer-method/" rel="bookmark">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/07/12/go-context/" rel="bookmark">Golang 笔记（二）：Context 源码剖析</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/01/09/go-slice/" rel="bookmark">Golang 笔记（三）：一种理解 Slice 的模型</a></div>
     </li>
   </ul>
 
@@ -495,7 +569,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -506,8 +580,8 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/%E5%AD%98%E5%82%A8/" rel="tag"># 存储</a>
-              <a href="/tags/go/" rel="tag"># go</a>
               <a href="/tags/golang/" rel="tag"># golang</a>
+              <a href="/tags/go/" rel="tag"># go</a>
               <a href="/tags/boltdb/" rel="tag"># boltdb</a>
               <a href="/tags/kv-engine/" rel="tag"># kv engine</a>
               <a href="/tags/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" rel="tag"># 源码阅读</a>
@@ -591,10 +665,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -697,7 +771,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -738,6 +812,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

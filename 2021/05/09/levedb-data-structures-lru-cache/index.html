@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="早对 LevelDB 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用 C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和 Jeff Dean 呢。 看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路：从架构概览说起，以模块分析做合。">
@@ -37,7 +39,7 @@
 <meta property="og:image" content="https://i.loli.net/2021/05/09/TrNCxo3evBZIuSA.png">
 <meta property="article:published_time" content="2021-05-09T15:15:48.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:19:46.424Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="存储">
 <meta property="article:tag" content="leveldb">
 <meta property="article:tag" content="LRU">
@@ -57,6 +59,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="存储,leveldb,LRU,LRU缓存">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "漫谈 LevelDB 数据结构（三）：LRU 缓存（ LRUCache）",
+    "description": "早对 LevelDB 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用 C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和 Jeff Dean 呢。 看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路：从架构概览说起，以模块分析做合。读代码的这些天，一直在盘算从哪下笔比较好。在将将读完之时，印象最深的反而是 LevelDB 的各种精妙的数据结构：贴合场景、从头构建、剪裁得当、代码精到。不妨， LevelDB 系列就从这些边边角角的小构件开始吧。 本系列主要想分享 LevelDB 中用到的三个工程中常用的经典数据结构，分别是用以快速读写 memtable 的 Skip List、用以快速筛选 sstable 的 Bloom Filter 和用以部分缓存 sstable 的 LRUCache 。这是第三篇，LRUCache。 引子 LRU 是工程中多见的一个数据结构，常用于缓存场景。近年来，LRU 也是面试中一道炙手可热的考题，一来工程用的多，二来代码量较少，三来涉及的数据结构也很典型。LeetCode 中有一道相应的题目：lru-cache。相对实际场景，题目进行了简化：本质上要求维护一个按访问时间有序的 kv 集合，且 kv 皆是整数。经典解法是使用一个哈希表（unordered_map）和一个双向链表，哈希表解决索引问题，双向链表维护访问顺序。这是我当时的一个解法，特点是用了两个辅助函数，并且可以返回节点自身，以支持链式调用，从而简化了代码。 说回 LevelDB 源码，作为一个工业品，它使用 的 LRUCache 又做了哪些优化和变动呢？下面让我们一块来拆解下 LevelDB 中使用的 LRUCache，看看有什么不同。 本文首先明确 LRUCache 的使用方法，然后总览分析 LRUCache 的实现思路，最后详述相关数据结构的实现细节。",
+    "url": "https://www.qtmuniao.com/2021/05/09/levedb-data-structures-lru-cache/",
+    "datePublished": "2021-05-09T23:15:48+08:00",
+    "dateModified": "2024-03-04T09:19:46+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2021/05/09/levedb-data-structures-lru-cache/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>漫谈 LevelDB 数据结构（三）：LRU 缓存（ LRUCache） | 木鸟杂记</title>
   
@@ -130,7 +204,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -218,8 +292,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -300,7 +374,7 @@
 <li>数据条目的生命周期管理</li>
 </ol>
 <p>用状态机来表示 Cache 中的 Entry 的生命周期如下：</p>
-<p><img src="https://i.loli.net/2021/05/09/cCweIyiS3oaKOMD.png" alt="leveldb-entry-lifecycle.png"></p>
+<p><img data-src="https://i.loli.net/2021/05/09/cCweIyiS3oaKOMD.png" alt="leveldb-entry-lifecycle.png"><span class="image-caption">leveldb-entry-lifecycle.png</span></p>
 <p>可以看出该状态机要比 LeetCode 中复杂一些，首先增加了多线程的引用，其次需要区分被引用（inuse） 和空闲（idle） 状态。</p>
 <p>多个线程可以通过 <code>Insert</code>、<code>Lookup</code> 对同一个条目进行插入和引用，因此缓存需要维护每个条目（entry）的引用数量。只有引用数量为 0 的条目才会进入一个待驱逐（idle）的状态，将所有待驱逐的条目按 LRU 顺序排序，在用量超过容量时，将依据上述顺序对最久没使用过的条目进行驱逐。</p>
 <p>此外，需要进行线程间同步和互斥，以保证 Cache 是线程安全的，最简单的方法是整个 Cache 使用一把锁，但这样多线程间争抢比较严重，会有性能问题。</p>
@@ -325,9 +399,9 @@
 <p>另外值得一提的是，哈希表中用来处理冲突的链表节点与双向链表中的节点使用的是同一个数据结构（<code>LRUHandle</code>），但在串起来时，用的是 <code>LRUHandle</code> 中不同指针字段。</p>
 <h2 id="数据结构">数据结构</h2>
 <p>LRUCache 实现主要涉及到了四个数据结构：<code>LRUHandle</code>、<code>HandleTable</code>、<code>LRUCache</code> 和 <code>ShardedLRUCache</code>。前三者组织形式如下：</p>
-<p><img src="https://i.loli.net/2021/05/09/iUc8ywmJATEH7pl.png" alt="lru-cache-architecture.png"></p>
+<p><img data-src="https://i.loli.net/2021/05/09/iUc8ywmJATEH7pl.png" alt="lru-cache-architecture.png"><span class="image-caption">lru-cache-architecture.png</span></p>
 <p><code>ShardedLRUCache</code> 由一组 <code>LRUCache</code> 组成，每个 <code>LRUCache</code> 作为一个分片，同时是一个加锁的粒度，他们都实现了 <code>Cache</code> 接口。下面示意图只画了 4 个分片，代码中是 16 个。</p>
-<p><img src="https://i.loli.net/2021/05/09/Dgba6dWsNerO28F.png" alt="shared-lru-cache.png"></p>
+<p><img data-src="https://i.loli.net/2021/05/09/Dgba6dWsNerO28F.png" alt="shared-lru-cache.png"><span class="image-caption">shared-lru-cache.png</span></p>
 <h3 id="LRUHandle——基本数据单元">LRUHandle——基本数据单元</h3>
 <p><code>LRUHandle</code> 是双向链表和哈希表的基本构成单位，同时也是数据条目缓存和操作的基本单元。其结构如下：</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">LRUHandle</span> &#123;</span><br><span class="line">  <span class="type">void</span>* value;</span><br><span class="line">  <span class="built_in">void</span> (*deleter)(<span class="type">const</span> Slice&amp;, <span class="type">void</span>* value); <span class="comment">// 释放 key,value 空间的用户回调</span></span><br><span class="line">  LRUHandle* next_hash;  <span class="comment">// 用于 hashtable 中链表处理冲突</span></span><br><span class="line">  LRUHandle* next;       <span class="comment">// 用于双向链表中维护 LRU 顺序</span></span><br><span class="line">  LRUHandle* prev;</span><br><span class="line">  <span class="type">size_t</span> charge;     <span class="comment">// TODO(opt): Only allow uint32_t?</span></span><br><span class="line">  <span class="type">size_t</span> key_length;</span><br><span class="line">  <span class="type">bool</span> in_cache;     <span class="comment">// 该 handle 是否在 cache table 中</span></span><br><span class="line">  <span class="type">uint32_t</span> refs;     <span class="comment">// 该 handle 被引用的次数</span></span><br><span class="line">  <span class="type">uint32_t</span> hash;     <span class="comment">// key 的 hash 值，用于确定分片和快速比较</span></span><br><span class="line">  <span class="type">char</span> key_data[<span class="number">1</span>];  <span class="comment">// key 的起始</span></span><br><span class="line"></span><br><span class="line">  <span class="function">Slice <span class="title">key</span><span class="params">()</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">    <span class="comment">// next_ is only equal to this if the LRU handle is the list head of an</span></span><br><span class="line">    <span class="comment">// empty list. List heads never have meaningful keys.</span></span><br><span class="line">    <span class="built_in">assert</span>(next != <span class="keyword">this</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">Slice</span>(key_data, key_length);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
@@ -350,7 +424,7 @@
 <p>由于返回的是其前驱节点 <code>next_hash</code> 的地址，因此在删除时，只需将该 next_hash 改为待删除节点后继节点地址，然后返回待删除节点即可。</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">LRUHandle* <span class="title">Remove</span><span class="params">(<span class="type">const</span> Slice&amp; key, <span class="type">uint32_t</span> hash)</span> </span>&#123;</span><br><span class="line">  LRUHandle** ptr = <span class="built_in">FindPointer</span>(key, hash);</span><br><span class="line">  LRUHandle* result = *ptr;</span><br><span class="line">  <span class="keyword">if</span> (result != <span class="literal">nullptr</span>) &#123;</span><br><span class="line">    *ptr = result-&gt;next_hash;</span><br><span class="line">    --elems_;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>在插入时，也是利用 <code>FindPointer</code> 函数找到待插入桶的链表尾部节点 <code>next_hash</code> 指针的指针，对于边界条件空桶来说，会找到桶的空头结点。之后需要判断是新插入还是替换，如果替换，则把被替换的旧节点返回，下面是插入新节点示意图：</p>
-<p><img src="https://i.loli.net/2021/05/09/TrNCxo3evBZIuSA.png" alt="leveldb-table-insert.png"></p>
+<p><img data-src="https://i.loli.net/2021/05/09/TrNCxo3evBZIuSA.png" alt="leveldb-table-insert.png"><span class="image-caption">leveldb-table-insert.png</span></p>
 <p>如果是新插入节点，节点总数会变多，如果节点总数多到大于某个阈值后，为了保持哈希表的性能，就需要进行 <code>resize</code>，以增加桶的个数，同时将所有节点进行重新分桶。LevelDB 选定的阈值是 <code>length_</code> —— 桶的个数。</p>
 <p><code>resize</code> 的操作比较重，因为需要对所有节点进行重新分桶，而为了保证线程安全，需要加锁，但这会使得哈希表一段时间不能提供服务。当然通过分片已经减小了单个分片中节点的数量，但如果分片不均匀，仍然会比较重。<span class="exturl" data-url="aHR0cHM6Ly9sZXZlbGRiLWhhbmRib29rLnJlYWR0aGVkb2NzLmlvL3poL2xhdGVzdC9jYWNoZS5odG1sI2R5bmFtaWMtc2l6ZWQtbm9uYmxvY2tpbmctaGFzaC10YWJsZQ==">这里<i class="fa fa-external-link-alt"></i></span>有提到一种渐进式的迁移方法：Dynamic-sized NonBlocking Hash table，可以将迁移时间进行均摊，有点类似于 Go GC 的演化。</p>
 <h2 id="LRUCache——-哈希表索引-双向环形链表">LRUCache—— 哈希表索引+双向环形链表</h2>
@@ -411,13 +485,13 @@
       <div class="popular-posts-title"><a href="/2020/07/03/leveldb-data-structures-skip-list/" rel="bookmark">漫谈 LevelDB 数据结构（一）：跳表（Skip List）</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/03/19/wisckey/" rel="bookmark">WiscKey —— SSD 介质下的 LSM-Tree 优化</a></div>
@@ -432,7 +506,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -526,10 +600,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -632,7 +706,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -673,6 +747,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

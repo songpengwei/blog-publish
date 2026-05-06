@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="cmu15445 是一门关于数据库管理系统（DBMS）设计与实现的经典公开课。该课程以 Database System Concepts 为教材，提供随堂讲义、笔记和视频，精心准备了几个互相勾连的小实验。该课程十分注重系统设计和编程实现，用主讲教授 Andy Pavlo 的话说，这是一门可以写在简历上、并且能帮你拿到好 offer 的课程。 这个假期得空，翻出这门课程，即被其翔实的内容、精当的组">
@@ -37,7 +39,7 @@
 <meta property="og:image" content="https://i.loli.net/2021/02/19/FyefbnZIJUKYMjc.png">
 <meta property="article:published_time" content="2021-02-09T16:13:33.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:18:06.693Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="存储">
 <meta property="article:tag" content="cmu">
 <meta property="article:tag" content="15445">
@@ -58,6 +60,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="存储,cmu,15445,database systems,buffer pool">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Cmu15445 数据库系统实验一：Buffer Pool Manager",
+    "description": "cmu15445 是一门关于数据库管理系统（DBMS）设计与实现的经典公开课。该课程以 Database System Concepts 为教材，提供随堂讲义、笔记和视频，精心准备了几个互相勾连的小实验。该课程十分注重系统设计和编程实现，用主讲教授 Andy Pavlo 的话说，这是一门可以写在简历上、并且能帮你拿到好 offer 的课程。 这个假期得空，翻出这门课程，即被其翔实的内容、精当的组织所折服。无奈时间有限，只能以实验为主线，辅以讲义和笔记，简单跟一跟。如果再有时间，就去扫下教材和视频。从实验一开始，每个实验 autograder 跑过之后，出一篇笔记，聊以备忘。 Andy Pavlo 教授建议不要公开实验代码仓库，因此文章尽量少贴代码，多写思路。 本篇是实验一，管理文件系统的页在内存中的缓存 —— buffer pool manager。 概览 实验的目标系统 BusTub 是一个面向磁盘的 DBMS，但磁盘上的数据不支持字节粒度的访问。这就需要一个管理页的中间层，但 Andy Pavlo 教授坚持不使用 mmap 将页管理权力让渡给操作系统，因此实验一 的目标便在于主动管理磁盘中的页（page）在内存中的缓存，从而，最小化磁盘访问次数（时间上）、最大化相关数据连续（空间上）。 该实验可以分解为相对独立的两个子任务： 维护替换策略的： LRU replacement policy 管理缓冲池的： buffer pool manager 两个组件都要求线程安全。 本文首先从基本概念、核心数据流总体分析下实验内容，然后分别对两个子任务进行梳理。",
+    "url": "https://www.qtmuniao.com/2021/02/10/cmu15445-project1-buffer-pool/",
+    "datePublished": "2021-02-10T00:13:33+08:00",
+    "dateModified": "2024-03-04T09:18:06+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2021/02/10/cmu15445-project1-buffer-pool/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>Cmu15445 数据库系统实验一：Buffer Pool Manager | 木鸟杂记</title>
   
@@ -131,7 +205,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -219,8 +293,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -304,7 +378,7 @@
 <li>page id 是这一段单位数据的全局标识，而 frame id 只是在内存池（frame 数组）中索引某个 page 下标</li>
 <li>page 在文件系统中是一段逻辑连续的字节数组；在内存中，我们会给其附加一些元信息：<code>pin_count_</code>，<code>is_dirty_</code></li>
 </ol>
-<p><img src="https://i.loli.net/2021/02/19/7QSY5EtFwKxuiVN.png" alt="基本概念"></p>
+<p><img data-src="https://i.loli.net/2021/02/19/7QSY5EtFwKxuiVN.png" alt="基本概念"><span class="image-caption">基本概念</span></p>
 <p>而管理帧的内存池大小一般来说是远小于磁盘的，因此在内存池满了后，再从磁盘加载新的页到内存池，需要**某种替换策略（replacer）**将一些不再使用的页踢出内存池以腾出空间。</p>
 <h3 id="核心数据流">核心数据流</h3>
 <p>先说结论，buffer pool manager 的<strong>实现核心</strong>，在于对内存池中所有 frame 的状态的管理。因此，如果我们能梳理出 frame 的状态机，便可以把握好核心数据流。</p>
@@ -317,7 +391,7 @@
 <p>而待实现函数：</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">FetchPageImpl</span>(page_id)</span><br><span class="line"><span class="built_in">NewPageImpl</span>(page_id)</span><br><span class="line"><span class="built_in">UnpinPageImpl</span>(page_id, is_dirty)</span><br><span class="line"><span class="built_in">DeletePageImpl</span>(page_id)</span><br></pre></td></tr></table></figure>
 <p>便是驱动状态机中上述状态发生改变的动作（action），状态机如下：</p>
-<p><img src="https://i.loli.net/2021/02/19/VOH78FybK96IcSq.png" alt="frame 状态机"></p>
+<p><img data-src="https://i.loli.net/2021/02/19/VOH78FybK96IcSq.png" alt="frame 状态机"><span class="image-caption">frame 状态机</span></p>
 <p>对应到实现时数据结构上：</p>
 <ol>
 <li>保存 page 数据的 frame 数组为 <code>pages_</code></li>
@@ -347,7 +421,7 @@
 <p>我使用中文注释注出了一些我认为需要注意的点。</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Page *<span class="title">BufferPoolManager::FetchPageImpl</span><span class="params">(<span class="type">page_id_t</span> page_id)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// a. 使用自动获取和释放锁</span></span><br><span class="line">  <span class="function">std::scoped_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(latch_)</span></span>;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 1.     Search the page table for the requested page (P).</span></span><br><span class="line">  <span class="comment">// 1.1    If P exists, pin it and return it immediately.</span></span><br><span class="line">  <span class="keyword">auto</span> target = page_table_.<span class="built_in">find</span>(page_id); <span class="comment">// b. 判断存在与访问数据只用一次查找</span></span><br><span class="line">  <span class="keyword">if</span> (target != page_table_.<span class="built_in">end</span>()) &#123;</span><br><span class="line">    <span class="type">frame_id_t</span> frame_id = target-&gt;second;</span><br><span class="line">    <span class="comment">// c. 通过指针运算获取 frame_id 处存放的 Page 结构体</span></span><br><span class="line">    Page *p = pages_ + frame_id; </span><br><span class="line">    p-&gt;pin_count_++;</span><br><span class="line">    replacer_-&gt;<span class="built_in">Pin</span>(frame_id); <span class="comment">// d. 将对应 page 从“回收站”中捞出</span></span><br><span class="line">    <span class="keyword">return</span> p;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 1.2    If P does not exist, find a replacement page (R) from either the free list or the replacer.</span></span><br><span class="line">  <span class="comment">//        Note that pages are always found from the free list first.</span></span><br><span class="line">  <span class="type">frame_id_t</span> frame_id = <span class="number">-1</span>; </span><br><span class="line">  Page *p = <span class="literal">nullptr</span>;</span><br><span class="line">  <span class="keyword">if</span> (!free_list_.<span class="built_in">empty</span>()) &#123;</span><br><span class="line">    frame_id = free_list_.<span class="built_in">back</span>(); <span class="comment">// e. 在结尾处操作效率高一点</span></span><br><span class="line">    free_list_.<span class="built_in">pop_back</span>();</span><br><span class="line">    <span class="built_in">assert</span>(frame_id &gt;= <span class="number">0</span> &amp;&amp; frame_id &lt; <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(pool_size_));</span><br><span class="line">    p = pages_ + frame_id;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// f. 从 freelist 中获取的 dirty page 已经在 delete 时写回了</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="type">bool</span> victimized = replacer_-&gt;<span class="built_in">Victim</span>(&amp;frame_id);</span><br><span class="line">    <span class="keyword">if</span> (!victimized) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">assert</span>(frame_id &gt;= <span class="number">0</span> &amp;&amp; frame_id &lt; <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(pool_size_));</span><br><span class="line">    p = pages_ + frame_id;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2.     If R is dirty, write it back to the disk.</span></span><br><span class="line">    <span class="keyword">if</span> (p-&gt;<span class="built_in">IsDirty</span>()) &#123;</span><br><span class="line">      disk_manager_-&gt;<span class="built_in">WritePage</span>(p-&gt;<span class="built_in">GetPageId</span>(), p-&gt;<span class="built_in">GetData</span>());</span><br><span class="line">      p-&gt;is_dirty_ = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    p-&gt;pin_count_ = <span class="number">0</span>; <span class="comment">// g. 将元信息 pin_count_ 清空</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 3.     Delete R from the page table and insert P.</span></span><br><span class="line">  page_table_.<span class="built_in">erase</span>(p-&gt;<span class="built_in">GetPageId</span>()); <span class="comment">// h. 时刻注意区分 p-&gt;GetPageId() 与 page_id 是否相等，别混用</span></span><br><span class="line">  page_table_[page_id] = frame_id;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 4.     Update P&#x27;s metadata, read in the page content from disk, and then return a pointer to P.</span></span><br><span class="line">  p-&gt;page_id_ = page_id;</span><br><span class="line">  p-&gt;<span class="built_in">ResetMemory</span>();</span><br><span class="line">  disk_manager_-&gt;<span class="built_in">ReadPage</span>(page_id, p-&gt;<span class="built_in">GetData</span>());</span><br><span class="line">  p-&gt;pin_count_++;</span><br><span class="line">  <span class="keyword">return</span> p;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>实验相关 autograder 可以在 <span class="exturl" data-url="aHR0cHM6Ly8xNTQ0NS5jb3Vyc2VzLmNzLmNtdS5lZHUvZmFsbDIwMjAvZmFxLmh0bWw=">FAQ<i class="fa fa-external-link-alt"></i></span> 中找到注册地址和邀请码，提交代码的时候最好不要提交 github 仓库地址，会有很多格式问题。可以每次按照实验页面的指示，将相关文件按目录结构达成 zip 包提交即可。</p>
-<p><img src="https://i.loli.net/2021/02/19/5rScRYv8xPtFq39.png" alt="提交事项"></p>
+<p><img data-src="https://i.loli.net/2021/02/19/5rScRYv8xPtFq39.png" alt="提交事项"><span class="image-caption">提交事项</span></p>
 <p>仔细阅读<span class="exturl" data-url="aHR0cHM6Ly8xNTQ0NS5jb3Vyc2VzLmNzLmNtdS5lZHUvZmFsbDIwMjAvcHJvamVjdDEv">实验描述<i class="fa fa-external-link-alt"></i></span>，提交前需要注意的事项：</p>
 <ol>
 <li>在 build 目录运行 make format ，自动格式化。</li>
@@ -355,7 +429,7 @@
 <li>自己针对每个函数在本地设计一些测试，写到相关文件（本实验 buffer_pool_manager_test.cpp ）中，并且打开测试开关，在 build 文件夹下，编译 <code>make buffer_pool_manager_test</code>，运行 <code>./test/buffer_pool_manager_test</code></li>
 </ol>
 <p>贴一个 project1 autograder 的实验结果：</p>
-<p><img src="https://i.loli.net/2021/02/19/FyefbnZIJUKYMjc.png" alt="autograder-result"></p>
+<p><img data-src="https://i.loli.net/2021/02/19/FyefbnZIJUKYMjc.png" alt="autograder-result"><span class="image-caption">autograder-result</span></p>
 <h2 id="小结">小结</h2>
 <p>这是 cmu15445 第一个实验，实现了在磁盘和内存间按需搬运页（page）的 buffer pool manager。本实验的关键之处在于把握基本概念，梳理出核心数据流，在此基础上注意一些实现的细节即可。</p>
 
@@ -391,19 +465,19 @@
       <div class="popular-posts-title"><a href="/2021/02/15/cmu15445-introduction/" rel="bookmark">Cmu15445 课程介绍</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
     </li>
     <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/03/19/wisckey/" rel="bookmark">WiscKey —— SSD 介质下的 LSM-Tree 优化</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
+      <div class="popular-posts-title"><a href="/2020/11/18/leveldb-data-structures-bloom-filter/" rel="bookmark">漫谈 LevelDB 数据结构（二）：布隆过滤器（Bloom Filter）</a></div>
     </li>
   </ul>
 
@@ -415,7 +489,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -510,10 +584,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -616,7 +690,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -657,6 +731,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

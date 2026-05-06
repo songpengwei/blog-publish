@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="Google LevelDB 是一个 LSM-Tree 的实现典范。但在开源出来后，为了保持轻量、简洁的风格，除了修修 Bug 之外，一直没有做太大的更新迭代。为了让其能够满足工业环境中多样性的负载， Facebook（Meta） 在 Fork 了 LevelDB 之后，做了多方面的优化。硬件方面，可以更有效地利用现代硬件，如闪存和快速磁盘、多核 CPU等；软件方面，针对读写路径、Compact">
@@ -36,7 +38,7 @@
 <meta property="og:image" content="https://s2.loli.net/2022/08/21/d2tDES7jAaofwP5.png">
 <meta property="article:published_time" content="2022-08-21T02:44:43.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:22:48.725Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="存储">
 <meta property="article:tag" content="RocksDB">
 <meta name="twitter:card" content="summary">
@@ -54,6 +56,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="存储,RocksDB">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "RocksDB 优化小解（一）：Indexing SST",
+    "description": "Google LevelDB 是一个 LSM-Tree 的实现典范。但在开源出来后，为了保持轻量、简洁的风格，除了修修 Bug 之外，一直没有做太大的更新迭代。为了让其能够满足工业环境中多样性的负载， Facebook（Meta） 在 Fork 了 LevelDB 之后，做了多方面的优化。硬件方面，可以更有效地利用现代硬件，如闪存和快速磁盘、多核 CPU等；软件方面，针对读写路径、Compaction 也做了大量优化，如 SST 索引、索引分片、前缀 Bloom Filter、列族等。 本系列文章，依据 RocksDB 系列博客，结合源码和一些使用经验，分享一些有趣的优化点，希望能对大家有所启发。水平所限，不当之处，欢迎留言讨论。 本篇是 RocksDB 优化系列第一篇，为了优化深层查询性能，将不同层级的 SST 通过一定方式索引起来。",
+    "url": "https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer/",
+    "datePublished": "2022-08-21T10:44:43+08:00",
+    "dateModified": "2024-03-04T09:22:48+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>RocksDB 优化小解（一）：Indexing SST | 木鸟杂记</title>
   
@@ -127,7 +201,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -215,8 +289,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -284,7 +358,7 @@
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer">https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer</a> 转载请注明出处</em></p>
 <h2 id="背景">背景</h2>
 <p>首先，上个<a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/">之前文章中</a>画的 LevelDB 架构图。</p>
-<p><img src="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png" alt="leveldb.png"></p>
+<p><img data-src="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png" alt="leveldb.png"><span class="image-caption">leveldb.png</span></p>
 <p>其中，LevelDB 中一个 <code>Get()</code> 的请求路径，会先后经过：</p>
 <ol>
 <li>一个可变的 memtable</li>
@@ -299,7 +373,7 @@
 <h3 id="分析">分析</h3>
 <p>可以观察到，在 LevelDB 的版本机制下，每个版本（VersionSet，由 Manifest 文件保存）内的 SST 文件数量是定死的、位置也是定死的，则不同层 SST 文件的相对位置也是确定的。</p>
 <p>则，我们在每一层进行查找时，其实<strong>不用从头开始二分，上层已经二分出的一些位置信息可以进行复用</strong>。因此，可以在增加一些类似查找树（如 B+ 树）的层级间的索引结构，以减小底层的二分范围。这种思想称为 <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRnJhY3Rpb25hbF9jYXNjYWRpbmc=">Fractional cascading<i class="fa fa-external-link-alt"></i></span>。</p>
-<p><img src="https://s2.loli.net/2022/08/21/XLU7IvQnJDFfOgS.png" alt="indexing-sst.png"></p>
+<p><img data-src="https://s2.loli.net/2022/08/21/XLU7IvQnJDFfOgS.png" alt="indexing-sst.png"><span class="image-caption">indexing-sst.png</span></p>
 <p>举个例子，如上图，1 层有 2 个 SST 文件，2 层有 8 个 SST 文件。假设现在我们想要查找 80，首先在第一层中所有文件的 <code>FileMetaData.largest</code> 中搜索，可以得到候选文件 file 1，但通过与其上下界比较发现小于其下界。于是继续向 2 层搜索，如果 SST 上没有索引，我们需要对所有八个候选文件进行二分，但如果有索引，如上图，我们只需要对前三个文件进行二分。由此，每层搜索的比较次数可以做到常数级别 N（扇出因子，即 RocksDB 中 <code>max_bytes_for_level_multiplier</code> 配置项），不会随着层次的加深而线性增加（ <code>log(N^L) = N*L</code>）。</p>
 <h3 id="实现">实现</h3>
 <p>RocksDB 中的版本是在每次 compaction 后确定的，只有 compaction 才会改变 SST。因此可以在 compaction 构建 SST 时构建相邻层间的 SST 索引。构建时，每个 SST 文件上下界各对应一个指针。那么如何确定每个指针的指向位置呢？与查找过程类似，拿着上界或者下界对应的 key，在下层所有 SST 文件的 <code>FileMetaData.largest</code> 构成的数组中进行搜索，将其指向下层文件该值对应的<strong>右界文件</strong>。这么选择原因在于，<strong>可以通过该指针（如 100 的指针），将下一层中指向的文件（如 file3）右边的文件（file4，file5，…）全部砍掉</strong>，从而减小搜索范围。</p>
@@ -319,7 +393,7 @@
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (cmp_smallest &lt; <span class="number">0</span>) &#123; <span class="comment">// target &lt; smallest，使用 smallest_rb 作为右界</span></span><br><span class="line">  *left_bound = (level &gt; <span class="number">0</span> &amp;&amp; file_index &gt; <span class="number">0</span>)</span><br><span class="line">                    ? index_units[file_index - <span class="number">1</span>].largest_lb</span><br><span class="line">                    : <span class="number">0</span>;</span><br><span class="line">  *right_bound = index.smallest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_smallest == <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.smallest_lb;</span><br><span class="line">  *right_bound = index.smallest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_smallest &gt; <span class="number">0</span> &amp;&amp; cmp_largest &lt; <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.smallest_lb;</span><br><span class="line">  *right_bound = index.largest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_largest == <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.largest_lb;</span><br><span class="line">  *right_bound = index.largest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_largest &gt; <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.largest_lb;</span><br><span class="line">  *right_bound = level_rb_[level + <span class="number">1</span>];</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="built_in">assert</span>(<span class="literal">false</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>**注：**当 x == smallest 或者 x == largest 时，对于 RocksDB 使用场景来说，上层已经找到了，无须再往查找下层。但该 <code>FileIndexer</code> 的应用场景更泛化一些，比如你可以使用其往下层寻找所有等于给定值的结果。</p>
 <p>下面，仍以之前例子，来使用图解释下：</p>
-<p><img src="https://s2.loli.net/2022/08/21/d2tDES7jAaofwP5.png" alt="create-indexing-sst.png"></p>
+<p><img data-src="https://s2.loli.net/2022/08/21/d2tDES7jAaofwP5.png" alt="create-indexing-sst.png"><span class="image-caption">create-indexing-sst.png</span></p>
 <p>可以看出，当上层文件边界（如 100）落到下层文件内（如 file 3 [95, 110]）时，该边界 lb 和 rb 指针指向相同，蜕化为单指针；当文件边界（如 400）落到下层文件<strong>空隙内</strong>（如 file 7 和 file 8 之间），lb 和 rb 才指向不同，从而在搜索时，相对单指针，总体上减少一个待扫描文件。</p>
 <p>另一方面，注意到，当上层文件边界值（如 400）落在下层文件空隙内时（即该值在下层肯定不存在），有 <code>largest_rb &lt; largest_lb</code> ，如果搜索值是 400，则利用此指针直接导致 <code>left_bound &gt; right_bound</code>，搜索结束。</p>
 <p>在具体实现时， RocksDB 使用了<strong>双指针比较法</strong>，一个指针迭代上层，一个指针迭代下层，一次迭代即可为所有文件建立一种索引。为减少代码中的<strong>分支判断</strong>，使逻辑清晰，RocksDB 将建立过程拆为了四趟，分别构建上述四种指针，逻辑封装在了两个函数中：<code>CalculateLB</code> 和 <code>CalculateRB</code>。</p>
@@ -365,22 +439,22 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
     </li>
     <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/03/19/wisckey/" rel="bookmark">WiscKey —— SSD 介质下的 LSM-Tree 优化</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
+      <div class="popular-posts-title"><a href="/2020/11/18/leveldb-data-structures-bloom-filter/" rel="bookmark">漫谈 LevelDB 数据结构（二）：布隆过滤器（Bloom Filter）</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/06/13/dynamo/" rel="bookmark">Amazon 针对小对象的分布式键值存储——Dynamo</a></div>
+      <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
     </li>
   </ul>
 
@@ -392,7 +466,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -484,10 +558,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -590,7 +664,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -631,6 +705,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

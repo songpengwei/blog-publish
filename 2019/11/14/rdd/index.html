@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="概述 RDD，学名可伸缩的分布式数据集（Resilient Distributed Dataset）。是一种对数据集形态的抽象，基于此抽象，使用者可以在集群中执行一系列计算，而不用将中间结果落盘。而这正是之前 MR 抽象的一个重要痛点，每一个步骤都需要落盘，使得不必要的开销很高。 对于分布式系统，容错支持是必不可少的。为了支持容错，RDD 只支持粗粒度的变换。即，输入数据集是 immutable">
@@ -41,7 +43,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/02/09/f1pw8jLhYeNtEoO.png">
 <meta property="article:published_time" content="2019-11-14T12:32:07.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:15:43.073Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="分布式系统">
 <meta property="article:tag" content="spark">
 <meta property="article:tag" content="rdd">
@@ -61,6 +63,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="分布式系统,spark,rdd,数据处理">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Spark 系统的理论基石 —— RDD",
+    "description": "概述 RDD，学名可伸缩的分布式数据集（Resilient Distributed Dataset）。是一种对数据集形态的抽象，基于此抽象，使用者可以在集群中执行一系列计算，而不用将中间结果落盘。而这正是之前 MR 抽象的一个重要痛点，每一个步骤都需要落盘，使得不必要的开销很高。 对于分布式系统，容错支持是必不可少的。为了支持容错，RDD 只支持粗粒度的变换。即，输入数据集是 immutable （或者说只读）的，每次运算会产生新的输出。不支持对一个数据集中细粒度的更新操作。这种约束，大大简化了容错支持，并且能满足很大一类的计算需求。",
+    "url": "https://www.qtmuniao.com/2019/11/14/rdd/",
+    "datePublished": "2019-11-14T20:32:07+08:00",
+    "dateModified": "2024-03-04T09:15:43+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2019/11/14/rdd/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>Spark 系统的理论基石 —— RDD | 木鸟杂记</title>
   
@@ -134,7 +208,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -222,8 +296,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -318,7 +392,7 @@
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">lines = spark.textFile(<span class="string">&quot;hdfs://...&quot;</span>)</span><br><span class="line">errors = lines.filter(_.startsWith(<span class="string">&quot;ERROR&quot;</span>))</span><br><span class="line">errors.persist()</span><br><span class="line"></span><br><span class="line"><span class="comment">// Return the time fields of errors mentioning</span></span><br><span class="line"><span class="comment">// HDFS as an array (assuming time is field</span></span><br><span class="line"><span class="comment">// number 3 in a tab-separated format):</span></span><br><span class="line">errors.filter(_.contains(<span class="string">&quot;HDFS&quot;</span>))</span><br><span class="line">      .map(_.split(’\t’)(<span class="number">3</span>))</span><br><span class="line">      .collect()</span><br></pre></td></tr></table></figure>
 <p>第一行基于某个 hdfs 上的文件定义一个 rdd（每一行作为集合中的一个条目）。第二行通过 filter 变换生成新的 rdd，第三行请求 spark 将其结果进行暂存。最后一行是链式操作，以一个 collect 的动作结尾，求出包含 HDFS 关键字的所有行数的各个字段。</p>
 <p>其计算的谱系图（lineage）如下：</p>
-<p><img src="https://i.loli.net/2020/02/09/dPmJ2nb1zUNGuAo.jpg" alt="rdd-example-lineage.jpg"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/dPmJ2nb1zUNGuAo.jpg" alt="rdd-example-lineage.jpg"><span class="image-caption">rdd-example-lineage.jpg</span></p>
 <p>有两点需要注意：</p>
 <ol>
 <li>直到遇到 collect 这个<strong>动作</strong>（Action）之前都没有发生实际的运算。</li>
@@ -328,7 +402,7 @@
 <figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Count errors mentioning MySQL:</span></span><br><span class="line">errors.filter(_.contains(<span class="string">&quot;MySQL&quot;</span>)).count()</span><br></pre></td></tr></table></figure>
 <h3 id="RDD-模型的优点">RDD 模型的优点</h3>
 <p>为了理解 RDD 带来的好处，可以看下面一个表，将 RDD 与 DSM （Distributed Shared Memory）做了详细对比。DSM 在这里是一个很宽泛的抽象，不仅包括一般的内存共享系统，还包括其他支持细粒度的状态更新的框架，比如说 Piccolo、分布式数据库等。</p>
-<p><img src="https://i.loli.net/2020/02/09/Jj8GFN5qP3aWZHY.jpg" alt="rdd-compare-dsm-table.jpg"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/Jj8GFN5qP3aWZHY.jpg" alt="rdd-compare-dsm-table.jpg"><span class="image-caption">rdd-compare-dsm-table.jpg</span></p>
 <p>首先， DSM 和 RDD 最主要的区别在于，DSM 支持对数据集细粒度的更新。即，可以对任意内存位置进行更新。而 RDD 舍弃了这一点，只允许批量的写入数据，从而提高了容错效率：</p>
 <ol>
 <li>使用 lineage 来按需恢复数据，而不用定期 snapshot，减小了不必要开销。</li>
@@ -344,13 +418,13 @@
 <p>如前所述，RDD 适用于针对全数据集统一处理的粗粒度变换的抽象。相对的，就不适用于要求对数据进行细粒度的、异步更新的数据集。比如说 web 应用，再比如说爬虫等等。对于这些引用类型，传统的快照+操作日志的容错方式可能更适合一些。如数据库 RAMCloud , Percolator 和 Piccolo。 RDD 的目标在于批量分析型应用，而将这些异步应用的需求留给那些专有系统。</p>
 <h2 id="Spark-编程接口-2">Spark 编程接口</h2>
 <p>Spark 利用 Scala 语言作为 RDD 抽象的接口，因为 Scala 兼顾了精确（其函数式语义适合交互式场景）与高效（使用静态类型）。当然，对于 RDD 本身来说，不限定于任何特定的语言表达。下面从<strong>执行流程</strong>与<strong>代码分发</strong>两个方面来详细说明下 Spark 是如何执行用户代码的。</p>
-<p><img src="https://i.loli.net/2020/02/09/aiyjrGJ8IkwtWRY.jpg" alt="rdd-spark-runtime.jpg"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/aiyjrGJ8IkwtWRY.jpg" alt="rdd-spark-runtime.jpg"><span class="image-caption">rdd-spark-runtime.jpg</span></p>
 <p>开发者利用 Spark 提供的库编写<em>驱动程序</em> （driver programe）以使用 Spark。驱动程序会定义一到多个 RDD，并对其进行各种变换。Spark 提供的库会连接 Spark 集群，生成计算拓扑，并将拓扑分散到多个 workers 上去进行执行，同时记下变换的谱系（lineage）。这些 workers 是分散在 Spark 集群内各个机器上的常驻进程，它们在内存里保存计算过程中生成的 RDD 的各个分区。</p>
 <p>像前面举的例子一样，开发者需要将函数作为参数传给 map 等 Spark 算子。Spark 会将这些函数（或者说<strong>闭包</strong>）序列化为 Java 对象，然后分发给执行节点进行加载。闭包所涉及的变量会被当做上述生成对象的字段值。RDD 本身会被包装成静态类型的参数进行传递。由于 Scala 支持类型推断，大部分例子都省掉了 RDD 数据类型。</p>
 <p>尽管 Spark 暴露的 Scala 的 RDD 接口在概念上看起来很简单，但实在实现上有一些很脏的角落，比如说 Scala 的闭包得使用反射， 比如说尽量避免修改 Scala 的解释器。</p>
 <h3 id="Spark-中的-RDD-操作">Spark 中的 RDD 操作</h3>
 <p>下表列出了 Spark 中支持的 RDD 操作。如前面所说，<strong>变换</strong>（transformations）是生成新 RDD 的惰性算子，而<strong>动作</strong>（actions）是触发调度的算子，它会返回一个结果或者将数据写到外存中。</p>
-<p><img src="https://i.loli.net/2020/02/09/6U1yOcZELsTH5uC.jpg" alt="rdd-operations-table.jpg"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/6U1yOcZELsTH5uC.jpg" alt="rdd-operations-table.jpg"><span class="image-caption">rdd-operations-table.jpg</span></p>
 <p>需要注意的是：</p>
 <ol>
 <li>有些操作如 <em>join</em>，要求操作数 RDD 必须是键值对（key value pairs）。</li>
@@ -367,13 +441,13 @@
 <li><strong>分区模式</strong>（partition scheme）。该 RDD 的分区是基于<strong>哈希分片</strong>的还是<strong>直接切分</strong>的。</li>
 <li><strong>数据放置</strong>（data placement）。知道分区的存放位置可以进行计算优化。</li>
 </ol>
-<p><img src="https://i.loli.net/2020/02/09/6KVtu2qrYFSMv84.jpg" alt="RDD 抽象接口组成"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/6KVtu2qrYFSMv84.jpg" alt="RDD 抽象接口组成"><span class="image-caption">RDD 抽象接口组成</span></p>
 <p>在 RDD 的接口设计中最有趣的一个点是如何对 RDD 间的<strong>依赖关系</strong>进行规约。最后发现可以将所有依赖归纳为两种类型：</p>
 <ol>
 <li><strong>窄依赖</strong>（narrow dependencies）：父 RDD 的分区最多被一个子 RDD 的分区所依赖，比如 <em>map</em>。</li>
 <li><strong>宽依赖</strong>（wide dependencies）：父 RDD 的分区可能被多个子 RDD 的分区所依赖，比如 <em>join</em>。</li>
 </ol>
-<p><img src="https://i.loli.net/2020/02/09/SaPvyV2LtiAhezJ.jpg" alt="宽依赖和窄依赖"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/SaPvyV2LtiAhezJ.jpg" alt="宽依赖和窄依赖"><span class="image-caption">宽依赖和窄依赖</span></p>
 <p>如此归纳的原因主要有两点。</p>
 <p><strong>调度优化</strong>。对于窄依赖，可以对分区间进行并行<strong>流水化</strong>调度，先计完成某个窄依赖算子（比如说 map）的分区不用等待其他分区而直接进行下一个窄依赖算子（比如 filter ）的运算。与之相对，宽依赖的要求父 RDD 的所有分区就绪，并进行跨节点的传送后，才能进行计算。类似于 MapReduce 中的 shuffle。</p>
 <p><strong>数据恢复</strong>。在某个分区出现错误或者丢失时，窄依赖的恢复更为高效。因为涉及到的父分区相对较少，并且可以并行恢复。而对于宽依赖，由于依赖复杂（如上图，子 RDD 的每个分区都会依赖父 RDD 的所有分区），一个分区的丢失可能就会引起全盘的重新计算。</p>
@@ -387,7 +461,7 @@
 <p>Spark 最初版本（论文里提到的），只有 1.4w 行 Scala 代码，由 mesos 管理资源分配，可以和 Hadoop 生态共用资源，并从 Hadoop/Hbase 中加载数据。对于 Spark 的实现，有几个值得一说的点： Job 调度，交互式解释器，内存管理和检查点机制（checkpointing）。</p>
 <h3 id="Job-调度">Job 调度</h3>
 <p>Spark 调度设计依赖于上一节提到的 RDD 的抽象。它的调度策略和 Dryad 有点像，但又不尽相同。在用户在某个 RDD 上调用 Action 类型（count，save 等等）的算子时，调度器就会根据用户代码中调用算子的顺序生成计算拓扑。我们把每一个变换前后的 RDD 当做<em>点</em>，算子产生的 RDD 间的依赖/父子关系当做<em>边</em>，如此构成一个<em>有向无环图</em>（DAG）。为了减小传输，调度器会将几个连续的计算进行归并，称为<em>阶段</em>（Stage），进行阶段归并的依据为是否需要 shuffle，也即是否为宽依赖。这样，会形成一个新的由阶段组成的更精简的 DAG。</p>
-<p><img src="https://i.loli.net/2020/02/09/EYIeyaDqo3cmdFu.png" alt="RDD 阶段划分"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/EYIeyaDqo3cmdFu.png" alt="RDD 阶段划分"><span class="image-caption">RDD 阶段划分</span></p>
 <p>之后，调度器会从目标 RDD 出发，沿着 DAG 图中的边往前遍历，对每个不在内存中的<strong>分区</strong>进行计算。如果需要计算的分区已经在内存中了，则直接利用结果即可，如上图所示。</p>
 <p>然后，调度器会将任务调度到离其依赖 RDD 的 Partition 近的地方去：</p>
 <ol>
@@ -407,7 +481,7 @@
 <li><strong>代码生成修改（Modified  code generation）</strong>：Scala 解释器在处理不同行的访问时，会通过一个静态方法来获取其<strong>初始化后</strong>单例，进而访问上一行的变量 <code>Line.x</code>。但是我们只能通过 HTTP 传字节码而没有将初始化后实例（即 x 已经被赋值）传过来，因此工作节点不能访问到 x。因此我们改变了代码生成逻辑，使得不同行之间能够直接引用实例。</li>
 </ol>
 <p>下图反映了我们修改后的 Scala 解释器生成 Java 对象的过程：</p>
-<p><img src="https://i.loli.net/2020/02/09/f1pw8jLhYeNtEoO.png" alt="spark 解释器"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/f1pw8jLhYeNtEoO.png" alt="spark 解释器"><span class="image-caption">spark 解释器</span></p>
 <p>我们发现解释器在对大型数据集进行交互式查询时很有帮助，我们计划对更高级的查询语言进行支持，如 SQL。</p>
 <h3 id="内存管理">内存管理</h3>
 <p>Spark 提供了三种存储 RDD 的方式：</p>
@@ -457,13 +531,10 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
@@ -472,7 +543,10 @@
       <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
     </li>
   </ul>
 
@@ -484,7 +558,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -578,10 +652,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -684,7 +758,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -725,6 +799,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

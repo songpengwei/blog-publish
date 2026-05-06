@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。  事务型还是分析型 术语 OL（Online）主要是指交互式的查询。 术语事务（">
@@ -38,7 +40,7 @@
 <meta property="og:image" content="https://s2.loli.net/2022/04/16/e2m8uLaoDnMrfSC.png">
 <meta property="article:published_time" content="2022-04-16T01:52:32.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:22:48.725Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="DDIA">
 <meta property="article:tag" content="读书笔记">
 <meta property="article:tag" content="设计数据密集型应用">
@@ -57,6 +59,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="DDIA,读书笔记,设计数据密集型应用">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "DDIA 读书笔记（三）： TP AP 和列存",
+    "description": "DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在这里。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。 事务型还是分析型 术语 OL（Online）主要是指交互式的查询。 术语事务（ transaction ）由来有一些历史原因。早期的数据库使用方多为商业交易（commercial ），比如买卖、发工资等等。但是随着数据库应用不断扩大，交易\\事务作为名词保留了下来。 事务不一定具有 ACID 特性，事务型处理多是随机的以较低的延迟进行读写，与之相反，分析型处理多为定期的批处理，延迟较高。",
+    "url": "https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2/",
+    "datePublished": "2022-04-16T09:52:32+08:00",
+    "dateModified": "2024-03-04T09:22:48+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>DDIA 读书笔记（三）： TP AP 和列存 | 木鸟杂记</title>
   
@@ -130,7 +204,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -218,8 +292,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -330,7 +404,7 @@
 <h2 id="数据仓库">数据仓库</h2>
 <p>对于一个企业来说，一般都会有很多偏交易型的系统，如用户网站、收银系统、仓库管理、供应链管理、员工管理等等。通常要求<strong>高可用</strong>与<strong>低延迟</strong>，因此直接在原库进行业务分析，会极大影响正常负载。因此需要一种手段将数据从原库导入到专门的<strong>数仓</strong>。</p>
 <p>我们称之为 <strong>ETL：extract-transform-load</strong>。</p>
-<p><img src="https://s2.loli.net/2022/04/16/HAq8ekcmz65xGlO.png" alt="ddia-3-8-etl.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/HAq8ekcmz65xGlO.png" alt="ddia-3-8-etl.png"><span class="image-caption">ddia-3-8-etl.png</span></p>
 <p>一般企业的数据量达到一定的量级才会需要进行 AP 分析，毕竟在小数据量尺度下，用 Excel 进行聚合查询都够了。当然，现在一个趋势是，随着移动互联网、物联网的普及，接入终端的类型和数量越来越多，产生的数据增量也越来越大，哪怕初创不久的公司可能也会积存大量数据，进而也需要 AP 支持。</p>
 <p>AP 场景下的<strong>聚合查询</strong>分析和传统 TP 型有所不同。因此，需要构建索引的方式也多有不同。</p>
 <h3 id="同样接口后的不同">同样接口后的不同</h3>
@@ -338,7 +412,7 @@
 <p>虽然有的数据库系统号称两者都支持，比如之前的 Microsoft SQL Server 和 SAP HANA，但是也正日益发展成两种独立的查询引擎。近年来提的较多的 HTAP 系统也是类似，其为了 serve 不同类型负载底层其实有两套不同的存储，只不过系统内部会自动的做数据的冗余和重新组织，对用户透明。</p>
 <h2 id="AP-建模：星状型和雪花型">AP 建模：星状型和雪花型</h2>
 <p>AP 中的处理模型相对较少，比较常用的有<strong>星状模型</strong>，也称为<strong>维度模型</strong>。</p>
-<p><img src="https://s2.loli.net/2022/04/16/VbBLmqt9grZYiPl.png" alt="ddia3-9-star-schema.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/VbBLmqt9grZYiPl.png" alt="ddia3-9-star-schema.png"><span class="image-caption">ddia3-9-star-schema.png</span></p>
 <p>如上图所示，星状模型通常包含一张<strong>事件表（<em>fact table</em>）<strong>和多张</strong>维度表（<em>dimension tables</em></strong>**）**。事件表以事件流的方式将数据组织起来，然后通过外键指向不同的维度。</p>
 <p>星状模型的一个变种是雪花模型，可以类比雪花（❄️）图案，其特点是在维度表中会进一步进行二次细分，讲一个维度分解为几个子维度。比如品牌和产品类别可能有单独的表格。星状模型更简单，雪花模型更精细，具体应用中会做不同取舍。</p>
 <p>在典型的数仓中，事件表可能会非常宽，即有很多的列：一百到数百列。</p>
@@ -348,12 +422,12 @@
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">  dim_date.weekday,</span><br><span class="line">  dim_product.category,</span><br><span class="line">  <span class="built_in">SUM</span>(fact_sales.quantity) <span class="keyword">AS</span> quantity_sold</span><br><span class="line"><span class="keyword">FROM</span> fact_sales</span><br><span class="line">  <span class="keyword">JOIN</span> dim_date <span class="keyword">ON</span> fact_sales.date_key <span class="operator">=</span> dim_date.date_key</span><br><span class="line">  <span class="keyword">JOIN</span> dim_product <span class="keyword">ON</span> fact_sales.product_sk <span class="operator">=</span> dim_product.product_sk</span><br><span class="line"><span class="keyword">WHERE</span></span><br><span class="line">  dim_date.year <span class="operator">=</span> <span class="number">2013</span> <span class="keyword">AND</span></span><br><span class="line">  dim_product.category <span class="keyword">IN</span> (<span class="string">&#x27;Fresh fruit&#x27;</span>, <span class="string">&#x27;Candy&#x27;</span>)</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span></span><br><span class="line">  dim_date.weekday, dim_product.category;</span><br></pre></td></tr></table></figure>
 <p>由于传统数据库通常是按行存储的，这意味着对于属性（列）很多的表，哪怕只查询一个属性，也必须从磁盘上取出很多属性，无疑浪费了 IO 带宽、增大了读放大。</p>
 <p>于是一个很自然的想法呼之欲出：每一个列分开存储好不好？</p>
-<p><img src="https://s2.loli.net/2022/04/16/P7OJ9fHMVXvW8uD.png" alt="ddia-3-10-store-by-column.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/P7OJ9fHMVXvW8uD.png" alt="ddia-3-10-store-by-column.png"><span class="image-caption">ddia-3-10-store-by-column.png</span></p>
 <p>不同列之间同一个行的字段可以通过下标来对应。当然也可以内嵌主键来对应，但那样存储成本就太高了。</p>
 <h2 id="列压缩">列压缩</h2>
 <p>将所有数据分列存储在一块，带来了一个意外的好处，由于同一属性的数据相似度高，因此更易压缩。</p>
 <p>如果每一列中值阈相比行数要小的多，可以用<strong>位图编码（ <em><span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQml0bWFwX2luZGV4">bitmap encoding<i class="fa fa-external-link-alt"></i></span></em> ）</strong>。举个例子，零售商可能有数十亿的销售交易，但只有 100,000 个不同的产品。</p>
-<p><img src="https://s2.loli.net/2022/04/16/WaqlOFXnHUI9RGw.png" alt="ddia-3-11-compress.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/WaqlOFXnHUI9RGw.png" alt="ddia-3-11-compress.png"><span class="image-caption">ddia-3-11-compress.png</span></p>
 <p>上图中，是一个列分片中的数据，可以看出只有 {29, 30, 31, 68, 69, 74} 六个离散值。针对每个值出现的位置，我们使用一个 bit array 来表示：</p>
 <ol>
 <li>bit map 下标对应列的下标</li>
@@ -420,7 +494,7 @@
 <p>其与关系数据库中的<strong>视图</strong>（View）区别在于，视图是<strong>虚拟的、逻辑存在</strong>的，只是对用户提供的一种抽象，是一个查询的中间结果，并没有进行持久化（有没有缓存就不知道了）。</p>
 <p>物化视图本质上是对数据的一个摘要存储，如果原数据发生了变动，该视图要被重新生成。因此，如果<strong>写多读少</strong>，则维持物化视图的代价很大。但在数仓中往往反过来，因此物化视图才能较好的起作用。</p>
 <p>物化视图一个特化的例子，是<strong>数据立方</strong>（data cube，或者 OLAP cube）：按不同维度对量化数据进行聚合。</p>
-<p><img src="https://s2.loli.net/2022/04/16/e2m8uLaoDnMrfSC.png" alt="ddia-3-12-data-cube.png"></p>
+<p><img data-src="https://s2.loli.net/2022/04/16/e2m8uLaoDnMrfSC.png" alt="ddia-3-12-data-cube.png"><span class="image-caption">ddia-3-12-data-cube.png</span></p>
 <p>上图是一个按<strong>日期和产品分类</strong>两个维度进行加和的数据立方，当针对日期和产品进行汇总查询时，由于该表的存在，就会变得非常快。</p>
 <p>当然，现实中，一个表中常常有多个维度，比如 3-9 中有日期、产品、商店、促销和客户五个维度。但构建数据立方的意义和方法都是相似的。</p>
 <p>但这种构建出来的视图只能针对固定的查询进行优化，如果有的查询不在此列，则这些优化就不再起作用。</p>
@@ -457,16 +531,16 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter2/" rel="bookmark">DDIA 读书笔记（二）：数据模型和查询语言</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA 读书笔记（四）：编码和演进</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA 读书笔记（五）：冗余</a></div>
@@ -481,7 +555,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -574,10 +648,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -680,7 +754,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -721,6 +795,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

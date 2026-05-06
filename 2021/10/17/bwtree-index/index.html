@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="概述 Bw-tree 是 2013 年微软发表的相关论文提出的数据结构。考虑到多核机器和 SSD 日趋普及，结合两大存储引擎 B±tree 和 LSM-tree 特点，提出了一种 latch-free、delta update、log structured 的 B族树 —— Bw-tree。 由于上述论文在实现细节上语焉不详，cmu 几个作者在 2015 年时实现了一版基于内存的 Bw-tree，">
@@ -43,7 +45,7 @@
 <meta property="og:image" content="https://i.loli.net/2021/10/17/cbjLdiZqefr9TJ1.png">
 <meta property="article:published_time" content="2021-10-17T14:53:10.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:22:17.239Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="分布式系统">
 <meta property="article:tag" content="存储引擎">
 <meta property="article:tag" content="bwtree">
@@ -62,6 +64,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="分布式系统,存储引擎,bwtree">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "微软提出的无锁 B 族树 —— Bw-Tree",
+    "description": "概述 Bw-tree 是 2013 年微软发表的相关论文提出的数据结构。考虑到多核机器和 SSD 日趋普及，结合两大存储引擎 B±tree 和 LSM-tree 特点，提出了一种 latch-free、delta update、log structured 的 B族树 —— Bw-tree。 由于上述论文在实现细节上语焉不详，cmu 几个作者在 2015 年时实现了一版基于内存的 Bw-tree，然后又发表了一篇论文，补充了一些实现上的细节，并将代码开源在了 github 上，称为 open bwtree。 例行地总结下（太长不看版），Bw tree 的主要特点有： 总体分三层：bwtree 索引层，缓存控制层和 Flash 存储层。 bwtree 在整体上是一棵 B+ 树，同时借鉴了 B-link 树的思想，每个节点存在一个指向右兄弟的 side pointer。 bwtree 在单个树节点上表现为类似 LSM-tree 的 Log-Structure，每个逻辑节点由 a base node + a delta records chain 组成。 bwtree 实现 latch-free 的核心数据结构叫 Mapping Table，通过 CAS 进行 installing 操作，修改一个 mapping entry 可以同时完成多个逻辑指针的修改。 bwtree flash 层也使用 Log-Structure Store （append only）对逻辑页的物理存储（base page 和 delta record）进行管理。",
+    "url": "https://www.qtmuniao.com/2021/10/17/bwtree-index/",
+    "datePublished": "2021-10-17T22:53:10+08:00",
+    "dateModified": "2024-03-04T09:22:17+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2021/10/17/bwtree-index/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>微软提出的无锁 B 族树 —— Bw-Tree | 木鸟杂记</title>
   
@@ -135,7 +209,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -223,8 +297,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -298,7 +372,7 @@
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2021/10/17/bwtree-index">https://www.qtmuniao.com/2021/10/17/bwtree-index</a>, 转载请注明出处</em></p>
 <h2 id="缘起">缘起</h2>
 <p>新数据结构的设计往往是为了适应硬件的变化。那么近些年，硬件层面有什么变化趋势呢？一方面，在单核性能压榨到极致后（摩尔定律失效），单机多核架构成为一个主要发展方向，但传统基于锁控制并发的数据结构难以充分利用多核性能。这是因为，过多的锁会导致频繁的等待和上下文切换。另一方面，闪存（Flash）的价格越来越便宜，逐渐成为主力存储类型。但闪存有其独特读写特点：顺序写比随机写快几倍，随机读并发要远强过传统磁盘。</p>
-<p><img src="https://i.loli.net/2021/10/17/mNhqJSairLp6Y2n.png" alt="flash 读写性能对比"></p>
+<p><img data-src="https://i.loli.net/2021/10/17/mNhqJSairLp6Y2n.png" alt="flash 读写性能对比"><span class="image-caption">flash 读写性能对比</span></p>
 <p>针对上述两个观察，微软设计出了 bwtree。bwtree 在内存中使用无锁结构进行增量更新：</p>
 <ol>
 <li>无锁结构能够减少上下文切换，提高并行吞吐。</li>
@@ -311,14 +385,14 @@
 </ol>
 <h2 id="架构">架构</h2>
 <p>bwtree 的架构图如下：</p>
-<p><img src="https://i.loli.net/2021/10/17/Z26gsaCcykPNHDT.png" alt="bwtree 架构图"></p>
+<p><img data-src="https://i.loli.net/2021/10/17/Z26gsaCcykPNHDT.png" alt="bwtree 架构图"><span class="image-caption">bwtree 架构图</span></p>
 <p>bwtree 总体上分三个层次，逻辑上的 Bw-tree 索引层，物理上的 Log Structured Store 存储层和沟通两者的中间缓存层。缓存层使用一个核心数据结构——<strong>映射表</strong>（Mapping Table），记录 Page ID 到物理指针的映射，并控制数据在内存和闪存间移动。</p>
 <h2 id="Bw-tree-索引">Bw-tree 索引</h2>
 <p>Bw-tree 对外提供 record（key value）级别的接口，整体结构如下图。</p>
 <p>Bw-tree 的节点（Node）是弹性可变的，由一个<strong>基础节点（<strong>a base node） 和一个</strong>增量记录链</strong>（a delta records chain）组成。所有对节点的修改，包括插入（insert）、更改（modify）和删除（delete） ，都会以增量记录（delta record）的形式追加到<strong>链表头</strong>。</p>
 <p>Bw-tree 中指针包括两种：节点内的<strong>物理指针（Physical link）<strong>和节点间的</strong>逻辑指针（Logical link）</strong>。逻辑指针即 page id，需要配合 Mapping Table 使用，因为后者记录了 page id 到物理指针的映射。物理指针，在内存中表现为 pointer，在闪存上表现为文件系统 or 块存储上的地址。Bw-tree 节点，如果在内存中，便通过内存指针链接到一块；如果刷到闪存上，就会通过物理地址串在一起。Bw-tree 节点间的逻辑指针，即 page id，是能够进行 CAS 方式进行并发控制的关键，后面会详细说原因。</p>
 <p><strong>注</strong>：下图中的 Delta node 叫法不太科学，叫 Delta record 更合理些，因为其保存的信息粒度比 node 细要一些，一般就是单个 record 级别。</p>
-<p><img src="https://i.loli.net/2021/10/17/k4heQxmIEwtVAX5.png" alt="cmu 论文中 bwtree 索引示意图"></p>
+<p><img data-src="https://i.loli.net/2021/10/17/k4heQxmIEwtVAX5.png" alt="cmu 论文中 bwtree 索引示意图"><span class="image-caption">cmu 论文中 bwtree 索引示意图</span></p>
 <p>Delta record 是 Bw-tree 中很重要的一个数据结构。主要有两种类型，一种是针对<strong>叶子节点</strong>（Leaf Node）的 kv 增量修改；一种是针对<strong>中间节点</strong>（Inner Node）的树结构修改。Delta record 中有几个比较重要的字段：low Key，high Key 和 side pointer。</p>
 <p>我们不妨站在设计者的角度考虑一下，delta record  应该包含哪些信息？简单罗列下：</p>
 <ol>
@@ -326,12 +400,12 @@
 <li>包含一些冗余信息（low key，high key），使之对查找进行优化。</li>
 <li>包含一些指向（借鉴 B-link 的 side pointer），使之能够在树结构调整时不影响并发的扫描。</li>
 </ol>
-<p><img src="https://i.loli.net/2021/10/17/aWj2nDw3hCxSoA7.png" alt="bwtree 逻辑节点"></p>
+<p><img data-src="https://i.loli.net/2021/10/17/aWj2nDw3hCxSoA7.png" alt="bwtree 逻辑节点"><span class="image-caption">bwtree 逻辑节点</span></p>
 <p>下面来通过一些典型的场景来串一下上述设计。常见的场景有两个，一是只针对单个节点的修改（追加包含 kv 的 delta record），一般是针对叶子节点；一是针对树结构的大范围修改，一般是由于新增或者删除太多引发的子树的分裂与合并，叶子节点和中间点都会涉及。</p>
 <h3 id="单节点操作">单节点操作</h3>
 <p>对于单个节点的操作主要包含更新（插入、删除、更改），查询（点查，范围查）和合并（<strong>consolidation</strong>）。其中，更新操作都是通过引入增量记录来完成，<strong>点查</strong>会从头开始遍历增量链直到基础节点，<strong>范围查</strong>会提前准备好节点对应的 kv vector，<strong>合并</strong>本质上是节点内的 compact。</p>
 <p>单个节点改变一般只发生在叶子节点上，其类型都是对于单条记录（一个 kv）的修改操作引起的，包括：插入、删除、更改。Bw-tree 将这些修改做成一条 delta record，追加到节点内的修改链上，之后修改映射表中的链表头指向，完成修改。</p>
-<p><img src="https://i.loli.net/2021/10/17/BFMUbKdoL2EyRwZ.png" alt="bwtree 单节点操作"></p>
+<p><img data-src="https://i.loli.net/2021/10/17/BFMUbKdoL2EyRwZ.png" alt="bwtree 单节点操作"><span class="image-caption">bwtree 单节点操作</span></p>
 <p>如上图 a，<strong>增量修改</strong> Page P 时，其步骤如下：</p>
 <ol>
 <li>在内存中新申请一个增量记录（图中 △D）。</li>
@@ -356,7 +430,7 @@
 <p>此外，不同于叶子节点的 kv 修改增量，中间节点的修改增量是一些特殊增量，下面会详细介绍。</p>
 <p>树结构调整包括节点分裂（node split）和合并（node merge）。</p>
 <p><strong>节点分裂。</strong></p>
-<p><img src="https://i.loli.net/2021/10/17/1uyLlpMUFvBg395.png" alt="bwtree 节点分裂过程"><img src="bwtree%202680f294d92b468ca412d253f01f3fd7/Untitled%203.png" alt="Untitled"></p>
+<p><img data-src="https://i.loli.net/2021/10/17/1uyLlpMUFvBg395.png" alt="bwtree 节点分裂过程"><span class="image-caption">bwtree 节点分裂过程</span><img data-src="bwtree%202680f294d92b468ca412d253f01f3fd7/Untitled%203.png" alt="Untitled"><span class="image-caption">Untitled</span></p>
 <p>如上图，<strong>分裂 Page P</strong>，分为两个阶段：child split（对应上图 a、b），parent Update（对应上图 c），每个阶段使用一个 CAS 操作将<strong>修改对外可见</strong>：</p>
 <ol>
 <li>创建 Page Q 。容纳 Page P 的右半部分 kv 值，并将其 side pointer 逻辑指向 Page P 右兄弟 Page R。此时，Page Q 对外不可见，即通过 Bw-tree 根节点不可达。</li>
@@ -370,7 +444,7 @@
 <li>更新完 Mapping Table 中的记录后，图中的虚线指针就随之改变了指向。</li>
 </ol>
 <p><strong>节点合并</strong>。</p>
-<p><img src="https://i.loli.net/2021/10/17/57G68sOEnF1p4if.png" alt="bwtree 节点合并过程"></p>
+<p><img data-src="https://i.loli.net/2021/10/17/57G68sOEnF1p4if.png" alt="bwtree 节点合并过程"><span class="image-caption">bwtree 节点合并过程</span></p>
 <p>如上图，将 Page R 合并到 Page L ，分为三个阶段，每个阶段包含一个 CAS 操作：</p>
 <ol>
 <li><strong>标记删除</strong>（Marking for Delete）：引入<strong>移除节点增量</strong>（Remove Node Delta），追加到 Page R ，然后通过 CAS 操作更新映射表中的 Page R 对应值，将 Page R 标记删除。但此时，Page R 仍然可以通过 Page L 的 side pointer 访问到，即移除节点增量只屏蔽了来自父节点的访问。</li>
@@ -392,7 +466,7 @@
 <li>所有线程遇到冲突的 SMO 时，不管是否属于本线程操作，都先去完成 SMO，这样总有一个线程完成 SMO 并得以继续，其他线程则直接放弃。</li>
 </ol>
 <h2 id="缓存管理（Cache-Management）">缓存管理（Cache Management）</h2>
-<p><img src="https://i.loli.net/2021/10/17/Q3uw57fJHKDyROj.png" alt="bwtree 映射表"></p>
+<p><img data-src="https://i.loli.net/2021/10/17/Q3uw57fJHKDyROj.png" alt="bwtree 映射表"><span class="image-caption">bwtree 映射表</span></p>
 <h3 id="主要功能">主要功能</h3>
 <p>缓存层主要功能有：</p>
 <ol>
@@ -407,7 +481,7 @@
 </ol>
 <h3 id="增量下刷">增量下刷</h3>
 <p>引起缓存中的页下刷的原因有很多种，比如上层事务要求做检查点，比如内存使用达到阈值需要换出。之前提到，一个逻辑页包含一个基础页和一个增量链，并且增量链在阈值范围内还会不断延长，因此对一个逻辑页的下刷不是一次性完成的，也是增量进行的。为此 Bw-tree 又引入了一种特殊的<strong>下刷增量</strong>（flush delta），记录下刷点，并添加到逻辑页中。这样如果有修改，在下次下刷时，只需要下刷增连链之后的增量记录即可。</p>
-<p><img src="https://i.loli.net/2021/10/17/cbjLdiZqefr9TJ1.png" alt="bwtree 存储结构和增量下刷"></p>
+<p><img data-src="https://i.loli.net/2021/10/17/cbjLdiZqefr9TJ1.png" alt="bwtree 存储结构和增量下刷"><span class="image-caption">bwtree 存储结构和增量下刷</span></p>
 <h2 id="闪存层（Log-Structured-Store，LSS）">闪存层（Log-Structured Store，LSS）</h2>
 <p>闪存层和内存对应，都是增量刷盘，单个逻辑 page 的数据并不相连，page 内通过文件系统地址串起来。</p>
 <p>会使用<strong>重写</strong>的方式进行垃圾回收，回收时可以将逻辑页的多个部分挪到一块，以减小之后的读放大。</p>
@@ -452,13 +526,10 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
@@ -467,7 +538,10 @@
       <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
     </li>
   </ul>
 
@@ -479,7 +553,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -572,10 +646,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -678,7 +752,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -719,6 +793,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

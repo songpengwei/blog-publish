@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="概述 Golang 中 slice 极似其他语言中数组，但又有诸多不同，因此容易使初学者产生一些误解，并在使用时不易察觉地掉进各种坑中。本篇小文，首先从 Go 语言官方博客出发，铺陈官方给出的 slice 的相关语法；其次以图示的方式给出一种理解 slice 的模型；最后再总结分析一些特殊的使用情况，以期在多个角度对 slice 都有个更清晰侧写。 如不愿看繁琐叙述过程，可直接跳到最后小结看总结。">
@@ -36,9 +38,9 @@
 <meta property="og:image" content="https://i.loli.net/2021/01/20/OIygENcWpd8S6ZB.png">
 <meta property="article:published_time" content="2021-01-09T06:51:46.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:17:51.639Z">
-<meta property="article:author" content="木鸟杂记">
-<meta property="article:tag" content="go">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="golang">
+<meta property="article:tag" content="go">
 <meta property="article:tag" content="slice">
 <meta property="article:tag" content="golang 编程范式">
 <meta name="twitter:card" content="summary">
@@ -56,6 +58,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="golang,go,slice,golang 编程范式">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Golang 笔记（三）：一种理解 Slice 的模型",
+    "description": "概述 Golang 中 slice 极似其他语言中数组，但又有诸多不同，因此容易使初学者产生一些误解，并在使用时不易察觉地掉进各种坑中。本篇小文，首先从 Go 语言官方博客出发，铺陈官方给出的 slice 的相关语法；其次以图示的方式给出一种理解 slice 的模型；最后再总结分析一些特殊的使用情况，以期在多个角度对 slice 都有个更清晰侧写。 如不愿看繁琐叙述过程，可直接跳到最后小结看总结。",
+    "url": "https://www.qtmuniao.com/2021/01/09/go-slice/",
+    "datePublished": "2021-01-09T14:51:46+08:00",
+    "dateModified": "2024-03-04T09:17:51+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2021/01/09/go-slice/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>Golang 笔记（三）：一种理解 Slice 的模型 | 木鸟杂记</title>
   
@@ -129,7 +203,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -217,8 +291,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -280,7 +354,7 @@
         <h2 id="概述">概述</h2>
 <p>Golang 中 slice 极似其他语言中数组，但又有诸多不同，因此容易使初学者产生一些误解，并在使用时不易察觉地掉进各种坑中。本篇小文，首先从 Go 语言官方博客出发，铺陈官方给出的 slice 的相关语法；其次以图示的方式给出一种理解 slice 的模型；最后再总结分析一些特殊的使用情况，以期在多个角度对 slice 都有个更清晰侧写。</p>
 <p>如不愿看繁琐叙述过程，可直接跳到最后小结看总结。</p>
-<p><img src="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png" alt="go-slice-view-derive.png"></p>
+<p><img data-src="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png" alt="go-slice-view-derive.png"><span class="image-caption">go-slice-view-derive.png</span></p>
 <span id="more"></span>
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2021/01/09/go-slice/">https://www.qtmuniao.com/2021/01/09/go-slice/</a>, 转载请注明出处</em></p>
 <h2 id="基本语法">基本语法</h2>
@@ -325,7 +399,7 @@
 <p>初用切片时，常常感觉其规则庞杂，难以尽记；于是我常想有没有什么合适的模型来刻画切片的本质。</p>
 <p>某天突然冒出个不成熟的想法：切片是隐藏了底层数组的一种线性<strong>读写视图</strong>。切片这种视图规避了 C/C++ 语言中常见的指针运算操作，因为用户可以通过切片派生来免于算偏移量。</p>
 <p>切片仅用 <code>ptr/cap/len</code> 三个变量来刻画一个窗口视图，其中 <code>ptr</code> 和 <code>ptr+cap</code> 是窗口的起止界限，<code>len</code> 是当前窗口可见长度。可以通过下标来切出一个新的视图，Go 会自动计算新的 ptr/len/cap ，所有通过切片表达式派生的视图都指向同一个底层数组。</p>
-<p><img src="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png" alt="go slice 视图"></p>
+<p><img data-src="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png" alt="go slice 视图"><span class="image-caption">go slice 视图</span></p>
 <p>切片派生会<strong>自动</strong>共享底层数组，以避免数组拷贝，提升效率；追加元素时，如果底层数组容量不够，<code>append</code> 会<strong>自动</strong>创建新数组并返回指向新数组的切片视图，而原来切片视图仍然指向原数组。</p>
 <h2 id="切片使用">切片使用</h2>
 <p>本小节将汇总一些 slice 使用时的一些有意思的点。</p>
@@ -339,7 +413,7 @@
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  a := [<span class="number">7</span>]<span class="type">int</span>&#123;<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>&#125;</span><br><span class="line">  s := a[:<span class="number">4</span>]</span><br><span class="line">  fmt.Println(s) <span class="comment">// [1 2 3 0]</span></span><br><span class="line">  </span><br><span class="line">  a[<span class="number">3</span>] = <span class="number">4</span>       <span class="comment">// 修改 a，s 相应值也跟着变化，说明 s 的底层就是 a</span></span><br><span class="line">  fmt.Println(s) <span class="comment">// [1 2 3 4]</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p><strong>切片时修改视图右界</strong>。在上述提出的视图模型中，进行切片操作时，新生成的切片<strong>左界</strong>限会随着 start 参数而变化，但是<strong>右界</strong>一直未变，即为底层数组结尾。如果我们想修改其右界，可以通过三参数切片（Full slice Expression），增加一个 limited-capacity 参数。</p>
 <p>该特性的一个使用场景是，如果我们想让新的 slice 在 append 时不影响原数组，就可以通过修改其右界，在 append 时发现 cap 不够强制生成一个新的底层数组。</p>
-<p><img src="https://i.loli.net/2021/01/20/OIygENcWpd8S6ZB.png" alt="go-full-slice-view-derive.png"></p>
+<p><img data-src="https://i.loli.net/2021/01/20/OIygENcWpd8S6ZB.png" alt="go-full-slice-view-derive.png"><span class="image-caption">go-full-slice-view-derive.png</span></p>
 <h2 id="小结">小结</h2>
 <p>本文核心目的在于提出一个易于记忆和理解 slice 模型，以拆解 slice 使用时千变万化的复杂度。总结一下，我们在理解 slice 时，可以从两个层面来入手：</p>
 <ol>
@@ -384,19 +458,19 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/12/07/bazel-build-golang/" rel="bookmark">Bazel 构建 Golang 项目</a></div>
+    </li>
+    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/01/06/go-value-pointer-method/" rel="bookmark">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/12/07/bazel-build-golang/" rel="bookmark">Bazel 构建 Golang 项目</a></div>
+      <div class="popular-posts-title"><a href="/2020/07/12/go-context/" rel="bookmark">Golang 笔记（二）：Context 源码剖析</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/12/14/bolt-index-design/" rel="bookmark">Boltdb 源码导读（二）：Boltdb 索引设计</a></div>
-    </li>
-    <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/07/12/go-context/" rel="bookmark">Golang 笔记（二）：Context 源码剖析</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2021/04/02/bolt-transaction/" rel="bookmark">Boltdb 源码导读（三）：Boltdb 事务实现</a></div>
@@ -411,7 +485,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -421,8 +495,8 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/go/" rel="tag"># go</a>
               <a href="/tags/golang/" rel="tag"># golang</a>
+              <a href="/tags/go/" rel="tag"># go</a>
               <a href="/tags/slice/" rel="tag"># slice</a>
               <a href="/tags/golang-%E7%BC%96%E7%A8%8B%E8%8C%83%E5%BC%8F/" rel="tag"># golang 编程范式</a>
           </div>
@@ -505,10 +579,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -611,7 +685,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -652,6 +726,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

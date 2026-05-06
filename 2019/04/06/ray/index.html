@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="导读 继 Spark 之后，UC Berkeley AMP 实验室又推出一重磅高性能AI计算引擎——Ray，号称支持每秒数百万次任务调度。那么它是怎么做到的呢？在试用之后，简单总结一下：  极简 Python API 接口：在函数或者类定义时加上  ray.remote  的装饰器并做一些微小改变，就能将单机代码变为分布式代码。这意味着不仅可以远程执行纯函数，还可以远程注册一个类（Actor模型）">
@@ -39,7 +41,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/02/09/hqzG1DUIvf2i4LV.png">
 <meta property="article:published_time" content="2019-04-06T07:10:10.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:15:22.995Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="distributed system">
 <meta property="article:tag" content="分布式系统">
 <meta property="article:tag" content="Ray">
@@ -59,6 +61,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="distributed system,分布式系统,Ray,AI引擎">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray",
+    "description": "导读 继 Spark 之后，UC Berkeley AMP 实验室又推出一重磅高性能AI计算引擎——Ray，号称支持每秒数百万次任务调度。那么它是怎么做到的呢？在试用之后，简单总结一下： 极简 Python API 接口：在函数或者类定义时加上 ray.remote 的装饰器并做一些微小改变，就能将单机代码变为分布式代码。这意味着不仅可以远程执行纯函数，还可以远程注册一个类（Actor模型），在其中维护大量context（成员变量），并远程调用其成员方法来改变这些上下文。 高效数据存储和传输：每个节点上通过共享内存（多进程访问无需拷贝）维护了一块局部的对象存储，然后利用专门优化过的 Apache Arrow格式来进行不同节点间的数据交换。 动态图计算模型：这一点得益于前两点，将远程调用返回的 future 句柄传给其他的远程函数或者角色方法，即通过远程函数的嵌套调用构建复杂的计算拓扑，并基于对象存储的发布订阅模式来进行动态触发执行。 全局状态维护：将全局的控制状态（而非数据）利用 Redis 分片来维护，使得其他组件可以方便的进行平滑扩展和错误恢复。当然，每个 redis 分片通过 chain-replica 来避免单点。 两层调度架构：分本地调度器和全局调度器；任务请求首先被提交到本地调度器，本地调度器会尽量在本地执行任务，以减少网络开销。在资源约束、数据依赖或者负载状况不符合期望时，会转给全局调度器来进行全局调度。 当然，还有一些需要优化的地方，比如 Job 级别的封装（以进行多租户资源配给），待优化的垃圾回收算法（针对对象存储，现在只是粗暴的 LRU），多语言支持（最近支持了Java，但不知道好不好用）等等。但是瑕不掩瑜，其架构设计和实现思路还是有很多可以借鉴的地方。",
+    "url": "https://www.qtmuniao.com/2019/04/06/ray/",
+    "datePublished": "2019-04-06T15:10:10+08:00",
+    "dateModified": "2024-03-04T09:15:22+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2019/04/06/ray/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray | 木鸟杂记</title>
   
@@ -132,7 +206,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -220,8 +294,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -294,7 +368,7 @@
 <p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, 转载请注明出处</em></p>
 <h2 id="动机和需求">动机和需求</h2>
 <p>（<em>开发 Ray 的动机始于<strong>强化学习（RL）</strong>，但是由于其计算模型强大表达能力，使用绝不限于 RL。这一小节是以描述 RL 系统需求为契机，引出 Ray 的初始设计方向。但是由于不大熟悉强化学习，一些名词可能表达翻译不准确。如果只对其架构感兴趣，完全可以跳过这一节</em>）</p>
-<p><img src="https://i.loli.net/2020/02/09/3WdenGAt7vhRkKL.png" alt="RL system example"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/3WdenGAt7vhRkKL.png" alt="RL system example"><span class="image-caption">RL system example</span></p>
 <p><em>图1：一个 RL 系统的例子</em></p>
 <p>我们从考虑 RL 系统的基本组件开始，逐渐完善 Ray 的需求。如<em>图1</em>所示，在一个 RL 系统的的设定中，*智能体（agent）<em>会反复与</em>环境（environment）<em>进行交互。智能体的目标是学习出一种最大化</em>奖励（reward）*的策略。*策略（policy）<em>本质上是从环境中状态到</em>行为抉择（action）*的一种映射。至于环境，智能体，状态，行为和奖励值的详细定义，则是由具体的应用所决定的。</p>
 <p>为了学习策略，智能体通常要进行两步操作：1）<em>策略评估（policy evaluation）<em>和 2）<em>策略优化（policy improvement）</em>。为了评估一个策略，智能体和环境持续进行交互（一般是仿真的环境）以产生</em>轨迹（trajectories）</em>。轨迹是在当前环境和给定策略下产生的一个二元组（状态，奖励值）序列。然后，智能体根据这些轨迹来反馈优化该策略，即，向最大化奖励值的梯度方向更新策略。<em>图2</em>展示了智能体用来学习策略一个例子的伪码。该伪码通过调用 <code>rollout(environment, policy)</code> 来评估策略，进而产生仿真轨迹。<code>train_policy()</code> 接着会用这些轨迹作为输入，调用 <code>policy.update(trajectories)</code> 来优化当前策略。会重复迭代这个过程直到策略收敛。</p>
@@ -378,7 +452,7 @@
 <p><em>图3：在 Ray 中实现图2逻辑的代码，注意装饰器  @ray.remote 会将被注解的方法或类声明为远程函数或者角色对象。调用远程函数或者角色方法后会立即返回一个 future 句柄，该句柄可以被传递给随后的远程函数或者角色方法，以此来表达数据间的依赖关系。每个角色对象包含一个环境对象  self.env ，这个环境状态为所有角色方法所共享。</em></p>
 <p>在不考虑角色对象的情况下，在一个计算图中有两种类型的点：数据对象（data objects）和远程函数调用（或者说任务）。同样，也有两种类型的边：数据边（data edges）和控制边（control edges）。数据边表达了数据对象任务间的依赖关系。更确切来说，如果数据对象 <em>D</em> 是任务 <em>T</em> 的输出，我们就会增加一条从 <em>T</em> 到 <em>D</em> 的边。类似的，如果 <em>D</em> 是 任务 <em>T</em> 的输入，我们就会增加一条 <em>D</em> 到 <em>T</em> 的边。控制边表达了由于远程函数嵌套调用所造成的计算依赖关系，即，如果任务 <em>T1</em> 调用任务 <em>T2</em>， 我们就会增加一条 <em>T1</em> 到 <em>T2</em> 的控制边。</p>
 <p>在计算图中，角色方法调用也被表示成了节点。除了一个关键不同点外，他们和任务调用间的依赖关系基本一样。为了表达同一个角色对象上的连续方法调用所形成的状态依赖关系，我们向计算图添加第三种类型的边：在同一个角色对象上，如果角色方法 <em>Mj</em> 紧接着 <em>Mi</em> 被调用，我们就会添加一条 <em>Mi</em> 到 <em>Mj</em> 的状态边（<em>即 Mi 调用后会改变角色对象中的某些状态，或者说成员变量；然后这些变化后的成员变量会作为 Mj 调用的隐式输入；由此，Mi 到 Mj 间形成了某种隐式依赖关系</em>）。这样一来，作用在同一角色对象上的所有方法调用会形成一条由状态边串起来的调用链（chain，见<em>图4</em>）。这条调用链表达了同一角色对象上方法被调用的前后相继的依赖关系。</p>
-<p><img src="https://i.loli.net/2020/02/09/EKbF13u4v5hOZra.png" alt="task graph"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/EKbF13u4v5hOZra.png" alt="task graph"><span class="image-caption">task graph</span></p>
 <p><em>图4</em>：<em>该图与图3 <code>train_policy.remote()</code> 调用相对应。远程函数调用和角色方法调用对应图中的任务（tasks）。该图中显示了两个角色对象A10和A20，每个角色对象的方法调用（被标记为 A1i 和 A2i 的两个任务）之间都有状态边（stateful edge）连接，表示这些调用间共享可变的角色状态。从 <code>train_policy</code> 到被其调用的任务间有控制边连接。为了并行地训练多种策略，我们可以调用 <code>train_policy.remote()</code> 多次</em>。</p>
 <p>状态边让我们将角色对象嵌入到无状态的任务图中，因为他们表达出了共享状态、前后相继的两个角色方法调用之间的隐式数据依赖关系。状态边的添加还可以让我们维护谱系图（lineage），如其他数据流系统一样，我们也会跟踪数据的谱系关系以在必要的时候进行数据的重建。通过显式的将状态边引入数据谱系图中，我们可以方便的对数据进行重建，不管这些数据是远程函数产生的还是角色方法产生的（小节4.2.3中会详细讲）。</p>
 <h2 id="架构">架构</h2>
@@ -387,7 +461,7 @@
 <li>实现 API 的应用层，现在包括 Python 和 Java分别实现的版本。</li>
 <li>提供高扩展性和容错的系统层，用 C++ 写的，以CPython的形式嵌入包中。</li>
 </ol>
-<p><img src="https://i.loli.net/2020/02/09/4Hkz5GqyQutLJRV.png" alt="ray architecture"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/4Hkz5GqyQutLJRV.png" alt="ray architecture"><span class="image-caption">ray architecture</span></p>
 <p><em>图5：Ray 的架构包括两部分：系统层和应用层。前者实现了API和计算模型，后者实现了任务调度和数据管理，以满足性能要求和容错需求</em></p>
 <h3 id="应用层">应用层</h3>
 <p>应用层包括三种类型的进程：</p>
@@ -406,7 +480,7 @@
 <h4 id="自下而上的分布式调度系统-Bottom-up-Distributed-Scheduler">自下而上的分布式调度系统(Bottom-up Distributed Scheduler)</h4>
 <p>如前面提到的，Ray 需要支持每秒数百万次任务调度，这些任务可能只持续短短数毫秒。大部分已知的调度策略都不满足这些需求。常见的集群计算框架，如 <span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9zeXN0ZW0vZmlsZXMvY29uZmVyZW5jZS9uc2RpMTIvbnNkaTEyLWZpbmFsMTM4LnBkZg==">Spark<i class="fa fa-external-link-alt"></i></span>， <span class="exturl" data-url="aHR0cDovL3d3dy5jcy5wcmluY2V0b24uZWR1L2NvdXJzZXMvYXJjaGl2ZS9mYWxsMTMvY29zNTE4L3BhcGVycy9jaWVsLnBkZg==">CIEL<i class="fa fa-external-link-alt"></i></span>， <span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9sZWdhY3kvZXZlbnQvb3NkaTA4L3RlY2gvZnVsbF9wYXBlcnMveXVfeS95dV95LnBkZg==">Dryad<i class="fa fa-external-link-alt"></i></span> 都实现了一个中心的调度器。这些调度器具有很好的局部性（局部性原理）的特点，但是往往会有数十毫秒的延迟。像 <span class="exturl" data-url="aHR0cDovL3N1cGVydGVjaC5jc2FpbC5taXQuZWR1L3BhcGVycy9zdGVhbC5wZGY=">work stealing<i class="fa fa-external-link-alt"></i></span>，<span class="exturl" data-url="aHR0cHM6Ly9jcy5zdGFuZm9yZC5lZHUvfm1hdGVpL3BhcGVycy8yMDEzL3Nvc3Bfc3BhcnJvdy5wZGY=">Sparrow<i class="fa fa-external-link-alt"></i></span> 和 <span class="exturl" data-url="aHR0cHM6Ly9oY2kuc3RhbmZvcmQuZWR1L2NzdHIvcmVwb3J0cy8yMDE2LTAxLnBkZg==">Canary<i class="fa fa-external-link-alt"></i></span> 一样的的分布式调度器的确能做到高并发，但是往往不考虑数据的局部性特点，或者假设任务(tasks)属于不同的作业(job)，或者假设计算拓扑是提前知道的。</p>
 <p>为了满足上述需求，我们设计了一个两层调度架构，包括一个<em>全局调度器（global scheduler）<em>和每个节点上的</em>本地调度器（local scheduler）</em>。为了避免全局调度器过载，每个节点(node）上创建的任务会被先提交到本地调度器。本地调度器总是先尝试将任务在本地执行，除非其所在机器过载(比如任务队列超过了预定义的阈值)或者不能满足任务任务的资源需求(比如，缺少 GPU)。如果本地调度器发现不能在本地执行某个任务，会将其转发给全局调度器。由于调度系统都倾向于首先在本地调度任务（即在调度结构层级中的叶子节点），我们将其称为自下而上的调度系统（可以看出，本地调度器只是根据本节点的局部负载信息进行调度，而全局调度器会根据全局负载来分派任务；当然前提是资源约束首先得被满足）。</p>
-<p><img src="https://i.loli.net/2020/02/09/cFVRq9BxZgpOhyi.png" alt="ray distributed scheduler"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/cFVRq9BxZgpOhyi.png" alt="ray distributed scheduler"><span class="image-caption">ray distributed scheduler</span></p>
 <p><em>图6 这是调度系统示意图，任务自下而上被提交：任务首先被驱动进程（Drivers）或者工作进程(Workers)提交到本地调度器，然后在需要的时候会由本地调度器转给全局调度器进行处理。图中箭头的粗细程度代表其请求的繁忙程度。</em></p>
 <p>全局调度器根据每个节点的负载状况和资源请求约束来决定调度策略。细化一下就是，全局调度器首先确定所有满足任务资源要求的节点，然后在其中选择具有最小<em>预估排队时间</em>(estimated waiting time)的一个，将任务调度过去。在给定的节点上，<em>预估排队时间</em>是下述两项时间的和：1）任务在节点上的排队时间 (任务队列长度乘上平均执行时间)； 2）任务依赖的远程对象的预估传输时间(所有远程输入的大小除以平均带宽)。全局调度器通过心跳获取到每个节点的任务排队情况和可用资源信息，从 GCS 中得到任务所有输入的位置和大小。然后，全局调度器通过<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU3JUE3JUJCJUU1JThCJTk1JUU1JUI5JUIzJUU1JTlEJTg3">移动指数平均<i class="fa fa-external-link-alt"></i></span>(exponential averaging)的方法来计算任务平均执行时间和平均传输带宽。如果全局调度器成为了系统瓶颈，我们可以实例化更多的副本来分摊流量，它们通过 GCS来共享全局状态信息。如此一来，我们的调度架构具有极高可扩展性。</p>
 <h5 id="任务生命周期">任务生命周期</h5>
@@ -432,9 +506,9 @@
 <h3 id="将所有碎片捏一块">将所有碎片捏一块</h3>
 <p><em>图 7</em> 通过一个简单的 <code>a</code> 加 <code>b</code> （<code>a，b</code>可以是标量，向量或者矩阵）然后返回 <code>c</code> 的例子展示了 Ray 端到端的工作流。远程函数 <code>add()</code> 在初始化 ( <code>ray.init</code> ) 的时候，会自动地被注册到 GCS 中，进而分发到集群中的每个工作进程。（<em>图7a</em> 的第零步）</p>
 <p><em>图7a</em> 展示了当一个驱动进程（driver）调用 <code>add.remote(a, b)</code> ，并且 <code>a, b</code> 分别存在节点 <em>N1</em> 和 <em>N2</em> 上时 ，Ray 的每一步操作。驱动进程将任务 <code>add(a, b)</code> 提交到本地调度器（步骤1），然后该任务请求被转到全局调度器（步骤2）（<strong>如前所述，如果本地任务排队队列没有超过设定阈值，该任务也可以在本地进行执行</strong>）。接着，全局调度器开始在 GCS  中查找 <code>add(a, b)</code> 请求中参数 <code>a, b</code> 的位置（步骤3），从而决定将该任务调度到节点 <em>N2</em> 上（因为 <em>N2</em> 上有其中一个参数 <code>b</code>）（步骤4）。<em>N2</em> 节点上的本地调度器收到请求后（<em>发现满足本地调度策略的条件，如满足资源约束，排队队列也没超过阈值，就会在本地开始执行该任务</em>），会检查本地对象存储中是否存在任务  <code>add(a, b)</code> 的所有输入参数（步骤5）。由于本地对象存储中没有对象 <code>a</code>，工作进程会在 GCS 中查找 <code>a</code> 的位置（步骤6）。 这时候发现 <code>a</code> 存储在 <em>N1</em> 中，于是将其同步到本地的对象存储中（步骤7）。由于任务 <code>add()</code> 所有的输入参数对象都存在了本地存储中，本地调度器将在本地工作进程中执行 <code>add()</code> （步骤8），并通过共享存储访问输入参数（步骤9）。</p>
-<p><img src="https://i.loli.net/2020/02/09/Fq6Vwvf1Thg5Ayc.png" alt="ray execute example"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/Fq6Vwvf1Thg5Ayc.png" alt="ray execute example"><span class="image-caption">ray execute example</span></p>
 <p>图 7b 展现了在 <em>N1</em> 上执行 <code>ray.get()</code>  和在 <em>N2</em> 上执行 <code>add()</code>后所触发的逐步的操作。一旦 <code>ray.get(id)</code>被调用，<em>N1</em> 上的用户驱动进程会在本地对象存储中查看该 id （<em>即由远程调用 <code>add()</code> 返回的 future 值，所有 object id 是全局唯一的，GCS 可以保证这一点</em>）对应的对象 <code>c</code> 是否存在（步骤1）。由于本地对象存储中没有 <code>c</code> , 驱动进程会去 GCS 中查找 <code>c</code> 的位置。在此时，发现 GCS 中并没有 c 的存在，因为 c 根本还没有被创建出来。 于是，<em>N1</em> 的对象存储向 GCS 中的对象表（Object Table）注册了一个回调函数，以监听 <code>c</code> 对象被创建事件（步骤2）。与此同时，在节点 <em>N2</em> 上，add() 任务执行完毕，将结果 <code>c</code> 存到其本地对象存储中（步骤3），同时也将 <code>c </code> 的位置信息添加到 GCS 的对象存储表中（步骤4）。GCS 监测到 <code>c</code> 的创建，会去触发之前 <em>N1</em> 的对象存储注册的回调函数（步骤5）。接下来，<em>N1</em> 的对象存储将 <code>c</code> 从 <em>N2</em> 中同步过去（步骤6），从而结束该任务。</p>
-<p><img src="https://i.loli.net/2020/02/09/hqzG1DUIvf2i4LV.png" alt="ray execute example b"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/hqzG1DUIvf2i4LV.png" alt="ray execute example b"><span class="image-caption">ray execute example b</span></p>
 <p>尽管这个例子中涉及了大量的 RPC调用，但对于大部分情况来说，RPC 的数量会小的多，因为大部分任务会在本地被调度执行，而且 GCS 回复的对象信息会被本地调度器和全局调度器缓存（但是另一方面，执行了大量远程任务之后，本地对象存储很容易被撑爆）。</p>
 <h2 id="名词对照">名词对照</h2>
 <p><strong>workloads</strong>：工作负载，即描述任务需要做的工作。</p>
@@ -485,13 +559,10 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
@@ -500,7 +571,10 @@
       <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
     </li>
   </ul>
 
@@ -512,7 +586,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -606,10 +680,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -712,7 +786,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -753,6 +827,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第四节课笔记，VM-FT。 备份——">
@@ -36,7 +38,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/04/03/wHOcrpf9s1LZQqM.png">
 <meta property="article:published_time" content="2020-04-01T15:20:25.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:16:21.784Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="分布式系统">
 <meta property="article:tag" content="6.824">
 <meta property="article:tag" content="笔记">
@@ -55,6 +57,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="分布式系统,6.824,笔记">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "MIT 6.824 2020 视频笔记四：VM-FT",
+    "description": "MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: Youtube，B站。课程资料：6.824主页。本篇是第四节课笔记，VM-FT。 备份——容错 失败（Failue） 如何定义？在其他电脑看来，停止对外提供服务。 通过备份/副本（Replication） 可以解决：宕机（fail-stop），比如 CPU 过热而关闭、主机或者网络断电、硬盘空间耗尽等问题。 不能解决：一些相关联（correlated，主副本机器会同时存在）的问题，比如软件 Bug、人为配置问题 前提 主从备份可以工作的一个假设是，主从机器的出错概率需要时独立的。 比如说：同一批次机器、同一个机架上的机器，出错概率就存在强正相关特性。 是否值当 需要对业务场景和所需费用考量，是否真的需要进行 Replica。比如银行数据就需要多备份，而课程网站可能并不需要。",
+    "url": "https://www.qtmuniao.com/2020/04/01/6-824-video-notes-4-vm-ft/",
+    "datePublished": "2020-04-01T23:20:25+08:00",
+    "dateModified": "2024-03-04T09:16:21+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2020/04/01/6-824-video-notes-4-vm-ft/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>MIT 6.824 2020 视频笔记四：VM-FT | 木鸟杂记</title>
   
@@ -128,7 +202,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -216,8 +290,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -276,7 +350,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
+        <p><img data-src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"><span class="image-caption">6.824-schedule.png</span></p>
 <p>MIT 今年终于主动在 Youtube 上放出了随堂视频资料，之前跟过一半这门课，今年打算刷一下视频，写写随堂笔记。该课程以分布式基础理论：容错、备份、一致性为脉络，以精选的工业级系统论文为主线，再填充上翔实的阅读材料和精到的课程实验，贯通学术理论和工业实践，实在是一门不可多得的分布式系统佳课。课程视频: <span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vY2hhbm5lbC9VQ183V3JiWlRDT0R1MW9fa2ZVTXE4OGcvdmlkZW9z">Youtube<i class="fa fa-external-link-alt"></i></span>，<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL2F2OTA5MTU1MjY=">B站<i class="fa fa-external-link-alt"></i></span>。课程资料：<span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvc2NoZWR1bGUuaHRtbA==">6.824主页<i class="fa fa-external-link-alt"></i></span>。本篇是第四节课笔记，VM-FT。</p>
 <h2 id="备份——容错">备份——容错</h2>
 <h3 id="失败（Failue）">失败（Failue）</h3>
@@ -308,7 +382,7 @@
 这正是之前强调的需要依赖指令的确定性的意义所在。当然，也可以在遇到这种命令时，让 Backup 去直接接受 Primary 的执行结果。</li>
 </ol>
 <p>此外，Replicated State Machine 需要机器为单核，因为在多核机器上，指令的执行顺序本身是不确定的。那对于多核机器如何做同步？State Transfer 。</p>
-<p><img src="https://i.loli.net/2020/04/03/ANYB2XQPEKbzoOj.png" alt="pb-ft-configuration.png"></p>
+<p><img data-src="https://i.loli.net/2020/04/03/ANYB2XQPEKbzoOj.png" alt="pb-ft-configuration.png"><span class="image-caption">pb-ft-configuration.png</span></p>
 <h3 id="挑战">挑战</h3>
 <ol>
 <li>需要同步什么状态？</li>
@@ -351,7 +425,7 @@
 <h3 id="OutPut-rule">OutPut rule</h3>
 <p>当 Primary 宕机时，其发送给 Backup 的最后一条指令也由于网络问题丢失了。当 Backup 接手时，如何处理该条指令丢失造成的不一致？<br>
 使用 Output Rule 保证。即 Primary 仅当在收到 Backup 该条指令的 ACK 时，才会将该指令结果发送给用户。当然，为缩短响应延迟，在 Backup 上，VMM 只需要将收到的指令缓存到 Buffer 中就可以回 ACK。而且，Primary 只是会延迟将回复发送给用户，以等待 Backup 的 ACK，但在这段等待时间内并不用真停止执行，毕竟网络请求回复是异步的，Primary 可以并行的做其他事情。</p>
-<p><img src="https://i.loli.net/2020/04/03/wHOcrpf9s1LZQqM.png" alt="pb-ft-protocol.png"></p>
+<p><img data-src="https://i.loli.net/2020/04/03/wHOcrpf9s1LZQqM.png" alt="pb-ft-protocol.png"><span class="image-caption">pb-ft-protocol.png</span></p>
 <p>在 Primary 宕机后，Backup 接管时，可能会产生重复的结果。但是由于P/B 共用 TCP channel，SEQ 也会被重用，会在 Client 端作为重复TCP 帧被忽略，从而不会暴露到用户层面。</p>
 <h3 id="吞吐">吞吐</h3>
 <p>如果 Primary 和 Backup 不在一个城市，每次通信都需要几ms，那么久很难构建高吞吐系统。</p>
@@ -387,22 +461,22 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/02/29/6-824-video-notes-1/" rel="bookmark">MIT 6.824 2020 视频笔记一：绪论</a></div>
+      <div class="popular-posts-title"><a href="/2020/03/06/6-824-video-notes-2/" rel="bookmark">MIT 6.824 2020 视频笔记二：RPC和线程</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/03/14/6-824-vidoe-notes-3-gfs/" rel="bookmark">MIT 6.824 2020 视频笔记三：GFS</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="bookmark">MIT 6.824 2020 视频笔记五：Go Concurrency</a></div>
+      <div class="popular-posts-title"><a href="/2020/02/29/6-824-video-notes-1/" rel="bookmark">MIT 6.824 2020 视频笔记一：绪论</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2020/03/06/6-824-video-notes-2/" rel="bookmark">MIT 6.824 2020 视频笔记二：RPC和线程</a></div>
+      <div class="popular-posts-title"><a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="bookmark">MIT 6.824 2020 视频笔记五：Go Concurrency</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/05/09/6-824-video-notes-6-fault-tolerate-raft-1/" rel="bookmark">MIT 6.824 2020 视频笔记六：Fault Tolerate Raft 1</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
   </ul>
 
@@ -414,7 +488,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -507,10 +581,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -613,7 +687,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -654,6 +728,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

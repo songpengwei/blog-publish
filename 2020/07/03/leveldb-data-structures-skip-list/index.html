@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="早对 LevelDB 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和  Jeff Dean 呢。 看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路，从架构概览说起，以模块分析做合。">
@@ -35,7 +37,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/07/07/N3iSsOqDBvdRCfg.png">
 <meta property="article:published_time" content="2020-07-03T15:21:23.000Z">
 <meta property="article:modified_time" content="2024-03-17T01:54:00.304Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="存储">
 <meta property="article:tag" content="leveldb">
 <meta property="article:tag" content="skiplist">
@@ -55,6 +57,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="存储,leveldb,skiplist,跳表">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "漫谈 LevelDB 数据结构（一）：跳表（Skip List）",
+    "description": "早对 LevelDB 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和 Jeff Dean 呢。 看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路，从架构概览说起，以模块分析做合。读代码的这些天，一直在盘算从哪下笔比较好。在将将读完之时，印象最深的反而是 LevelDB 的各种精妙的数据结构：贴合场景、从头构建、剪裁得当、代码精到。不妨， LevelDB 系列就从这些边边角角的小构件开始吧。 本系列主要想分享 LevelDB 中用到的三个工程中常用的经典数据结构，分别是用以快速读写 memtable 的 Skip List、用以快速筛选 sstable 的 Bloom Filter 和用以部分缓存 sstable 的 LRUCache 。这是第一篇，Skip List。 需求 LevelDB 是一个单机的 KV 存储引擎。KV 引擎在本质上可认为只提供对数据条目（key，val） Put(key, val), Get(key) val, Delete(key) 操作的三个接口。而在实现上，LevelDB 在收到删除请求时不会真正删除数据，而是为该 Key 写一个特殊标记，以备读取时发现该 Key 不存在，从而将 Delete 转为 Put ，进而将三个接口简化为两个。砍完这一刀后，剩下的就是在 Put 和 Get 间进行性能取舍，LevelDB 的选择是：牺牲部分 Get 性能，换取强悍 Put 性能，再极力优化 Get。 我们知道，在存储层次体系（Memory hierarchy）中，内存访问远快于磁盘，因此 LevelDB 为了达到目标做了以下设计： 写入（Put）：让所有写入都发生在内存中，然后达到一定尺寸后将其批量刷磁盘。 读取（Get）：随着时间推移，数据不断写入，内存中会有一小部分数据，磁盘中有剩余大部分数据。读取时，如果在内存中没命中，就需要去磁盘查找。 为了保证写入性能，同时优化读取性能，需要内存中的存储结构能够同时支持高效的插入和查找。 之前听说 LevelDB 时，最自然的想法，以为该内存结构（memtable）为是平衡树，比如红黑树、AVL 树等，可以保证插入和查找的时间复杂度都是 lg(n)，看源码才知道用了跳表。相比平衡树，跳表优势在于，在保证读写性能的同时，大大简化了实现。 此外，为了将数据定期 dump 到磁盘，还需要该数据结构支持高效的顺序遍历。总结一下 LevelDB 内存数据结构（memtable）需求点： 高效查找 高效插入 高效顺序遍历",
+    "url": "https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/",
+    "datePublished": "2020-07-03T23:21:23+08:00",
+    "dateModified": "2024-03-17T09:54:00+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>漫谈 LevelDB 数据结构（一）：跳表（Skip List） | 木鸟杂记</title>
   
@@ -128,7 +202,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -216,8 +290,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -316,7 +390,7 @@
 <p>利用 map 构造一个下标到节点的映射？这样虽然可以进行二分查询了，但是每次插入都会引起后面所有元素的下标变动，从而需要在 map 中进行 O(n) 的更新。</p>
 <p>增加指针使得从任何一个节点都能直接跳到其他节点？那得构造一个全连接图，指针耗费太多空间不说，每次插入指针的更新仍是 O(n) 的。</p>
 <p>跳表给出了一种思路，<strong>跳步采样，构建索引，逐层递减</strong>。下面利用论文中的一张图来详细解释下。</p>
-<p><img src="https://i.loli.net/2020/07/07/OeJRfVhHMEpxiNz.png" alt="skiplist-linked-lists-with-additional-pointers.png"></p>
+<p><img data-src="https://i.loli.net/2020/07/07/OeJRfVhHMEpxiNz.png" alt="skiplist-linked-lists-with-additional-pointers.png"><span class="image-caption">skiplist-linked-lists-with-additional-pointers.png</span></p>
 <p>如上图，初始我们有个带头结点的有序链表 a，其查找复杂度为 O(n)。然后，我们进行跳步采样，将采样出的节点按用指针依次串联上，得到表 b，此时的查找复杂度为 O(<em>n</em>/2 + 1)  <em>[注1]</em>。其后，我们在上次采样出的节点，再次进行跳步采样，并利用指针依次串联上，得到表 c，此时的查找复杂为 O(<em>n</em>/4 + 2)。此后，我们重复这个跳步采样、依次串联的过程，直到采样出的节点只剩一个，如图 e，此时的查找复杂度，可以看出为 O(log2n) <em>[注2]</em>。</p>
 <p>代价是我们增加了一堆指针，增加了多少呢？我们来逐次考虑这个问题。从图中可以看出，每次采样出多少节点，便会增加多少个指针；我们的采样策略是，每次在上一次的节点集中间隔采样，初始节点数为 n，最后采到只剩一个节点为止。将其加和则为：(n/2 + n/4 + … + 1) = n。这和一个节点为 n 的二叉树的指针数是相同的。</p>
 <p>这里我们回避了一个问题：该结构的插入时间复杂度是多少？这其实进一步了引出本质问题，我们该如何进行插入。</p>
@@ -368,7 +442,7 @@
 <p>该函数的含义为：在跳表中查找不小于给 Key 的第一个值，如果没有找到，则返回 nullptr。如果参数 <code>prev</code> 不为空，在查找过程中，记下待查找节点在各层中的前驱节点。显然，如果查找操作，则指定 <code>prev = nullptr</code> 即可；若要插入数据，则需传入一个合适尺寸的 <code>prev</code> 参数。</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">typename</span> SkipList&lt;Key, Comparator&gt;::Node*</span><br><span class="line">SkipList&lt;Key, Comparator&gt;::<span class="built_in">FindGreaterOrEqual</span>(<span class="type">const</span> Key&amp; key, Node** prev) <span class="type">const</span> &#123;</span><br><span class="line">  Node* x = head_;                <span class="comment">// 从头结点开始查找</span></span><br><span class="line">  <span class="type">int</span> level = <span class="built_in">GetMaxHeight</span>() - <span class="number">1</span>; <span class="comment">// 从最高层开始查找</span></span><br><span class="line">  <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">    Node* next = x-&gt;<span class="built_in">Next</span>(level);  <span class="comment">// 该层中下一个节点</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">KeyIsAfterNode</span>(key, next)) &#123;</span><br><span class="line">      x = next;                   <span class="comment">// 待查找 key 比 next 大，则在该层继续查找</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (prev != <span class="literal">nullptr</span>) prev[level] = x;</span><br><span class="line">      </span><br><span class="line">      <span class="keyword">if</span> (level == <span class="number">0</span>) &#123;           <span class="comment">// 待查找 key 不大于 next，则到底返回</span></span><br><span class="line">        <span class="keyword">return</span> next;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;                    <span class="comment">// 待查找 key 不大于 next，且没到底，则往下查找</span></span><br><span class="line">        level--;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>该过程借用论文中图示如下：</p>
-<p><img src="https://i.loli.net/2020/07/07/N3iSsOqDBvdRCfg.png" alt="skiplist-search-insert.png"></p>
+<p><img data-src="https://i.loli.net/2020/07/07/N3iSsOqDBvdRCfg.png" alt="skiplist-search-insert.png"><span class="image-caption">skiplist-search-insert.png</span></p>
 <h3 id="插入">插入</h3>
 <p>在 <code>FindGreaterOrEqual</code> 基础上，记下待插入节点的各层次前驱节点，比如上图中，调用 <code>FindGreaterOrEqual(17, prev)</code> 后 <code>prev = [12, 9, 6, 6]</code>。插入代码如下：</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="type">void</span> SkipList&lt;Key, Comparator&gt;::<span class="built_in">Insert</span>(<span class="type">const</span> Key&amp; key) &#123;</span><br><span class="line">  <span class="comment">// 待做(opt): 由于插入要求外部加锁，因此可以使用 NoBarrier_Next 的 FindGreaterOrEqual 以提高性能</span></span><br><span class="line">  Node* prev[kMaxHeight]; <span class="comment">// 长度设定简单粗暴，直接取最大值（kMaxHeight = 12）肯定没错。</span></span><br><span class="line">  Node* x = <span class="built_in">FindGreaterOrEqual</span>(key, prev);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// LevelDB 跳表要求不能插入重复数据</span></span><br><span class="line">  <span class="built_in">assert</span>(x == <span class="literal">nullptr</span> || !<span class="built_in">Equal</span>(key, x-&gt;key));</span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> height = <span class="built_in">RandomHeight</span>(); <span class="comment">// 随机获取一个 level 值</span></span><br><span class="line">  <span class="keyword">if</span> (height &gt; <span class="built_in">GetMaxHeight</span>()) &#123; <span class="comment">// GetMaxHeight() 为获取跳表当前层数</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="built_in">GetMaxHeight</span>(); i &lt; height; i++) &#123;</span><br><span class="line">      prev[i] = head_;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 此处不用为并发读加锁。因为并发读在（在另外线程中通过 FindGreaterOrEqual 中的 GetMaxHeight）</span></span><br><span class="line">    <span class="comment">// 读取到更新后跳表层数，但该节点尚未插入时也无妨。因为这意味着它会读到 nullptr，而在 LevelDB</span></span><br><span class="line">    <span class="comment">// 的 Comparator 设定中，nullptr 比所有 key 都大。因此，FindGreaterOrEqual 会继续往下找，</span></span><br><span class="line">    <span class="comment">// 符合预期。</span></span><br><span class="line">    max_height_.<span class="built_in">store</span>(height, std::memory_order_relaxed);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  x = <span class="built_in">NewNode</span>(key, height);</span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; height; i++) &#123;</span><br><span class="line">    <span class="comment">// 此句 NoBarrier_SetNext() 版本就够用了，因为后续 prev[i]-&gt;SetNext(i, x) 语句会进行强制同步。</span></span><br><span class="line">    <span class="comment">// 并且为了保证并发读的正确性，一定要先设置本节点指针，再设置原条表中节点（prev）指针</span></span><br><span class="line">    x-&gt;<span class="built_in">NoBarrier_SetNext</span>(i, prev[i]-&gt;<span class="built_in">NoBarrier_Next</span>(i));</span><br><span class="line">    prev[i]-&gt;<span class="built_in">SetNext</span>(i, x);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -435,13 +509,13 @@
       <div class="popular-posts-title"><a href="/2021/05/09/levedb-data-structures-lru-cache/" rel="bookmark">漫谈 LevelDB 数据结构（三）：LRU 缓存（ LRUCache）</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/03/19/wisckey/" rel="bookmark">WiscKey —— SSD 介质下的 LSM-Tree 优化</a></div>
@@ -456,7 +530,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -550,10 +624,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -656,7 +730,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -697,6 +771,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>

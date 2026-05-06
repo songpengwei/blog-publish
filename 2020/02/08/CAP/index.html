@@ -11,6 +11,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
   <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
   <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
   <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
 
@@ -21,7 +23,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="小引 曾经在一个面试中让谈谈对 CAP 的理解，当时凭着准备面试时谷歌到的N手资料，类似于小学生背书一样，生挤出只言片语。面试官无奈的笑笑，简练的概括出他想要听到的要点，听的我心下惭愧。面试自然是挂了，后来工作时偶尔接触到这个词汇，初不得要领，后通过不同资料的多侧面理解、印证，渐渐拼凑出了一个轮廓，在这里梳理下，将影子撵到纸上，以供日后索引。 面试官大约是这么概括的：在分布式系统中，失败必然的，">
@@ -35,10 +37,10 @@
 <meta property="og:image" content="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png">
 <meta property="article:published_time" content="2020-02-08T06:01:05.000Z">
 <meta property="article:modified_time" content="2024-03-04T01:15:58.927Z">
-<meta property="article:author" content="木鸟杂记">
+<meta property="article:author" content="木鸟 (qtmuniao)">
 <meta property="article:tag" content="分布式系统">
-<meta property="article:tag" content="CAP">
 <meta property="article:tag" content="CAP定理">
+<meta property="article:tag" content="CAP">
 <meta property="article:tag" content="一致性">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png">
@@ -55,6 +57,78 @@
     lang   : 'zh-CN'
   };
 </script>
+
+
+
+
+  <meta name="keywords" content="分布式系统,CAP定理,CAP,一致性">
+
+
+
+  <meta name="author" content="木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "分布式基础（一）：CAP 的理解",
+    "description": "小引 曾经在一个面试中让谈谈对 CAP 的理解，当时凭着准备面试时谷歌到的N手资料，类似于小学生背书一样，生挤出只言片语。面试官无奈的笑笑，简练的概括出他想要听到的要点，听的我心下惭愧。面试自然是挂了，后来工作时偶尔接触到这个词汇，初不得要领，后通过不同资料的多侧面理解、印证，渐渐拼凑出了一个轮廓，在这里梳理下，将影子撵到纸上，以供日后索引。 面试官大约是这么概括的：在分布式系统中，失败必然的，分区容错（P）是一定需要的，因此设计系统时需要在可用性（A）和一致性（C）间进行权衡。当时被教育印象很深，现在看来，这句概括是点出了小荷才露尖尖角的那个角。",
+    "url": "https://www.qtmuniao.com/2020/02/08/CAP/",
+    "datePublished": "2020-02-08T14:01:05+08:00",
+    "dateModified": "2024-03-04T09:15:58+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/2020/02/08/CAP/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
 
   <title>分布式基础（一）：CAP 的理解 | 木鸟杂记</title>
   
@@ -128,7 +202,7 @@
       <h1 class="site-title">木鸟杂记</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
-      <p class="site-subtitle" itemprop="description">分布式系统，数据库，存储</p>
+      <p class="site-subtitle" itemprop="description">专注分布式系统、数据库内核及大模型架构的深度技术博客</p>
   </div>
 
   <div class="site-nav-right">
@@ -216,8 +290,8 @@
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="木鸟杂记">
-      <meta itemprop="description" content="一个喜欢摄影的分布式程序员">
+      <meta itemprop="name" content="木鸟 (qtmuniao)">
+      <meta itemprop="description" content="系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
@@ -276,7 +350,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png" alt="cap-consistency-example.png"></p>
+        <p><img data-src="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png" alt="cap-consistency-example.png"><span class="image-caption">cap-consistency-example.png</span></p>
 <h2 id="小引">小引</h2>
 <p>曾经在一个面试中让谈谈对 CAP 的理解，当时凭着准备面试时谷歌到的N手资料，类似于小学生背书一样，生挤出只言片语。面试官无奈的笑笑，简练的概括出他想要听到的要点，听的我心下惭愧。面试自然是挂了，后来工作时偶尔接触到这个词汇，初不得要领，后通过不同资料的多侧面理解、印证，渐渐拼凑出了一个轮廓，在这里梳理下，将影子撵到纸上，以供日后索引。</p>
 <p>面试官大约是这么概括的：<em>在分布式系统中，失败必然的，分区容错（P）是一定需要的，因此设计系统时需要在可用性（A）和一致性（C）间进行权衡</em>。当时被教育印象很深，现在看来，这句概括是点出了小荷才露尖尖角的那个角。</p>
@@ -301,7 +375,7 @@
 </ol>
 <p>正是数据的多机冗余和分片引出了分布式系统中的一致性问题。举个例子简单说明：</p>
 <p>拿只有数据冗余的策略来说，假设有 <em>S0</em>、<em>S1</em>、<em>S2</em> 三个节点组成的一个数据系统，分别存放了某数据集 D 的三个副本 <em>D0</em>、<em>D1</em>、<em>D2</em> ，该数据集是个简单的<strong>键值对</strong>（<em>Key-value</em>）集合。初始，集合中 <code>&quot;a&quot; = 0</code>；某时刻 t，客户端 C0 向 <em>S0</em> 发送写请求 <code>set(&quot;a&quot;, 1)</code> ，并得到成功响应；紧跟 t 之后，另一个客户端 <em>C1</em> 向 <em>S1</em> 发送了一个读请求 <code>get(&quot;a&quot;)</code>，</p>
-<p><img src="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png" alt="cap-consistency-example.png"></p>
+<p><img data-src="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png" alt="cap-consistency-example.png"><span class="image-caption">cap-consistency-example.png</span></p>
 <p>如果系统如下设计：</p>
 <ol>
 <li><em>S0</em> 改变了 “a” 的值，并且将其同步到了 <em>S1</em>，<em>C1</em> 得到带有<strong>全局最新</strong>数据 <code>&quot;a&quot; = 1</code> 的响应</li>
@@ -380,19 +454,19 @@
       <div class="popular-posts-title"><a href="/2020/02/16/not-cp-or-ap/" rel="bookmark">（译）请不要再称数据库为 CP 和 AP</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
     </li>
   </ul>
 
@@ -404,7 +478,7 @@
   <div id="qr" style="display: none;">
       
       <div style="display: inline-block;">
-        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟杂记 微信支付">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="木鸟 (qtmuniao) 微信支付">
         <p>微信支付</p>
       </div>
 
@@ -415,8 +489,8 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" rel="tag"># 分布式系统</a>
-              <a href="/tags/CAP/" rel="tag"># CAP</a>
               <a href="/tags/CAP%E5%AE%9A%E7%90%86/" rel="tag"># CAP定理</a>
+              <a href="/tags/CAP/" rel="tag"># CAP</a>
               <a href="/tags/%E4%B8%80%E8%87%B4%E6%80%A7/" rel="tag"># 一致性</a>
           </div>
 
@@ -498,10 +572,10 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="木鸟杂记"
+    <img class="site-author-image" itemprop="image" alt="木鸟 (qtmuniao)"
       src="/img/logo.jpg">
-  <p class="site-author-name" itemprop="name">木鸟杂记</p>
-  <div class="site-description" itemprop="description">一个喜欢摄影的分布式程序员</div>
+  <p class="site-author-name" itemprop="name">木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">系统工程师木鸟的个人博客。分享《DDIA精读》、分布式系统架构、Ray/Kubernetes 源码分析、数据库内核实现及 AI 基础设施建设经验。</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
@@ -604,7 +678,7 @@
   <span class="with-love">
     <i class="user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">木鸟杂记</span>
+  <span class="author" itemprop="copyrightHolder">木鸟 (qtmuniao)</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
   </div>
@@ -645,6 +719,7 @@
   
   <script src="/lib/anime.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
 
 <script src="/js/utils.js"></script>
