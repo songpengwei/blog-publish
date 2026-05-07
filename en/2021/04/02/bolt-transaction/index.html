@@ -37,7 +37,7 @@
 <meta property="og:image" content="https://i.loli.net/2021/04/10/SzeTKMk1glF5Pwu.png">
 <meta property="og:image" content="https://i.loli.net/2021/04/10/3S7jYQwvKfGJO46.png">
 <meta property="article:published_time" content="2021-04-02T13:46:55.000Z">
-<meta property="article:modified_time" content="2026-05-07T15:44:06.370Z">
+<meta property="article:modified_time" content="2026-05-07T16:06:32.396Z">
 <meta property="article:author" content="青藤木鸟 (qtmuniao)">
 <meta property="article:tag" content="storage">
 <meta property="article:tag" content="golang">
@@ -100,7 +100,7 @@
     "description": "boltdb is one of the few pure-Go, single-node KV libraries on the market. boltdb is based on Howard Chu’s LMDB project, with a clean implementation; excluding unit tests and adapter code, the core code is just a little over four thousand lines. A simple API and minimalist implementation—that is precisely the author’s intent. Due to the author’s limited bandwidth, the original boltdb has been archived and is no longer updated. If you want to improve it and submit new PRs, the etcd-maintained fork, bbolt, is recommended. For convenience, this series of guide articles is still based on the original, unchanging repo. The project is small but complete: with just over four thousand lines of code, it implements a single-node KV engine based on B+ tree indexing and supporting single-writer, multiple-reader transactions. The code itself is simple and unadorned, with adequate comments. If you are a Go enthusiast or interested in KV stores, boltdb is absolutely a repo not to be missed. This series is planned as three articles, sequentially focusing on data organization, index design, and transaction implementation—the three main aspects of boltdb source code analysis. Since these three aspects are not fully orthogonal and decoupled, the narrative will inevitably interweave them. If something is unclear, just skip it for now and come back to sort it out once you have the full picture. This article is the third: boltdb transaction implementation. Introduction Before analyzing boltdb’s transactions, it is necessary to define the concept of a transaction to clarify the scope of our discussion. A database transaction (abbreviated: transaction) is a logical unit of work in the execution process of a database management system, consisting of a finite database operation sequence[^1]. The Wikipedia definition is a bit convoluted; you only need to grasp a few key points when understanding it: Execution: at the computation level Logical unit: implies indivisibility Finite operation sequence: generally not too large in granularity Why do we need transactions? Transactions emerged in the 1970s to free database users from cognitive burden: transactions help users organize a set of operations and automatically clean up when something goes wrong. Later, NoSQL and some distributed storage systems sacrificed full transaction support for higher performance. However, history spirals upward—the convenience of transactions led NewSQL and other next-generation distributed databases to bring them back. Speaking of transactions, the most famous concept is the four ACID properties. In fact, ACID is more like an easy-to-remember slogan than a strict description, because the properties are not very symmetric conceptually and depend on contextual interpretation. This article will still analyze boltdb’s transaction support from these four aspects, but at the beginning of each section, I will first draw on Martin Kleppmann’s talk[^2] to try to explain their meaning from different angles; then I will analyze how boltdb implements them.",
     "url": "https://www.qtmuniao.com/en/2021/04/02/bolt-transaction/",
     "datePublished": "2021-04-02T21:46:55+08:00",
-    "dateModified": "2026-05-07T23:44:06+08:00",
+    "dateModified": "2026-05-08T00:06:32+08:00",
     "author": {
       "@type": "Person",
       "name": "青藤木鸟 (qtmuniao)",
@@ -338,7 +338,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+                <time title="Modified: 2026-05-08 00:06:32" itemprop="dateModified" datetime="2026-05-08T00:06:32+08:00">2026-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">

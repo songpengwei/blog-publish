@@ -39,7 +39,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png">
 <meta property="og:image" content="https://i.loli.net/2020/02/09/yUSnKop1hGH6QEj.png">
 <meta property="article:published_time" content="2019-03-30T01:07:16.000Z">
-<meta property="article:modified_time" content="2026-05-07T15:44:06.335Z">
+<meta property="article:modified_time" content="2026-05-07T16:06:32.392Z">
 <meta property="article:author" content="青藤木鸟 (qtmuniao)">
 <meta property="article:tag" content="distributed system">
 <meta property="article:tag" content="storage">
@@ -99,7 +99,7 @@
     "description": "Overview First, let me explain what BLOB means. Its full English name is Binary Large OBjects, which can be understood as large objects in arbitrary binary format; in Facebook’s context, these are images, videos, and documents uploaded by users. This data has the characteristics of created once, read many times, never modified, and occasionally deleted. Previously, I briefly translated Facebook’s predecessor work — Haystack. As the business grew and data volume increased further, the old approach no longer worked. If all BLOBs were stored using Haystack, due to its triple-replication implementation, the cost-effectiveness at this scale would be very low. However, completely using network mounts + traditional disks + Unix-like (POSIX) file systems for cold storage couldn’t keep up with reads. Thus, the divide and conquer approach, most commonly used in computer science, came into play. They first counted the relationship between BLOB access frequency and creation time, then proposed the concept of hot and cold distribution in BLOB access over time (similar to the long-tail effect). Based on this, they proposed a hot/warm separation strategy: using Haystack as hot storage to handle frequently accessed traffic, and using F4 to handle the remaining less frequently accessed BLOB traffic. Under this assumption (F4 only stores data that basically doesn’t change much and has relatively low access volume), F4’s design can be greatly simplified. Of course, there is a dedicated routing layer above both to shield the underlying details, make decisions, and route requests. For Haystack, seven years had passed since its paper was published (07~14). Relative to that time, a few minor updates were made, such as removing the Flag bit, and adding a journal file in addition to the data file and index file, specifically to record deleted BLOB entries. For F4, the main design goal is to minimize the effective replication factor (effective-replication-factor) as much as possible while ensuring fault tolerance, to address the growing demand for warm data storage. Furthermore, it is more modular and has better scalability, meaning it can smoothly scale by adding machines to cope with continuous data growth. To summarize, the main highlights of this paper are hot/warm separation, erasure coding, and geo-replication.",
     "url": "https://www.qtmuniao.com/en/2019/03/30/f4/",
     "datePublished": "2019-03-30T09:07:16+08:00",
-    "dateModified": "2026-05-07T23:44:06+08:00",
+    "dateModified": "2026-05-08T00:06:32+08:00",
     "author": {
       "@type": "Person",
       "name": "青藤木鸟 (qtmuniao)",
@@ -337,7 +337,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+                <time title="Modified: 2026-05-08 00:06:32" itemprop="dateModified" datetime="2026-05-08T00:06:32+08:00">2026-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -515,13 +515,13 @@
       <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
     </li>
   </ul>
 

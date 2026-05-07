@@ -249,7 +249,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/07/03/distributed-system-1-master-workers/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2018/07/11/raft-leader-election/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -263,7 +263,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/07/03/distributed-system-1-master-workers/" class="post-title-link" itemprop="url">分布式系统架构（一）—— Master-Workers 架构</a>
+            <a href="/2018/07/11/raft-leader-election/" class="post-title-link" itemprop="url">6.824 - Raft 实现（一）：Leader选举</a>
         </h2>
 
         <div class="post-meta">
@@ -272,16 +272,10 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2021-07-03 18:22:02" itemprop="dateCreated datePublished" datetime="2021-07-03T18:22:02+08:00">2021-07-03</time>
+              <time title="创建时间：2018-07-11 00:00:00 / 修改时间：22:13:00" itemprop="dateCreated datePublished" datetime="2018-07-11T00:00:00+08:00">2018-07-11</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:21:38" itemprop="dateModified" datetime="2024-03-04T09:21:38+08:00">2024-03-04</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -292,7 +286,7 @@
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%9E%B6%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">架构</span></a>
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/Raft/" itemprop="url" rel="index"><span itemprop="name">Raft</span></a>
                 </span>
             </span>
 
@@ -307,109 +301,14 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <blockquote>
-<p>分布式系统有很多经典的套路，也即设计模式。每个设计模式可以解决经典的一类问题，积累的多了，便可以稍加变化，进行取舍，设计出贴合需求的架构组织。但似乎大家在这方面经验分享的不太多，因此之后打算总结一些工作和学习的经验，既是备忘，也希望对大家有些助益。篇幅所限、能力所囿，难以面面俱到，又或疏于精确。不当之处，欢迎指正。</p>
-<p>每篇将以概述背景、架构模块、总结延伸来分别解析，本篇是第一篇：Master-Workers 架构。</p>
-</blockquote>
-<h2 id="概述">概述</h2>
-<p>Master-Workers 架构（粗译为<strong>主从架构</strong>）是分布式系统中常见的一种组织方式，如 GFS 中的 Master、ChunkServers；MapReduce 中的 Master、Workers。面对分布式系统中一堆分离的机器资源，主从架构是一种最自然、直白的组织方式——就像一群人，有个说了算 leader 进行组织、协调，才能最大化这群人的对外输出能力。</p>
-<p>这也是计算机系统中常见的一种分而治之思想的体现。即将一个复杂的系统，拆解成几个相对高内聚、低耦合的子模块，定义清楚其<strong>功能边界</strong>和<strong>交互接口</strong>，使得系统易于理解、维护和扩展。对于主从架构来说，<strong>主（Master）</strong> 通常会维护集群元信息、进而依靠这些元信息进行调度，<strong>从（Workers）</strong> 通常负责具体<strong>数据切片</strong>（存储系统）的读写或者作为<strong>子任务</strong>（计算系统）的执行单元。</p>
+          <h2 id="概述">概述</h2>
+<p>记录下在实现6.824 lab2 raft 的一些想法和经验，聊以备忘。</p>
+<h2 id="实验概述">实验概述</h2>
+<p>6.824是MIT的一门分布式课程，我跟的是<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/lab-raft.html">2018 spring</a> 。在第二个实验中要求简单实现一个分布式一致性协议–<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf">raft</a>。</p>
+<p>这是一个专为方便教学和工程实现所设计的协议，它将协议拆解为几个相对独立的模块–leader选举，log复制，安全保证。论文里图二基本给出了Raft的所有实现细节，可谓字字珠玑。但也因为太微言大义了，导致有些状态转换分散在不同描述中，假如你真只照着这幅图实现，很容易遗漏些细节。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/07/03/distributed-system-1-master-workers/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/07/03/distributed-system-1-master-workers/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2021/07/03/distributed-system-1-master-workers/" class="post-title-link" itemprop="url">Distributed System Architecture (1) — Master-Workers Architecture</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-07-03 18:22:02" itemprop="dateCreated datePublished" datetime="2021-07-03T18:22:02+08:00">2021-07-03</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/distributed-system/" itemprop="url" rel="index"><span itemprop="name">distributed system</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/distributed-system/architecture/" itemprop="url" rel="index"><span itemprop="name">architecture</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>Distributed systems have many classic patterns, also known as design patterns. Each pattern solves a classic category of problems; with enough accumulated knowledge, one can make variations and trade-offs to design architectures that fit specific requirements. However, there don’t seem to be many shared experiences in this area, so I plan to summarize some lessons from work and study—partly as notes, and partly hoping they may be helpful to others. Given space constraints and my own limitations, it is difficult to be exhaustive or precise. Corrections are welcome for any inaccuracies.</p>
-<p>Each post will analyze a topic through background overview, architecture modules, and summary/extensions. This is the first post: the Master-Workers architecture.</p>
-</blockquote>
-<h2 id="Overview">Overview</h2>
-<p>The Master-Workers architecture (loosely translated as <strong>primary-secondary architecture</strong>) is a common organizational pattern in distributed systems, such as the Master and ChunkServers in GFS, and the Master and Workers in MapReduce. Faced with a cluster of separate machine resources in a distributed system, the primary-secondary architecture is the most natural and straightforward way to organize them—like a group of people with a leader who makes decisions and coordinates, thereby maximizing the group’s collective output.</p>
-<p>This is also a manifestation of the common divide-and-conquer philosophy in computer systems. A complex system is broken down into several relatively high-cohesion, low-coupling sub-modules, with clearly defined <strong>functional boundaries</strong> and <strong>interaction interfaces</strong>, making the system easier to understand, maintain, and extend. In the primary-secondary architecture, the <strong>primary (Master)</strong> typically maintains cluster metadata and uses it for scheduling, while the <strong>secondaries (Workers)</strong> are usually responsible for reading and writing specific <strong>data shards</strong> (in storage systems) or serving as execution units for <strong>sub-tasks</strong> (in compute systems).</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2021/07/03/distributed-system-1-master-workers/#more" rel="contents">
+              <a class="btn" href="/2018/07/11/raft-leader-election/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -435,7 +334,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/06/14/paxos-zhixing/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2018/03/11/binary-search/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -449,7 +348,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/06/14/paxos-zhixing/" class="post-title-link" itemprop="url">Paxos Made Simple 论文导读</a>
+            <a href="/2018/03/11/binary-search/" class="post-title-link" itemprop="url">数据结构与算法（二）：二分搜索</a>
         </h2>
 
         <div class="post-meta">
@@ -459,14 +358,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-06-14 18:48:18" itemprop="dateCreated datePublished" datetime="2021-06-14T18:48:18+08:00">2021-06-14</time>
+              <time title="创建时间：2018-03-11 00:00:00" itemprop="dateCreated datePublished" datetime="2018-03-11T00:00:00+08:00">2018-03-11</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:19:46" itemprop="dateModified" datetime="2024-03-04T09:19:46+08:00">2024-03-04</time>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -474,11 +373,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">数据结构</span></a>
                 </span>
             </span>
 
@@ -493,111 +388,13 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="引子">引子</h2>
-<p>Paxos 是分布式系统中绕不过去的一个算法，但出了名的难以理解。因此我看到 Paxos 也是一直绕着走，但是绕的多了总感觉有些遗憾。于是过去一周闲暇时间搜集了很多资料，尝试了很多打开方式，总算初窥门径。便趁着新鲜，将脑中的理解赶到纸上，做个小结，以备后日不时之需。</p>
-<p>Paxos 算法的发明人 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Leslie_Lamport">Leslie Lamport</a>  是分布式系统的奠基人之一，轶事颇多，从 Paxos 这个名字也能窥得一斑：Paxos 是 Lamport 为了引出分布式系统共识问题，所虚拟的一个古希腊城邦。在最初的相关论文 <a target="_blank" rel="noopener" href="https://lamport.azurewebsites.net/pubs/lamport-paxos.pdf">The Part-Time Parliament</a> 发表于 1998 年后，很多人都表示理解不能。于是 Lamport 在  2001 年，又使用相对简练的语言和逻辑，将其主干思想重新阐述了一遍，便有了 <a target="_blank" rel="noopener" href="https://lamport.azurewebsites.net/pubs/paxos-simple.pdf">Paxos made simple</a>。</p>
-<p>Lamport 在 Paxos made simple 论文的摘要只有一句话：</p>
-<blockquote>
-<p>The Paxos algorithm, when presented in plain English, is very simple</p>
-</blockquote>
-<p>然而，我却无法理解这种 simple。</p>
+          <h2 id="概述">概述</h2>
+<p>以前对二分查找的认识只停留在有序数组查找给定整数上，后来发现一类问题都可以用二分的思想来做，概括来说就是：如果要求的结果所在的集合（值域）和要搜索的数的集合（定义域）存在单调（映射）关系，就可以通过二分思想来解决，说起来有点抽象，后面将用几个例子来说明。</p>
+<p>二分思想以其每次迭代将规模砍一半的效率，有着极其广阔的应用。</p>
+<p>本文分两大部分，第一部分对二分查找的各个细节探讨；第二部分拓展二分查找为一般的二分思想。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/06/14/paxos-zhixing/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/06/14/paxos-zhixing/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2021/06/14/paxos-zhixing/" class="post-title-link" itemprop="url">Paxos Made Simple: A Guided Reading</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-06-14 18:48:18" itemprop="dateCreated datePublished" datetime="2021-06-14T18:48:18+08:00">2021-06-14</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/distributed-systems/" itemprop="url" rel="index"><span itemprop="name">distributed systems</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/distributed-systems/paper-reading/" itemprop="url" rel="index"><span itemprop="name">paper reading</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="Introduction">Introduction</h2>
-<p>Paxos is an unavoidable algorithm in distributed systems, but it is notoriously difficult to understand. So I had always been avoiding it, but after doing so for a long time, I began to feel some regret. Thus, over the past week, I spent my spare time collecting a lot of materials and trying many different approaches, and finally got a preliminary grasp of it. While it’s still fresh in my mind, I’ll put my understanding down on paper as a brief summary for future reference.</p>
-<p>The inventor of the Paxos algorithm, <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Leslie_Lamport">Leslie Lamport</a>, is one of the founding figures of distributed systems, with many interesting anecdotes. You can catch a glimpse of this just from the name Paxos: Paxos is a fictional ancient Greek city-state that Lamport invented to introduce the consensus problem in distributed systems. After the initial related paper, <a target="_blank" rel="noopener" href="https://lamport.azurewebsites.net/pubs/lamport-paxos.pdf">The Part-Time Parliament</a>, was published in 1998, many people said they couldn’t understand it. So in 2001, Lamport restated the core ideas using relatively concise language and logic, resulting in <a target="_blank" rel="noopener" href="https://lamport.azurewebsites.net/pubs/paxos-simple.pdf">Paxos Made Simple</a>.</p>
-<p>The abstract of Lamport’s <em>Paxos Made Simple</em> paper contains only one sentence:</p>
-<blockquote>
-<p>The Paxos algorithm, when presented in plain English, is very simple</p>
-</blockquote>
-<p>Yet, I cannot understand this kind of simple.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2021/06/14/paxos-zhixing/#more" rel="contents">
+              <a class="btn" href="/2018/03/11/binary-search/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -623,7 +420,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/05/31/zookeeper/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2018/02/24/hadoop-map-reduce/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -637,7 +434,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/05/31/zookeeper/" class="post-title-link" itemprop="url">分布式系统协调内核——Zookeeper</a>
+            <a href="/2018/02/24/hadoop-map-reduce/" class="post-title-link" itemprop="url">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a>
         </h2>
 
         <div class="post-meta">
@@ -646,27 +443,21 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2021-05-31 22:59:37" itemprop="dateCreated datePublished" datetime="2021-05-31T22:59:37+08:00">2021-05-31</time>
+              <time title="创建时间：2018-02-24 00:00:00 / 修改时间：22:33:00" itemprop="dateCreated datePublished" datetime="2018-02-24T00:00:00+08:00">2018-02-24</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:19:46" itemprop="dateModified" datetime="2024-03-04T09:19:46+08:00">2024-03-04</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/Hadoop/" itemprop="url" rel="index"><span itemprop="name">Hadoop</span></a>
                 </span>
             </span>
 
@@ -681,115 +472,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1>Zookeeper</h1>
-<p>本篇要介绍 Patrick Hunt 等人在 2010 年发表的、至今仍然广泛使用的、定位于<strong>分布式系统协调组件</strong>的论文 —— Z<a target="_blank" rel="noopener" href="https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf">ooKeeper: Wait-free coordination for Internet-scale systems</a>。我们在多线程、多进程编程时，免不了进行同步和互斥，常见手段有共享内存、消息队列、锁、信号量等等。而在分布式系统中，不同组件间必然也需要类似的协调手段，于是 Zookeeper 应运而生。配合客户端库，Zookeeper 可以提供动态参数配置（configuration metadata）、分布式锁、共享寄存器（shared register）、服务发现、集群关系（group membership）、多节点选主（leader election）等一系列分布式系统的协调服务。</p>
-<p>总体来看，Zookeeper 有以下特点：</p>
-<ol>
-<li>Zookeeper 是一个分布式协调内核，本身功能比较内聚，以保持 API 的简洁与高效。</li>
-<li>Zookeeper 提供一组高性能的、保证 FIFO的、基于事件驱动的非阻塞 API。</li>
-<li>Zookeeper 使用类似文件系统的目录树方式对数据进行组织，表达能力强大，方便客户端构建更复杂的协调源语。</li>
-<li>Zookeeper 是一个自洽的容错系统，使用 Zab 原子广播（atomic broadcast）协议保证高可用和一致性。</li>
-</ol>
-<p>本文依从论文顺序，简要介绍下 Zookeeper 的服务接口设计与模块粗略实现。更多细节请参考<a target="_blank" rel="noopener" href="https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf">论文</a>和<a target="_blank" rel="noopener" href="https://zookeeper.apache.org/">开源项目主页</a>。</p>
+          <h2 id="概述">概述</h2>
+<p>梳理一下MapReduce框架涉及到的一些基本接口和类。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/05/31/zookeeper/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/05/31/zookeeper/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2021/05/31/zookeeper/" class="post-title-link" itemprop="url">Distributed System Coordination Kernel — Zookeeper</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-05-31 22:59:37" itemprop="dateCreated datePublished" datetime="2021-05-31T22:59:37+08:00">2021-05-31</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1>Zookeeper</h1>
-<p>This post introduces the paper by Patrick Hunt et al. published in 2010, still widely used today, positioned as a <strong>distributed system coordination component</strong> —— Z<a target="_blank" rel="noopener" href="https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf">ooKeeper: Wait-free coordination for Internet-scale systems</a>. When programming with multiple threads and processes, we inevitably need synchronization and mutual exclusion; common methods include shared memory, message queues, locks, semaphores, etc. In distributed systems, different components also inevitably need similar coordination mechanisms, and thus Zookeeper was born. Combined with client libraries, Zookeeper can provide dynamic parameter configuration (configuration metadata), distributed locks, shared registers (shared register), service discovery, group membership, leader election, and a series of other distributed system coordination services.</p>
-<p>Overall, Zookeeper has the following characteristics:</p>
-<ol>
-<li>Zookeeper is a distributed coordination kernel with relatively cohesive functionality, keeping the API simple and efficient.</li>
-<li>Zookeeper provides a set of high-performance, FIFO-guaranteed, event-driven non-blocking APIs.</li>
-<li>Zookeeper organizes data using a filesystem-like directory tree, offering powerful expressiveness and making it convenient for clients to build more complex coordination primitives.</li>
-<li>Zookeeper is a self-contained fault-tolerant system, using the Zab atomic broadcast (atomic broadcast) protocol to ensure high availability and consistency.</li>
-</ol>
-<p>This article follows the order of the paper, briefly introducing Zookeeper’s service interface design and rough module implementation. For more details, please refer to the <a target="_blank" rel="noopener" href="https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf">paper</a> and the <a target="_blank" rel="noopener" href="https://zookeeper.apache.org/">open source project homepage</a>.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2021/05/31/zookeeper/#more" rel="contents">
+              <a class="btn" href="/2018/02/24/hadoop-map-reduce/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -815,7 +502,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/05/16/distributed-system-material/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2018/02/24/tree-traversal-nonrecursive/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -829,7 +516,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/05/16/distributed-system-material/" class="post-title-link" itemprop="url">分布式系统学习资料汇总</a>
+            <a href="/2018/02/24/tree-traversal-nonrecursive/" class="post-title-link" itemprop="url">数据结构与算法（一）：二叉树的非递归遍历</a>
         </h2>
 
         <div class="post-meta">
@@ -838,23 +525,17 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2021-05-16 01:32:04" itemprop="dateCreated datePublished" datetime="2021-05-16T01:32:04+08:00">2021-05-16</time>
+              <time title="创建时间：2018-02-24 00:00:00 / 修改时间：00:34:00" itemprop="dateCreated datePublished" datetime="2018-02-24T00:00:00+08:00">2018-02-24</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:19:46" itemprop="dateModified" datetime="2024-03-04T09:19:46+08:00">2024-03-04</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">数据结构</span></a>
                 </span>
             </span>
 
@@ -869,111 +550,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="引子">引子</h2>
-<p>时下，随着通信技术的发展、移动互联网的普及、物联网车联网人工智能的兴起，每天所产生的数据呈爆炸性的增长。这种尺度的数据不是传统单机系统可以独立处理的，而只能借助于大规模的分布式系统，因而分布式系统渐渐的变成一门“显学”。而作为一个分布式系统初学者，面对网上未加归类、浩如烟海的学习资料，很容易两眼抓瞎。</p>
-<p>但分布式系统有其基本研究内容和独特发展脉络，比如：</p>
-<ol>
-<li>一些基本研究问题：时序问题、一致性问题、容错技术、共识算法、并发控制等等。</li>
-<li>一些基本定理：CAP、PACELC、FLP</li>
-<li>渐次发展的工业系统：MapReduce、Spark、GFS、Dynamo、Cosmos</li>
-</ol>
-<p>因此只需要在“时空”两个维度对分布式系统进行把握，就能提纲挈领，愈学愈明。“<strong>时</strong>”表示分布式系统的演进脉络，可以通过阅读不同时期、学术界工业界的一些论文来把握。“<strong>空</strong>”表示分布式系统中所研究的基本问题的拆解，可以通过阅读一些书籍建立分布式系统的知识体系。本文将我在学习分布式系统知识过程搜集到的一些资料，按类别简单汇总，以飨诸君。资料排名没有先后，请按需采用。</p>
-<p>**注：**文中推荐的资料大多为英文，如果阅读有困难，推荐使用 Chrome 浏览器，并且给 Chrome 装一个 “<a target="_blank" rel="noopener" href="https://chrome.google.com/webstore/detail/google-translate/aapbdbdomjkkjkaonfhkkikfgjllcleb">google 翻译</a>”的插件，可以点击一键“翻译此页面”。</p>
+          <h2 id="概述">概述</h2>
+<p>最近在琢磨关于树的非递归遍历的一些思路和对应的实现，写在这里，聊以备忘。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/05/16/distributed-system-material/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/05/16/distributed-system-material/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2021/05/16/distributed-system-material/" class="post-title-link" itemprop="url">Distributed Systems Learning Resources</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-05-16 01:32:04" itemprop="dateCreated datePublished" datetime="2021-05-16T01:32:04+08:00">2021-05-16</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="Introduction">Introduction</h2>
-<p>Nowadays, with the development of communication technology, the proliferation of mobile Internet, and the rise of IoT, connected vehicles, and AI, the amount of data generated daily is growing explosively. Data at this scale cannot be processed independently by traditional single-machine systems; it can only be handled by large-scale distributed systems. As a result, distributed systems have gradually become a prominent field of study. However, as a beginner in distributed systems, it is easy to feel overwhelmed when faced with the vast, unclassified sea of learning materials available online.</p>
-<p>But distributed systems have their fundamental research areas and unique evolutionary threads, such as:</p>
-<ol>
-<li>Some fundamental research problems: ordering, consistency, fault tolerance, consensus algorithms, concurrency control, etc.</li>
-<li>Some fundamental theorems: CAP, PACELC, FLP</li>
-<li>Gradually evolving industrial systems: MapReduce, Spark, GFS, Dynamo, Cosmos</li>
-</ol>
-<p>Therefore, by grasping distributed systems along the two dimensions of “time” and “space,” one can master the essentials and learn more clearly. “<strong>Time</strong>” refers to the evolutionary thread of distributed systems, which can be understood by reading papers from different periods in academia and industry. “<strong>Space</strong>” refers to the decomposition of fundamental problems studied in distributed systems, which can be understood by reading books to build a knowledge system. This article briefly summarizes some materials I collected during my study of distributed systems, categorized for your reference. The materials are listed in no particular order; please adopt them as needed.</p>
-<p><strong>Note:</strong> Most of the recommended materials are in English. If you have difficulty reading them, I recommend using the Chrome browser with the “<a target="_blank" rel="noopener" href="https://chrome.google.com/webstore/detail/google-translate/aapbdbdomjkkjkaonfhkkikfgjllcleb">Google Translate</a>” extension installed, which allows one-click “Translate this page.”</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2021/05/16/distributed-system-material/#more" rel="contents">
+              <a class="btn" href="/2018/02/24/tree-traversal-nonrecursive/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -999,7 +580,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/05/09/levedb-data-structures-lru-cache/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2017/12/12/android-dail-pad/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -1013,7 +594,491 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/05/09/levedb-data-structures-lru-cache/" class="post-title-link" itemprop="url">漫谈 LevelDB 数据结构（三）：LRU 缓存（ LRUCache）</a>
+            <a href="/2017/12/12/android-dail-pad/" class="post-title-link" itemprop="url">Android 学习笔记（二）：代码组织</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2017-12-12 00:00:00 / 修改时间：21:32:00" itemprop="dateCreated datePublished" datetime="2017-12-12T00:00:00+08:00">2017-12-12</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/APP%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">APP开发</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="问题">问题</h3>
+<p>在进行模块化的时候，试图将诸如<code>SearchListener</code>, <code>CallManager</code> 的模块从<code>MainActivity</code>中拆出来，然而在响应事件的时候，不可避免的需要改变其他资源状态，那么就需要获取其句柄。由此还需要把<code>MainActivity</code>作为句柄传入代码。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2017/12/12/android-dail-pad/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2017/12/02/android-search-box/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2017/12/02/android-search-box/" class="post-title-link" itemprop="url">Android 学习笔记（一）：搜索框的实现</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2017-12-02 00:00:00 / 修改时间：17:36:00" itemprop="dateCreated datePublished" datetime="2017-12-02T00:00:00+08:00">2017-12-02</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/APP%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">APP开发</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="目标">目标</h3>
+<p>输入关键字，实时显示搜索结果。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2017/12/02/android-search-box/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2017/08/03/design-patterns/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2017/08/03/design-patterns/" class="post-title-link" itemprop="url">一些设计模式</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2017-08-03 00:00:00 / 修改时间：11:01:00" itemprop="dateCreated datePublished" datetime="2017-08-03T00:00:00+08:00">2017-08-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>写程序的时候，规模小，尚不能感觉设计模式的重要性。等规模一上来，需求一迭代，一个应用了恰当设计模式的工程，总能以最小的代价进行最快的迭代。<br>
+但是一个奇怪的点是，我总记不住具体的实现所对应的设计模式的名字，但是对他们背后的设计思想，却是念念不忘——依赖于抽象而非具体；对扩展开放，对修改关闭；</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2017/08/03/design-patterns/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2017/07/23/hadoop-0.1.0-file-system/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2017/07/23/hadoop-0.1.0-file-system/" class="post-title-link" itemprop="url">Hadoop 源码阅读之DFS（三）：FileSystem</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2017-07-23 00:00:00 / 修改时间：20:10:00" itemprop="dateCreated datePublished" datetime="2017-07-23T00:00:00+08:00">2017-07-23</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/Hadoop/" itemprop="url" rel="index"><span itemprop="name">Hadoop</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h3 id="FileSystem">FileSystem</h3>
+<p>FileSystem是一个抽象基类，为<code>LocalFileSystem</code>和<code>DistributedFileSystem</code>提供一些公共方法。通过<code>HashMap</code>:name-&gt; filesystem，维护所有使用的的文件系统，其key或者为“Local”，或者为“Host:Port”（标识一个NameNode）。<br>
+继承了<code>Configured</code>类，可以通过配置加载一些基本参数，保存在<code>Configuration</code>中。<br>
+为了提高可靠性，给每个文件生成一个校验和，保存在<code>.*.crc</code>的<strong>隐藏</strong>文件中。</p>
+
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2017/07/15/java-details/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2017/07/15/java-details/" class="post-title-link" itemprop="url">一些有意思的细节</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2017-07-15 00:00:00 / 修改时间：12:05:00" itemprop="dateCreated datePublished" datetime="2017-07-15T00:00:00+08:00">2017-07-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>编程中有很多有意思的细节，看到了，就记在这里。</p>
+<h3 id="简化判断"><code>|</code> 简化判断</h3>
+<p>一堆数按位或，只要有多于一个数为负，则结果为负。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">write</span><span class="params">(<span class="type">byte</span> b[], <span class="type">int</span> off, <span class="type">int</span> len)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">   <span class="keyword">if</span> ((off | len | (b.length - (len + off)) | (off + len)) &lt; <span class="number">0</span>)</span><br><span class="line">       <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IndexOutOfBoundsException</span>();</span><br><span class="line"></span><br><span class="line">   <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span> ; i &lt; len ; i++) &#123;</span><br><span class="line">       write(b[off + i]);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><em>from</em>: <code>FilterOutputStream</code></p>
+
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2017/07/11/hadoop-source-DataNode/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2017/07/11/hadoop-source-DataNode/" class="post-title-link" itemprop="url">Hadoop 源码阅读之DFS（二）：DataNode</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2017-07-11 00:00:00 / 修改时间：20:06:00" itemprop="dateCreated datePublished" datetime="2017-07-11T00:00:00+08:00">2017-07-11</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/Hadoop/" itemprop="url" rel="index"><span itemprop="name">Hadoop</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>上一篇把一些零碎的小类集在一起，凑成一篇。这篇打算对比较长的一个类<code>DataNode</code>读读。<br>
+每个DataNode代表一个数据节点，对应某台机器的一个文件夹，本质上是一定数量的Block的集合，能够和NameNode，client以及其他DataNode进行通信，以对该Block集合进行操作，主要包括client的读和写，其他DataNode block的复制，以及响应NameNode操作，进行删除等操作。<br>
+具体实现来说，数据结构上，维持了一个block到byte array的表；执行时，DataNode内部是一个无限循环，不断询问NameNode，报告状态（心跳），执行命令**（RPC）**。</p>
+<ol>
+<li>状态信息。[<code>DataNodeInfo</code>](/hadoop-source-DFS#datanode-info)：总大小，剩余大小，上次更新时间。</li>
+<li>执行命令。
+<ul>
+<li>客户端读写Blocks</li>
+<li>让其他DataNode复制Blocks</li>
+<li>删除某些Blocks</li>
+</ul>
+</li>
+</ol>
+<p>此外，DataNode还维持着一个Server Socket以处理来自Client或者其他DataNode请求。DataNode会将其对外暴露的<em>host:port</em>提交给NameNode，后者会将该信息进一步下发给相关的其他DataNode或者client。<br>
+(摘自类注释)</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2017/07/11/hadoop-source-DataNode/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2017/07/02/hadoop-source-DFS/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2017/07/02/hadoop-source-DFS/" class="post-title-link" itemprop="url">Hadoop 源码阅读之DFS（一）：一些基本的类</a>
         </h2>
 
         <div class="post-meta">
@@ -1023,14 +1088,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-05-09 23:15:48" itemprop="dateCreated datePublished" datetime="2021-05-09T23:15:48+08:00">2021-05-09</time>
+              <time title="创建时间：2017-07-02 00:00:00" itemprop="dateCreated datePublished" datetime="2017-07-02T00:00:00+08:00">2017-07-02</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:19:46" itemprop="dateModified" datetime="2024-03-04T09:19:46+08:00">2024-03-04</time>
+                <time title="修改时间：2017-07-03 23:15:00" itemprop="dateModified" datetime="2017-07-03T23:15:00+08:00">2017-07-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1042,7 +1107,7 @@
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/leveldb/" itemprop="url" rel="index"><span itemprop="name">leveldb</span></a>
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/Hadoop/" itemprop="url" rel="index"><span itemprop="name">Hadoop</span></a>
                 </span>
             </span>
 
@@ -1057,113 +1122,12 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <blockquote>
-<p>早对 LevelDB 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用 C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和 Jeff Dean 呢。<br>
-看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路：从架构概览说起，以模块分析做合。读代码的这些天，一直在盘算从哪下笔比较好。在将将读完之时，印象最深的反而是 LevelDB 的各种精妙的数据结构：贴合场景、从头构建、剪裁得当、代码精到。不妨， LevelDB 系列就从这些边边角角的小构件开始吧。<br>
-本系列主要想分享 LevelDB 中用到的三个工程中常用的经典数据结构，分别是用以快速读写 memtable 的 Skip List、用以快速筛选 sstable 的 Bloom Filter 和用以部分缓存 sstable 的 LRUCache 。这是第三篇，LRUCache。</p>
-</blockquote>
-<h2 id="引子">引子</h2>
-<p>LRU 是工程中多见的一个数据结构，常用于缓存场景。近年来，LRU 也是面试中一道炙手可热的考题，一来工程用的多，二来代码量较少，三来涉及的数据结构也很典型。LeetCode 中有一道相应的题目：<a target="_blank" rel="noopener" href="https://leetcode.com/problems/lru-cache/">lru-cache</a>。相对实际场景，题目进行了简化：本质上要求维护一个按访问时间有序的 kv 集合，且 kv 皆是整数。经典解法是使用一个哈希表（unordered_map）和一个双向链表，哈希表解决索引问题，双向链表维护访问顺序。这是我当时的一个<a target="_blank" rel="noopener" href="https://github.com/songpengwei/Algorithms/blob/master/engineering/lru-cache.cc">解法</a>，特点是用了两个辅助函数，并且可以返回节点自身，以支持链式调用，从而简化了代码。</p>
-<p>说回 LevelDB 源码，作为一个工业品，它使用 的 LRUCache 又做了哪些优化和变动呢？下面让我们一块来拆解下 LevelDB 中使用的 LRUCache，看看有什么不同。</p>
-<p>本文首先明确 LRUCache 的使用方法，然后总览分析 LRUCache 的实现思路，最后详述相关数据结构的实现细节。</p>
+          <p>计划花一个月左右的时间，通读一遍Hadoop 0.1.0的源码，尽量少写一些废话，多记录一些思考。</p>
+<p>Random一下，就从分布式文件系统（DFS）开始吧。<br>
+DFS即分布式文件系统，集合多台机器存储在预定义位置上的一组文件作为存储构件，在此基础上实现一些分布式操作，从而对外抽象出一套基本文件读写API。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/05/09/levedb-data-structures-lru-cache/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/05/09/levedb-data-structures-lru-cache/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2021/05/09/levedb-data-structures-lru-cache/" class="post-title-link" itemprop="url">'A Casual Discussion on LevelDB Data Structures (III): LRU Cache (LRUCache)'</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-05-09 23:15:48" itemprop="dateCreated datePublished" datetime="2021-05-09T23:15:48+08:00">2021-05-09</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Source-Code-Reading/" itemprop="url" rel="index"><span itemprop="name">Source Code Reading</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Source-Code-Reading/leveldb/" itemprop="url" rel="index"><span itemprop="name">leveldb</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>I had heard of LevelDB a while ago, but this time, on a whim, I went through the code with some reference materials, and it really lives up to its reputation. Whether you are interested in storage, want to use C++ elegantly, or want to learn how to architect a project, I highly recommend taking a look. Not to mention that the authors are Sanjay Ghemawat and Jeff Dean.<br>
-If I don’t write something after reading through it once, given my memory, I’ll surely forget it soon. So I wanted to write something about the wonders of LevelDB, but I didn’t want to take the usual approach: starting with an architectural overview and ending with module analysis. While reading the code, I kept thinking about where to start writing. When I was just finishing up, what impressed me most were actually all the exquisite data structures in LevelDB: tailored to the scenario, built from scratch, appropriately trimmed, and precisely coded. Why not start the LevelDB series with these little corner pieces?<br>
-This series mainly wants to share three classic data structures commonly used in engineering in LevelDB: the Skip List used for fast read/write to the memtable, the Bloom Filter used for fast filtering of sstables, and the LRUCache used for partially caching sstables. This is the third article, on LRUCache.</p>
-</blockquote>
-<h2 id="Introduction">Introduction</h2>
-<p>LRU is a data structure commonly seen in engineering, often used in caching scenarios. In recent years, LRU has also become a hot interview question, first because it is widely used in engineering, second because the code volume is relatively small, and third because the data structures involved are very typical. There is a corresponding problem on LeetCode: <a target="_blank" rel="noopener" href="https://leetcode.com/problems/lru-cache/">lru-cache</a>. Compared to real-world scenarios, the problem has been simplified: essentially, it requires maintaining a time-ordered key-value collection, where both keys and values are integers. The classic solution is to use a hash table (unordered_map) and a doubly linked list; the hash table solves the indexing problem, and the doubly linked list maintains the access order. Here is a <a target="_blank" rel="noopener" href="https://github.com/songpengwei/Algorithms/blob/master/engineering/lru-cache.cc">solution</a> I wrote at the time, which is characterized by using two helper functions and being able to return the node itself to support chaining, thereby simplifying the code.</p>
-<p>Returning to the LevelDB source code, as an industrial-grade product, what optimizations and changes have been made to its LRUCache? Let’s break down the LRUCache used in LevelDB together and see what the differences are.</p>
-<p>This article first clarifies how LRUCache is used, then gives an overview of the implementation ideas of LRUCache, and finally details the implementation of the relevant data structures.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2021/05/09/levedb-data-structures-lru-cache/#more" rel="contents">
+              <a class="btn" href="/2017/07/02/hadoop-source-DFS/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1189,7 +1153,7 @@ This series mainly wants to share three classic data structures commonly used in
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/05/08/adjust-scene-photo/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2017/06/29/hadoop-0.1.0-code-debug/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -1203,7 +1167,7 @@ This series mainly wants to share three classic data structures commonly used in
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/05/08/adjust-scene-photo/" class="post-title-link" itemprop="url">程序员五一晒图小贴士</a>
+            <a href="/2017/06/29/hadoop-0.1.0-code-debug/" class="post-title-link" itemprop="url">Hadoop-0.1.0代码调试运行</a>
         </h2>
 
         <div class="post-meta">
@@ -1213,14 +1177,14 @@ This series mainly wants to share three classic data structures commonly used in
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-05-08 21:57:20" itemprop="dateCreated datePublished" datetime="2021-05-08T21:57:20+08:00">2021-05-08</time>
+              <time title="创建时间：2017-06-29 00:00:00" itemprop="dateCreated datePublished" datetime="2017-06-29T00:00:00+08:00">2017-06-29</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-05-05 20:13:17" itemprop="dateModified" datetime="2024-05-05T20:13:17+08:00">2024-05-05</time>
+                <time title="修改时间：2017-06-27 23:24:00" itemprop="dateModified" datetime="2017-06-27T23:24:00+08:00">2017-06-27</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1228,7 +1192,11 @@ This series mainly wants to share three classic data structures commonly used in
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/Hadoop/" itemprop="url" rel="index"><span itemprop="name">Hadoop</span></a>
                 </span>
             </span>
 
@@ -1243,105 +1211,11 @@ This series mainly wants to share three classic data structures commonly used in
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>强行凑出来的五一小长假即将结束，一年一度的朋友圈晒图大赛又将起航。虽然手机自带的图片自动<em>润色功能</em>越来越强大，但毕竟不能满足我们程序员想掌控一切的精细化调整需求。下面就我一些浅薄的调色经验，以我在长沙游天心阁玩拍的一张图片的调色过程为例，教你一套李鬼变李逵的风景调色屠龙技。最后会给一个简单的修图原理的总结，一探图片调色背后的本质。</p>
-<h2 id="先来个对比">先来个对比</h2>
-<p>为了说明图片调色确实有奇效，先上一个对比图给大家直观感受下：</p>
-<p><img src="https://i.loli.net/2021/05/08/6m34cMHoDyUuKEf.jpg" alt="对比图-调色前.jpg"></p>
-<p><img src="https://i.loli.net/2021/05/08/SQ19HFBJnIr3bER.jpg" alt="对比图-调色后.jpg"></p>
-<p>此图摄于老长沙制高点——天心阁。是日乌云密布，暴雨将至，从天心阁二层远眺，黄瓦蓝天，车水马龙，一动一静，似有雷霆之势。</p>
-<p>下面分步骤讲解下调色过程和原理，尽量简洁一点，并且附上参考资料，留给有兴趣深挖的同学。</p>
+          <p>之前雄心勃勃的从GitHub上下了Hadoop源码，想要通读涨涨姿势，甚至想自己写一个简易版本。<br>
+不料代码啃起来味同嚼蜡，在读了基本的RPC之后，就此搁置。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/05/08/adjust-scene-photo/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/05/08/adjust-scene-photo/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2021/05/08/adjust-scene-photo/" class="post-title-link" itemprop="url">Photo Editing Tips for Programmers on May Day</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-05-08 21:57:20" itemprop="dateCreated datePublished" datetime="2021-05-08T21:57:20+08:00">2021-05-08</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Life/" itemprop="url" rel="index"><span itemprop="name">Life</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>The patched-together May Day holiday is coming to an end, and the annual social media photo-sharing competition is about to kick off. Although smartphones’ built-in auto-<em>enhancement</em> features are getting increasingly powerful, they can’t satisfy us programmers’ desire for fine-grained control over everything. Below, I’ll share some of my humble color-grading experience, using a photo I took at Tianxin Pavilion in Changsha as an example, to teach you a dragon-slaying technique for landscape color grading that turns a fake into the real deal. Finally, I’ll give a brief summary of photo editing principles to explore the essence behind image color grading.</p>
-<h2 id="Before-After">Before &amp; After</h2>
-<p>To show that photo color grading really works wonders, here’s a side-by-side comparison for an intuitive feel:</p>
-<p><img src="https://i.loli.net/2021/05/08/6m34cMHoDyUuKEf.jpg" alt="对比图-调色前.jpg"></p>
-<p><img src="https://i.loli.net/2021/05/08/SQ19HFBJnIr3bER.jpg" alt="对比图-调色后.jpg"></p>
-<p>This photo was taken at Tianxin Pavilion, the commanding height of old Changsha. That day, dark clouds gathered and a storm was approaching. Looking into the distance from the second floor of Tianxin Pavilion, yellow tiles and blue sky, bustling traffic — motion and stillness intertwined, as if with the momentum of thunder.</p>
-<p>Below I’ll explain the color grading process and principles step by step, keeping it as concise as possible, with reference materials for those interested in digging deeper.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2021/05/08/adjust-scene-photo/#more" rel="contents">
+              <a class="btn" href="/2017/06/29/hadoop-0.1.0-code-debug/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1366,7 +1240,7 @@ This series mainly wants to share three classic data structures commonly used in
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/9/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span><a class="page-number" href="/page/11/">11</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/11/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/9/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><span class="page-number current">10</span>
   </nav>
 
 

@@ -38,7 +38,7 @@
 <meta property="og:image" content="https://i.loli.net/2021/05/09/Dgba6dWsNerO28F.png">
 <meta property="og:image" content="https://i.loli.net/2021/05/09/TrNCxo3evBZIuSA.png">
 <meta property="article:published_time" content="2021-05-09T15:15:48.000Z">
-<meta property="article:modified_time" content="2026-05-07T15:44:06.371Z">
+<meta property="article:modified_time" content="2026-05-07T16:06:32.395Z">
 <meta property="article:author" content="青藤木鸟 (qtmuniao)">
 <meta property="article:tag" content="leveldb">
 <meta property="article:tag" content="LRU">
@@ -100,7 +100,7 @@
     "description": "I had heard of LevelDB a while ago, but this time, on a whim, I went through the code with some reference materials, and it really lives up to its reputation. Whether you are interested in storage, want to use C++ elegantly, or want to learn how to architect a project, I highly recommend taking a look. Not to mention that the authors are Sanjay Ghemawat and Jeff Dean. If I don’t write something after reading through it once, given my memory, I’ll surely forget it soon. So I wanted to write something about the wonders of LevelDB, but I didn’t want to take the usual approach: starting with an architectural overview and ending with module analysis. While reading the code, I kept thinking about where to start writing. When I was just finishing up, what impressed me most were actually all the exquisite data structures in LevelDB: tailored to the scenario, built from scratch, appropriately trimmed, and precisely coded. Why not start the LevelDB series with these little corner pieces? This series mainly wants to share three classic data structures commonly used in engineering in LevelDB: the Skip List used for fast read/write to the memtable, the Bloom Filter used for fast filtering of sstables, and the LRUCache used for partially caching sstables. This is the third article, on LRUCache. Introduction LRU is a data structure commonly seen in engineering, often used in caching scenarios. In recent years, LRU has also become a hot interview question, first because it is widely used in engineering, second because the code volume is relatively small, and third because the data structures involved are very typical. There is a corresponding problem on LeetCode: lru-cache. Compared to real-world scenarios, the problem has been simplified: essentially, it requires maintaining a time-ordered key-value collection, where both keys and values are integers. The classic solution is to use a hash table (unordered_map) and a doubly linked list; the hash table solves the indexing problem, and the doubly linked list maintains the access order. Here is a solution I wrote at the time, which is characterized by using two helper functions and being able to return the node itself to support chaining, thereby simplifying the code. Returning to the LevelDB source code, as an industrial-grade product, what optimizations and changes have been made to its LRUCache? Let’s break down the LRUCache used in LevelDB together and see what the differences are. This article first clarifies how LRUCache is used, then gives an overview of the implementation ideas of LRUCache, and finally details the implementation of the relevant data structures.",
     "url": "https://www.qtmuniao.com/en/2021/05/09/levedb-data-structures-lru-cache/",
     "datePublished": "2021-05-09T23:15:48+08:00",
-    "dateModified": "2026-05-07T23:44:06+08:00",
+    "dateModified": "2026-05-08T00:06:32+08:00",
     "author": {
       "@type": "Person",
       "name": "青藤木鸟 (qtmuniao)",
@@ -338,7 +338,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+                <time title="Modified: 2026-05-08 00:06:32" itemprop="dateModified" datetime="2026-05-08T00:06:32+08:00">2026-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -514,7 +514,7 @@ This series mainly wants to share three classic data structures commonly used in
       <div class="popular-posts-title"><a href="/en/2020/11/18/leveldb-data-structures-bloom-filter/" rel="bookmark">A Casual Discussion of LevelDB Data Structures (II): Bloom Filter</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/en/2020/03/19/wisckey/" rel="bookmark">WiscKey: LSM-Tree Optimizations for SSD Storage</a></div>
+      <div class="popular-posts-title"><a href="/en/2020/06/13/dynamo/" rel="bookmark">Amazon's Distributed Key-Value Store for Small Objects — Dynamo</a></div>
     </li>
   </ul>
 

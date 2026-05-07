@@ -35,7 +35,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="https://s2.loli.net/2024/02/06/SdeBuqCJnvPTt6m.png">
 <meta property="article:published_time" content="2024-02-06T12:21:12.000Z">
-<meta property="article:modified_time" content="2026-05-07T15:44:06.374Z">
+<meta property="article:modified_time" content="2026-05-07T16:06:32.399Z">
 <meta property="article:author" content="青藤木鸟 (qtmuniao)">
 <meta property="article:tag" content="memgraph">
 <meta property="article:tag" content="mvcc">
@@ -95,7 +95,7 @@
     "description": "Memgraph is an in-memory graph database that uses OpenCypher as its query language, focusing on small-data, low-latency graph scenarios. Since Memgraph is open source (repo here, implemented in C++), we can take a peek at its internals. According to this comment, the inspiration for its in-memory structure implementation mainly comes from the paper: Fast Serializable Multi-Version Concurrency Control for Main-Memory Database Systems. This series is mainly divided into two parts: paper interpretation and code walkthrough, each split into several posts as needed. This post is the first part of the paper interpretation, covering the paper’s overview and how linked lists are cleverly used to store multiple versions and control visibility. Parts two and three of the paper interpretation will cover how serializability is achieved and how multi-version data is reclaimed. Overview As the paper’s title suggests, it aims to implement a high-performance data structure for main-memory databases, based on multi-version concurrency control (MVCC), supporting the serializable isolation level. The core ideas are: Use columnar storage Reuse the Undo Buffer data structure Use a doubly linked list to chain together multiple versions of data Cleverly design timestamps to control data visibility Use a predicate tree (PT) to determine whether a transaction’s read set has been modified Unlike typical multi-version schemes, this paper performs in-place updates, then “pushes” the old version data into a linked list. I use “push” because the list uses head insertion: data near the head is newer, while data near the tail is older. The head of each data item’s linked list is maintained by a data structure called VersionVector; if a row has no old data, the corresponding position is null.",
     "url": "https://www.qtmuniao.com/en/2024/02/06/memory-mvcc-serial/",
     "datePublished": "2024-02-06T20:21:12+08:00",
-    "dateModified": "2026-05-07T23:44:06+08:00",
+    "dateModified": "2026-05-08T00:06:32+08:00",
     "author": {
       "@type": "Person",
       "name": "青藤木鸟 (qtmuniao)",
@@ -333,7 +333,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+                <time title="Modified: 2026-05-08 00:06:32" itemprop="dateModified" datetime="2026-05-08T00:06:32+08:00">2026-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">

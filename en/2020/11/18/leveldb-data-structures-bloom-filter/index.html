@@ -38,7 +38,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/11/22/yuSGRpPcHs9Qvki.png">
 <meta property="og:image" content="https://i.loli.net/2020/11/22/hnJRTqjL8tcUk7A.png">
 <meta property="article:published_time" content="2020-11-18T13:32:23.000Z">
-<meta property="article:modified_time" content="2026-05-07T15:44:06.370Z">
+<meta property="article:modified_time" content="2026-05-07T16:06:32.394Z">
 <meta property="article:author" content="青藤木鸟 (qtmuniao)">
 <meta property="article:tag" content="storage">
 <meta property="article:tag" content="leveldb">
@@ -99,7 +99,7 @@
     "description": "I had heard about LevelDB long ago. This time, on a whim, I skimmed through the code together with some reference materials, and it truly lives up to its reputation. If you are interested in storage, if you want to use C++ elegantly, or if you want to learn how to architect a project, I recommend taking a look. Not to mention that the authors are Sanjay Ghemawat and Jeff Dean. If I don’t produce something after reading it, given my memory, I will surely forget it soon. So I wanted to write something about the wonders of LevelDB, but I didn’t want to take the usual path: starting with an architectural overview and ending with module analysis. These days of reading code, I kept thinking about where to start. Just as I finished reading, what impressed me most was actually the various exquisite data structures in LevelDB: fitting the scenario, built from scratch, appropriately tailored, and concise in code. Why not start the LevelDB series with these small corner components? This series mainly wants to share three classic data structures commonly used in engineering in LevelDB: the Skip List used for fast read/write of memtable, the Bloom Filter used for fast filtering of sstable, and the LRUCache used for partially caching sstable. This is the second post, Bloom Filter. Introduction LevelDB is a single-machine KV storage engine, but it does not use a traditional balanced search tree to balance read/write performance. Instead, it uses the LSM-tree structure to organize data, sacrificing some read performance in exchange for higher write throughput. Let’s use a diagram to introduce how LSM-tree is organized across different storage media. LevelDB divides data into two main parts, stored in memory and the file system respectively. The main data modules include WAL log, memtable, immutable memtable, and sstable. In order of data flow: When LevelDB receives a write request put(k, v), it first appends the operation log to the log file (WAL) for recovery in case of unexpected node crashes. After writing the WAL, LevelDB inserts this kv pair into the lookup structure in memory: memtable. After memtable accumulates to a certain degree, it rotates into a read-only memtable, i.e., immutable memtable; at the same time, a new memtable is generated for writing. When memory is under pressure, the immutable memtable is sequentially written to the file system, generating a level0 sstable (sorted strings table) file. This process is called a minor compaction. Since query operations need to traverse memtable, immutable, and sstables layer by layer. As more and more sstable files are generated, query performance will inevitably degrade, so different sstables need to be merged, which is called major compaction. LevelDB Hierarchical Organization All sstable files in the file system are logically organized by LevelDB into multiple levels (usually 7 levels), satisfying the following properties: The larger the level, the earlier its data was written. That is, data is first “placed” in the upper level (minor compaction), and when the upper level is “full” (reaches capacity limit), it “overflows” to the lower level for merging (major compaction). Each level has a limit on total file size, growing exponentially. For example, the total size limit of level0 is 10MB, level1 is 100MB, and so on. The highest level (level6) has no limit. Since each sstable file in level0 is directly flushed from memtable, the key ranges of multiple sstable files may overlap. For other levels, multiple sstable files are guaranteed not to overlap through certain rules. For a read operation in LevelDB, it needs to first search memtable and immutable memtable, and then search each level in the file system in turn. It can be seen that compared to write operations, read operations are rather inefficient. We call the phenomenon where a single read request from the client is turned into multiple read requests inside the system read amplification. To reduce read amplification, LevelDB takes several measures: Minimize sstable files through major compaction Use fast filtering methods to quickly determine whether a key is in a certain sstable file And to quickly determine whether a key is in a key set, LevelDB uses exactly the Bloom filter. Of course, the Bloom filter can only quickly determine that a key is definitely not in a certain sstable, thereby skipping certain sstables during layer-by-layer lookups. The reason will be detailed later; we will leave it here for now.",
     "url": "https://www.qtmuniao.com/en/2020/11/18/leveldb-data-structures-bloom-filter/",
     "datePublished": "2020-11-18T21:32:23+08:00",
-    "dateModified": "2026-05-07T23:44:06+08:00",
+    "dateModified": "2026-05-08T00:06:32+08:00",
     "author": {
       "@type": "Person",
       "name": "青藤木鸟 (qtmuniao)",
@@ -337,7 +337,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+                <time title="Modified: 2026-05-08 00:06:32" itemprop="dateModified" datetime="2026-05-08T00:06:32+08:00">2026-05-08</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -491,7 +491,7 @@
       <div class="popular-posts-title"><a href="/2022/05/06/meta-object-store-delta/" rel="bookmark">Meta 链式复制的对象存储——Delta</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/en/2019/05/26/gfs/" rel="bookmark">GFS — the Art of Trade-Offs</a></div>
+      <div class="popular-posts-title"><a href="/en/2019/03/30/f4/" rel="bookmark">F4: Facebook's Warm BLOB Storage System</a></div>
     </li>
   </ul>
 

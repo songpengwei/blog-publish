@@ -249,7 +249,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/10/27/jemalloc/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/04/08/paywall-one-year/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -263,7 +263,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2024/10/27/jemalloc/" class="post-title-link" itemprop="url">从“丰巢”快递柜看 Jemalloc 的内存管理</a>
+            <a href="/2024/04/08/paywall-one-year/" class="post-title-link" itemprop="url">关于如何在晴天卖出 250 把雨伞这件事</a>
         </h2>
 
         <div class="post-meta">
@@ -274,7 +274,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2024-10-27 22:32:37 / 修改时间：22:36:11" itemprop="dateCreated datePublished" datetime="2024-10-27T22:32:37+08:00">2024-10-27</time>
+              <time title="创建时间：2024-04-08 21:08:58 / 修改时间：21:12:44" itemprop="dateCreated datePublished" datetime="2024-04-08T21:08:58+08:00">2024-04-08</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -282,7 +282,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">计算机基础</span></a>
+                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
                 </span>
             </span>
 
@@ -297,119 +297,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1>引子</h1>
-<p>在某些工作负载中，随着时间的推移，内存的使用会逐渐增长，直到 OOM。后面发现是内存碎片问题，而将系统默认的内存分配器（<a target="_blank" rel="noopener" href="https://github.com/lattera/glibc/blob/master/malloc/malloc.c">glibc malloc</a>）换成 <a target="_blank" rel="noopener" href="https://jemalloc.net/">jemalloc</a> ，能有效控制内存的增长上界。</p>
-<p>为了解其背后原理，便找来 jemalloc 最初的论文：<a target="_blank" rel="noopener" href="https://www.bsdcan.org/2006/papers/jemalloc.pdf">A Scalable Concurrent malloc(3) Implementation for FreeBSD</a> 来一探究竟。当然，相比 2006 年论文发表时，当前的 jemalloc 可能已经发生了很大改变，因此本文只对当时论文内容负责。更多 jemalloc 机制，大家可以去其 <a target="_blank" rel="noopener" href="https://github.com/jemalloc/jemalloc">github 仓库</a>查看文档和源码。</p>
-<h1>背景</h1>
-<p>在探讨论文的主要思路之前，我们先简单回顾下<strong>内存分配器</strong>（memory allocator）的<em>作用</em>和<em>边界</em>。简言之：</p>
-<ol>
-<li>对下，向操作系统申请<strong>大块</strong>内存（使用 <code>sbrk</code>、<code>mmap</code> 等系统调用）</li>
-<li>对上，处理应用层的各种尺寸的内存申请请求（<code>malloc(size)</code>），并在应用层“表示”不用（<code>free</code>）后进行释放</li>
-</ol>
-<p>往小了说，分配器的功能非常简单：<strong>分配</strong>和<strong>释放</strong>（malloc 和 free）。想象中，实现也应该很简单，只需利用一个表来记录所有已使用内存和未分配内存（ a bit of bookkeeping），然后：</p>
-<ol>
-<li>malloc 请求来了，先去空闲表中找，不够的话就问操作系统要</li>
-<li>free 请求来了，还回空闲表中，如果空的多了，就还给操作系统</li>
-</ol>
+          <p>说的就是我的大规模数据系统专栏《系统日知录》—— 有人问，在读了你的专栏文章后，可能很久之后<s>才可能会用到</s>都不会用到，那为啥要买呢？何况，雨伞在雨天可是刚需，这专栏在面试的时候可不是。所以这实在不是一门好“生意”——<strong>受众狭窄、场景低频</strong>，两者乘数，便是我这惨淡销量了。</p>
+<p>这也是为什么成功的专栏动辄上万次购买，而我只卖了个二百五，也敢把经历拿出来说一说了。万一你有类似的危险想法，也可以参考一二。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2024/10/27/jemalloc/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2024/10/27/jemalloc/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2024/10/27/jemalloc/" class="post-title-link" itemprop="url">Understanding Jemalloc's Memory Management Through "Hive Box" Parcel Lockers</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-10-27 22:32:37" itemprop="dateCreated datePublished" datetime="2024-10-27T22:32:37+08:00">2024-10-27</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Computer-Science/" itemprop="url" rel="index"><span itemprop="name">Computer Science</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h1>Introduction</h1>
-<p>In certain workloads, memory usage gradually grows over time until an OOM occurs. Later, it was found to be a memory fragmentation issue. Replacing the system’s default memory allocator (<a target="_blank" rel="noopener" href="https://github.com/lattera/glibc/blob/master/malloc/malloc.c">glibc malloc</a>) with <a target="_blank" rel="noopener" href="https://jemalloc.net/">jemalloc</a> can effectively control the upper bound of memory growth.</p>
-<p>To understand the principles behind it, I sought out jemalloc’s original paper: <a target="_blank" rel="noopener" href="https://www.bsdcan.org/2006/papers/jemalloc.pdf">A Scalable Concurrent malloc(3) Implementation for FreeBSD</a>. Of course, compared to when the paper was published in 2006, the current jemalloc may have changed significantly. Therefore, this article is only responsible for the content of the paper at that time. For more jemalloc mechanisms, you can check the documentation and source code in its <a target="_blank" rel="noopener" href="https://github.com/jemalloc/jemalloc">GitHub repository</a>.</p>
-<h1>Background</h1>
-<p>Before discussing the main ideas of the paper, let’s briefly review the <em>role</em> and <em>boundaries</em> of a <strong>memory allocator</strong>. In short:</p>
-<ol>
-<li>Downward, it requests <strong>large chunks</strong> of memory from the operating system (using system calls like <code>sbrk</code>, <code>mmap</code>)</li>
-<li>Upward, it handles memory allocation requests of various sizes from the application layer (<code>malloc(size)</code>), and releases them after the application layer indicates it is no longer needed (<code>free</code>)</li>
-</ol>
-<p>In the simplest terms, the allocator’s functions are very simple: <strong>allocation</strong> and <strong>deallocation</strong> (malloc and free). One might imagine the implementation is also very straightforward—just use a table to keep track of all used and unallocated memory (a bit of bookkeeping), and then:</p>
-<ol>
-<li>When a malloc request comes in, first look in the free list; if there’s not enough, ask the OS for more</li>
-<li>When a free request comes in, return it to the free list; if there’s too much free memory, return it to the OS</li>
-</ol>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2024/10/27/jemalloc/#more" rel="contents">
+              <a class="btn" href="/2024/04/08/paywall-one-year/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -435,7 +327,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/08/25/snowflake-paper/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/02/28/mini-filesystem/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -449,7 +341,94 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2024/08/25/snowflake-paper/" class="post-title-link" itemprop="url">Snowflake：云原生数仓的开创者</a>
+            <a href="/2024/02/28/mini-filesystem/" class="post-title-link" itemprop="url">螺蛳壳里做道场：实现一个256KB的迷你文件系统</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-02-28 10:22:16" itemprop="dateCreated datePublished" datetime="2024-02-28T10:22:16+08:00">2024-02-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-02-29 09:07:32" itemprop="dateModified" datetime="2024-02-29T09:07:32+08:00">2024-02-29</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">计算机基础</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>本文主要“编译”自书籍《<a target="_blank" rel="noopener" href="https://pages.cs.wisc.edu/~remzi/OSTEP/">Operating Systems: Three Easy Pieces</a>》第 40 章，这是一本非常深入浅出的书，推荐给所有对操作系统感到迷茫的同学。本文件系统基于一个非常小的硬盘空间，以<strong>数据结构</strong>和<strong>读写流程</strong>为主线，从零到一的推导出各个基本环节，可以帮你快速建立起对文件系统的直觉。</p>
+</blockquote>
+<p>文件系统基本都是构建于块存储之上的。但当然，现在的一些分布式文件系统，如 <a target="_blank" rel="noopener" href="https://github.com/juicedata/juicefs">JuiceFS</a>，底层是基于对象存储的。但无论块存储还是对象存储，其本质都是按 “数据块” 进行<strong>寻址</strong>和<strong>数据交换</strong>的。</p>
+<p>我们首先会探讨一个完整的文件系统在硬盘上的数据结构，也即布局；然后再通过打开关闭、读写流程将各个子模块串起来，从而完成对一个文件系统要点的覆盖。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/02/28/mini-filesystem/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/02/06/memory-mvcc-serial/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/02/06/memory-mvcc-serial/" class="post-title-link" itemprop="url">MemGraph 背后论文《基于内存和MVCC 的高速可串行化》详细解析（一）</a>
         </h2>
 
         <div class="post-meta">
@@ -460,7 +439,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2024-08-25 14:41:07 / 修改时间：14:47:29" itemprop="dateCreated datePublished" datetime="2024-08-25T14:41:07+08:00">2024-08-25</time>
+              <time title="创建时间：2024-02-06 20:21:12 / 修改时间：20:28:56" itemprop="dateCreated datePublished" datetime="2024-02-06T20:21:12+08:00">2024-02-06</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -488,108 +467,22 @@
 
       
           <blockquote>
-<p>Snowflake 由甲骨文的两位员工在 2012 年出来创办，一开始就瞄准云原生数仓，因此架构设计（在当时看来）非常“激进”。超前的视野带来超额的回报，Snowflake 在 2020 年正式上市，市值一度高达 700 亿美金，创造了史上规模最大的软件 IPO 记录。</p>
-<p>本文我们综合两篇论文：<a target="_blank" rel="noopener" href="https://dl.acm.org/doi/pdf/10.1145/2882903.2903741">The Snowflake Elastic Data Warehouse</a> 和 <a target="_blank" rel="noopener" href="https://www.usenix.org/system/files/nsdi20-paper-vuppalapati.pdf">Building An Elastic Query Engine on Disaggregated Storage</a>  来大致聊聊其架构设计。</p>
-<p>本文来自我的专栏《<a target="_blank" rel="noopener" href="https://xiaobot.net/p/system-thinking">系统日知录</a>》，如果你觉得文章还不错，欢迎订阅支持我。</p>
+<p><a target="_blank" rel="noopener" href="https://memgraph.com/">Memgraph</a> 是一个内存型图数据库，使用 OpenCypher 作为查询语言，主打小数据量、低延迟的图场景。由于 Memgraph 是开源的（repo 在<a target="_blank" rel="noopener" href="https://github.com/memgraph/memgraph">这</a>，使用 C++ 实现）我们可以一窥其实现。根据<a target="_blank" rel="noopener" href="https://github.com/memgraph/memgraph/blob/master/src/storage/v2/storage.hpp#L57">这行注释</a>，我们可以看出，其内存结构实现灵感主要来自论文：<a target="_blank" rel="noopener" href="https://db.in.tum.de/~muehlbau/papers/mvcc.pdf">Fast Serializable Multi-Version Concurrency Control for Main-Memory Database Systems</a>。</p>
+<p>本系列主要分为两大部分，<strong>论文解读</strong>和<strong>代码串讲</strong>，每一部分会根据情况拆成几篇。本篇，是论文解读（一），主要讲论文概述以及如何使用链表巧妙的存储了多版本、控制了可见性。论文解析（二）和（三），会讲如何实现可串行化以及回收多版本数据。</p>
 </blockquote>
-<p>这篇文章我早就想写了，但上次在看论文时卡住了——论文信息太多，地毯式的阅读，很快就淹没在细节中，当时也只看了三分之二，就搁置了。上周（20240707）在文章 <a target="_blank" rel="noopener" href="https://xiaobot.net/post/93d3e9ad-90f2-47ec-a942-ff95c351cba1">Spark：如何在云上做缩容</a>时提到了存算分离的 snowflake ，有读者要求写下，于是便重新捡起来。</p>
-<p>相比上次 push 的方式，本次采用 pull 的方式：即不是被动的读论文，而是先思考，如果让我设计这么一个云原生数仓，我要怎么设计，会有哪些问题等等。带着这些问题，我再去从论文中找答案，发现效率一下高了很多，也便让这篇文章没有再次难产。</p>
+<h2 id="概述">概述</h2>
+<p>从论文题目可以看出，本论文旨在实现一种针对<strong>内存型</strong>数据库的、基于<strong>多版本</strong>（MVCC）实现的、支持可<strong>串行化</strong>隔离级别的高性能数据结构。其基本思想是：</p>
+<ol>
+<li>使用列存</li>
+<li>复用 Undo Buffer 数据结构</li>
+<li>使用双向链表来串起数据的多版本</li>
+<li>巧妙设计时间戳来实现数据的可见性</li>
+<li>通过谓词树（PT）来判事务读集合（Read Set）是否被更改</li>
+</ol>
+<p>与一般的多版本不同的是，本论文会在<strong>原地更新</strong>数据，然后将旧版本数据“压”到链表中去，使用 “压”是因为链表采用头插法：表头一侧数据较新、表尾一侧数据较旧。所有数据的链表头由一个叫 <code>VersionVector</code> 的数据结构维护，如果某一行没有旧数据，对应的位置就是 <code>null</code>。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2024/08/25/snowflake-paper/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2024/08/25/snowflake-paper/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2024/08/25/snowflake-paper/" class="post-title-link" itemprop="url">'Snowflake: The Pioneer of Cloud-Native Data Warehouses'</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-08-25 14:41:07" itemprop="dateCreated datePublished" datetime="2024-08-25T14:41:07+08:00">2024-08-25</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Database/" itemprop="url" rel="index"><span itemprop="name">Database</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Database/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>Snowflake was founded in 2012 by two former Oracle employees, targeting cloud-native data warehouses from the very beginning. Therefore, its architectural design was (at the time) considered very “radical.” This forward-looking vision brought extraordinary returns — Snowflake went public in 2020 with a market capitalization reaching as high as $70 billion, setting the record for the largest software IPO in history.</p>
-<p>In this article, we combine two papers — <a target="_blank" rel="noopener" href="https://dl.acm.org/doi/pdf/10.1145/2882903.2903741">The Snowflake Elastic Data Warehouse</a> and <a target="_blank" rel="noopener" href="https://www.usenix.org/system/files/nsdi20-paper-vuppalapati.pdf">Building An Elastic Query Engine on Disaggregated Storage</a> — to roughly discuss its architectural design.</p>
-<p>This article comes from my column “<a target="_blank" rel="noopener" href="https://xiaobot.net/p/system-thinking">System Thinking Daily</a>.” If you find it helpful, feel free to subscribe to support me.</p>
-</blockquote>
-<p>I have wanted to write this article for a long time, but I got stuck while reading the papers last time — there was too much information, and carpet-bombing reading soon drowned me in details. At that time, I only read two-thirds of it and then put it aside. Last week (2024-07-07), when mentioning the disaggregated-storage Snowflake in the article <a target="_blank" rel="noopener" href="https://xiaobot.net/post/93d3e9ad-90f2-47ec-a942-ff95c351cba1">Spark: How to Scale Down in the Cloud</a>, a reader asked me to write about it, so I picked it up again.</p>
-<p>Compared with the push approach last time, this time I adopted a pull approach: that is, instead of passively reading papers, I first thought about how I would design such a cloud-native data warehouse and what problems I might encounter. With these questions in mind, I went back to the papers for answers, and found that the efficiency improved dramatically, which also prevented this article from being abandoned again.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2024/08/25/snowflake-paper/#more" rel="contents">
+              <a class="btn" href="/2024/02/06/memory-mvcc-serial/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -615,7 +508,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/07/28/listening-conquest-of-happiness/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/01/04/2023-summary/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -629,7 +522,93 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2024/07/28/listening-conquest-of-happiness/" class="post-title-link" itemprop="url">人生是旷野 —— 罗素《幸福之路》</a>
+            <a href="/2024/01/04/2023-summary/" class="post-title-link" itemprop="url">2023 年终总结——穷则思变</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-01-04 14:24:17" itemprop="dateCreated datePublished" datetime="2024-01-04T14:24:17+08:00">2024-01-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-02-03 16:17:17" itemprop="dateModified" datetime="2024-02-03T16:17:17+08:00">2024-02-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><img src="https://s2.loli.net/2024/01/04/YQDIuMkiNGJmdtx.jpg" alt="IMG_8879.JPG"></p>
+<p>2023 年倏忽而过，事后来看，要用一个词来形容的话，就是——<strong>穷则思变</strong>。</p>
+<p>穷倒并非是物理上穷的吃不下饭，而是更接近穷则独善其身”中困顿的穷。思想上原先很多赖以生存的观念维持不下去了，因此经历了一个痛苦地重塑过程。这倒并非坏事，只不过其间被动的思想拉扯，现在想来仍然倍感折磨。当然，正是这些逆境逼迫我们跳出“群体思维”进行求索（think different），纵一时痛苦，却能有所得——每个人毕竟要走出属于自己的路。</p>
+<p>那这一年到底发生了哪些改变呢？</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/01/04/2023-summary/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/01/03/yc-2024-rfs/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/01/03/yc-2024-rfs/" class="post-title-link" itemprop="url">Y Combinator 2024 年关注 20 个创业领域</a>
         </h2>
 
         <div class="post-meta">
@@ -640,7 +619,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2024-07-28 08:30:37 / 修改时间：08:45:03" itemprop="dateCreated datePublished" datetime="2024-07-28T08:30:37+08:00">2024-07-28</time>
+              <time title="创建时间：2024-01-03 14:07:04 / 修改时间：22:09:23" itemprop="dateCreated datePublished" datetime="2024-01-03T14:07:04+08:00">2024-01-03</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -648,11 +627,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/%E8%AF%BB%E4%B9%A6/" itemprop="url" rel="index"><span itemprop="name">读书</span></a>
+                  <a href="/categories/%E5%88%9B%E4%B8%9A/" itemprop="url" rel="index"><span itemprop="name">创业</span></a>
                 </span>
             </span>
 
@@ -668,108 +643,20 @@
 
       
           <blockquote>
-<p>缘于某个播客提了一嘴，便找来书在通勤时听了。这版是傅雷翻在 1939 年译的版本，有一股淡淡的老式白话风。小书不长，几天便听完。我喜欢在走路的时候听东西，所听入耳、所观入眼，哲人的凝言练语、街头的风物百态，总能在心里发生奇妙的化学反应，偶在三伏天都一激灵。</p>
-<p>最近心绪颇为起伏，在上下班踱步听这本书时，数次给我宽慰平和，书中指出的快乐和不快乐之因，都命中了我的某些缺点和特点，因此听完觉得还是要写点东西。</p>
+<p><a target="_blank" rel="noopener" href="https://www.ycombinator.com/">Y Combinator</a>（YC）是一家知名的美国创业加速器，自2005年成立以来致力于推动初创企业成功。作为初创企业界的领军人物，YC 的特点是，不仅提供资金，还提供指导、资源和网络，以帮助初创企业在竞争激烈的市场中脱颖而出。YC 的成功案例包括 Airbnb、Dropbox 和 Reddit 等，这些公司现在都是各自领域的巨头。<br>
+YC 发布的“创业公司征集请求”（<a target="_blank" rel="noopener" href="https://www.ycombinator.com/rfs">RFS</a>）是其基于对市场趋势、技术进步和全球挑战的深入理解，对全球创业社区的发出的一种前瞻性呼吁，相信能够对创业者和想选择创业公司的小伙伴们有诸多启发。2024 年的 RFS 一共有 20 个方向，这是上篇，包括前十个。如果看的人多，我再继续翻译后面 10 条。以下是正文。</p>
 </blockquote>
-<h1>罗素《幸福之路》</h1>
-<p>人类从狩猎时代进入农耕时代后，虽获得了生活的相对安稳，却也失掉了向外的探索和冒险。到工业时代，城市化加剧，进一步脱离了自然的“蓝领白领”亦是如此。只有少数的企业家才仍然保持着丛林式的生活方式。</p>
-<p>选择安稳意味着有大量的“烦闷”（Boredom）需要排遣。但多数人过度的将注意力集中在自己的身上，比如畏罪狂（纠结于行为不符合少时的成见或社会的规训）、自溺狂（过度期待外界称许的虚荣）、自大狂（过度的权力欲望），则使得这种烦闷愈加在幻想中野蛮式的生长，直至占满人们的内心。</p>
+<h1><strong>引言</strong></h1>
+<p>虽然，我们投资过的最棒创业 idea，往往并不是一开始我们想找的，反而是那些无心插柳的。</p>
+<p>但仍然，我们对几类创业公司非常期待。以下是我们最新的 2024 版本的<strong>创业公司征集请求</strong>（Requests for Startups，RFS），简述了下我们关注一些创业方向。</p>
+<blockquote>
+<p>但并非说创业只有选择这些方向，才能够申请 Y Combinator。其实我们的多数投资仍然集中在过于一直关注的互联网和移动端。所以如果在阅读本文前，你已经有相关方向的创业想法，请继续做下去。<br>
+同样的，也不是说我们列了这些方向，你就要据此创立一家公司。RFS 的目的在于，如果你正好已经有一个类似的想法，那欢迎向我们申请。<br>
+另外，如果你想知道我们在寻求投资哪些类型的非盈利组织，可以看<a target="_blank" rel="noopener" href="https://www.ycombinator.com/blog/what-y-combinator-looks-for-in-nonprofits/">这篇文章</a>。</p>
+</blockquote>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2024/07/28/listening-conquest-of-happiness/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2024/07/28/listening-conquest-of-happiness/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2024/07/28/listening-conquest-of-happiness/" class="post-title-link" itemprop="url">Life Is a Wilderness —— Bertrand Russell's "The Conquest of Happiness"</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-07-28 08:30:37" itemprop="dateCreated datePublished" datetime="2024-07-28T08:30:37+08:00">2024-07-28</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Life/" itemprop="url" rel="index"><span itemprop="name">Life</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Life/Reading/" itemprop="url" rel="index"><span itemprop="name">Reading</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>I first heard about it from a passing mention on a podcast, so I sought out the audiobook for my commute. This is the 1939 translation by Fu Lei, with a faint, old-fashioned vernacular style. It’s a short book; I finished it in a few days. I like listening to things while walking—what enters my ears and what meets my eyes, the philosopher’s concise aphorisms and the myriad scenes of the street, always produce a curious chemical reaction in my mind, occasionally sending a jolt through me even in the height of summer.</p>
-<p>Lately my emotions have been rather turbulent, and listening to this book during my daily commute has brought me comfort and calm on several occasions. The causes of happiness and unhappiness the book points out all hit upon certain flaws and traits of mine, so after finishing it I felt I should write something down.</p>
-</blockquote>
-<h1>Bertrand Russell’s “The Conquest of Happiness”</h1>
-<p>After humanity transitioned from the hunting era to the agricultural era, although we gained relative stability in life, we lost the outward exploration and adventure. In the industrial era, with accelerated urbanization, the “blue-collar and white-collar” workers further detached from nature are no different. Only a small number of entrepreneurs still maintain a jungle-like way of life.</p>
-<p>Choosing stability means having a great deal of “boredom” to dispel. But most people excessively concentrate their attention on themselves—for example, the persecution maniac (obsessing over behavior that doesn’t conform to childhood prejudices or social conditioning), the narcissist (excessive vanity seeking external praise), and the megalomaniac (excessive desire for power)—which causes this boredom to grow wildly in fantasy until it fills people’s hearts.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2024/07/28/listening-conquest-of-happiness/#more" rel="contents">
+              <a class="btn" href="/2024/01/03/yc-2024-rfs/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -795,7 +682,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/07/07/ray-data-2/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/11/15/raft-explain/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -809,7 +696,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2024/07/07/ray-data-2/" class="post-title-link" itemprop="url">使用 ray.data 进行大规模数据处理（二）：全局视角</a>
+            <a href="/2023/11/15/raft-explain/" class="post-title-link" itemprop="url">使用“隐喻”的方式帮你建立对 Raft 的直觉</a>
         </h2>
 
         <div class="post-meta">
@@ -819,14 +706,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2024-07-07 21:03:33" itemprop="dateCreated datePublished" datetime="2024-07-07T21:03:33+08:00">2024-07-07</time>
+              <time title="创建时间：2023-11-15 21:31:57" itemprop="dateCreated datePublished" datetime="2023-11-15T21:31:57+08:00">2023-11-15</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-09-12 23:12:23" itemprop="dateModified" datetime="2024-09-12T23:12:23+08:00">2024-09-12</time>
+                <time title="修改时间：2023-11-16 05:43:15" itemprop="dateModified" datetime="2023-11-16T05:43:15+08:00">2023-11-16</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -838,7 +725,7 @@
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E6%9E%B6%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">架构</span></a>
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
                 </span>
             </span>
 
@@ -853,119 +740,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <blockquote>
-<p><a target="_blank" rel="noopener" href="http://ray.data">ray.data</a> 是基于 ray core 的一层封装。依赖 ray.data，用户用简单的代码，就可以实现数据大规模的异构处理（主要指同时使用 CPU 和 GPU）。一句话总结：很简单好用，同时也有很多坑。<br>
-在 <a target="_blank" rel="noopener" href="https://xiaobot.net/post/55c2d455-3319-4c7f-9e5e-4eb118a482d7">上一篇</a>中，我们从用户接口出发，浅浅地梳理了一下 <a target="_blank" rel="noopener" href="http://ray.data">ray.data</a> 的主要接口。本篇，我们从宏观的角度，大概串一下 ray.data 的基本原理。之后，我们再用几篇，结合代码细节和使用经验，探讨下比较重要的几块内容：执行调度、数据格式和避坑指南。<br>
-本文来自我的专栏《<a target="_blank" rel="noopener" href="https://xiaobot.net/p/system-thinking">系统日知录</a>》，如果你觉得文章还不错，欢迎订阅支持我。</p>
-</blockquote>
-<h1>概述</h1>
-<p>从高层来理解，ray.data 的一次数据处理任务大致可以分成前后相继的三阶段：</p>
-<ol>
-<li><strong>数据加载</strong>：将数据从系统外部读到 ray 的 Object Store 中 （如 read_parquet）</li>
-<li><strong>数据变换</strong>：利用各种算子在 Object Store 中对数据进行变换（如 map/filter/repartition）</li>
-<li><strong>数据写回</strong>：将 Object Store 中的数据写回外部存储（如 write_parquet）</li>
-</ol>
+          <p>相比 Paxos，Raft 的一大特色就是算法拆成了相对正交的几个部分——领导者选举、日志同步、状态持久化、日志压缩和配置变更。你如果对课程照目录看下就能看出来，除却最后一部分，这些模块就是我们课程 PartA ~ PartD 要分别实现的内容。将算法正交化拆分的好处是，让每个模块相对内聚，使得整体更易理解和实现——这也是 Raft 算法设计的初衷。</p>
+<p>下面我不打算采用<strong>精确</strong>的方式来讲解每个模块——那是<strong>论文正文</strong>和<strong>代码实现</strong>要做的事情。相反，本章我将带领大家在<strong>感性</strong>上建立一个对 Raft 基本概念（任期、选举）和两大流程（领导选举、日志同步）的认识。带着这个感性认识，大家可以再去仔细研读<a target="_blank" rel="noopener" href="https://raft.github.io/raft.pdf">论文</a>，想必能事半功倍地梳理出 Raft 算法中海量的细节。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2024/07/07/ray-data-2/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2024/07/07/ray-data-2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2024/07/07/ray-data-2/" class="post-title-link" itemprop="url">'Large-Scale Data Processing With ray.data (Part 2): A Global Perspective'</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-07-07 21:03:33" itemprop="dateCreated datePublished" datetime="2024-07-07T21:03:33+08:00">2024-07-07</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/Architecture/" itemprop="url" rel="index"><span itemprop="name">Architecture</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p><a target="_blank" rel="noopener" href="http://ray.data">ray.data</a> is a wrapper layer built on top of ray core. With ray.data, users can implement large-scale heterogeneous data processing (mainly using both CPU and GPU) with simple code. In one sentence: it’s simple and easy to use, but also has many pitfalls.<br>
-In the <a target="_blank" rel="noopener" href="https://xiaobot.net/post/55c2d455-3319-4c7f-9e5e-4eb118a482d7">previous post</a>, we started from the user interface and briefly outlined the main APIs of <a target="_blank" rel="noopener" href="http://ray.data">ray.data</a>. In this post, we will take a macroscopic view and roughly go through the basic principles of ray.data. After that, we will use a few more posts, combined with code details and practical experience, to discuss several important topics: execution scheduling, data formats, and a pitfall avoidance guide.<br>
-This article comes from my column “<a target="_blank" rel="noopener" href="https://xiaobot.net/p/system-thinking">System Thinking Daily</a>”. If you find the article helpful, welcome to subscribe to support me.</p>
-</blockquote>
-<h1>Overview</h1>
-<p>From a high-level understanding, a ray.data processing task can be roughly divided into three sequential stages:</p>
-<ol>
-<li><strong>Data Loading</strong>: Reading data from external systems into Ray’s Object Store (e.g., read_parquet)</li>
-<li><strong>Data Transformation</strong>: Using various operators to transform data in the Object Store (e.g., map/filter/repartition)</li>
-<li><strong>Data Write-back</strong>: Writing data from the Object Store back to external storage (e.g., write_parquet)</li>
-</ol>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2024/07/07/ray-data-2/#more" rel="contents">
+              <a class="btn" href="/2023/11/15/raft-explain/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -991,7 +770,7 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/06/29/interesting-linear-algebra-1/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/11/15/s3-experience/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -1005,7 +784,7 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2024/06/29/interesting-linear-algebra-1/" class="post-title-link" itemprop="url">有趣的线性代数（一）：矩阵乘法</a>
+            <a href="/2023/11/15/s3-experience/" class="post-title-link" itemprop="url">构建和维护星球最强对象存储系统的一点微小经验</a>
         </h2>
 
         <div class="post-meta">
@@ -1015,14 +794,14 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2024-06-29 21:23:11" itemprop="dateCreated datePublished" datetime="2024-06-29T21:23:11+08:00">2024-06-29</time>
+              <time title="创建时间：2023-11-15 21:29:38" itemprop="dateCreated datePublished" datetime="2023-11-15T21:29:38+08:00">2023-11-15</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-06-30 14:46:56" itemprop="dateModified" datetime="2024-06-30T14:46:56+08:00">2024-06-30</time>
+                <time title="修改时间：2024-03-04 09:23:33" itemprop="dateModified" datetime="2024-03-04T09:23:33+08:00">2024-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1030,7 +809,7 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/math/" itemprop="url" rel="index"><span itemprop="name">math</span></a>
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
                 </span>
             </span>
 
@@ -1046,102 +825,11 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
 
       
           <blockquote>
-<p>由于对各种矩阵运算物理意义的理解总是跟不上，因此尽管多年多次尝试入门机器学习，却总是被拒之门外。偶然间同事推荐了 <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV16Z4y1U7oU">MIT 那门经典的线性代数公开课</a>，听了几节，煞是过瘾，之前紧闭的大门竟有打开一丝的感觉。</p>
-</blockquote>
-<blockquote>
-<p>因此，本系列会在每篇文章分享一些课程中有意思的点。为了避免晦涩，每章会尽可能去上下文、保持简短，请放心食用。也因此，本系列会牺牲一些精确性，且并无体系化，仅仅旨在唤起你一丢丢兴趣。注：例子都由 <a target="_blank" rel="noopener" href="https://kimi.moonshot.cn/">KimiChat</a> 生成。</p>
+<p>本文来自 Amazon S3 VP  <a target="_blank" rel="noopener" href="https://www.linkedin.com/in/andywarfield">Andy Warfield</a> 在 FAST 23 上的主旨演讲的<a target="_blank" rel="noopener" href="https://www.allthingsdistributed.com/2023/07/building-and-operating-a-pretty-big-storage-system.html">文字稿</a>，总结了他们在构架和维护如此量级的对象存储 —— S3 的一些经验。我们知道，Amazon S3 是云时代最重要的存储基础设施之一，现在各家云厂商的对象存储基本都兼容 S3 接口，所有云原生的基础设施，比如云原生数据库，其最终存储都要落到对象存储上。</p>
 </blockquote>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2024/06/29/interesting-linear-algebra-1/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2024/06/29/interesting-linear-algebra-1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2024/06/29/interesting-linear-algebra-1/" class="post-title-link" itemprop="url">Interesting Linear Algebra (Part 1): Matrix Multiplication</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2024-06-29 21:23:11" itemprop="dateCreated datePublished" datetime="2024-06-29T21:23:11+08:00">2024-06-29</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/math/" itemprop="url" rel="index"><span itemprop="name">math</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>Since I always struggled to keep up with understanding the physical meaning of various matrix operations, despite multiple attempts to get into machine learning over the years, I was always turned away at the door. By chance, a colleague recommended <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV16Z4y1U7oU">MIT’s classic linear algebra open course</a>. After listening to a few lectures, it was quite exhilarating; the previously tightly shut door seemed to open a crack.</p>
-</blockquote>
-<blockquote>
-<p>Therefore, this series will share some interesting points from the course in each article. To avoid being obscure, each chapter will be as context-independent and concise as possible, so please enjoy with confidence. Consequently, this series will sacrifice some precision and is not systematic; it merely aims to spark a little interest. Note: Examples are all generated by <a target="_blank" rel="noopener" href="https://kimi.moonshot.cn/">KimiChat</a>.</p>
-</blockquote>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2024/06/29/interesting-linear-algebra-1/#more" rel="contents">
+              <a class="btn" href="/2023/11/15/s3-experience/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1167,7 +855,7 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2024/05/05/infra-interview-tcp/">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/10/05/firebolt-paper/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -1181,7 +869,7 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2024/05/05/infra-interview-tcp/" class="post-title-link" itemprop="url">Infra 面试之数据结构五：顺序组装</a>
+            <a href="/2023/10/05/firebolt-paper/" class="post-title-link" itemprop="url">Firebolt：如何在十八个月内组装一个商业数据库</a>
         </h2>
 
         <div class="post-meta">
@@ -1191,14 +879,14 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2024-05-05 10:49:31" itemprop="dateCreated datePublished" datetime="2024-05-05T10:49:31+08:00">2024-05-05</time>
+              <time title="创建时间：2023-10-05 17:23:25" itemprop="dateCreated datePublished" datetime="2023-10-05T17:23:25+08:00">2023-10-05</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-07-28 08:47:41" itemprop="dateModified" datetime="2024-07-28T08:47:41+08:00">2024-07-28</time>
+                <time title="修改时间：2023-10-06 00:27:52" itemprop="dateModified" datetime="2023-10-06T00:27:52+08:00">2023-10-06</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1206,11 +894,11 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%81%8C%E5%9C%BA/" itemprop="url" rel="index"><span itemprop="name">职场</span></a>
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E8%81%8C%E5%9C%BA/%E9%9D%A2%E8%AF%95/" itemprop="url" rel="index"><span itemprop="name">面试</span></a>
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E8%AE%BA%E6%96%87%E8%A7%A3%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">论文解读</span></a>
                 </span>
             </span>
 
@@ -1225,17 +913,11 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>这是我在很早之前遇到的一个题，很有意思，所以到现在仍然记得。题意借用了 TCP 的上下文，要求实现 TCP 中一个“顺序组装”的关键逻辑：</p>
-<ol>
-<li>对于 TCP 层来说，IP 层的 packet 是乱序的收到。</li>
-<li>对于应用层来说，TCP 层交付的是顺序的数据。</li>
-</ol>
-<p>这个题有意思的点在于，借用了 TCP 的上下文之后，就可以先和候选人讨论一些 TCP 的基础知识，然后话锋一转，引出这道题。这样既可以考察一些基础知识，也可以考察工程代码能力。</p>
-<h1>题目</h1>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Packet</span> &#123;</span><br><span class="line">    <span class="type">size_t</span> offset;</span><br><span class="line">    <span class="type">size_t</span> length;</span><br><span class="line">    <span class="type">uint8_t</span> *data;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现一个“顺序交付”语义</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TCP</span> &#123;</span><br><span class="line">  <span class="comment">// 应用层调用：按顺序读取不超过 count 的字节数到 buf 中，并返回实际读到的字节数</span></span><br><span class="line">  <span class="function"><span class="type">size_t</span> <span class="title">read</span><span class="params">(<span class="type">void</span> *buf, <span class="type">size_t</span> count)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：得到一些随机顺序的 IP 层封包</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">receive</span><span class="params">(Packet* p)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：数据发完，连接关闭</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">finish</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+          <p>假如你是一个初创公司的 CTO，想迅速推出一款面向 AP 市场可用的数据库产品，还得有差异化的功能（不然谁会用一个新产品），你会怎么做呢？</p>
+<p><a target="_blank" rel="noopener" href="https://www.firebolt.io/">Firebolt</a> 在 2022 年专门发了一篇论文：<a target="_blank" rel="noopener" href="https://www.firebolt.io/content/firebolt-vldb-cdms-2022">Assembling a Query Engine From Spare Parts</a> 来讲这个事情。核心思想就是，<strong>利用开源组件，像攒台式机一样攒出一个数据库</strong>。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2024/05/05/infra-interview-tcp/#more" rel="contents">
+              <a class="btn" href="/2023/10/05/firebolt-paper/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1260,8 +942,8 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2024/05/05/infra-interview-tcp/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/09/18/three-basic-sort/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -1275,7 +957,7 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/en/2024/05/05/infra-interview-tcp/" class="post-title-link" itemprop="url">Infra Interview: Data Structures v — In-Order Assembly</a>
+            <a href="/2023/09/18/three-basic-sort/" class="post-title-link" itemprop="url">【图解面试基础】三种基本排序算法</a>
         </h2>
 
         <div class="post-meta">
@@ -1284,27 +966,17 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2024-05-05 10:49:31" itemprop="dateCreated datePublished" datetime="2024-05-05T10:49:31+08:00">2024-05-05</time>
+              <time title="创建时间：2023-09-18 09:47:16 / 修改时间：17:08:01" itemprop="dateCreated datePublished" datetime="2023-09-18T09:47:16+08:00">2023-09-18</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/career/" itemprop="url" rel="index"><span itemprop="name">career</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/career/interview/" itemprop="url" rel="index"><span itemprop="name">interview</span></a>
+                  <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80/" itemprop="url" rel="index"><span itemprop="name">计算机基础</span></a>
                 </span>
             </span>
 
@@ -1319,17 +991,264 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>This is a problem I encountered a long time ago. It was quite interesting, so I still remember it to this day. The problem borrows the context of TCP and asks you to implement a key piece of TCP logic: “in-order assembly”:</p>
-<ol>
-<li>From the TCP layer’s perspective, IP layer packets are received out of order.</li>
-<li>From the application layer’s perspective, data delivered by the TCP layer is in order.</li>
-</ol>
-<p>What’s interesting about this problem is that by borrowing the TCP context, you can first discuss some TCP fundamentals with the candidate, then pivot to introduce this problem. This way, you can test both foundational knowledge and engineering coding skills.</p>
-<h1>Problem</h1>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Packet</span> &#123;</span><br><span class="line">    <span class="type">size_t</span> offset;</span><br><span class="line">    <span class="type">size_t</span> length;</span><br><span class="line">    <span class="type">uint8_t</span> *data;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现一个“顺序交付”语义</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">TCP</span> &#123;</span><br><span class="line">  <span class="comment">// 应用层调用：按顺序读取不超过 count 的字节数到 buf 中，并返回实际读到的字节数</span></span><br><span class="line">  <span class="function"><span class="type">size_t</span> <span class="title">read</span><span class="params">(<span class="type">void</span> *buf, <span class="type">size_t</span> count)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：得到一些随机顺序的 IP 层封包</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">receive</span><span class="params">(Packet* p)</span></span>;</span><br><span class="line">  <span class="comment">// TCP 层回调：数据发完，连接关闭</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">finish</span><span class="params">()</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+          <blockquote>
+<p>这是使用 <a target="_blank" rel="noopener" href="https://procreate.com/" title="Procreate">Procreate</a> 画图之余，心血来潮开的一个<a target="_blank" rel="noopener" href="https://space.bilibili.com/30933812/channel/collectiondetail?sid=1655069">面试基础系列</a>，力求图文并茂、代码视频兼顾，做成最好看的面试系列。欢迎喜欢的小伙伴点赞、转发和打赏，如果支持的同学多，我就继续更下去。</p>
+</blockquote>
+<p><img src="https://s2.loli.net/2023/09/18/g78B3XunFliWv6a.png" alt="3-basic-sort.png"></p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/en/2024/05/05/infra-interview-tcp/#more" rel="contents">
+              <a class="btn" href="/2023/09/18/three-basic-sort/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/08/21/use-analogy-to-know-more/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2023/08/21/use-analogy-to-know-more/" class="post-title-link" itemprop="url">知新的关键——类比</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-08-21 16:47:15" itemprop="dateCreated datePublished" datetime="2023-08-21T16:47:15+08:00">2023-08-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-09-18 16:52:26" itemprop="dateModified" datetime="2023-09-18T16:52:26+08:00">2023-09-18</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>这一年来，由于各种原因，需要不断地学新东西。于是如何高效地学习，就成了一个随之而来的问题。最近看了一些书和公开课，包括 Scott H Young 的 <a target="_blank" rel="noopener" href="https://book.douban.com/subject/11603298/">Learn More, Study Less</a>（以下简称 LMSL），和 Coursera 上的公开课<a target="_blank" rel="noopener" href="https://www.coursera.org/learn/ruhe-xuexi">学会如何学习</a>（Learning How to Learn，以下简称 LHL），发现了一些有意思的观点，趁着热乎（虽然都还没看完），记下来梳理一下，也希望能对大家有所启发。</p>
+<p>这两个资源在进行讲解时，都使用了<strong>类比</strong>（analogy）。</p>
+<p>LMSL 中提出了<strong>整体学习法</strong>（Holistic learning），其基本思想是：你不可能孤立地学会一个概念，而只能将其融入已有的概念体系中，从不同角度对其进行刻画来弄懂其内涵和外延。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2023/08/21/use-analogy-to-know-more/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/08/21/database-interview-myth/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2023/08/21/database-interview-myth/" class="post-title-link" itemprop="url">数据库面试的几个常见误区</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2023-08-21 16:29:41 / 修改时间：16:36:22" itemprop="dateCreated datePublished" datetime="2023-08-21T16:29:41+08:00">2023-08-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1>数据库面试的几个常见误区</h1>
+<p>由于业务的需要，最近面试了很多数据库候选人。发现很多候选人在面试准备时会有一些普遍的误区，借此机会展开聊聊我作为面试官的一些建议。这次主要讲四个误区：代码基础差、工程素养弱、沟通思维无、知识框架碎。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2023/08/21/database-interview-myth/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2023/08/21/life-engineering-many-passes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2023/08/21/life-engineering-many-passes/" class="post-title-link" itemprop="url">生活工程学（一）：多轮次拆解</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-08-21 16:19:43" itemprop="dateCreated datePublished" datetime="2023-08-21T16:19:43+08:00">2023-08-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-10-27 22:32:19" itemprop="dateModified" datetime="2024-10-27T22:32:19+08:00">2024-10-27</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1></h1>
+<blockquote>
+<p>我们在工程实践中，有些构建代码的小技巧，其背后所体现的思想，生活中也常常可见。本系列便是这样一组跨越生活和工程的奇怪联想。这是第一篇：多轮次拆解，也即，<strong>很多我们习惯一遍完成的事情，有时候拆成多个轮次完成，会简单、高效很多</strong>。</p>
+</blockquote>
+<p>我在进行 code review 时，常看到一些新手同学在一个 for 循环中干太多事情。常会引起多层嵌套，或者 for 循环内容巨大无比。此时，如果不损失太多性能，我通常建议同学将要干的事情拆成多少个步骤，每个步骤一个 for 循环。甚至，可以每个步骤一个函数。</p>
+<p>当然，这些全是从维护角度着眼的。因为人一下总是记不了太多事情，一步步来，而不是揉在一块来，会让每个步骤逻辑清晰很多。后者，我通常称之为”<strong>摊大饼</strong>“式代码，这种代码的特点是写时很自然，但是维护起来很费劲——细节揉在一起总会让复杂度爆炸。软件工程中的最小可用原型，也是类似的理念。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2023/08/21/life-engineering-many-passes/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1354,7 +1273,7 @@ This article comes from my column “<a target="_blank" rel="noopener" href="htt
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
