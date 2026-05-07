@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="I had heard of LevelDB long ago. This time, on a whim, I went through the code roughly with some reference materials, and it truly lives up to its reputation. If you are interested in storage, want t">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Casual Talk on LevelDB Data Structures (Part 1): Skip List">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2020/07/03/leveldb-data-structures-skip-list/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="I had heard of LevelDB long ago. This time, on a whim, I went through the code roughly with some reference materials, and it truly lives up to its reputation. If you are interested in storage, want t">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/07/07/OeJRfVhHMEpxiNz.png">
+<meta property="og:image" content="https://i.loli.net/2020/07/07/N3iSsOqDBvdRCfg.png">
+<meta property="article:published_time" content="2020-07-03T15:21:23.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.675Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="storage">
+<meta property="article:tag" content="leveldb">
+<meta property="article:tag" content="skiplist">
+<meta property="article:tag" content="skip list">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/07/07/OeJRfVhHMEpxiNz.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2020/07/03/leveldb-data-structures-skip-list/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="storage,leveldb,skiplist,skip list">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Casual Talk on LevelDB Data Structures (Part 1): Skip List",
+    "description": "I had heard of LevelDB long ago. This time, on a whim, I went through the code roughly with some reference materials, and it truly lives up to its reputation. If you are interested in storage, want to use C++ elegantly, or want to learn how to architect a project, I highly recommend studying it. Not to mention that the authors are Sanjay Ghemawat and Jeff Dean. If I don’t produce something after reading it, given my memory, I will surely forget it soon. So I wanted to write something about the beauty of LevelDB, but I didn’t want to take the usual route, starting with an architectural overview and ending with module analysis. While reading the code, I kept thinking about where to start. Just as I was finishing, what impressed me most was actually the various ingenious data structures in LevelDB: tailored to the scenario, built from scratch, appropriately trimmed, and precisely coded. Why not start the LevelDB series with these small corner components? This series mainly wants to share three classic data structures commonly used in engineering in LevelDB: the Skip List used for fast read/write of memtable, the Bloom Filter used for fast filtering of sstable, and the LRUCache used for partial caching of sstable. This is the first article, on the Skip List. Requirements LevelDB is a single-machine KV storage engine. A KV engine essentially only provides three interfaces for data entries (key, val): Put(key, val), Get(key) val, and Delete(key). In implementation, when LevelDB receives a delete request, it does not actually delete the data, but writes a special mark for that key, so that when reading, it finds that the key does not exist, thus converting Delete into Put, and reducing the three interfaces to two. After this simplification, what remains is a trade-off between Put and Get performance. LevelDB’s choice is: sacrifice some Get performance for powerful Put performance, and then optimize Get as much as possible. As we know, in the Memory hierarchy, memory access is much faster than disk, so LevelDB made the following design choices to achieve its goals: Write (Put): Make all writes happen in memory, and then flush to disk in batches when a certain size is reached. Read (Get): As data is continuously written, there will be a small portion of data in memory and the remaining majority on disk. When reading, if it’s not found in memory, it needs to be looked up on disk. To ensure write performance while optimizing read performance, the in-memory storage structure needs to support efficient insertion and lookup simultaneously. When I first heard of LevelDB, my most natural thought was that the in-memory structure (memtable) was a self-balancing binary search tree, such as a red-black tree or AVL tree, which could guarantee lg(n) time complexity for both insertion and lookup. Only after reading the source code did I learn that it uses a skip list. Compared to balanced trees, the advantage of skip lists is that they greatly simplify the implementation while guaranteeing read/write performance. In addition, to periodically dump data to disk, the data structure also needs to support efficient sequential traversal. To summarize, the requirements for LevelDB’s in-memory data structure (memtable) are: Efficient lookup Efficient insertion Efficient sequential traversal",
+    "url": "https://www.qtmuniao.com/en/2020/07/03/leveldb-data-structures-skip-list/",
+    "datePublished": "2020-07-03T23:21:23+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2020/07/03/leveldb-data-structures-skip-list/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Casual Talk on LevelDB Data Structures (Part 1): Skip List | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2020/07/03/leveldb-data-structures-skip-list/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2020/07/03/leveldb-data-structures-skip-list/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/07/03/leveldb-data-structures-skip-list/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Casual Talk on LevelDB Data Structures (Part 1): Skip List
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-07-03 23:21:23" itemprop="dateCreated datePublished" datetime="2020-07-03T23:21:23+08:00">2020-07-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Source-Code-Reading/" itemprop="url" rel="index"><span itemprop="name">Source Code Reading</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Source-Code-Reading/leveldb/" itemprop="url" rel="index"><span itemprop="name">leveldb</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>I had heard of <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2dvb2dsZS9sZXZlbGRi">LevelDB<i class="fa fa-external-link-alt"></i></span> long ago. This time, on a whim, I went through the code roughly with some reference materials, and it truly lives up to its reputation. If you are interested in storage, want to use C++ elegantly, or want to learn how to architect a project, I highly recommend studying it. Not to mention that the authors are Sanjay Ghemawat and Jeff Dean.</p>
+<p>If I don’t produce something after reading it, given my memory, I will surely forget it soon. So I wanted to write something about the beauty of LevelDB, but I didn’t want to take the usual route, starting with an architectural overview and ending with module analysis. While reading the code, I kept thinking about where to start. Just as I was finishing, what impressed me most was actually the various ingenious data structures in LevelDB: tailored to the scenario, built from scratch, appropriately trimmed, and precisely coded. Why not start the LevelDB series with these small corner components?</p>
+<p>This series mainly wants to share three classic data structures commonly used in engineering in LevelDB: the <strong>Skip List</strong> used for fast read/write of memtable, the <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter"><strong>Bloom Filter</strong></a> used for fast filtering of sstable, and the <strong>LRUCache</strong> used for partial caching of sstable. This is the first article, on the Skip List.</p>
+</blockquote>
+<h2 id="Requirements">Requirements</h2>
+<p>LevelDB is a single-machine KV storage engine. A KV engine essentially only provides three interfaces for data entries (key, val): <code>Put(key, val)</code>, <code>Get(key) val</code>, and <code>Delete(key)</code>. In implementation, when LevelDB receives a delete request, it does not actually delete the data, but writes a special mark for that key, so that when reading, it finds that the key does not exist, thus converting <code>Delete</code> into <code>Put</code>, and reducing the three interfaces to two. After this simplification, what remains is a trade-off between <code>Put</code> and <code>Get</code> performance. LevelDB’s choice is: <strong>sacrifice some <code>Get</code> performance for powerful <code>Put</code> performance, and then optimize <code>Get</code> as much as possible</strong>.</p>
+<p>As we know, in the <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvTWVtb3J5X2hpZXJhcmNoeQ==">Memory hierarchy<i class="fa fa-external-link-alt"></i></span>, memory access is much faster than disk, so LevelDB made the following design choices to achieve its goals:</p>
+<ol>
+<li><em>Write (Put)</em>: Make all writes happen in <strong>memory</strong>, and then flush to <strong>disk</strong> in batches when a certain size is reached.</li>
+<li><em>Read (Get)</em>: As data is continuously written, there will be a small portion of data in memory and the remaining majority on disk. When reading, if it’s not found in memory, it needs to be looked up on disk.</li>
+</ol>
+<p>To ensure write performance while optimizing read performance, the in-memory storage structure needs to support efficient <strong>insertion</strong> and <strong>lookup</strong> simultaneously.</p>
+<p>When I first heard of LevelDB, my most natural thought was that the in-memory structure (memtable) was a <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvU2VsZi1iYWxhbmNpbmdfYmluYXJ5X3NlYXJjaF90cmVl">self-balancing binary search tree<i class="fa fa-external-link-alt"></i></span>, such as a <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvUmVkJUUyJTgwJTkzYmxhY2tfdHJlZQ==">red-black tree<i class="fa fa-external-link-alt"></i></span> or <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQVZMX3RyZWU=">AVL tree<i class="fa fa-external-link-alt"></i></span>, which could guarantee lg(n) time complexity for both insertion and lookup. Only after reading the source code did I learn that it uses a skip list. Compared to balanced trees, the advantage of skip lists is that they greatly simplify the implementation while guaranteeing read/write performance.</p>
+<p>In addition, to periodically dump data to disk, the data structure also needs to support efficient sequential traversal. To summarize, the requirements for LevelDB’s in-memory data structure (memtable) are:</p>
+<ol>
+<li>Efficient lookup</li>
+<li>Efficient insertion</li>
+<li>Efficient sequential traversal</li>
+</ol>
+<span id="more"></span>
+<p><em>Author: Muniao’s Notes <a href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/">https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/</a>, please indicate the source when reposting</em></p>
+<h2 id="Principles">Principles</h2>
+<p>The skip list was proposed by William Pugh in 1990. The relevant paper is: <span class="exturl" data-url="aHR0cHM6Ly8xNTcyMS5jb3Vyc2VzLmNzLmNtdS5lZHUvc3ByaW5nMjAxOC9wYXBlcnMvMDgtb2x0cGluZGV4ZXMxL3B1Z2gtc2tpcGxpc3RzLWNhY20xOTkwLnBkZg==">Skip Lists: A Probabilistic Alternative to Balanced Trees<i class="fa fa-external-link-alt"></i></span>. From the title, we can see that the author aimed to design a data structure that could replace balanced trees. As he mentioned at the beginning:</p>
+<blockquote>
+<p>Skip lists are a data structure that can be used in place of balanced trees.</p>
+<p>Skip lists use probabilistic balancing rather than strictly enforced balancing and as a result the algorithms for insertion and deletion in skip lists are much simpler and significantly faster than equivalent algorithms for balanced trees.</p>
+</blockquote>
+<blockquote>
+<p>A skip list is a data structure that can replace balanced trees.</p>
+<p>Skip lists use probabilistic balancing rather than strictly enforced balancing strategies, thus greatly simplifying and speeding up element insertion and deletion compared to balanced trees.</p>
+</blockquote>
+<p>There is a key phrase in this passage: <strong>probabilistic balancing</strong>. I’ll leave it as a teaser for now.</p>
+<p>Next, we will interpret skip lists from two perspectives: linked lists to skip lists, and skip lists to balanced trees.</p>
+<h3 id="From-Linked-List-to-Skip-List">From Linked List to Skip List</h3>
+<p>In short, <strong>a skip list is a linked list with additional pointers</strong>. To understand this relationship, let’s think about the process of optimizing the lookup performance of an ordered linked list.</p>
+<p>Suppose we have an ordered linked list. We know that its query and insertion complexity are both O(n). Compared to arrays, the reason linked lists cannot perform binary search is that they cannot use index-based constant-time data access, and therefore cannot quickly filter out half of the current scale each time. So how can we modify a linked list to make binary search possible?</p>
+<p>Use a map to construct a mapping from index to node? Although this would allow binary search, each insertion would cause the indices of all subsequent elements to change, thus requiring O(n) updates in the map.</p>
+<p>Add pointers so that from any node you can directly jump to any other node? That would require constructing a fully connected graph. Not only would the pointers consume too much space, but each insertion would still require O(n) pointer updates.</p>
+<p>The skip list provides an idea: <strong>step sampling, building indexes, decreasing layer by layer</strong>. Let’s use a figure from the paper to explain in detail.</p>
+<p><img data-src="https://i.loli.net/2020/07/07/OeJRfVhHMEpxiNz.png" alt="skiplist-linked-lists-with-additional-pointers.png"><span class="image-caption">skiplist-linked-lists-with-additional-pointers.png</span></p>
+<p>As shown in the figure, initially we have an ordered linked list a with a head node, and its lookup complexity is O(n). Then, we perform step sampling, connect the sampled nodes in order with pointers, and get table b. At this point, the lookup complexity is O(⌈<em>n</em>/2⌉ + 1) <em>[Note 1]</em>. After that, we perform step sampling again on the nodes sampled last time, connect them with pointers, and get table c. At this point, the lookup complexity is O(⌈<em>n</em>/4⌉ + 2). We repeat this process of step sampling and sequential connection until only one sampled node remains, as shown in figure e. At this point, the lookup complexity can be seen to be O(log2n) <em>[Note 2]</em>.</p>
+<p>The cost is that we add a bunch of pointers. How many more? Let’s consider this question step by step. From the figure, we can see that each time we sample a certain number of nodes, we add that many pointers. Our sampling strategy is to sample at intervals from the previous set of nodes each time, starting with n nodes and continuing until only one node remains. Summing them up: (n/2 + n/4 + … + 1) = n. This is the same number of pointers as a binary tree with n nodes.</p>
+<p>Here we avoid one question: what is the insertion time complexity of this structure? This actually leads to the essential question: how should we perform insertion.</p>
+<h3 id="Skip-List-and-Balanced-Tree">Skip List and Balanced Tree</h3>
+<p>In practice, we often use binary search trees as dictionaries or ordered lists. During insertion, if the data has good randomness in the key space, then sequential insertion into a binary search tree can maintain good query performance. But if we insert data sequentially, it will cause the binary search tree to become severely unbalanced, causing both read and write performance to degrade significantly.</p>
+<p>To ensure performance, adjustments are needed when imbalance is detected, leading to AVL trees and red-black trees. As we all know, the rotation strategies of AVL and the coloring strategies of red-black trees are somewhat complex. At least, I didn’t remember them after roughly reading twice, and it’s impossible to write them by hand in an interview.</p>
+<p>The skip list, while guaranteeing the same query efficiency, uses a clever transformation that greatly simplifies the implementation of insertion. We cannot guarantee that all insertion requests have good randomness, or balance, in the key space; but we can control the balance of each node in other dimensions. For example, the probabilistic balance of the distribution of the number of pointers per node in a skip list.</p>
+<h3 id="Probabilistic-Balancing">Probabilistic Balancing</h3>
+<p>To better explain this problem, let’s sort out the structure of the skip list and the concepts involved. Each node in a skip list has 1 ~ MaxLevel pointers; a node with k pointers is called a <em>level k node</em>; the maximum level of all nodes is the <em>MaxLevel</em> of the skip list. The skip list has an empty head node, which has MaxLevel pointers.</p>
+<p>According to the previous idea of building a skip list from an ordered linked list, each insertion of a new node becomes a difficult problem. For example, how many pointers should the inserted node have? How can we ensure that lookup performance does not degrade after insertion (i.e., maintain the balance of sampling)?</p>
+<p>To solve this problem, Pugh made a clever transformation: decomposing the <em>global, static</em> index building into <em>independent, dynamic</em> index building. The key lies in <strong>maintaining the probability distribution of the number of pointers of global nodes in the skip list to maintain query efficiency</strong>. Analyzing the above process of building indexes by step sampling layer by layer, we can find that in the built skip list, 50% of the nodes are level 1 nodes, 25% are level 2 nodes, 12.5% are level 3 nodes, and so on. If we can maintain that the nodes in our constructed skip list have the same probability distribution, we can guarantee similar query performance. This seems intuitively correct. I won’t delve into the mathematical principles behind it here; interested students can go read the paper.</p>
+<p>After such a transformation, the two problems raised above are solved:</p>
+<ol>
+<li>The number of pointers for a newly inserted node is determined by independently calculating a probability value, so that the number of pointers of global nodes satisfies a geometric distribution.</li>
+<li>No additional node adjustments are needed during insertion. We only need to find the position where it should be placed, and then modify the pointers of itself and its predecessors.</li>
+</ol>
+<p>Thus, the time complexity of inserting a node is the sum of the lookup time complexity <code>O(log2n)</code> and the pointer modification complexity <code>O(1)</code> <em>[Note 3]</em>, which is also <code>O(log2n)</code>. The deletion process is similar to insertion and can also be transformed into a lookup and pointer modification, so the complexity is also <code>O(log2n)</code>.</p>
+<h2 id="Source-Code-Analysis">Source Code Analysis</h2>
+<p>After much anticipation, let’s get to the main topic. LevelDB’s implementation of SkipList adds code for optimizing multi-threaded concurrent access, providing the following guarantees:</p>
+<ol>
+<li>Write: When modifying the skip list, locking is required on the user code side.</li>
+<li>Read: When accessing the skip list (lookup, traversal), it is only necessary to ensure that the skip list is not destroyed by other threads; no additional locking is required.</li>
+</ol>
+<p>That is, the user side only needs to handle write-write conflicts; LevelDB’s skip list guarantees no read-write conflicts.</p>
+<p>This is because LevelDB makes the following invariants in its implementation:</p>
+<ol>
+<li>Unless the skip list is destroyed, skip list nodes will only increase and will not be deleted, because the skip list does not provide a deletion interface at all.</li>
+<li>Nodes inserted into the skip list are immutable except for the next pointer, and only insertion operations will change the skip list.</li>
+</ol>
+<h3 id="Interface">Interface</h3>
+<p>LevelDB’s Skip List mainly provides three external interfaces: insertion, query, and traversal.</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Insert key into the skip list.</span></span><br><span class="line"><span class="comment">// Requirement: cannot insert a key that is equal to an existing node in the skip list.</span></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="type">void</span> SkipList&lt;Key, Comparator&gt;::<span class="built_in">Insert</span>(<span class="type">const</span> Key&amp; key)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Return true if and only if there is a node in the skip list equal to the given key.</span></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="type">bool</span> SkipList&lt;Key, Comparator&gt;::<span class="built_in">Contains</span>(<span class="type">const</span> Key&amp; key) <span class="type">const</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Return an iterator for the given skip list.</span></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Iterator</span>(<span class="type">const</span> SkipList* list)</span><br></pre></td></tr></table></figure>
+<p>For flexibility, LevelDB’s SkipList uses a class template (<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvVGVtcGxhdGVfKEMlMkIlMkIp">template class<i class="fa fa-external-link-alt"></i></span>), allowing the caller to customize the type of Key and customize the comparison class Comparator based on that Key.</p>
+<p>Before analyzing these interfaces in detail, let’s first look at the data structure of the basic element <code>SkipList::Node</code>. There is some synchronization code for multi-threaded read/write of shared variables in the code. This mainly involves instruction reordering, which I’ll briefly explain below.</p>
+<p>As we know, compilers/CPUs will reorder instructions as needed (to speed up execution, optimize memory, etc.) while ensuring the same effect. This is indeed fine for single-threaded code. But for multi-threading, instruction reordering can make the execution order of code between threads counterintuitive. Here’s an <span class="exturl" data-url="aHR0cHM6Ly9nb2xhbmcub3JnL3JlZi9tZW0=">example<i class="fa fa-external-link-alt"></i></span> in Go:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> a, b <span class="type">int</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">f</span><span class="params">()</span></span> &#123;</span><br><span class="line">  a = <span class="number">1</span></span><br><span class="line">  b = <span class="number">2</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">g</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="built_in">print</span>(b)</span><br><span class="line">  <span class="built_in">print</span>(a)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">go</span> f()</span><br><span class="line">  g()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>This code snippet may print <code>2 0</code>!</p>
+<p>The reason is that the compiler/CPU reordered the assignment order in <code>f()</code> or the print order in <code>g()</code>. This means that multi-threaded code written intuitively may have problems. Because you implicitly assume that the execution order within a single thread follows the code order, and that although code execution in multi-threading may interleave, each thread still maintains its own internal code order. But this is not the case. Due to compiler/CPU instruction reordering, without explicit synchronization, you cannot make any assumptions about the execution order between threads.</p>
+<p>Back to the LevelDB skip list code, it mainly involves several memory orders newly supported in the C++11 atomic standard library, which specify some restrictions on instruction reordering. I’ll only explain the three used here:</p>
+<ol>
+<li><code>std::memory_order_relaxed</code>: No restrictions on reordering; only guarantees atomicity of related shared memory accesses.</li>
+<li><code>std::memory_order_acquire</code>: Used in load, guaranteeing that subsequent reads/writes to related memory in the same thread will not be reordered before this load, and that stores with release from other threads to the same memory are visible.</li>
+<li><code>std::memory_order_release</code>: Used in store, guaranteeing that subsequent reads/writes to related memory in the same thread will not be reordered before this store, and that all modifications in this thread are visible to other threads using load acquire.</li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">SkipList</span>&lt;Key, Comparator&gt;::Node &#123;</span><br><span class="line">  <span class="function"><span class="keyword">explicit</span> <span class="title">Node</span><span class="params">(<span class="type">const</span> Key&amp; k)</span> : key(k) &#123;</span>&#125;</span><br><span class="line"></span><br><span class="line">  Key <span class="type">const</span> key;</span><br><span class="line"></span><br><span class="line">  <span class="function">Node* <span class="title">Next</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(n &gt;= <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">return</span> next_[n].<span class="built_in">load</span>(std::memory_order_acquire);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">SetNext</span><span class="params">(<span class="type">int</span> n, Node* x)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(n &gt;= <span class="number">0</span>);</span><br><span class="line">    next_[n].<span class="built_in">store</span>(x, std::memory_order_release);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Accessor versions without memory barriers. Memory barrier is an apt metaphor,</span></span><br><span class="line">  <span class="comment">// i.e., placing a barrier to prevent reordering / perform synchronization.</span></span><br><span class="line">  <span class="function">Node* <span class="title">NoBarrier_Next</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(n &gt;= <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">return</span> next_[n].<span class="built_in">load</span>(std::memory_order_relaxed);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">NoBarrier_SetNext</span><span class="params">(<span class="type">int</span> n, Node* x)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(n &gt;= <span class="number">0</span>);</span><br><span class="line">    next_[n].<span class="built_in">store</span>(x, std::memory_order_relaxed);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">// The length of the pointer array is the level of this node. next_[0] is the lowest level pointer.</span></span><br><span class="line">  std::atomic&lt;Node*&gt; next_[<span class="number">1</span>]; <span class="comment">// Pointer to the pointer array</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="Lookup">Lookup</h3>
+<p>Lookup is the basis of insertion. Each node must first find a suitable position before insertion. Therefore, LevelDB abstracts a common function: <code>FindGreaterOrEqual</code>:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="type">bool</span> SkipList&lt;Key, Comparator&gt;::<span class="built_in">Contains</span>(<span class="type">const</span> Key&amp; key) <span class="type">const</span> &#123;</span><br><span class="line">  Node* x = <span class="built_in">FindGreaterOrEqual</span>(key, <span class="literal">nullptr</span>);</span><br><span class="line">  <span class="keyword">if</span> (x != <span class="literal">nullptr</span> &amp;&amp; <span class="built_in">Equal</span>(key, x-&gt;key)) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The meaning of this function is: find the first value in the skip list that is not less than the given key; if not found, return nullptr. If the parameter <code>prev</code> is not empty, during the lookup process, record the predecessor nodes of the node to be found at each level. Obviously, for a lookup operation, just specify <code>prev = nullptr</code>; for inserting data, a <code>prev</code> parameter of appropriate size needs to be passed.</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">typename</span> SkipList&lt;Key, Comparator&gt;::Node*</span><br><span class="line">SkipList&lt;Key, Comparator&gt;::<span class="built_in">FindGreaterOrEqual</span>(<span class="type">const</span> Key&amp; key, Node** prev) <span class="type">const</span> &#123;</span><br><span class="line">  Node* x = head_;                <span class="comment">// Start lookup from head node</span></span><br><span class="line">  <span class="type">int</span> level = <span class="built_in">GetMaxHeight</span>() - <span class="number">1</span>; <span class="comment">// Start lookup from highest level</span></span><br><span class="line">  <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">    Node* next = x-&gt;<span class="built_in">Next</span>(level);  <span class="comment">// Next node at this level</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">KeyIsAfterNode</span>(key, next)) &#123;</span><br><span class="line">      x = next;                   <span class="comment">// The key to find is larger than next, continue lookup at this level</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (prev != <span class="literal">nullptr</span>) prev[level] = x;</span><br><span class="line">      </span><br><span class="line">      <span class="keyword">if</span> (level == <span class="number">0</span>) &#123;           <span class="comment">// The key to find is not larger than next, and we&#x27;ve reached the bottom, return</span></span><br><span class="line">        <span class="keyword">return</span> next;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;                    <span class="comment">// The key to find is not larger than next, and we haven&#x27;t reached the bottom, go down</span></span><br><span class="line">        level--;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>This process is illustrated below using a figure from the paper:</p>
+<p><img data-src="https://i.loli.net/2020/07/07/N3iSsOqDBvdRCfg.png" alt="skiplist-search-insert.png"><span class="image-caption">skiplist-search-insert.png</span></p>
+<h3 id="Insertion">Insertion</h3>
+<p>On the basis of <code>FindGreaterOrEqual</code>, record the predecessor nodes of the node to be inserted at each level. For example, in the figure above, after calling <code>FindGreaterOrEqual(17, prev)</code>, <code>prev = [12, 9, 6, 6]</code>. The insertion code is as follows:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="type">void</span> SkipList&lt;Key, Comparator&gt;::<span class="built_in">Insert</span>(<span class="type">const</span> Key&amp; key) &#123;</span><br><span class="line">  <span class="comment">// TODO(opt): Since insertion requires external locking, we can use a version of</span></span><br><span class="line">  <span class="comment">// FindGreaterOrEqual that uses NoBarrier_Next to improve performance.</span></span><br><span class="line">  Node* prev[kMaxHeight]; <span class="comment">// The length is set simply and roughly, directly taking the maximum value (kMaxHeight = 12) is definitely correct.</span></span><br><span class="line">  Node* x = <span class="built_in">FindGreaterOrEqual</span>(key, prev);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// LevelDB skip list requires that duplicate data cannot be inserted.</span></span><br><span class="line">  <span class="built_in">assert</span>(x == <span class="literal">nullptr</span> || !<span class="built_in">Equal</span>(key, x-&gt;key));</span><br><span class="line"></span><br><span class="line">  <span class="type">int</span> height = <span class="built_in">RandomHeight</span>(); <span class="comment">// Randomly get a level value</span></span><br><span class="line">  <span class="keyword">if</span> (height &gt; <span class="built_in">GetMaxHeight</span>()) &#123; <span class="comment">// GetMaxHeight() gets the current level of the skip list</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="built_in">GetMaxHeight</span>(); i &lt; height; i++) &#123;</span><br><span class="line">      prev[i] = head_;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// No need to lock for concurrent reads here. Because a concurrent read (in another thread through</span></span><br><span class="line">    <span class="comment">// GetMaxHeight in FindGreaterOrEqual) may read the updated skip list level before this node is inserted.</span></span><br><span class="line">    <span class="comment">// But that&#x27;s fine. Because it means it will read nullptr, and in LevelDB&#x27;s Comparator setting,</span></span><br><span class="line">    <span class="comment">// nullptr is larger than all keys. Therefore, FindGreaterOrEqual will continue looking down, as expected.</span></span><br><span class="line">    max_height_.<span class="built_in">store</span>(height, std::memory_order_relaxed);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  x = <span class="built_in">NewNode</span>(key, height);</span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; height; i++) &#123;</span><br><span class="line">    <span class="comment">// NoBarrier_SetNext() version is sufficient here, because the subsequent prev[i]-&gt;SetNext(i, x) statement will enforce synchronization.</span></span><br><span class="line">    <span class="comment">// And to ensure the correctness of concurrent reads, we must first set this node&#x27;s pointer, then set the original skip list node&#x27;s (prev) pointer.</span></span><br><span class="line">    x-&gt;<span class="built_in">NoBarrier_SetNext</span>(i, prev[i]-&gt;<span class="built_in">NoBarrier_Next</span>(i));</span><br><span class="line">    prev[i]-&gt;<span class="built_in">SetNext</span>(i, x);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The <strong>complexity</strong> of LevelDB’s skip list implementation lies in providing correctness guarantees for lock-free concurrent reads. But the <strong>key point</strong> of the algorithm is how to determine the level of each newly inserted node to satisfy probabilistic balancing, thereby providing efficient query performance. That is, the implementation of <code>RandomHeight</code>:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="type">int</span> SkipList&lt;Key, Comparator&gt;::<span class="built_in">RandomHeight</span>() &#123;</span><br><span class="line">  <span class="comment">// Increase the level with probability 1/4 each time.</span></span><br><span class="line">  <span class="type">static</span> <span class="type">const</span> <span class="type">unsigned</span> <span class="type">int</span> kBranching = <span class="number">4</span>;</span><br><span class="line">  <span class="type">int</span> height = <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">while</span> (height &lt; kMaxHeight &amp;&amp; ((rnd_.<span class="built_in">Next</span>() % kBranching) == <span class="number">0</span>)) &#123;</span><br><span class="line">    height++;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">assert</span>(height &gt; <span class="number">0</span>);</span><br><span class="line">  <span class="built_in">assert</span>(height &lt;= kMaxHeight);</span><br><span class="line">  <span class="keyword">return</span> height;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>LevelDB’s sampling is relatively sparse, sampling one out of every four, and the maximum level is kMaxHeight = 12. The specific implementation process is the construction of a geometric distribution with P = 3/4. The result is that among all nodes: 3/4 are level 1 nodes, 3/16 are level 2 nodes, 3/64 are level 3 nodes, and so on. Thus, the average number of pointers per node is 1/P = 4/3 = 1.33. Of course, the meaning of p in the paper is the sampling ratio between adjacent levels, and its relationship with the P I mentioned is: p = 1-P.</p>
+<p>Choosing p = 1/4 compared to p = 1/2 is trading time for space, sacrificing some constant query efficiency for a reduction in the average number of pointers, thereby reducing memory usage. The paper also recommends p = 1/4 unless read speed requirements are particularly strict. In this case, it can support up to n = (1/p)^kMaxHeight nodes without degradation of query time complexity. If kMaxHeight = 12, the skip list can support up to n = 4 ^ 12 = 16M values.</p>
+<h3 id="Traversal">Traversal</h3>
+<p>LevelDB constructs an inner class Iterator for the skip list, which takes SkipList as a constructor parameter and implements most of the functions of the Iterator interface exported by LevelDB, such as Next, Prev, Seek, SeekToFirst, SeekToLast, etc.</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Iterator</span>(<span class="type">const</span> SkipList* list) &#123;</span><br><span class="line">  list_ = list;</span><br><span class="line">  node_ = <span class="literal">nullptr</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">bool</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Valid</span>() <span class="type">const</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> node_ != <span class="literal">nullptr</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">const</span> Key&amp; SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">key</span>() <span class="type">const</span> &#123;</span><br><span class="line">  <span class="built_in">assert</span>(<span class="built_in">Valid</span>());</span><br><span class="line">  <span class="keyword">return</span> node_-&gt;key;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">void</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Next</span>() &#123;</span><br><span class="line">  <span class="built_in">assert</span>(<span class="built_in">Valid</span>());</span><br><span class="line">  node_ = node_-&gt;<span class="built_in">Next</span>(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">void</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Prev</span>() &#123;</span><br><span class="line">  <span class="comment">// Rather than adding an extra prev pointer to each node, we find its prev node by searching from the head.</span></span><br><span class="line">  <span class="built_in">assert</span>(<span class="built_in">Valid</span>());</span><br><span class="line">  node_ = list_-&gt;<span class="built_in">FindLessThan</span>(node_-&gt;key);</span><br><span class="line">  <span class="keyword">if</span> (node_ == list_-&gt;head_) &#123;</span><br><span class="line">    node_ = <span class="literal">nullptr</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">void</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">Seek</span>(<span class="type">const</span> Key&amp; target) &#123;</span><br><span class="line">  node_ = list_-&gt;<span class="built_in">FindGreaterOrEqual</span>(target, <span class="literal">nullptr</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">void</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">SeekToFirst</span>() &#123;</span><br><span class="line">  node_ = list_-&gt;head_-&gt;<span class="built_in">Next</span>(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> Key, <span class="keyword">class</span> <span class="title class_">Comparator</span>&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="type">void</span> SkipList&lt;Key, Comparator&gt;::Iterator::<span class="built_in">SeekToLast</span>() &#123;</span><br><span class="line">  node_ = list_-&gt;<span class="built_in">FindLast</span>();</span><br><span class="line">  <span class="keyword">if</span> (node_ == list_-&gt;head_) &#123;</span><br><span class="line">    node_ = <span class="literal">nullptr</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>It can be seen that this iterator does not add an extra prev pointer to each node for reverse iteration, but instead chooses to search from the head. This is also a trade-off of time for space. Of course, the assumption is that forward traversal is relatively rare.</p>
+<p>The implementation of <code>FindLessThan</code> and <code>FindLast</code> is similar in idea to <code>FindGreaterOrEqual</code>, so I won’t elaborate further.</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Return the latest node with a key &lt; key.</span></span><br><span class="line"><span class="comment">// Return head_ if there is no such node.</span></span><br><span class="line"><span class="function">Node* <span class="title">FindLessThan</span><span class="params">(<span class="type">const</span> Key&amp; key)</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Return the last node in the list.</span></span><br><span class="line"><span class="comment">// Return head_ if list is empty.</span></span><br><span class="line"><span class="function">Node* <span class="title">FindLast</span><span class="params">()</span> <span class="type">const</span></span>;</span><br></pre></td></tr></table></figure>
+<h2 id="Summary">Summary</h2>
+<p>The skip list is essentially an optimization of the linked list. It builds indexes by step sampling layer by layer to speed up lookup. Using the idea of probabilistic balancing, it determines the level of newly inserted nodes to satisfy a geometric distribution, simplifying the implementation of insertion while guaranteeing similar lookup efficiency.</p>
+<p>LevelDB’s skip list implementation also specifically optimizes for multi-threaded reads, but writes still require external locking. In terms of implementation strategy, it adopts a time-for-space approach to optimize memory usage.</p>
+<p>In the next article, we will continue to analyze another classic data structure used in LevelDB: the <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter">Bloom Filter</a>.</p>
+<h2 id="Annotations">Annotations</h2>
+<p>[1] First search at the upper level, then narrow down to a certain range and search at the lower level.</p>
+<p>[2] It can be proven, or we can simply find the pattern: O(⌈<em>n</em>/2⌉ + 1) -&gt; O(⌈<em>n</em>/4⌉ + 2) -&gt; … -&gt; O(1 + log2n), i.e., O(log2n).</p>
+<p>[3] From the sampling process, we know that the probabilities of all nodes satisfy a <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvR2VvbWV0cmljX2Rpc3RyaWJ1dGlvbg==">geometric distribution<i class="fa fa-external-link-alt"></i></span> with p = 0.5. The expected number of pointers per node is 1/p = 2, so each insertion requires modifying 2 * 2 pointers on average, which is a constant level.</p>
+<h2 id="References">References</h2>
+<ol>
+<li>LevelDB handbook: <span class="exturl" data-url="aHR0cHM6Ly9sZXZlbGRiLWhhbmRib29rLnJlYWR0aGVkb2NzLmlvL3poL2xhdGVzdC9pbmRleC5odG1s">https://leveldb-handbook.readthedocs.io/zh/latest/index.html<i class="fa fa-external-link-alt"></i></span></li>
+<li>Dissecting LevelDB - Data Storage: <span class="exturl" data-url="aHR0cHM6Ly9jYXRrYW5nLmdpdGh1Yi5pby8yMDE3LzAxLzE3L2xldmVsZGItZGF0YS5odG1s">https://catkang.github.io/2017/01/17/leveldb-data.html<i class="fa fa-external-link-alt"></i></span></li>
+<li>C++ atomic memory order: <span class="exturl" data-url="aHR0cHM6Ly9lbi5jcHByZWZlcmVuY2UuY29tL3cvY3BwL2F0b21pYy9tZW1vcnlfb3JkZXI=">https://en.cppreference.com/w/cpp/atomic/memory_order<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+<h2 id="The-last-thing">The last thing</h2>
+<p>There is a simplified version of a skip list problem on LeetCode. After reading this article, you can take the opportunity to implement it: <span class="exturl" data-url="aHR0cHM6Ly9sZWV0Y29kZS5jb20vcHJvYmxlbXMvZGVzaWduLXNraXBsaXN0Lw==">https://leetcode.com/problems/design-skiplist/<i class="fa fa-external-link-alt"></i></span></p>
+<p>This is my implementation: <span class="exturl" data-url="aHR0cHM6Ly9sZWV0Y29kZS5jb20vcHJvYmxlbXMvZGVzaWduLXNraXBsaXN0L2Rpc2N1c3MvNzQwODgxL0MlMkIlMkItY2xlYW4tYW5kLXNpbXBsZS1zb2x1dGlvbi1mcm9tLWxldmVsZGI=">https://leetcode.com/problems/design-skiplist/discuss/740881/C%2B%2B-clean-and-simple-solution-from-leveldb<i class="fa fa-external-link-alt"></i></span></p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/07/03/leveldb-data-structures-skip-list/" rel="bookmark">漫谈 LevelDB 数据结构（一）：跳表（Skip List）</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/06/meta-object-store-delta/" rel="bookmark">Meta 链式复制的对象存储——Delta</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/04/distributed-database-storage-components/" rel="bookmark">层层剥开数据库存储层</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/05/26/gfs/" rel="bookmark">GFS — the Art of Trade-Offs</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb Source Code Guide (1): Boltdb Data Organization</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/storage/" rel="tag"># storage</a>
+              <a href="/tags/leveldb/" rel="tag"># leveldb</a>
+              <a href="/tags/skiplist/" rel="tag"># skiplist</a>
+              <a href="/tags/skip-list/" rel="tag"># skip list</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/13/dynamo/" rel="prev" title="Amazon 针对小对象的分布式键值存储——Dynamo">
+      <i class="fa fa-chevron-left"></i> Amazon 针对小对象的分布式键值存储——Dynamo
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/07/03/leveldb-data-structures-skip-list/" rel="next" title="漫谈 LevelDB 数据结构（一）：跳表（Skip List）">
+      漫谈 LevelDB 数据结构（一）：跳表（Skip List） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Requirements"><span class="nav-number">1.</span> <span class="nav-text">Requirements</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Principles"><span class="nav-number">2.</span> <span class="nav-text">Principles</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#From-Linked-List-to-Skip-List"><span class="nav-number">2.1.</span> <span class="nav-text">From Linked List to Skip List</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Skip-List-and-Balanced-Tree"><span class="nav-number">2.2.</span> <span class="nav-text">Skip List and Balanced Tree</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Probabilistic-Balancing"><span class="nav-number">2.3.</span> <span class="nav-text">Probabilistic Balancing</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Source-Code-Analysis"><span class="nav-number">3.</span> <span class="nav-text">Source Code Analysis</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Interface"><span class="nav-number">3.1.</span> <span class="nav-text">Interface</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Lookup"><span class="nav-number">3.2.</span> <span class="nav-text">Lookup</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Insertion"><span class="nav-number">3.3.</span> <span class="nav-text">Insertion</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Traversal"><span class="nav-number">3.4.</span> <span class="nav-text">Traversal</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Summary"><span class="nav-number">4.</span> <span class="nav-text">Summary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Annotations"><span class="nav-number">5.</span> <span class="nav-text">Annotations</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">6.</span> <span class="nav-text">References</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#The-last-thing"><span class="nav-number">7.</span> <span class="nav-text">The last thing</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2020/07/03/leveldb-data-structures-skip-list/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '30fe856ab11371c4c159014939ce331a',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

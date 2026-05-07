@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Overview RDD, whose full name is Resilient Distributed Dataset, is an abstraction over dataset shapes. Based on this abstraction, users can execute a series of computations on a cluster without persis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="The Theoretical Foundation of Spark — RDD">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2019/11/14/rdd/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Overview RDD, whose full name is Resilient Distributed Dataset, is an abstraction over dataset shapes. Based on this abstraction, users can execute a series of computations on a cluster without persis">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/dPmJ2nb1zUNGuAo.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/Jj8GFN5qP3aWZHY.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/aiyjrGJ8IkwtWRY.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/6U1yOcZELsTH5uC.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/6KVtu2qrYFSMv84.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/SaPvyV2LtiAhezJ.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/EYIeyaDqo3cmdFu.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/f1pw8jLhYeNtEoO.png">
+<meta property="article:published_time" content="2019-11-14T12:32:07.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.673Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="spark">
+<meta property="article:tag" content="rdd">
+<meta property="article:tag" content="distributed-systems">
+<meta property="article:tag" content="data-processing">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/dPmJ2nb1zUNGuAo.jpg">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2019/11/14/rdd/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="spark,rdd,distributed-systems,data-processing">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "The Theoretical Foundation of Spark — RDD",
+    "description": "Overview RDD, whose full name is Resilient Distributed Dataset, is an abstraction over dataset shapes. Based on this abstraction, users can execute a series of computations on a cluster without persisting intermediate results to disk. This was exactly a major pain point of the earlier MapReduce abstraction — every step required disk writes, leading to high unnecessary overhead. For distributed systems, fault tolerance support is essential. To support fault tolerance, RDD only supports coarse-grained transformations. That is, the input dataset is immutable (or read-only), and each computation produces a new output. Fine-grained update operations on a dataset are not supported. This constraint greatly simplifies fault tolerance support and can satisfy a large class of computation needs.",
+    "url": "https://www.qtmuniao.com/en/2019/11/14/rdd/",
+    "datePublished": "2019-11-14T20:32:07+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2019/11/14/rdd/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>The Theoretical Foundation of Spark — RDD | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2019/11/14/rdd/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2019/11/14/rdd/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2019/11/14/rdd/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          The Theoretical Foundation of Spark — RDD
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-11-14 20:32:07" itemprop="dateCreated datePublished" datetime="2019-11-14T20:32:07+08:00">2019-11-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Overview">Overview</h2>
+<p>RDD, whose full name is Resilient Distributed Dataset, is an abstraction over dataset shapes. Based on this abstraction, users can execute a series of computations on a cluster without persisting intermediate results to disk. This was exactly a major pain point of the earlier MapReduce abstraction — every step required disk writes, leading to high unnecessary overhead.</p>
+<p>For distributed systems, fault tolerance support is essential. To support fault tolerance, RDD only supports coarse-grained transformations. That is, the input dataset is immutable (or read-only), and each computation produces a new output. Fine-grained update operations on a dataset are not supported. This constraint greatly simplifies fault tolerance support and can satisfy a large class of computation needs.</p>
+<span id="more"></span>
+<p>When first encountering the concept of RDD, it was somewhat difficult to understand why the abstraction should be centered around datasets. As I delved deeper, I realized that a consistent abstraction over datasets is precisely the essence that enables the existence and optimization of computational pipelines. After defining the basic properties of a dataset (immutability, partitioning, dependencies, placement, etc.), various high-level operators can be applied on top of it to build a DAG execution engine and perform appropriate optimizations. From this perspective, RDD is truly an elegant design.</p>
+<p>As usual, let me summarize the main design points of the RDD paper:</p>
+<ol>
+<li><strong>Explicit abstraction</strong>. Datasets used in computations are explicitly abstracted, with their interfaces and properties defined. Thanks to the unified dataset abstraction, different computation processes can be combined for unified DAG scheduling.</li>
+<li><strong>Memory-based</strong>. Compared to MapReduce where intermediate results must be written to disk, RDD significantly reduces the latency of individual operator computation and the loading latency between different operators by keeping results in memory.</li>
+<li><strong>Narrow vs. wide dependencies</strong>. When performing DAG scheduling, the concepts of narrow and wide dependencies are defined and used for stage division and scheduling optimization.</li>
+<li><strong>Lineage-based fault tolerance</strong>. Error recovery mainly relies on computing from the lineage graph rather than maintaining redundant backups, because memory is limited after all — we trade computation for storage.</li>
+<li><strong>Interactive queries</strong>. The Scala interpreter was modified to enable interactive querying of large datasets based on multi-machine memory, thereby supporting higher-level query languages like SQL.</li>
+</ol>
+<p><em>Author: Muniao’s Notes <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, please indicate the source when reprinting</em></p>
+<h2 id="Introduction">Introduction</h2>
+<p>Dryad and MapReduce are already popular big data analysis tools. They provide users with some high-level operators without needing to worry about the underlying distributed and fault-tolerance details. However, they both lack an abstraction for distributed memory; different computation processes can only be coupled through external storage: the predecessor task writes its results to external storage, and the successor task loads them into memory as input before continuing with the successor computation. Such a design has two major drawbacks: poor reusability and high latency. This is extremely unfriendly to machine learning algorithms that require iterative computation (such as PageRank, K-Means, LR, which need data reuse); it is also a disaster for random interactive queries (which require low latency). Because most of the time is spent on data backup, disk I/O, and data serialization.</p>
+<p>Before RDD, there had been many attempts in the industry to solve the data reuse problem. These include iterative graph computing systems that keep intermediate results in memory — Pregel, and HaLoop, which strings together multiple MapReduce jobs and caches loop invariants. However, these systems only support restricted computation models (such as MR) and only perform implicit[1] data reuse. How to achieve more general data reuse to support more complex query computation remains a difficult problem.</p>
+<p>RDD was designed to solve this problem — an efficient <strong>data structure abstraction</strong> for data reuse. RDD supports data fault tolerance and data parallelism; on top of this, it allows users to leverage multi-machine memory, control data partitioning, and construct a series of computation processes. Thereby solving the data reuse needs of many applications with continuous computation processes.</p>
+<p>One of the more difficult design aspects is how to perform <strong>efficient fault tolerance</strong> for in-memory data. Some existing cluster-memory-based systems, such as distributed key-value stores, shared memory, and Piccolo, provide a mutable dataset abstraction that allows fine-grained modifications. To support fault tolerance on top of this abstraction, data replication across machines or operation log backups are required. These operations would cause large amounts of data transfer between machines. Since network bandwidth is much slower than RAM, this undermines the advantage of distributed memory utilization.</p>
+<p>In contrast, RDD only provides coarse-grained computation interfaces based on entire datasets, meaning all entries in a dataset are subjected to the same operation. This way, for fault tolerance, we only need to <strong>back up each operation rather than the data itself</strong> (because updates are performed on the whole dataset); when recovering from errors in a partition, we only need to start from the original dataset and recompute sequentially.</p>
+<p>At first glance, this computation abstraction seems very limited, but it actually satisfies a large class of existing cluster computation needs, including MR, DryadLINQ, SQL, Pregel, and HaLoop. It can also satisfy some other computation needs, such as interactive computation. Spark, the implementation system of RDD, provides high-level operators similar to DryadLINQ and should be the first to provide interactive cluster computation interfaces.</p>
+<h2 id="RDD">RDD</h2>
+<p>This section first gives a detailed definition of RDD, then introduces the operation interfaces for RDD in Spark, compares RDD with shared memory abstractions that provide fine-grained update interfaces, and finally discusses the limitations of RDD.</p>
+<h3 id="RDD-Abstraction">RDD Abstraction</h3>
+<p>RDD is a partitioned, read-only abstraction over a set of data records. RDDs can only be obtained through deterministic computations on persistent storage or other RDDs; such computations are called <strong>transformations</strong>. Common <strong>transformation</strong> operators include map, filter, and join.</p>
+<p>Instead of constantly taking checkpoints for fault tolerance, RDD records the path of changes from the initial external storage dataset, which is its <strong>lineage</strong>. Theoretically, all RDDs can be rebuilt from external storage according to the lineage graph after an error occurs. Generally, the reconstruction granularity is the partition rather than the entire dataset — first because the cost is smaller, and second because different partitions may be on different machines.</p>
+<p>Users can control two aspects of RDDs: persistence and partitioning. For the former, if some RDDs need to be reused, users can instruct the system to persist them according to some strategy. For the latter, users can customize partition routing functions to route records in the dataset to different partitions based on some key. For example, when performing a join operation, the datasets to be joined can be partitioned according to the same strategy for parallel join.</p>
+<h3 id="Spark-Programming-Interface">Spark Programming Interface</h3>
+<p>Spark provides interfaces for operating on RDDs by exposing operators integrated with the programming language. RDDs appear as classes in the programming language, and RDD operators are functions that act on these classes. Previous systems such as DryadLINQ and FlumeJava also used a similar form.</p>
+<p>When using RDDs, users first load data from persistent storage into memory through <em>transformations</em> (such as <em>map</em> or <em>filter</em>), then can apply any series of transformations supported by the system to the RDDs, and finally use <em>actions</em> to persist the RDDs back to external storage or return control to the user. Like DryadLINQ, this load-transform-persist process is <strong>declarative</strong> (or lazy[2]): Spark uses the execution engine to perform execution optimization (such as parallelization and pipelining) after obtaining the entire topology.</p>
+<p>Another important interface is <em>persist</em>, which allows users to tell the system <strong>which</strong> RDDs need to be persisted, <strong>how</strong> to persist them (local disk or cross-machine storage), and if multiple RDDs need to be persisted, how to determine <strong>priority</strong>. Spark saves RDDs in memory by default; if memory is insufficient, it will spill data to disk according to user configuration.</p>
+<h4 id="An-Example">An Example</h4>
+<p>Suppose we want to find error entries in a log file stored on HDFS and analyze specific entries containing the keyword “hdfs”. Using the Spark interface and implementing it in Scala, the code is as follows:</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">lines = spark.textFile(<span class="string">&quot;hdfs://...&quot;</span>)</span><br><span class="line">errors = lines.filter(_.startsWith(<span class="string">&quot;ERROR&quot;</span>))</span><br><span class="line">errors.persist()</span><br><span class="line"></span><br><span class="line"><span class="comment">// Return the time fields of errors mentioning</span></span><br><span class="line"><span class="comment">// HDFS as an array (assuming time is field</span></span><br><span class="line"><span class="comment">// number 3 in a tab-separated format):</span></span><br><span class="line">errors.filter(_.contains(<span class="string">&quot;HDFS&quot;</span>))</span><br><span class="line">      .map(_.split(&#x27;\t&#x27;)(<span class="number">3</span>))</span><br><span class="line">      .collect()</span><br></pre></td></tr></table></figure>
+<p>The first line defines an RDD based on a file on HDFS (each line as an entry in the collection). The second line generates a new RDD through the filter transformation. The third line requests Spark to cache its results. The last line is a chain of operations ending with a collect action, obtaining the various fields of all lines containing the HDFS keyword.</p>
+<p>Its computation lineage graph is as follows:</p>
+<p><img data-src="https://i.loli.net/2020/02/09/dPmJ2nb1zUNGuAo.jpg" alt="rdd-example-lineage.jpg"><span class="image-caption">rdd-example-lineage.jpg</span></p>
+<p>There are two points to note:</p>
+<ol>
+<li>No actual computation occurs until the <strong>action</strong> (Action) collect is encountered.</li>
+<li>Intermediate results are not saved during chained operations;</li>
+</ol>
+<p>Since the third line caches results in memory, other actions can also be based on this. For example, counting error entries containing the ‘MySQL’ keyword:</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Count errors mentioning MySQL:</span></span><br><span class="line">errors.filter(_.contains(<span class="string">&quot;MySQL&quot;</span>)).count()</span><br></pre></td></tr></table></figure>
+<h3 id="Advantages-of-the-RDD-Model">Advantages of the RDD Model</h3>
+<p>To understand the benefits brought by RDD, consider the following table, which compares RDD with DSM (Distributed Shared Memory) in detail. DSM here is a very broad abstraction, including not only general memory sharing systems but also other frameworks that support fine-grained state updates, such as Piccolo and distributed databases.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/Jj8GFN5qP3aWZHY.jpg" alt="rdd-compare-dsm-table.jpg"><span class="image-caption">rdd-compare-dsm-table.jpg</span></p>
+<p>First, the main difference between DSM and RDD is that DSM supports fine-grained updates to datasets. That is, updates can be made to arbitrary memory locations. RDD gives up this capability and only allows batch data writes, thereby improving fault tolerance efficiency:</p>
+<ol>
+<li>Using lineage to recover data on demand, rather than periodic snapshots, reduces unnecessary overhead.</li>
+<li>Each partition can be recovered independently after an error, without rebuilding the entire dataset.</li>
+</ol>
+<p>Second, the immutable nature of RDDs allows the system to relatively easily migrate certain computations. For example, some straggler tasks in MR can be conveniently migrated to other compute nodes because their input data will definitely not change, so consistency issues need not be considered.</p>
+<p>Finally, two more benefits are worth mentioning:</p>
+<ol>
+<li>Because only batch computation is supported, the scheduling system can better exploit data locality to speed up computation.</li>
+<li>If cluster memory is insufficient, as long as the data supports iteration, it can be loaded into memory in batches for computation, or results can be spilled to external storage in batches. In this way, it can provide very elegant degradation when memory is insufficient without much performance loss.</li>
+</ol>
+<h3 id="Scenarios-Where-RDD-Is-Not-Suitable">Scenarios Where RDD Is Not Suitable</h3>
+<p>As mentioned above, RDD is suitable for coarse-grained transformation abstractions that apply unified processing to entire datasets. Correspondingly, it is not suitable for datasets that require fine-grained, asynchronous updates to data. For example, web applications, or web crawlers, etc. For these application types, traditional snapshot + operation log fault tolerance methods may be more suitable, such as databases RAMCloud, Percolator, and Piccolo. RDD targets batch analytical applications, leaving the needs of these asynchronous applications to specialized systems.</p>
+<h2 id="Spark-Programming-Interface-2">Spark Programming Interface</h2>
+<p>Spark uses the Scala language as the interface for the RDD abstraction because Scala balances precision (its functional semantics are suitable for interactive scenarios) with efficiency (using static types). Of course, for RDD itself, it is not limited to any particular language expression. Below, we explain in detail how Spark executes user code from two aspects: <strong>execution flow</strong> and <strong>code distribution</strong>.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/aiyjrGJ8IkwtWRY.jpg" alt="rdd-spark-runtime.jpg"><span class="image-caption">rdd-spark-runtime.jpg</span></p>
+<p>Developers use the libraries provided by Spark to write <em>driver programs</em> to use Spark. The driver program defines one or more RDDs and applies various transformations to them. The libraries provided by Spark connect to the Spark cluster, generate a computation topology, distribute the topology to multiple workers for execution, and record the lineage of transformations. These workers are long-running processes distributed across machines in the Spark cluster; they store partitions of RDDs generated during computation in memory.</p>
+<p>As in the previous example, developers need to pass functions as arguments to Spark operators such as map. Spark serializes these functions (or <strong>closures</strong>) into Java objects and distributes them to execution nodes for loading. Variables involved in closures are treated as field values of the generated objects. RDDs themselves are packaged as statically typed parameters for passing. Since Scala supports type inference, most examples omit the RDD data type.</p>
+<p>Although the Scala RDD interface exposed by Spark appears conceptually simple, there are some very dirty corners in its actual implementation, such as Scala closures requiring reflection, and trying to avoid modifying the Scala interpreter.</p>
+<h3 id="RDD-Operations-in-Spark">RDD Operations in Spark</h3>
+<p>The following table lists the RDD operations supported in Spark. As mentioned earlier, <strong>transformations</strong> are lazy operators that generate new RDDs, while <strong>actions</strong> are operators that trigger scheduling; they return a result or write data to external storage.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/6U1yOcZELsTH5uC.jpg" alt="rdd-operations-table.jpg"><span class="image-caption">rdd-operations-table.jpg</span></p>
+<p>Points to note:</p>
+<ol>
+<li>Some operations, such as <em>join</em>, require the operand RDDs to be key-value pairs.</li>
+<li><em>map</em> is a one-to-one mapping, while <em>flatMap</em> is a one-to-one or one-to-many mapping similar to that in MapReduce.</li>
+<li><em>save</em> persists an RDD.</li>
+<li><em>groupByKey</em>, <em>reduceByKey</em>, and <em>sort</em> all cause re-hashing or reordering across different partitions of an RDD.</li>
+</ol>
+<h2 id="Representation-of-RDDs">Representation of RDDs</h2>
+<p>One difficulty in providing the RDD abstraction is how to efficiently <strong>track lineage</strong> while providing rich <strong>transformation support</strong>. We ultimately chose a graph-based scheduling model, decoupling scheduling from operators. Thereby, operator support can be conveniently increased without changing the scheduling module logic. Specifically, the core components of the RDD abstraction mainly consist of the following five parts:</p>
+<ol>
+<li><strong>Partition set</strong>. Partitions are the smallest constituent units of each RDD.</li>
+<li><strong>Dependency set</strong>. Mainly the parent-child dependency relationships between RDDs.</li>
+<li><strong>Compute function</strong>. The transformation function applied to partitions, which can compute a child partition from several parent partitions.</li>
+<li><strong>Partition scheme</strong>. Whether the RDD is partitioned based on <strong>hash sharding</strong> or <strong>direct splitting</strong>.</li>
+<li><strong>Data placement</strong>. Knowing partition placement locations enables computation optimization.</li>
+</ol>
+<p><img data-src="https://i.loli.net/2020/02/09/6KVtu2qrYFSMv84.jpg" alt="RDD Abstraction Interface Composition"><span class="image-caption">RDD Abstraction Interface Composition</span></p>
+<p>One of the most interesting points in the RDD interface design is how to reduce the <strong>dependency relationships</strong> between RDDs. It was ultimately discovered that all dependencies can be categorized into two types:</p>
+<ol>
+<li><strong>Narrow dependencies</strong>: A partition of the parent RDD is depended upon by at most one partition of the child RDD, such as <em>map</em>.</li>
+<li><strong>Wide dependencies</strong>: A partition of the parent RDD may be depended upon by multiple partitions of the child RDD, such as <em>join</em>.</li>
+</ol>
+<p><img data-src="https://i.loli.net/2020/02/09/SaPvyV2LtiAhezJ.jpg" alt="Wide and Narrow Dependencies"><span class="image-caption">Wide and Narrow Dependencies</span></p>
+<p>The main reasons for this categorization are two-fold.</p>
+<p><strong>Scheduling optimization</strong>. For narrow dependencies, pipelined scheduling can be performed between partitions: a partition that has completed a narrow dependency operator (such as map) does not need to wait for other partitions and can directly proceed to the next narrow dependency operator (such as filter). In contrast, wide dependencies require all partitions of the parent RDD to be ready and transferred across nodes before computation can proceed, similar to the shuffle in MapReduce.</p>
+<p><strong>Data recovery</strong>. When a partition encounters an error or is lost, recovery for narrow dependencies is more efficient. Because fewer parent partitions are involved, and recovery can be performed in parallel. For wide dependencies, due to complex dependencies (as shown in the figure above, each partition of the child RDD depends on all partitions of the parent RDD), the loss of one partition may trigger a full recomputation.</p>
+<p>This design that decouples scheduling from operators greatly simplifies the implementation of transformations; most transformations can be implemented in about 20 lines of code. Since there is no need to understand scheduling details, anyone can quickly get started implementing a new transformation. A few examples:</p>
+<p><strong>HDFS file</strong>: The <em>partitions</em> function returns all blocks of the HDFS file, with each block treated as a partition. <em>preferredLocations</em> returns the location of each block, and <em>Iterator</em> reads each block.</p>
+<p><strong>map</strong>: Calling map on any RDD returns a MappedRDD object, whose <em>partitions</em> function and <em>preferredLocations</em> are consistent with the parent RDD. For <em>iterator</em>, we only need to apply the function passed to the map operator to each partition of the parent RDD in turn.</p>
+<p><strong>union</strong>: Calling union on two RDDs returns a new RDD, each partition of which is computed from the corresponding two parent RDDs through narrow dependencies.</p>
+<p><strong>sample</strong>: The sampling function is largely consistent with map. However, this function saves a random seed for each partition to decide whether each record of the parent RDD is retained.</p>
+<p><strong>join</strong>: Calling join on two RDDs may result in two narrow dependencies (if their partitions are both hashed by the key to be joined), two wide dependencies, or mixed dependencies. In each case, the child RDD will have a <em>partitioner</em> function, either inherited from the parent partition or using the default hash partition function.</p>
+<h2 id="Implementation">Implementation</h2>
+<p>The initial version of Spark (mentioned in the paper) consisted of only 14,000 lines of Scala code, managed resource allocation by Mesos, could share resources with the Hadoop ecosystem, and loaded data from Hadoop/HBase. Regarding Spark’s implementation, there are several points worth discussing: Job scheduling, interactive interpreter, memory management, and checkpointing.</p>
+<h3 id="Job-Scheduling">Job Scheduling</h3>
+<p>Spark’s scheduling design relies on the RDD abstraction mentioned in the previous section. Its scheduling strategy is somewhat similar to Dryad’s but not exactly the same. When a user calls an Action-type operator (such as count, save, etc.) on an RDD, the scheduler generates a computation topology based on the order in which operators are called in the user code. We treat each RDD before and after a transformation as a <em>node</em>, and the dependency/parent-child relationships between RDDs generated by operators as <em>edges</em>, thereby forming a <em>directed acyclic graph</em> (DAG). To reduce transfer, the scheduler merges several consecutive computations into a <em>stage</em>. The criterion for stage merging is whether a shuffle is needed, that is, whether it is a wide dependency. This forms a new, more streamlined DAG composed of stages.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/EYIeyaDqo3cmdFu.png" alt="RDD Stage Division"><span class="image-caption">RDD Stage Division</span></p>
+<p>After that, the scheduler starts from the target RDD and traverses forward along the edges in the DAG graph, computing each <strong>partition</strong> that is not in memory. If the partition to be computed is already in memory, the result is directly used, as shown in the figure above.</p>
+<p>Then, the scheduler schedules tasks to locations close to the partitions of their dependent RDDs:</p>
+<ol>
+<li>If a partition is in the memory of a node, the task is scheduled to that node.</li>
+<li>If a partition is still on disk, the task is scheduled to the location returned by the preferredLocations function (such as HDFS files).</li>
+</ol>
+<p>For wide dependencies, like MR, Spark persists intermediate results to simplify fault tolerance. If a parent RDD of a stage is unavailable, the scheduler submits some <strong>parallel running</strong> tasks to generate these missing partitions. However, Spark currently cannot recover from scheduler failures itself, although redundantly backing up the lineage graph of RDDs seems like a simple and feasible solution.</p>
+<p>Finally, currently it is still the user driver program that calls Action operators to trigger scheduling tasks. But we are exploring maintaining some periodic checkpointing tasks to supplement certain missing partitions in RDDs.</p>
+<h3 id="Interpreter-Integration">Interpreter Integration</h3>
+<p>Like Python and Ruby, Scala provides an interactive shell environment. Since Spark keeps data in memory, we hope to leverage Scala’s interactive environment to allow users to perform interactive real-time queries on large datasets.</p>
+<p>The usual practice of the Scala interpreter for interpreting and executing user code is to compile each line of Scala commands entered by the user into a Java Class bytecode, and then load it into the JVM. This class contains an initialized singleton instance, which contains user-defined variables and functions. For example, if the user inputs:</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> x = <span class="number">5</span></span><br><span class="line">println(x)</span><br></pre></td></tr></table></figure>
+<p>The Scala interpreter generates a class called <code>Line1</code> for the first line, with a field x, and compiles the second line as: <code>println(Line1.getInstance().x)</code></p>
+<p>To enable the Scala interpreter to run in a distributed environment, we made the following modifications to it in Spark:</p>
+<ol>
+<li><strong>Class shipping</strong>: To allow worker nodes to pull the bytecode compiled from user input in the driver node’s interpreter, we enabled the interpreter to expose access to each class via HTTP.</li>
+<li><strong>Modified code generation</strong>: When the Scala interpreter handles access to different lines, it obtains its <strong>initialized</strong> singleton through a static method, and then accesses the variable from the previous line <code>Line.x</code>. However, we can only transfer bytecode via HTTP without transferring the initialized instance (i.e., x has already been assigned), so worker nodes cannot access x. Therefore, we changed the code generation logic so that different lines can directly reference instances.</li>
+</ol>
+<p>The following figure reflects the process of the modified Scala interpreter generating Java objects:</p>
+<p><img data-src="https://i.loli.net/2020/02/09/f1pw8jLhYeNtEoO.png" alt="spark interpreter"><span class="image-caption">spark interpreter</span></p>
+<p>We found the interpreter very helpful for interactive queries on large datasets, and we plan to support more advanced query languages, such as SQL.</p>
+<h3 id="Memory-Management">Memory Management</h3>
+<p>Spark provides three ways to store RDDs:</p>
+<ol>
+<li>Unserialized Java objects in memory</li>
+<li>Serialized data in memory</li>
+<li>Disk</li>
+</ol>
+<p>Since Spark runs on the JVM, the first storage method provides the fastest access, and the second allows users to sacrifice some performance for more efficient memory utilization. When data scales are too large to fit in memory, the third method is very useful.</p>
+<p>To effectively utilize limited memory, we adopt an LRU-style eviction policy at the RDD partition level. That is, when we newly compute an RDD partition, if we find that memory is insufficient, we evict the least recently used RDD partition from memory. However, if this least recently used partition belongs to the same RDD as the newly computed partition, we continue searching until we find a partition that does not belong to the same RDD as the current partition and is the least recently used. Because most Spark computations are applied to entire RDDs, this prevents these partitions from being repeatedly computed and evicted. This policy worked well at the time the paper was written; however, we still provide users with interfaces for deep control — specifying storage priority.</p>
+<p>Currently, each Spark instance has its own separate memory space; we plan to provide unified memory management across Spark instances in the future.</p>
+<h3 id="Checkpointing">Checkpointing</h3>
+<p>Although all failed RDDs can be recomputed through lineage, for some RDDs with particularly long lineage, this would be a very time-consuming operation. Therefore, providing RDD-level external storage checkpointing may be very useful.</p>
+<p>For RDDs with very long lineage graphs and many wide dependencies in the lineage graph, checkpointing to external storage is very helpful, because the loss of one or two partitions may trigger a full recomputation. For such long and complex computation topologies, recomputing based on the lineage graph would undoubtedly waste a lot of time. For RDDs with only narrow dependencies and not-so-long lineage graphs, checkpointing to external storage may be more costly than beneficial, because they can be easily computed in parallel.</p>
+<p>Spark currently provides a checkpointing API (passing the REPLICATE flag to the persist function), and then leaves the decision of whether to persist it to the user. But we are considering whether some automatic checkpointing can be performed. Since the scheduler knows the memory footprint and computation time of each dataset, we may selectively persist certain key RDDs to minimize downtime recovery time.</p>
+<p>Finally, due to the read-only nature of RDDs, we do not need to overly consider consistency issues when checkpointing as in general shared memory models. Therefore, background threads can silently perform these tasks without affecting the main workflow, and complex distributed snapshot algorithms need not be used to solve consistency issues.</p>
+<h2 id="Annotations">Annotations</h2>
+<p>[1] <strong>Implicit vs. Explicit</strong>: Here, explicit means completely constructing the concept of a dataset, defining its connotation and boundaries, and making some extensions based on it. Implicit means de facto data reuse, but without defining the format of the reused data.</p>
+<p>[2] <strong>Declarative vs. Imperative Languages</strong>: Examples of the former include SQL and HTML; the most common example of the latter is Shell, and other common programming languages such as C, Java, and Python also fall into this category. The advantage of the former is that it decouples “what to do” from “how to do it,” thereby enabling the development of different execution engines to optimize “how to do it” for different scenarios. The latter tells the machine to execute specific operations in a specific order, consistent with intuition, which is the approach of general programming languages.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/11/14/rdd/" rel="bookmark">Spark 系统的理论基石 —— RDD</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/spark/" rel="tag"># spark</a>
+              <a href="/tags/rdd/" rel="tag"># rdd</a>
+              <a href="/tags/distributed-systems/" rel="tag"># distributed-systems</a>
+              <a href="/tags/data-processing/" rel="tag"># data-processing</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/11/03/python3-generator/" rel="prev" title="Python3 生成器（Generator）概念浅析">
+      <i class="fa fa-chevron-left"></i> Python3 生成器（Generator）概念浅析
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/11/14/rdd/" rel="next" title="Spark 系统的理论基石 —— RDD">
+      Spark 系统的理论基石 —— RDD <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">2.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RDD"><span class="nav-number">3.</span> <span class="nav-text">RDD</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RDD-Abstraction"><span class="nav-number">3.1.</span> <span class="nav-text">RDD Abstraction</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Spark-Programming-Interface"><span class="nav-number">3.2.</span> <span class="nav-text">Spark Programming Interface</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#An-Example"><span class="nav-number">3.2.1.</span> <span class="nav-text">An Example</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Advantages-of-the-RDD-Model"><span class="nav-number">3.3.</span> <span class="nav-text">Advantages of the RDD Model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Scenarios-Where-RDD-Is-Not-Suitable"><span class="nav-number">3.4.</span> <span class="nav-text">Scenarios Where RDD Is Not Suitable</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Spark-Programming-Interface-2"><span class="nav-number">4.</span> <span class="nav-text">Spark Programming Interface</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RDD-Operations-in-Spark"><span class="nav-number">4.1.</span> <span class="nav-text">RDD Operations in Spark</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Representation-of-RDDs"><span class="nav-number">5.</span> <span class="nav-text">Representation of RDDs</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Implementation"><span class="nav-number">6.</span> <span class="nav-text">Implementation</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Job-Scheduling"><span class="nav-number">6.1.</span> <span class="nav-text">Job Scheduling</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Interpreter-Integration"><span class="nav-number">6.2.</span> <span class="nav-text">Interpreter Integration</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Memory-Management"><span class="nav-number">6.3.</span> <span class="nav-text">Memory Management</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Checkpointing"><span class="nav-number">6.4.</span> <span class="nav-text">Checkpointing</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Annotations"><span class="nav-number">7.</span> <span class="nav-text">Annotations</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2019/11/14/rdd/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '75099647bdad429f42b51128016fc746',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

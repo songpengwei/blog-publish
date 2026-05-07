@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="boltdb is one of the few pure-Go, single-node KV libraries on the market. boltdb is based on Howard Chu’s LMDB project, with a clean and concise implementation. Excluding unit tests and adapter code,">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Boltdb Source Code Guide (1): Boltdb Data Organization">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2020/11/29/bolt-data-organised/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="boltdb is one of the few pure-Go, single-node KV libraries on the market. boltdb is based on Howard Chu’s LMDB project, with a clean and concise implementation. Excluding unit tests and adapter code,">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/11/29/scJkTp5GSdPlHW1.png">
+<meta property="og:image" content="https://i.loli.net/2020/11/29/BjTF382uakiy4QA.png">
+<meta property="og:image" content="https://i.loli.net/2020/11/29/d84eqFEGwiLQZUu.png">
+<meta property="og:image" content="https://i.loli.net/2020/11/29/4eGQqLtk5fmNvH7.png">
+<meta property="og:image" content="https://i.loli.net/2020/12/05/6SPHqWmLXkwiusj.png">
+<meta property="article:published_time" content="2020-11-29T03:54:52.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.675Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="storage">
+<meta property="article:tag" content="golang">
+<meta property="article:tag" content="go">
+<meta property="article:tag" content="boltdb">
+<meta property="article:tag" content="kv engine">
+<meta property="article:tag" content="source code reading">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/11/29/scJkTp5GSdPlHW1.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2020/11/29/bolt-data-organised/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="storage,golang,go,boltdb,kv engine,source code reading">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Boltdb Source Code Guide (1): Boltdb Data Organization",
+    "description": "boltdb is one of the few pure-Go, single-node KV libraries on the market. boltdb is based on Howard Chu’s LMDB project, with a clean and concise implementation. Excluding unit tests and adapter code, the core code is only about four thousand lines. Simple APIs and a minimalist implementation are exactly what the author intended. Due to the author’s limited bandwidth, the original boltdb has been archived and is no longer updated. If you want to make improvements or submit new PRs, the fork maintained by etcd, bbolt, is recommended. For convenience, this series of guide articles will still use the original, no-longer-changing repo as the basis. Though small, the project is fully featured: in just over four thousand lines of code, it implements a single-node KV engine based on B+ tree indexing with single-writer, multi-reader transaction support. The code itself is plain and well-commented. If you are a Go enthusiast or interested in KV stores, boltdb is absolutely a repo you should not miss. This series is planned as three articles, analyzing boltdb’s source code around data organization, index design, and transaction implementation. Since these three aspects are not completely orthogonal, the narrative will inevitably intertwine; if something is unclear, just skip it for now and come back to sort it out once you have the full picture. This article is the first one: boltdb data organization. Introduction The bottom-most layer of a storage engine is how it organizes data on various physical media (e.g., on disk, in memory). These data organization choices also reflect the design trade-off philosophy of the storage engine. At the file-system level, boltdb adopts a page-based organization, aligning everything to pages; in memory, boltdb organizes data as a B+ tree, whose basic unit is the node. An in-memory tree node corresponds to one or more contiguous pages on the file system. These are the only two core abstractions in boltdb’s data organization, making the design remarkably simple. Of course, such simplicity necessarily comes with a cost, which will be analyzed in detail in later articles. This article first gives an overall explanation of the relationship between nodes and pages, then analyzes the formats of the four page types and their in-memory representations one by one, and finally walks through the DB file growth process and the memory loading strategy across the DB lifecycle.",
+    "url": "https://www.qtmuniao.com/en/2020/11/29/bolt-data-organised/",
+    "datePublished": "2020-11-29T11:54:52+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2020/11/29/bolt-data-organised/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Boltdb Source Code Guide (1): Boltdb Data Organization | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2020/11/29/bolt-data-organised/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2020/11/29/bolt-data-organised/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/11/29/bolt-data-organised/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Boltdb Source Code Guide (1): Boltdb Data Organization
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-11-29 11:54:52" itemprop="dateCreated datePublished" datetime="2020-11-29T11:54:52+08:00">2020-11-29</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/source-code-reading/" itemprop="url" rel="index"><span itemprop="name">source code reading</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/source-code-reading/boltdb/" itemprop="url" rel="index"><span itemprop="name">boltdb</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p><span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2JvbHRkYi9ib2x0">boltdb<i class="fa fa-external-link-alt"></i></span> is one of the few pure-Go, single-node KV libraries on the market. boltdb is based on <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS9oeWNfc3ltYXM=">Howard Chu’s<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cDovL3N5bWFzLmNvbS9tZGIv">LMDB project<i class="fa fa-external-link-alt"></i></span>, with a clean and concise implementation. Excluding unit tests and adapter code, the core code is only about four thousand lines. Simple APIs and a minimalist implementation are exactly what the author intended. Due to the author’s limited bandwidth, the original boltdb has been archived and is no longer updated. If you want to make improvements or submit new PRs, the fork maintained by etcd, <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2V0Y2QtaW8vYmJvbHQ=">bbolt<i class="fa fa-external-link-alt"></i></span>, is recommended.</p>
+<p>For convenience, this series of guide articles will still use the original, no-longer-changing repo as the basis. Though small, the project is fully featured: in just over four thousand lines of code, it implements a single-node KV engine based on B+ tree indexing with single-writer, multi-reader transaction support. The code itself is plain and well-commented. If you are a Go enthusiast or interested in KV stores, boltdb is absolutely a repo you should not miss.</p>
+<p>This series is planned as three articles, analyzing boltdb’s source code around <strong>data organization</strong>, <strong>index design</strong>, and <strong>transaction implementation</strong>. Since these three aspects are not completely orthogonal, the narrative will inevitably intertwine; if something is unclear, just skip it for now and come back to sort it out once you have the full picture. This article is the first one: boltdb data organization.</p>
+</blockquote>
+<h2 id="Introduction">Introduction</h2>
+<p>The bottom-most layer of a storage engine is how it organizes data on various physical media (e.g., on disk, in memory). These data organization choices also reflect the design trade-off philosophy of the storage engine.</p>
+<p>At the file-system level, boltdb adopts a <strong>page</strong>-based organization, aligning everything to pages; in memory, boltdb organizes data as a B+ tree, whose basic unit is the <strong>node</strong>. An in-memory tree node corresponds to one or more <strong>contiguous</strong> pages on the file system. These are the only two core abstractions in boltdb’s data organization, making the design remarkably simple. Of course, such simplicity necessarily comes with a cost, which will be analyzed in detail in later articles.</p>
+<p>This article first gives an overall explanation of the relationship between nodes and pages, then analyzes the formats of the four page types and their in-memory representations one by one, and finally walks through the DB file growth process and the memory loading strategy across the DB lifecycle.</p>
+<span id="more"></span>
+<p><em>Author: 木鸟杂记 <a href="https://www.qtmuniao.com/2020/11/29/bolt-data-organised">https://www.qtmuniao.com/2020/11/29/bolt-data-organised</a>, please indicate the source when reposting</em></p>
+<h2 id="Overview">Overview</h2>
+<p>This article mainly involves the two source files <code>page.go</code> and <code>freelist.go</code>, analyzing the on-disk formats of various boltdb pages and their representations after being loaded into memory.</p>
+<h3 id="Top-Level-Organization">Top-Level Organization</h3>
+<p>Boltdb’s data organization, from top to bottom, is as follows:</p>
+<ol>
+<li>Each DB corresponds to one file.</li>
+<li>Logically:
+<ul>
+<li>A DB contains multiple buckets, equivalent to multiple namespaces; buckets can be nested without limit.</li>
+<li>Each bucket corresponds to one B+ tree.</li>
+</ul>
+</li>
+<li>Physically:
+<ul>
+<li>A DB file is stored sequentially in page-sized units.</li>
+<li>A page size is consistent with the OS page size (usually 4 KB).</li>
+</ul>
+</li>
+</ol>
+<h3 id="Pages-and-Nodes">Pages and Nodes</h3>
+<p>Pages are divided into four types:</p>
+<ul>
+<li><strong>Meta pages</strong>: globally there are exactly two meta pages, saved in the file; they are the key to boltdb’s transaction implementation.</li>
+<li><strong>Free-list pages</strong>: a special kind of page that stores the list of free page IDs; they appear as contiguous runs of pages in the file.</li>
+<li><strong>Two data page types</strong>: all remaining pages are data pages, of two types corresponding to branch nodes and leaf nodes in the B+ tree.</li>
+</ul>
+<p>The relationship between pages and nodes is:</p>
+<ol>
+<li>A page is the basic storage unit of the DB file; a node is the basic building block of the B+ tree.</li>
+<li>One data node corresponds to one or more <strong>contiguous</strong> data pages.</li>
+<li>A contiguous sequence of <strong>data pages</strong>, when deserialized and loaded into memory, becomes one data node.</li>
+</ol>
+<p>To summarize: <strong>data pages</strong> organized linearly on the file system are logically structured into a two-dimensional B+ tree through in-page pointers. The tree root is saved in the <strong>meta</strong> page, while the IDs of all other unused pages are saved in the <strong>free-list</strong> page.</p>
+<h2 id="Page-Format-and-In-Memory-Representation">Page Format and In-Memory Representation</h2>
+<p>Boltdb has four page types: meta page, free-list page, branch node page, and leaf node page. They are marked with constant enumerations:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> (</span><br><span class="line">  branchPageFlag   = <span class="number">0x01</span></span><br><span class="line">  leafPageFlag     = <span class="number">0x02</span></span><br><span class="line">  metaPageFlag     = <span class="number">0x04</span></span><br><span class="line">  freelistPageFlag = <span class="number">0x10</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>Each page consists of a fixed-length header and a data part:</p>
+<p><img data-src="https://i.loli.net/2020/11/29/scJkTp5GSdPlHW1.png" alt="boltdb page structure"><span class="image-caption">boltdb page structure</span></p>
+<p>Here <code>ptr</code> points to the data part of the page. To avoid serialization and deserialization when loading into memory and writing to the file system, boltdb makes extensive use of pointer operations from Go’s <code>unsafe</code> package.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> pgid <span class="type">uint64</span></span><br><span class="line"><span class="keyword">type</span> page <span class="keyword">struct</span> &#123;</span><br><span class="line">  id       pgid</span><br><span class="line">  flags    <span class="type">uint16</span>  <span class="comment">// page type, one of the four types</span></span><br><span class="line">  count    <span class="type">uint16</span>  <span class="comment">// number of elements in the corresponding node, e.g., KV pairs</span></span><br><span class="line">  overflow <span class="type">uint32</span>  <span class="comment">// number of overflow pages for the corresponding node, i.e., using overflow+1 pages to store the node</span></span><br><span class="line">  ptr      <span class="type">uintptr</span> <span class="comment">// points to the byte array of the data; when overlay&gt;0 it spans multiple contiguous pages; however, multiple physical pages are represented by only one page struct in memory</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Meta-Page-metaPage">Meta Page (metaPage)</h3>
+<p>Boltdb has exactly two meta pages, stored at the beginning of the DB file (pageid = 0 and 1). However, in the meta page <code>ptr</code> does not point to an element list but to the individual fields of the whole DB’s meta information.</p>
+<p><img data-src="https://i.loli.net/2020/11/29/BjTF382uakiy4QA.png" alt="meta-page.png"><span class="image-caption">meta-page.png</span></p>
+<p>The in-memory data structure after loading the meta page is as follows:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> meta <span class="keyword">struct</span> &#123;</span><br><span class="line">  magic    <span class="type">uint32</span></span><br><span class="line">  version  <span class="type">uint32</span></span><br><span class="line">  pageSize <span class="type">uint32</span> <span class="comment">// page size of this DB, obtained via syscall.Getpagesize(), usually 4k</span></span><br><span class="line">  flags    <span class="type">uint32</span> <span class="comment">// </span></span><br><span class="line">  root     bucket <span class="comment">// tree composed of the roots of all sub-buckets</span></span><br><span class="line">  freelist pgid   <span class="comment">// starting page id where the free list is stored</span></span><br><span class="line">  pgid     pgid   <span class="comment">// largest page id currently used, i.e., number of pages used</span></span><br><span class="line">  txid     txid   <span class="comment">// transaction version number, used for transaction-related functionality</span></span><br><span class="line">  checksum <span class="type">uint64</span> <span class="comment">// checksum, used to verify whether the meta page was written completely</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Free-List-Page-freelistPage">Free-List Page (freelistPage)</h3>
+<p>The free-list page is a contiguous run of pages (one or more) in the DB file used to store the list of page IDs freed during DB modifications.</p>
+<p><img data-src="https://i.loli.net/2020/11/29/d84eqFEGwiLQZUu.png" alt="freelist-page.png"><span class="image-caption">freelist-page.png</span></p>
+<p>In memory it is represented in two parts: one is the list of allocatable free page IDs (<code>ids</code>), and the other is the list of newly freed pages grouped by transaction ID.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// represents the list of currently released pages</span></span><br><span class="line"><span class="comment">// and pages just freed by a write transaction</span></span><br><span class="line"><span class="keyword">type</span> freelist <span class="keyword">struct</span> &#123;</span><br><span class="line">  ids        []pgid            <span class="comment">// all free and available free page ids.</span></span><br><span class="line">  pending    <span class="keyword">map</span>[txid][]pgid   <span class="comment">// mapping of soon-to-be free page ids by tx.</span></span><br><span class="line">  cache      <span class="keyword">map</span>[pgid]<span class="type">bool</span>     <span class="comment">// fast lookup of all free and pending page ids.</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The <code>pending</code> part is recorded separately mainly for MVCC transactions:</p>
+<ol>
+<li>When a write transaction rolls back, the pending free pages of the corresponding transaction must be removed from the <code>pending</code> entry.</li>
+<li>When a write transaction (e.g., txid=7) has already committed, some read transactions (e.g., txid &lt;= 7) may still be using the pages it just freed, so they cannot be allocated immediately.</li>
+</ol>
+<p>This part will be explained in detail in the boltdb transaction article; for now, just keep it in mind.</p>
+<h4 id="Converting-Free-List-to-Page">Converting Free List to Page</h4>
+<p>The free list persists itself to a given page via the <code>write</code> function <strong>at transaction commit time</strong>. When writing, it merges <code>pending</code> and <code>ids</code> before writing, because:</p>
+<ol>
+<li>The <code>write</code> function is called at write-transaction commit time. Write transactions are serialized, so the write transactions corresponding to <code>pending</code> have already committed.</li>
+<li>Writing to the file is for crash recovery, and upon restart there are no read operations, so there is no need to worry about read transactions still using freshly freed pages.</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *freelist)</span></span> write(p *page) <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// set page type</span></span><br><span class="line">  p.flags |= freelistPageFlag</span><br><span class="line"></span><br><span class="line">  <span class="comment">// page.count is of type uint16, whose range is [0, 64k-1]. If the free page ID list length exceeds this range, another approach is needed.</span></span><br><span class="line">  <span class="comment">// Here a trick is used: set page.count to 64k (0xFFFF), then store the actual count in the first element of the data part (as type pgid, i.e., uint64).</span></span><br><span class="line">  lenids := f.count()</span><br><span class="line">  <span class="keyword">if</span> lenids == <span class="number">0</span> &#123;</span><br><span class="line">    p.count = <span class="type">uint16</span>(lenids)</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> lenids &lt; <span class="number">0xFFFF</span> &#123;</span><br><span class="line">    p.count = <span class="type">uint16</span>(lenids)</span><br><span class="line">    <span class="comment">// copyall merges pending and ids and sorts them</span></span><br><span class="line">    f.copyall(((*[maxAllocSize]pgid)(unsafe.Pointer(&amp;p.ptr)))[:]) </span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    p.count = <span class="number">0xFFFF</span></span><br><span class="line">    ((*[maxAllocSize]pgid)(unsafe.Pointer(&amp;p.ptr)))[<span class="number">0</span>] = pgid(lenids)</span><br><span class="line">    f.copyall(((*[maxAllocSize]pgid)(unsafe.Pointer(&amp;p.ptr)))[<span class="number">1</span>:])</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>Note</strong> that this step only converts <code>freelist</code> into an in-memory page structure; additional operations such as <code>tx.write()</code> are required to actually persist the corresponding pages to the file.</p>
+<h4 id="Loading-Free-List-from-Page">Loading Free List from Page</h4>
+<p>When the database restarts, it first recovers a valid meta information from the first two meta pages. Then, according to the <code>freelist</code> field in the meta information, it finds the starting address of the freelist pages and restores it into memory.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *freelist)</span></span> read(p *page) &#123;</span><br><span class="line">  <span class="comment">// count == 0xFFFF indicates the actual count is stored in the first element pointed to by ptr</span></span><br><span class="line">  idx, count := <span class="number">0</span>, <span class="type">int</span>(p.count)</span><br><span class="line">  <span class="keyword">if</span> count == <span class="number">0xFFFF</span> &#123;</span><br><span class="line">    idx = <span class="number">1</span></span><br><span class="line">    count = <span class="type">int</span>(((*[maxAllocSize]pgid)(unsafe.Pointer(&amp;p.ptr)))[<span class="number">0</span>])</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// copy the free list from the page into the in-memory freelist struct</span></span><br><span class="line">  <span class="keyword">if</span> count == <span class="number">0</span> &#123;</span><br><span class="line">    f.ids = <span class="literal">nil</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    ids := ((*[maxAllocSize]pgid)(unsafe.Pointer(&amp;p.ptr)))[idx:count]</span><br><span class="line">    f.ids = <span class="built_in">make</span>([]pgid, <span class="built_in">len</span>(ids))</span><br><span class="line">    <span class="built_in">copy</span>(f.ids, ids)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ensure ids is sorted</span></span><br><span class="line">    sort.Sort(pgids(f.ids))</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// rebuild the freelist.cache map.</span></span><br><span class="line">  f.reindex()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Free-List-Allocation">Free-List Allocation</h4>
+<p>The original author’s free-list allocation is exceptionally simple. The <strong>allocation unit</strong> is the page, and the allocation strategy is <strong><span class="exturl" data-url="aHR0cHM6Ly9iYWlrZS5iYWlkdS5jb20vaXRlbS8lRTklQTYlOTYlRTYlQUMlQTElRTklODAlODIlRTUlQkElOTQlRTclQUUlOTclRTYlQjMlOTUvMTAxNDczMzQ/">first-fit<i class="fa fa-external-link-alt"></i></span></strong>: from the sorted free page list <code>ids</code>, find the first run of contiguous free pages equal to the requested length, then return the starting page ID.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// if n contiguous free pages can be found, return the starting page id</span></span><br><span class="line"><span class="comment">// otherwise return 0</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *freelist)</span></span> allocate(n <span class="type">int</span>) pgid &#123;</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(f.ids) == <span class="number">0</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// iterate to find contiguous free pages and check if they equal n</span></span><br><span class="line">  <span class="keyword">var</span> initial, previd pgid</span><br><span class="line">  <span class="keyword">for</span> i, id := <span class="keyword">range</span> f.ids &#123;</span><br><span class="line">    <span class="keyword">if</span> id &lt;= <span class="number">1</span> &#123;</span><br><span class="line">      <span class="built_in">panic</span>(fmt.Sprintf(<span class="string">&quot;invalid page allocation: %d&quot;</span>, id))</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// if not contiguous, reset initial</span></span><br><span class="line">    <span class="keyword">if</span> previd == <span class="number">0</span> || id-previd != <span class="number">1</span> &#123;</span><br><span class="line">      initial = id</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (id-initial)+<span class="number">1</span> == pgid(n) &#123;</span><br><span class="line">      <span class="comment">// when exactly the first n pages in ids are allocated, simply advance the f.ids slice.</span></span><br><span class="line">      <span class="comment">// although this may temporarily waste space, during append/free operations on f.ids</span></span><br><span class="line">      <span class="comment">// space will be reallocated on demand, and these wasted spaces will be reclaimed.</span></span><br><span class="line">      <span class="keyword">if</span> (i + <span class="number">1</span>) == n &#123;</span><br><span class="line">        f.ids = f.ids[i+<span class="number">1</span>:]</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">copy</span>(f.ids[i-n+<span class="number">1</span>:], f.ids[i+<span class="number">1</span>:])</span><br><span class="line">        f.ids = f.ids[:<span class="built_in">len</span>(f.ids)-n]</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// delete corresponding page ids from cache</span></span><br><span class="line">      <span class="keyword">for</span> i := pgid(<span class="number">0</span>); i &lt; pgid(n); i++ &#123;</span><br><span class="line">        <span class="built_in">delete</span>(f.cache, initial+i)</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">return</span> initial</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    previd = id</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>This GC strategy is quite simple and direct, with linear time complexity. Alibaba seems to have made a patch that groups all free pages by their contiguous length.</p>
+<h3 id="Leaf-Page-leafPage">Leaf Page (leafPage)</h3>
+<p>This type of page corresponds to a leaf node in the <strong>B+ tree</strong>. A leaf node contains two kinds of elements: ordinary KV data and sub-buckets.</p>
+<p>For the former, the basic element stored in the page is a piece of user data in some bucket. For the latter, an element in the page is a sub-bucket in the DB.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// single element in the byte array pointed to by page ptr</span></span><br><span class="line"><span class="keyword">type</span> leafPageElement <span class="keyword">struct</span> &#123; </span><br><span class="line">  flags         <span class="type">uint32</span>    <span class="comment">// ordinary kv (flags=0) or subbucket (flags=bucketLeafFlag)</span></span><br><span class="line">  pos           <span class="type">uint16</span>    <span class="comment">// distance between the kv header and the corresponding kv</span></span><br><span class="line">  ksize         <span class="type">uint32</span>    <span class="comment">// number of bytes of key</span></span><br><span class="line">  vsize         <span class="type">uint32</span>    <span class="comment">// number of bytes of val</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Its detailed structure is as follows:</p>
+<p><img data-src="https://i.loli.net/2020/11/29/4eGQqLtk5fmNvH7.png" alt="leaf-page-element.png"><span class="image-caption">leaf-page-element.png</span></p>
+<p>As can be seen, when organizing data, the leaf page stores <strong>element headers</strong> (<code>leafPageElement</code>) and <strong>the elements themselves</strong> (<code>key value</code>) separately. The advantage is that <code>leafPageElement</code> is fixed-length and can be accessed by index. During binary search for a given key, only the corresponding page needs to be loaded into memory on demand (pages are accessed via mmap, so data is actually loaded from the file system into memory only when accessed).</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">inodes := p.leafPageElements()</span><br><span class="line">index := sort.Search(<span class="type">int</span>(p.count), <span class="function"><span class="keyword">func</span><span class="params">(i <span class="type">int</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> bytes.Compare(inodes[i].key(), key) != <span class="number">-1</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>If element headers and their corresponding elements were stored adjacent to each other, all pages corresponding to the <code>leafPageElement</code> array would have to be read sequentially and fully loaded into memory before binary search could be performed.</p>
+<p>Another small optimization is that <code>pos</code> stores the <strong>relative offset</strong> from the start address of the element header to the start address of the element, rather than the <strong>absolute offset</strong> from the <code>ptr</code> pointer. This allows a relatively small number of bits (<code>pos</code> is <code>uint16</code>) to represent a relatively long distance.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(n *branchPageElement)</span></span> key() []<span class="type">byte</span> &#123;</span><br><span class="line">  buf := (*[maxAllocSize]<span class="type">byte</span>)(unsafe.Pointer(n)) <span class="comment">// buf is the start address of the element header</span></span><br><span class="line">  <span class="keyword">return</span> (*[maxAllocSize]<span class="type">byte</span>)(unsafe.Pointer(&amp;buf[n.pos]))[:n.ksize]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Branch-Page-branchPage">Branch Page (branchPage)</h3>
+<p>The branch page structure is largely the same as the leaf page. The difference is that the value saved in the page is a page ID, i.e., the page that each branch of this branch node at certain keys points to.</p>
+<p><img data-src="https://i.loli.net/2020/12/05/6SPHqWmLXkwiusj.png" alt="branch-element.png"><span class="image-caption">branch-element.png</span></p>
+<p>The key in <code>branchPageElement</code> stores the starting key of the page it points to.</p>
+<h2 id="Conversion-Flow">Conversion Flow</h2>
+<p>Boltdb uses mmap to map the DB file into memory space. While building the tree and accessing it, corresponding pages are loaded into memory on demand, leveraging the OS page cache policy for replacement.</p>
+<h3 id="File-Growth">File Growth</h3>
+<p>When we open a DB, if the DB file is found to be empty, four pages are initialized in memory (4 * 4K = 16K): two meta pages, one empty free-list page, and one empty leaf node page. They are then written to the DB file, after which the normal open flow proceeds.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(db *DB)</span></span> init() <span class="type">error</span> &#123;</span><br><span class="line">  <span class="comment">// set page size consistent with the OS</span></span><br><span class="line">  db.pageSize = os.Getpagesize()</span><br><span class="line"></span><br><span class="line">  buf := <span class="built_in">make</span>([]<span class="type">byte</span>, db.pageSize*<span class="number">4</span>)</span><br><span class="line">  <span class="comment">// create two meta pages in buffer.</span></span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">2</span>; i++ &#123;</span><br><span class="line">    p := db.pageInBuffer(buf[:], pgid(i))</span><br><span class="line">    p.id = pgid(i)</span><br><span class="line">    p.flags = metaPageFlag</span><br><span class="line"></span><br><span class="line">    <span class="comment">// initialize meta pages.</span></span><br><span class="line">    m := p.meta()</span><br><span class="line">    m.magic = magic</span><br><span class="line">    m.version = version</span><br><span class="line">    m.pageSize = <span class="type">uint32</span>(db.pageSize)</span><br><span class="line">    m.freelist = <span class="number">2</span></span><br><span class="line">    m.root = bucket&#123;root: <span class="number">3</span>&#125;</span><br><span class="line">    m.pgid = <span class="number">4</span></span><br><span class="line">    m.txid = txid(i)</span><br><span class="line">    m.checksum = m.sum64()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// write an empty free list at pgid=2.</span></span><br><span class="line">  p := db.pageInBuffer(buf[:], pgid(<span class="number">2</span>))</span><br><span class="line">  p.id = pgid(<span class="number">2</span>)</span><br><span class="line">  p.flags = freelistPageFlag</span><br><span class="line">  p.count = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// write an empty leaf element at pgid=3.</span></span><br><span class="line">  p = db.pageInBuffer(buf[:], pgid(<span class="number">3</span>))</span><br><span class="line">  p.id = pgid(<span class="number">3</span>)</span><br><span class="line">  p.flags = leafPageFlag</span><br><span class="line">  p.count = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// write the four pages from buffer to the data file and flush to disk</span></span><br><span class="line">  <span class="keyword">if</span> _, err := db.ops.writeAt(buf, <span class="number">0</span>); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> err</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> err := fdatasync(db); err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> err</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>As data is continuously written, new pages need to be allocated. Boltdb first looks in the freelist for any reusable pages; if none are available, it must re-mmap (unmap then mmap) to expand the DB file. Each expansion doubles the size (so starting from 16K * 2 = 32K), and after reaching 1 GB, each subsequent expansion adds another 1 GB.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(db *DB)</span></span> mmapSize(size <span class="type">int</span>) (<span class="type">int</span>, <span class="type">error</span>) &#123;</span><br><span class="line">  <span class="comment">// from 32KB up to 1GB.</span></span><br><span class="line">  <span class="keyword">for</span> i := <span class="type">uint</span>(<span class="number">15</span>); i &lt;= <span class="number">30</span>; i++ &#123;</span><br><span class="line">    <span class="keyword">if</span> size &lt;= <span class="number">1</span>&lt;&lt;i &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="number">1</span> &lt;&lt; i, <span class="literal">nil</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Verify the requested size is not above the maximum allowed.</span></span><br><span class="line">  <span class="keyword">if</span> size &gt; maxMapSize &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>, fmt.Errorf(<span class="string">&quot;mmap too large&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// align to maxMmapStep = 1G</span></span><br><span class="line">  sz := <span class="type">int64</span>(size)</span><br><span class="line">  <span class="keyword">if</span> remainder := sz % <span class="type">int64</span>(maxMmapStep); remainder &gt; <span class="number">0</span> &#123;</span><br><span class="line">    sz += <span class="type">int64</span>(maxMmapStep) - remainder</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// align to db.pageSize</span></span><br><span class="line">  pageSize := <span class="type">int64</span>(db.pageSize)</span><br><span class="line">  <span class="keyword">if</span> (sz % pageSize) != <span class="number">0</span> &#123;</span><br><span class="line">    sz = ((sz / pageSize) + <span class="number">1</span>) * pageSize</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// must not exceed maxMapSize</span></span><br><span class="line">  <span class="keyword">if</span> sz &gt; maxMapSize &#123;</span><br><span class="line">    sz = maxMapSize</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="type">int</span>(sz), <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>On 32-bit machines the file must not exceed <code>maxMapSize</code> = 2 GB; on 64-bit machines the upper limit is 256 TB.</p>
+<h3 id="Read-Write-Flow">Read/Write Flow</h3>
+<p>When opening an existing DB, the DB file is first mapped into memory space, then the meta pages are parsed, and finally the free list is loaded.</p>
+<p>When reading from the DB, pages along the access path are loaded into memory on demand and converted to nodes for caching.</p>
+<p>When modifying the DB, the COW principle is used: all modifications are not done in place, but a copy is made before any change. If a leaf node needs to be modified, all nodes on the path from the root bucket to that node must also be modified. These nodes all need newly allocated space and then persistence; this is closely related to transaction implementation and will be explained in detail in the transaction article of this series.</p>
+<h2 id="Summary">Summary</h2>
+<p>Boltdb uses only two concepts in data organization: <strong>page</strong> and <strong>node</strong>. Each database corresponds to one file, and each file contains a series of linearly organized pages. Page sizes are fixed; depending on their nature, there are four types: meta page, free-list page, leaf page, and branch page. When opening the database, the following operations are performed in sequence:</p>
+<ol>
+<li>Use mmap to map the database file into memory space.</li>
+<li>Parse the meta pages to obtain the free-list page ID and the root bucket page ID.</li>
+<li>According to the free-list page ID, load all free pages into memory.</li>
+<li>According to the root bucket starting page address, parse the root bucket root node.</li>
+<li>According to read/write needs, starting from the tree root, traverse and load data pages (branch pages and leaf pages) along the access path into memory on demand to become nodes.</li>
+</ol>
+<p>As can be seen, nodes are of two types: branch node (branch node) and leaf node (leaf node).</p>
+<p>Another thing to note is that the existence of nested buckets makes this part slightly harder to understand. In the next article on boltdb’s <strong>index design</strong>, we will analyze in detail how boltdb organizes multiple buckets and the B+ tree index within a single bucket.</p>
+<h2 id="References">References</h2>
+<ol>
+<li>github, <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2JvbHRkYi9ib2x0">boltdb repo<i class="fa fa-external-link-alt"></i></span></li>
+<li>我叫尤加利, <span class="exturl" data-url="aHR0cHM6Ly95b3VqaWFsaTE5OTUuZ2l0aHViLmlvL3N0b3JhZ2UvYm9sdGRiLw==">boltdb 源码分析<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/12/14/bolt-index-design/" rel="bookmark">Boltdb Source Code Guide (2): Boltdb Index Design</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2021/04/02/bolt-transaction/" rel="bookmark">Boltdb Source Code Guide (3): Transaction Implementation</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/12/14/bolt-index-design/" rel="bookmark">Boltdb 源码导读（二）：Boltdb 索引设计</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/04/02/bolt-transaction/" rel="bookmark">Boltdb 源码导读（三）：Boltdb 事务实现</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/12/07/bazel-build-golang/" rel="bookmark">Bazel 构建 Golang 项目</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/storage/" rel="tag"># storage</a>
+              <a href="/tags/golang/" rel="tag"># golang</a>
+              <a href="/tags/go/" rel="tag"># go</a>
+              <a href="/tags/boltdb/" rel="tag"># boltdb</a>
+              <a href="/tags/kv-engine/" rel="tag"># kv engine</a>
+              <a href="/tags/source-code-reading/" rel="tag"># source code reading</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/11/18/leveldb-data-structures-bloom-filter/" rel="prev" title="漫谈 LevelDB 数据结构（二）：布隆过滤器（Bloom Filter）">
+      <i class="fa fa-chevron-left"></i> 漫谈 LevelDB 数据结构（二）：布隆过滤器（Bloom Filter）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/11/29/bolt-data-organised/" rel="next" title="Boltdb 源码导读（一）：Boltdb 数据组织">
+      Boltdb 源码导读（一）：Boltdb 数据组织 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">2.</span> <span class="nav-text">Overview</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Top-Level-Organization"><span class="nav-number">2.1.</span> <span class="nav-text">Top-Level Organization</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Pages-and-Nodes"><span class="nav-number">2.2.</span> <span class="nav-text">Pages and Nodes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Page-Format-and-In-Memory-Representation"><span class="nav-number">3.</span> <span class="nav-text">Page Format and In-Memory Representation</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Meta-Page-metaPage"><span class="nav-number">3.1.</span> <span class="nav-text">Meta Page (metaPage)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Free-List-Page-freelistPage"><span class="nav-number">3.2.</span> <span class="nav-text">Free-List Page (freelistPage)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Converting-Free-List-to-Page"><span class="nav-number">3.2.1.</span> <span class="nav-text">Converting Free List to Page</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Loading-Free-List-from-Page"><span class="nav-number">3.2.2.</span> <span class="nav-text">Loading Free List from Page</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Free-List-Allocation"><span class="nav-number">3.2.3.</span> <span class="nav-text">Free-List Allocation</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Leaf-Page-leafPage"><span class="nav-number">3.3.</span> <span class="nav-text">Leaf Page (leafPage)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Branch-Page-branchPage"><span class="nav-number">3.4.</span> <span class="nav-text">Branch Page (branchPage)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Conversion-Flow"><span class="nav-number">4.</span> <span class="nav-text">Conversion Flow</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#File-Growth"><span class="nav-number">4.1.</span> <span class="nav-text">File Growth</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Read-Write-Flow"><span class="nav-number">4.2.</span> <span class="nav-text">Read&#x2F;Write Flow</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Summary"><span class="nav-number">5.</span> <span class="nav-text">Summary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">6.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2020/11/29/bolt-data-organised/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'c1681e9043f6859165c8e883f61d8ae0',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

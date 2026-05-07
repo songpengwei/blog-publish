@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="DDIA reading group: we will share chapter by chapter, supplemented with some details based on my experience in distributed storage and databases in industry. Sharing roughly every two weeks—welcome t">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DDIA Reading Notes (Chapter 1): Reliability, Scalability, Maintainability">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2022/02/19/ddia-reading-chapter1/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="DDIA reading group: we will share chapter by chapter, supplemented with some details based on my experience in distributed storage and databases in industry. Sharing roughly every two weeks—welcome t">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://s2.loli.net/2022/02/19/XJczNiq9SbhHLuy.png">
+<meta property="og:image" content="https://s2.loli.net/2022/02/19/2fYma6MCUVpq1oy.png">
+<meta property="og:image" content="https://s2.loli.net/2022/02/19/TY4N7gA39hFtxcH.png">
+<meta property="og:image" content="https://s2.loli.net/2022/02/19/vKsokpb5XaMlSTA.png">
+<meta property="og:image" content="https://s2.loli.net/2022/02/19/zfFMc8RXsW6iTok.png">
+<meta property="article:published_time" content="2022-02-19T15:22:11.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.676Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="DDIA">
+<meta property="article:tag" content="Reading Notes">
+<meta property="article:tag" content="Designing Data-Intensive Applications">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2022/02/19/XJczNiq9SbhHLuy.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2022/02/19/ddia-reading-chapter1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="DDIA,Reading Notes,Designing Data-Intensive Applications">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "DDIA Reading Notes (Chapter 1): Reliability, Scalability, Maintainability",
+    "description": "DDIA reading group: we will share chapter by chapter, supplemented with some details based on my experience in distributed storage and databases in industry. Sharing roughly every two weeks—welcome to join. Schedule and all transcripts are here. We have a corresponding distributed systems &amp; database discussion group; notifications will be sent before each session. To join, add my WeChat: qtmuniao, briefly introduce yourself, and note: Distributed Systems Group. Chapter 1 is easily skipped because it is concept-heavy and tends to speak in generalities. Yet the three concepts it introduces are indeed unavoidable focal points when building systems. P.S. The open-source Chinese translation is not very idiomatic in places, which can make for uncomfortable reading—though this is unavoidable in any translation.",
+    "url": "https://www.qtmuniao.com/en/2022/02/19/ddia-reading-chapter1/",
+    "datePublished": "2022-02-19T23:22:11+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2022/02/19/ddia-reading-chapter1/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>DDIA Reading Notes (Chapter 1): Reliability, Scalability, Maintainability | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2022/02/19/ddia-reading-chapter1/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2022/02/19/ddia-reading-chapter1/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/02/19/ddia-reading-chapter1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DDIA Reading Notes (Chapter 1): Reliability, Scalability, Maintainability
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2022-02-19 23:22:11" itemprop="dateCreated datePublished" datetime="2022-02-19T23:22:11+08:00">2022-02-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>DDIA reading group: we will share chapter by chapter, supplemented with some details based on my experience in distributed storage and databases in industry. Sharing roughly every two weeks—welcome to join. Schedule and all transcripts are <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">here<i class="fa fa-external-link-alt"></i></span>. We have a corresponding distributed systems &amp; database discussion group; notifications will be sent before each session. To join, add my WeChat: qtmuniao, briefly introduce yourself, and note: Distributed Systems Group.</p>
+</blockquote>
+<p>Chapter 1 is easily skipped because it is concept-heavy and tends to speak in generalities. Yet the three concepts it introduces are indeed unavoidable focal points when building systems.</p>
+<p>P.S. The <span class="exturl" data-url="aHR0cDovL2RkaWEudm9ubmcuY29tLw==">open-source Chinese translation<i class="fa fa-external-link-alt"></i></span> is not very idiomatic in places, which can make for uncomfortable reading—though this is unavoidable in any translation.</p>
+<span id="more"></span>
+<p><em>Author: Muniao’s Notes <a href="https://www.qtmuniao.com/2022/02/19/ddia-reading-chapter1">https://www.qtmuniao.com/2022/02/19/ddia-reading-chapter1</a> — please indicate the source when reposting</em></p>
+<h2 id="Why-This-Book-Takes-Data-Systems-as-Its-Theme">Why This Book Takes Data Systems as Its Theme</h2>
+<p><strong>Data system</strong> is a vague umbrella term. In the information society, everything can be informatized—or, to some extent, digitized. The collection, storage, and use of this data form the foundation of the information society. Most common applications are backed by a data system, e.g., WeChat, <span class="exturl" data-url="aHR0cDovL0pELmNvbQ==">JD.com<i class="fa fa-external-link-alt"></i></span>, Weibo, etc.</p>
+<p><img data-src="https://s2.loli.net/2022/02/19/XJczNiq9SbhHLuy.png" alt="data-society.png"><span class="image-caption">data-society.png</span></p>
+<p>Therefore, as IT practitioners, it is necessary to systematically understand modern, distributed data systems. By studying this book, we can learn the principles behind data systems, understand common practices, and apply them to the systems we design at work.</p>
+<h2 id="Common-Data-Systems">Common Data Systems</h2>
+<ul>
+<li>Storing data for later reuse — <strong>database</strong></li>
+<li>Remembering the results of very “heavy” operations to speed up subsequent reads — <strong>cache</strong></li>
+<li>Allowing users to search by various keywords and filter data by various conditions — <strong>search engine</strong></li>
+<li>Continuously generating data and sending it to other processes for handling — <strong>stream processing</strong></li>
+<li>Periodically processing accumulated large volumes of data — <strong>batch processing</strong></li>
+<li>Transmitting and distributing messages — <strong>message queue</strong></li>
+</ul>
+<p>These concepts are so familiar that we use them directly when designing systems without thinking about their implementation details, let alone reimplementing them from scratch. Of course, this also shows how successful these abstractions are.</p>
+<h2 id="Increasing-Complexity-of-Data-Systems">Increasing Complexity of Data Systems</h2>
+<p>In recent years, however, as application requirements have grown more complex, many new data collection, storage, and processing systems have emerged. They are not confined to a single function, and are difficult to rigidly classify into any one category. A few examples:</p>
+<ol>
+<li><strong>Kafka</strong>: can persist log data for a period of time; can act as a message queue to distribute data; can act as a stream-processing component to repeatedly refine data; and so on.</li>
+<li><strong>Spark</strong>: can perform batch processing on data; can also turn small batches into streams for stream processing.</li>
+<li><strong>Redis</strong>: can serve as a cache to accelerate database access; can also act as an event hub for pub-sub messaging.</li>
+</ol>
+<p>When we face a new scenario and combine these components in some way, we are, in a sense, creating a new data system. The book gives a common example of a data system that collects, stores, queries, and side-processes user data. From its diagram you can see shadows of various Web Services.</p>
+<p><img data-src="https://s2.loli.net/2022/02/19/2fYma6MCUVpq1oy.png" alt="data-system.png"><span class="image-caption">data-system.png</span></p>
+<p>Yet even such a small system involves many trade-offs in design:</p>
+<ol>
+<li>Which caching strategy to use? Cache-aside or write-through?</li>
+<li>When some component machines fail, do we guarantee availability or consistency?</li>
+<li>When a machine is temporarily unrecoverable, how do we ensure data correctness and completeness?</li>
+<li>When load increases, do we add machines or improve single-machine performance?</li>
+<li>When designing external APIs, do we aim for simplicity or pursue power?</li>
+</ol>
+<p>Therefore, it is necessary to think fundamentally about how to evaluate a good data system, how to build a good data system, what design patterns can be followed, and what aspects usually need to be considered.</p>
+<p>The book answers with three words: <em><strong>Reliability, Scalability, Maintainability</strong></em></p>
+<h2 id="Reliability">Reliability</h2>
+<p>How is reliability measured?</p>
+<ul>
+<li>
+<p><strong>Functionally</strong></p>
+<ol>
+<li>Under normal circumstances, application behavior satisfies the behavior specified by the API.</li>
+<li>When users enter incorrect input or perform incorrect operations, it can handle them properly.</li>
+</ol>
+</li>
+<li>
+<p><strong>Performance-wise</strong></p>
+<p>Under given hardware and data volumes, promised performance metrics are met.</p>
+</li>
+<li>
+<p><strong>Security-wise</strong></p>
+<p>It can block unauthorized access and malicious damage.</p>
+</li>
+</ul>
+<p>Availability is also an aspect of reliability; cloud services usually measure availability in terms of “nines.”</p>
+<hr>
+<p>Two easily confused concepts: <strong>Fault (something goes wrong in the system)</strong> and <strong>Failure (the system cannot provide service)</strong>.</p>
+<p>A system that cannot tolerate faults will easily fail after accumulating many faults.</p>
+<p>How to prevent it? Chaos testing: e.g., Netflix’s <span class="exturl" data-url="aHR0cHM6Ly9uZXRmbGl4LmdpdGh1Yi5pby9jaGFvc21vbmtleS8=">chaosmonkey<i class="fa fa-external-link-alt"></i></span>.</p>
+<h3 id="Hardware-Failures">Hardware Failures</h3>
+<p>In a large data center, this is the norm:</p>
+<ol>
+<li>Network jitter or disconnection</li>
+<li>Hard-drive aging and bad sectors</li>
+<li>Memory failures</li>
+<li>Machine overheating causing CPU problems</li>
+<li>Data-center power outages</li>
+</ol>
+<p>Common hardware metrics that need to be considered in data systems:</p>
+<ul>
+<li>
+<p><strong>MTTF (mean time to failure)</strong></p>
+<p>A single disk has an average failure time of 5–10 years. If you have 10k+ disks, under uniform expectation you would expect failed disks every day. Of course, in reality hard drives fail in waves.</p>
+</li>
+</ul>
+<p>Solutions: increase redundancy:</p>
+<p>Multi-path power supply to the data center, dual networks, etc.</p>
+<p>For data:</p>
+<p><strong>Single machine</strong>: can use RAID redundancy, e.g., EC erasure coding.</p>
+<p><strong>Multi-machine</strong>: multiple replicas or EC erasure coding.</p>
+<h3 id="Software-Errors">Software Errors</h3>
+<p>Compared to the randomness of hardware failures, software errors have higher correlation:</p>
+<ol>
+<li>Inability to handle specific input, causing system crashes.</li>
+<li>Runaway processes (e.g., loops that do not release resources) exhausting CPU, memory, and network resources.</li>
+<li>System-dependent components becoming slow or even unresponsive.</li>
+<li>Cascading failures.</li>
+</ol>
+<p>When designing software, we usually have some <strong>environmental assumptions</strong> and some <strong>implicit constraints</strong>. As time passes and the system continues to run, if these assumptions can no longer be satisfied, or if these constraints are broken by later maintainers adding features, a system that was running normally at first may suddenly crash.</p>
+<h3 id="Human-Errors">Human Errors</h3>
+<p>The most unstable element in a system is people, so the design should eliminate human impact on the system as much as possible. According to the software lifecycle, consider it in several stages:</p>
+<ul>
+<li>
+<p><strong>Design &amp; Coding</strong></p>
+<ol>
+<li>Eliminate all unnecessary assumptions as much as possible, provide reasonable abstractions, and carefully design APIs.</li>
+<li>Isolate between processes, and use sandbox mechanisms for modules that are especially error-prone.</li>
+<li>Design circuit breakers for service dependencies.</li>
+</ol>
+</li>
+<li>
+<p><strong>Testing Phase</strong></p>
+<ol>
+<li>Introduce third-party testers as much as possible, and automate the testing platform as much as possible.</li>
+<li>Unit testing, integration testing, e2e testing, chaos testing.</li>
+</ol>
+</li>
+<li>
+<p><strong>Operation Phase</strong></p>
+<ol>
+<li>Detailed dashboards.</li>
+<li>Continuous self-checks.</li>
+<li>Alerting mechanisms.</li>
+<li>Problem playbooks.</li>
+</ol>
+</li>
+<li>
+<p><strong>For the Organization</strong></p>
+<p>Scientific training and management.</p>
+</li>
+</ul>
+<h3 id="How-Important-Is-Reliability">How Important Is Reliability?</h3>
+<p>It concerns user data security, corporate reputation, and is the cornerstone of a company’s survival and growth.</p>
+<h2 id="Scalability">Scalability</h2>
+<p>Scalability is the ability of a system to cope with load growth. It is important, yet difficult to get right in practice, because a fundamental contradiction exists: <strong>only products that survive are qualified to talk about scalability, while designing for scalability too early often leads to death</strong>.</p>
+<p>Still, one can learn some basic concepts to deal with <strong>potentially</strong> explosive load growth.</p>
+<h3 id="Measuring-Load">Measuring Load</h3>
+<p>Before dealing with load, you must first find a suitable way to measure it, such as <strong>load parameters</strong>:</p>
+<ul>
+<li>Daily/monthly active users of the application</li>
+<li>Requests per second to the Web server</li>
+<li>Read/write ratio in the database</li>
+<li>Number of simultaneously active users in a chat room</li>
+</ul>
+<p>The book uses information disclosed by Twitter in November 2012 as an example:</p>
+<ol>
+<li>Identify core businesses: posting tweets, home feed timeline.</li>
+<li>Determine request magnitudes: posting tweets (average 4.6k req/s, peak over 12k req/s), viewing others’ tweets (300k req/s).</li>
+</ol>
+<p><img data-src="https://s2.loli.net/2022/02/19/TY4N7gA39hFtxcH.png" alt="twitter-table.png"><span class="image-caption">twitter-table.png</span></p>
+<p>In terms of data magnitude alone, the design does not matter much. But Twitter needs to process data multiple times based on follow and followed relationships between users. There are two common approaches: pull and push:</p>
+<ol>
+<li><strong>Pull</strong>. When each user views their home feed, <strong>pull</strong> all followed users’ tweets from the database in real time, merge them, and present them.</li>
+<li><strong>Push</strong>. Save a feed-timeline view for each user; when a user posts a tweet, insert it into all followers’ feed-timeline views.</li>
+</ol>
+<p><img data-src="https://s2.loli.net/2022/02/19/vKsokpb5XaMlSTA.png" alt="twitter-push.png"><span class="image-caption">twitter-push.png</span></p>
+<p>The former is lazy: users only pull when they view, so there is no invalid computation or requests, but it needs to be calculated on the fly each time, making presentation slower. It also cannot withstand high traffic.</p>
+<p>The latter pre-computes the view regardless of whether the user views it or not, making presentation faster, but introduces many invalid requests.</p>
+<p>Ultimately, a hybrid push-pull approach is used, which is also a classic system-design interview question abroad.</p>
+<h3 id="Describing-Performance">Describing Performance</h3>
+<p>Note the distinction from system load: system load is examining the system from the user’s perspective, an <strong>objective metric</strong>. System performance describes an <strong>actual capability</strong> of the system. For example:</p>
+<ol>
+<li><strong>Throughput:</strong> the amount of data that can be processed per second, usually denoted as QPS.</li>
+<li><strong>Response time:</strong> the time observed from the user side from sending a request to receiving a response.</li>
+<li><strong>Latency:</strong> In daily usage, latency is often used interchangeably with response time; but strictly speaking, latency only refers to the queuing and dormancy time during the request process. Although it generally accounts for the bulk of response time, only when we consider the actual processing time of the request to be instantaneous can latency be equivalent to response time.</li>
+</ol>
+<p>Response time is usually measured by percentiles, such as p95, p99, and p999, meaning that 95%, 99%, or 99.9% of requests can be completed within that threshold. In practice, sliding windows are usually used to calculate the response-time distribution over a recent period, and it is usually presented as line charts or histograms.</p>
+<h3 id="Coping-with-Load">Coping with Load</h3>
+<p>After having the means to describe and define load and performance, we finally come to the main topic: how to cope with continuous load growth, i.e., making the system scalable.</p>
+<ol>
+<li><strong>Scaling up</strong> or <strong>vertical scaling</strong>: switch to machines with more powerful performance. e.g., mainframes for machine-learning training.</li>
+<li><strong>Scaling out</strong> or <strong>horizontal scaling</strong>: “parallel” many cheap machines to share the load. e.g., Musk building rockets.</li>
+</ol>
+<p>Two ways of load scaling:</p>
+<ul>
+<li>
+<p><strong>Automatic</strong></p>
+<p>If the load is hard to predict and volatile, automatic is better. The downside is that it is not easy to track load, prone to jitter, and causes resource waste.</p>
+</li>
+<li>
+<p><strong>Manual</strong></p>
+<p>If the load is easy to predict and does not change much, manual is best. Simple to design and less prone to errors.</p>
+</li>
+</ul>
+<p>For different application scenarios:</p>
+<p>First, if the scale is small, try to use machines with better performance, which can save a lot of trouble.</p>
+<p>Second, you can use the cloud and leverage cloud scalability. Even infrastructure providers such as Snowflake are all-in on cloud-native.</p>
+<p>Finally, if that still does not work, then consider designing your own scalable distributed architecture.</p>
+<p>Two service types:</p>
+<ul>
+<li>
+<p><strong>Stateless services</strong></p>
+<p>Relatively simple: multiple machines with a gateway on the outside.</p>
+</li>
+<li>
+<p><strong>Stateful services</strong></p>
+<p>Depending on requirements and scenarios—read/write load, storage magnitude, data complexity, response time, access patterns—make trade-offs and design an architecture that meets the needs.</p>
+</li>
+</ul>
+<p><strong>You cannot have everything; there is no silver-bullet architecture!</strong> Yet at the same time: everything changes but the essence remains the same—the atomic design patterns that make up different architectures are limited, which is also the focus of the book’s later discussions.</p>
+<h2 id="Maintainability">Maintainability</h2>
+<p>From the perspective of the entire software lifecycle, the maintenance phase definitely accounts for the bulk.</p>
+<p>But most people like to dig holes, not fill them. Therefore, it is necessary to dig the hole well enough from the very beginning. There are three principles:</p>
+<ul>
+<li>
+<p><em><strong>Operability</strong></em></p>
+<p>Easy for the operations team to take over painlessly.</p>
+</li>
+<li>
+<p><em><strong>Simplicity</strong></em></p>
+<p>Easy for new developers to get started smoothly: this requires reasonable abstraction and eliminating various complexities as much as possible. e.g., hierarchical abstraction.</p>
+</li>
+<li>
+<p><em><strong>Evolvability</strong></em></p>
+<p>Easy to quickly adapt to future requirements: avoid tight coupling, do not bind code to a specific implementation. Also called <strong>extensibility</strong>, <strong>modifiability</strong>, or <strong>plasticity</strong>.</p>
+</li>
+</ul>
+<h3 id="Operability-Life-Is-Short-Care-for-Operations"><strong>Operability: Life Is Short, Care for Operations</strong></h3>
+<p>Effective operations is absolutely a high-tech job:</p>
+<ol>
+<li>Closely monitor system status and quickly recover when problems occur.</li>
+<li>After recovery, review the problem and locate the cause.</li>
+<li>Regularly update and upgrade platforms, libraries, and components.</li>
+<li>Understand interrelationships between components to avoid cascading failures.</li>
+<li>Establish automated configuration management, service management, and update/upgrade mechanisms.</li>
+<li>Execute complex maintenance tasks, such as moving a storage system from one data center to another.</li>
+<li>Ensure system security when making configuration changes.</li>
+</ol>
+<p>A system with good operability means writing <strong>documentation and tools</strong> to automate <strong>definable</strong> maintenance processes, thereby freeing up human resources to focus on higher-value matters:</p>
+<ol>
+<li>Friendly documentation and consistent operational standards.</li>
+<li>Detailed monitoring dashboards, self-checks, and alerts.</li>
+<li>Universal default configurations.</li>
+<li>Self-healing mechanisms when problems occur, and allowing administrators to manually intervene when self-healing is impossible.</li>
+<li>Automate maintenance processes as much as possible.</li>
+<li>Avoid single-point dependencies, whether machines or people.</li>
+</ol>
+<h3 id="Simplicity-Complexity-Management"><strong>Simplicity: Complexity Management</strong></h3>
+<p><img data-src="https://s2.loli.net/2022/02/19/zfFMc8RXsW6iTok.png" alt="recommand-book.png"><span class="image-caption">recommand-book.png</span></p>
+<p>Recommended book: <strong><span class="exturl" data-url="aHR0cHM6Ly9ib29rLmRvdWJhbi5jb20vc3ViamVjdC8zMDIxODA0Ni8=">A Philosophy of Software Design<i class="fa fa-external-link-alt"></i></span></strong>, which discusses how to define, identify, and reduce complexity in software design.</p>
+<p>Complexity manifestations:</p>
+<ol>
+<li>Expansion of state space.</li>
+<li>Strong coupling between components.</li>
+<li>Inconsistent terminology and <a href="https://www.qtmuniao.com/2021/12/12/how-to-write-code-scrutinize-names/">naming</a>.</li>
+<li>Performance hacks.</li>
+<li>Workarounds everywhere.</li>
+</ol>
+<p>The requirements are simple, but that does not stop you from implementing them in a very complex way 😉: too much <strong>accidental complexity</strong> is introduced—complexity not determined by the problem itself, but introduced by the implementation.</p>
+<p>Usually, it is because the problem is not understood deeply enough, and “running-account” (without any <strong>abstraction</strong>) style code is written.</p>
+<p>If you find a suitable abstraction for a problem, then half the problem is solved, e.g.:</p>
+<ol>
+<li>High-level languages hide the details of machine code, CPU, and system calls.</li>
+<li>SQL hides the details of storage architecture, index structures, and query-optimization implementation.</li>
+</ol>
+<p>How to find suitable abstractions?</p>
+<ol>
+<li>Find them from common abstractions in the computer field.</li>
+<li>Find them from concepts commonly encountered in daily life.</li>
+</ol>
+<p>In short, a suitable abstraction is either <strong>intuitive</strong>; or shares <strong>context</strong> with your readers.</p>
+<p>This book will also present many abstractions commonly used in distributed systems later.</p>
+<h3 id="Evolvability-Lowering-the-Barrier-to-Change">Evolvability: Lowering the Barrier to Change</h3>
+<p>If system requirements do not change, it means the industry is dead.</p>
+<p>Otherwise, requirements are constantly changing, and the reasons for change are varied:</p>
+<ol>
+<li>A more comprehensive understanding of the problem domain.</li>
+<li>Emergence of previously unconsidered use cases.</li>
+<li>Changes in business strategy.</li>
+<li>Customers demanding new features.</li>
+<li>Changes in dependent platforms.</li>
+<li>Compliance requirements.</li>
+<li>Changes in scale.</li>
+</ol>
+<p>Ways to cope:</p>
+<ul>
+<li>
+<p><strong>Project management</strong></p>
+<p>Agile development.</p>
+</li>
+<li>
+<p><strong>System design</strong></p>
+<p>Builds on the first two points. Reasonable abstraction, reasonable encapsulation, closed for modification, open for extension.</p>
+</li>
+</ul>
+<h2 id="References">References</h2>
+<ol>
+<li><span class="exturl" data-url="aHR0cHM6Ly9kYXRhaW50ZW5zaXZlLm5ldC8=">https://dataintensive.net/<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cDovL2RkaWEudm9ubmcuY29tLyMvY2gx">http://ddia.vonng.com/#/ch1<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+<hr>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA Reading Notes (Chapter 3): B-Trees and LSM-Trees</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA Reading Notes (Chapter 4): Encoding and Evolution</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA Reading Notes (V): Replication</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="bookmark">DDIA 读书笔记（三）： TP AP 和列存</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DDIA/" rel="tag"># DDIA</a>
+              <a href="/tags/Reading-Notes/" rel="tag"># Reading Notes</a>
+              <a href="/tags/Designing-Data-Intensive-Applications/" rel="tag"># Designing Data-Intensive Applications</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/12/12/how-to-write-code-scrutinize-names/" rel="prev" title="好好写代码之命名篇——推敲">
+      <i class="fa fa-chevron-left"></i> 好好写代码之命名篇——推敲
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/02/19/ddia-reading-chapter1/" rel="next" title="DDIA 读书笔记（一）：可靠、可扩展、可维护">
+      DDIA 读书笔记（一）：可靠、可扩展、可维护 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Why-This-Book-Takes-Data-Systems-as-Its-Theme"><span class="nav-number">1.</span> <span class="nav-text">Why This Book Takes Data Systems as Its Theme</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Common-Data-Systems"><span class="nav-number">2.</span> <span class="nav-text">Common Data Systems</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Increasing-Complexity-of-Data-Systems"><span class="nav-number">3.</span> <span class="nav-text">Increasing Complexity of Data Systems</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reliability"><span class="nav-number">4.</span> <span class="nav-text">Reliability</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Hardware-Failures"><span class="nav-number">4.1.</span> <span class="nav-text">Hardware Failures</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Software-Errors"><span class="nav-number">4.2.</span> <span class="nav-text">Software Errors</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Human-Errors"><span class="nav-number">4.3.</span> <span class="nav-text">Human Errors</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#How-Important-Is-Reliability"><span class="nav-number">4.4.</span> <span class="nav-text">How Important Is Reliability?</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Scalability"><span class="nav-number">5.</span> <span class="nav-text">Scalability</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Measuring-Load"><span class="nav-number">5.1.</span> <span class="nav-text">Measuring Load</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Describing-Performance"><span class="nav-number">5.2.</span> <span class="nav-text">Describing Performance</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Coping-with-Load"><span class="nav-number">5.3.</span> <span class="nav-text">Coping with Load</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Maintainability"><span class="nav-number">6.</span> <span class="nav-text">Maintainability</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Operability-Life-Is-Short-Care-for-Operations"><span class="nav-number">6.1.</span> <span class="nav-text">Operability: Life Is Short, Care for Operations</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Simplicity-Complexity-Management"><span class="nav-number">6.2.</span> <span class="nav-text">Simplicity: Complexity Management</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Evolvability-Lowering-the-Barrier-to-Change"><span class="nav-number">6.3.</span> <span class="nav-text">Evolvability: Lowering the Barrier to Change</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">7.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2022/02/19/ddia-reading-chapter1/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '7aad4683247230f265fc38375c62f35a',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

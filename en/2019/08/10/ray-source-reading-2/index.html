@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="The previous post covered how tasks awaiting scheduling are organized. This post continues with the softer topic: node resource abstraction and scheduling policies. Introduction Since Ray supports exp">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ray Source Code Reading (Part 2): Resource Abstraction and Scheduling Policies">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2019/08/10/ray-source-reading-2/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="The previous post covered how tasks awaiting scheduling are organized. This post continues with the softer topic: node resource abstraction and scheduling policies. Introduction Since Ray supports exp">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2019-08-10T10:36:04.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.673Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="Ray">
+<meta property="article:tag" content="Scheduling Policy">
+<meta property="article:tag" content="Distributed Systems">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2019/08/10/ray-source-reading-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="Ray,Scheduling Policy,Distributed Systems">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Ray Source Code Reading (Part 2): Resource Abstraction and Scheduling Policies",
+    "description": "The previous post covered how tasks awaiting scheduling are organized. This post continues with the softer topic: node resource abstraction and scheduling policies. Introduction Since Ray supports explicit resource constraints for tasks, it needs to abstract the resources of all nodes in a hardware-agnostic way, managing all resources uniformly to enable logical addition and removal of resources. When a node joins, its total resource capacity must be sensed; when a task is scheduled, a node satisfying the constraints must be found; when a task is successfully scheduled, the remaining available resources can be obtained, and so on. In addition to standard resources like CPU and GPU, Ray also supports scheduling of user-defined labeled resources. When starting a node (ray start --resources &lt;resources&gt;), users specify the total amount of some category of resource that the node has (e.g., memory, bandwidth, a certain model of GPU, etc.). When defining a remote function, users specify how much of that category the task requires. Ray’s scheduler will then dispatch the task to a specific machine according to the user’s custom resource requirements. This is an interesting design for interaction between user code and the scheduler. For scheduling policies, due to Ray’s decentralized scheduling, inconsistent states can easily arise. The simplest approach in practice turns out to be statistically optimal—for each task, find nodes that satisfy the resource constraints and randomly select one to dispatch the task to.",
+    "url": "https://www.qtmuniao.com/en/2019/08/10/ray-source-reading-2/",
+    "datePublished": "2019-08-10T18:36:04+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2019/08/10/ray-source-reading-2/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Ray Source Code Reading (Part 2): Resource Abstraction and Scheduling Policies | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2019/08/10/ray-source-reading-2/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2019/08/10/ray-source-reading-2/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2019/08/10/ray-source-reading-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ray Source Code Reading (Part 2): Resource Abstraction and Scheduling Policies
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-08-10 18:36:04" itemprop="dateCreated datePublished" datetime="2019-08-10T18:36:04+08:00">2019-08-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Source-Code-Reading/" itemprop="url" rel="index"><span itemprop="name">Source Code Reading</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Source-Code-Reading/Ray/" itemprop="url" rel="index"><span itemprop="name">Ray</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>The previous post covered how tasks awaiting scheduling are organized. This post continues with the softer topic: node resource abstraction and scheduling policies.</p>
+<h2 id="Introduction">Introduction</h2>
+<p>Since Ray supports <strong>explicit resource constraints</strong> for tasks, it needs to abstract the resources of all nodes in a hardware-agnostic way, managing all resources uniformly to enable logical addition and removal of resources. When a node joins, its total resource capacity must be sensed; when a task is scheduled, a node satisfying the constraints must be found; when a task is successfully scheduled, the remaining available resources can be obtained, and so on.</p>
+<p>In addition to standard resources like CPU and GPU, Ray also supports scheduling of user-defined labeled resources. When starting a node (<code>ray start --resources &lt;resources&gt;</code>), users specify the total amount of <strong>some category of resource</strong> that the node has (e.g., memory, bandwidth, a certain model of GPU, etc.). When defining a remote function, users specify how much of that category the task requires. Ray’s scheduler will then dispatch the task to a specific machine according to the user’s custom resource requirements. This is an <strong>interesting design for interaction between user code and the scheduler</strong>.</p>
+<p>For scheduling policies, due to Ray’s decentralized scheduling, inconsistent states can easily arise. The simplest approach in practice turns out to be statistically optimal—for each task, find nodes that satisfy the resource constraints and randomly select one to dispatch the task to.</p>
+<span id="more"></span>
+<p><em>Author: Muniao’s Notes <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, please indicate the source when reposting</em></p>
+<h2 id="Scheduling-Resource-Abstraction-SchedulingResources">Scheduling Resource Abstraction (SchedulingResources)</h2>
+<p>The four most basic classes are <code>FractionalResourceQuantity</code>, <code>ResourceSet</code>, <code>ResourceIds</code>, and <code>ResourceIdSet</code>. A brief overview of each class:</p>
+<ul>
+<li><code>FractionalResourceQuantity</code> defines the <strong>quantity</strong> of a certain resource.</li>
+<li><code>ResourceSet</code> is a <strong>set</strong> of different kinds of resources and their quantities.</li>
+<li><code>ResourceIds</code> assigns indices to resource quantities by fractions—0, 1 … quantity-1.</li>
+<li><code>ResourceIdSet</code> is a set of indexed resources.</li>
+</ul>
+<p>The first two describe resources at the <strong>how much</strong> level, while the latter two deconstruct resources at the <strong>index</strong> level.</p>
+<p><strong>The latter two are refinements based on the former two</strong>. They both define a <strong>single quantity</strong> and a <strong>set quantity</strong> composed of different kinds of quantities.</p>
+<p>Furthermore, an important point reflected in the name <code>FractionalResourceQuantity</code> is that Ray supports <strong>small quantity values</strong>, but only pure fractional values. Why this design? Take the simplest example: GPUs are expensive, so we might want multiple tasks to share a single GPU to improve GPU utilization. Then each task can specify a fractional GPU requirement when defining its resource needs. In this scenario, non-pure fractional values like 1.x or 2.x don’t make much sense—after all, you either occupy one entirely or share one with others.</p>
+<h3 id="Resource-Quantity-FractionalResourceQuantity">Resource Quantity (FractionalResourceQuantity)</h3>
+<p><code>FractionalResourceQuantity</code> is a wrapper around <code>double</code>, representing the <strong>quantity</strong> of resource measurement in Ray. However, to avoid precision loss in calculations, its internal implementation actually uses a 64-bit integer—the <strong>actual value</strong> multiplied by <code>kResourceConversionFactor = 10000</code> and truncated. The purpose is clear:</p>
+<ol>
+<li>For Ray’s resource usage scenarios, precision to about four or five decimal places is sufficient.</li>
+<li>It provides exact arithmetic within this precision.</li>
+</ol>
+<p>On this basis, it overloads some basic operations for measurable quantities—addition, subtraction, and boolean operations. In Ray’s scenarios, only node joining (adding resources), checking schedulability (comparing resources), and task scheduling (decreasing resources) are needed, so multiplication and division are not required.</p>
+<p>Of course, it can also be understood from another angle, perhaps more intuitively: its internal representation effectively changes the <strong>dimension/unit</strong> from a logical <code>1</code> to a smaller <code>1/kResourceConversionFactor</code>.</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">FractionalResourceQuantity</span> &#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="comment">// Default constructor: resource_quantity_ = 0</span></span><br><span class="line">  <span class="built_in">FractionalResourceQuantity</span>();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Basic constructor: specify resource quantity</span></span><br><span class="line">  <span class="built_in">FractionalResourceQuantity</span>(<span class="type">double</span> resource_quantity);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/// Addition and subtraction operations</span></span><br><span class="line">  <span class="type">const</span> FractionalResourceQuantity <span class="keyword">operator</span>+(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span>;</span><br><span class="line">  <span class="type">const</span> FractionalResourceQuantity <span class="keyword">operator</span>-(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span>;</span><br><span class="line">  <span class="type">void</span> <span class="keyword">operator</span>+=(<span class="type">const</span> FractionalResourceQuantity &amp;rhs);</span><br><span class="line">  <span class="type">void</span> <span class="keyword">operator</span>-=(<span class="type">const</span> FractionalResourceQuantity &amp;rhs);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/// Boolean operations</span></span><br><span class="line">  <span class="type">bool</span> <span class="keyword">operator</span>==(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span>;</span><br><span class="line">  <span class="type">bool</span> <span class="keyword">operator</span>!=(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span>;</span><br><span class="line">  <span class="type">bool</span> <span class="built_in">operator</span>&lt;(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span>;</span><br><span class="line">  <span class="type">bool</span> <span class="keyword">operator</span>&gt;(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span>;</span><br><span class="line">  <span class="type">bool</span> <span class="keyword">operator</span>&lt;=(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span>;</span><br><span class="line">  <span class="type">bool</span> <span class="keyword">operator</span>&gt;=(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/// Actual value as a floating-point number</span></span><br><span class="line">  <span class="function"><span class="type">double</span> <span class="title">ToDouble</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">// Resource quantity in units of 1/kResourceConversionFactor</span></span><br><span class="line">  <span class="type">int64_t</span> resource_quantity_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>A basic principle when implementing such operations is to <strong>reuse</strong> as much as possible, that is, to define the <strong>minimum number of orthogonal operations</strong> and then use these to implement other operations. This has two benefits:</p>
+<ol>
+<li>The code is concise because of reuse.</li>
+<li>Changes are easier—if the implementation needs to change in the future, only the most basic operations need to be modified.</li>
+</ol>
+<p>Specifically for the boolean operation set in this example, first define <strong>equals and less than</strong> as the basic operation set, then implement the other operators based on these. A similar idea appears later in <code>ResourceSet</code>:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Two basic operations</span></span><br><span class="line"><span class="type">bool</span> FractionalResourceQuantity::<span class="keyword">operator</span>==(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> resource_quantity_ == rhs.resource_quantity_;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">bool</span> FractionalResourceQuantity::<span class="keyword">operator</span>&lt;(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> resource_quantity_ &lt; rhs.resource_quantity_;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// The following call basic operations to complete the definition</span></span><br><span class="line"><span class="type">bool</span> FractionalResourceQuantity::<span class="keyword">operator</span>!=(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> !(*<span class="keyword">this</span> == rhs);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">bool</span> FractionalResourceQuantity::<span class="keyword">operator</span>&gt;(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> rhs &lt; *<span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">bool</span> FractionalResourceQuantity::<span class="keyword">operator</span>&lt;=(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> !(*<span class="keyword">this</span> &gt; rhs);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">bool</span> FractionalResourceQuantity::<span class="keyword">operator</span>&gt;=(<span class="type">const</span> FractionalResourceQuantity &amp;rhs) <span class="type">const</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> !(*<span class="keyword">this</span> &lt; rhs);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Resource-Set-ResourceSet">Resource Set (ResourceSet)</h3>
+<p><code>ResourceSet</code> is a collection of different kinds of resources and their quantities. In terms of implementation, it is a wrapper around a dictionary (<code>unordered_map</code>). In physical terms, it is generally used to represent a node’s total resources, already used resources, remaining available resources, etc.</p>
+<p>Basic operations include adding or deleting a single resource, as well as operations between resource sets. See the inline comments for details.</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ResourceSet</span> &#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="built_in">ResourceSet</span>();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Three constructors:</span></span><br><span class="line">  <span class="comment">// Build a dictionary of label(string)-&gt;amount(FractionalResourceQuantity) from a dictionary or a list of key-value pairs.</span></span><br><span class="line">  <span class="built_in">ResourceSet</span>(</span><br><span class="line">      <span class="type">const</span> std::unordered_map&lt;std::string, FractionalResourceQuantity&gt; &amp;resource_map);</span><br><span class="line">  <span class="built_in">ResourceSet</span>(<span class="type">const</span> std::unordered_map&lt;std::string, <span class="type">double</span>&gt; &amp;resource_map);</span><br><span class="line">  <span class="built_in">ResourceSet</span>(<span class="type">const</span> std::vector&lt;std::string&gt; &amp;resource_labels,</span><br><span class="line">              <span class="type">const</span> std::vector&lt;<span class="type">double</span>&gt; resource_capacity);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Destructor</span></span><br><span class="line">  ~<span class="built_in">ResourceSet</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Determine whether resource set A is a subset of B (all labels&#x27; amounts in A are not greater than the corresponding labels&#x27; amounts in B).</span></span><br><span class="line">  <span class="comment">// Use this operation as a basic operation to implement the next three operations.</span></span><br><span class="line">  <span class="function"><span class="type">bool</span> <span class="title">IsSubset</span><span class="params">(<span class="type">const</span> ResourceSet &amp;other)</span> <span class="type">const</span></span>;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// In the following functions, the first two have exactly the same implementation.</span></span><br><span class="line">  <span class="type">bool</span> <span class="keyword">operator</span>==(<span class="type">const</span> ResourceSet &amp;rhs) <span class="type">const</span>;</span><br><span class="line">  <span class="function"><span class="type">bool</span> <span class="title">IsEqual</span><span class="params">(<span class="type">const</span> ResourceSet &amp;other)</span> <span class="type">const</span></span>;</span><br><span class="line">  <span class="function"><span class="type">bool</span> <span class="title">IsSuperset</span><span class="params">(<span class="type">const</span> ResourceSet &amp;other)</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Dictionary-like add, delete, update, and query operations, i.e., add, delete, update, and query the quantity of a certain kind of resource.</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">AddOrUpdateResource</span><span class="params">(<span class="type">const</span> std::string &amp;resource_name,</span></span></span><br><span class="line"><span class="params"><span class="function">                           <span class="type">const</span> FractionalResourceQuantity &amp;capacity)</span></span>;</span><br><span class="line">  <span class="function"><span class="type">bool</span> <span class="title">DeleteResource</span><span class="params">(<span class="type">const</span> std::string &amp;resource_name)</span></span>;</span><br><span class="line">  <span class="function">FractionalResourceQuantity <span class="title">GetResource</span><span class="params">(<span class="type">const</span> std::string &amp;resource_name)</span> <span class="type">const</span></span>;</span><br><span class="line">  <span class="function"><span class="type">bool</span> <span class="title">IsEmpty</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// Addition and subtraction operations between two sets. Note that when adding, sometimes you cannot exceed an upper bound: for example, a node&#x27;s total resource capacity, hence</span></span><br><span class="line">  <span class="comment">// AddResourcesCapacityConstrained; when subtracting, the resource quantity cannot become negative, hence</span></span><br><span class="line">  <span class="comment">// SubtractResourcesStrict. These are two upper/lower bound protection functions.</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">AddResourcesCapacityConstrained</span><span class="params">(<span class="type">const</span> ResourceSet &amp;other,</span></span></span><br><span class="line"><span class="params"><span class="function">                                       <span class="type">const</span> ResourceSet &amp;total_resources)</span></span>;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">AddResources</span><span class="params">(<span class="type">const</span> ResourceSet &amp;other)</span></span>;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">SubtractResources</span><span class="params">(<span class="type">const</span> ResourceSet &amp;other)</span></span>;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">SubtractResourcesStrict</span><span class="params">(<span class="type">const</span> ResourceSet &amp;other)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Since all nodes must have CPU, and all task scheduling also requires CPU resources, it is singled out as a separate function.</span></span><br><span class="line">  <span class="comment">// Its corresponding label name is: kCPU_ResourceLabel = &quot;CPU&quot;</span></span><br><span class="line">  <span class="function"><span class="type">const</span> ResourceSet <span class="title">GetNumCpus</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Return the list of resources and corresponding quantities organized in dictionary form; one uses double representation, the other uses FractionalResourceQuantity representation.</span></span><br><span class="line">  <span class="function"><span class="type">const</span> std::unordered_map&lt;std::string, <span class="type">double</span>&gt; <span class="title">GetResourceMap</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">  <span class="function"><span class="type">const</span> std::unordered_map&lt;std::string, FractionalResourceQuantity&gt;</span></span><br><span class="line"><span class="function">      &amp;<span class="title">GetResourceAmountMap</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="type">const</span> std::string <span class="title">ToString</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">// Internal dictionary of resources and their quantities</span></span><br><span class="line">  std::unordered_map&lt;std::string, FractionalResourceQuantity&gt; resource_capacity_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>When performing addition and subtraction between sets, there are two additional functions with upper and lower bound checks. Probably to avoid consequences caused by imprecise floating-point operations?</p>
+<h3 id="Resource-IDs-ResourceIds">Resource IDs (ResourceIds)</h3>
+<p><code>ResourceIds</code> solves the problem of assigning IDs to resources and splitting resources in some way.</p>
+<p>For <strong>resource IDs</strong>, it assigns a logical ID (0~n-1) to all resources in the system. For example, GPU 0, GPU 1, etc. This allows user code to locate resources and request that certain code use a specific resource.</p>
+<p>For <strong>resource splitting</strong>, Ray requires the API (<code>ray.remote(label=amount)</code>) to use resources in only two forms:</p>
+<ol>
+<li>amount &gt;= 1 and must be an integer.</li>
+<li>amount &lt; 1, i.e., a pure fraction.</li>
+</ol>
+<p>Corresponding to the physical meaning: either <strong>exclusively occupy</strong> one or more whole resources, or <strong>share</strong> a single resource with others. A classic example of the former is CPU; a classic example of the latter is GPU.</p>
+<p>In internal implementation, <code>ResourceIds</code> maintains two lists. One is a whole integer list (<code>vector&lt;int64_t&gt; whole_ids_</code>) representing the IDs of all whole resources. The other is a key-value pair list (<code>vector&lt;pair&lt;int64_t, FractionalResourceQuantity&gt;&gt;</code>) representing the IDs of all fractional resources and their corresponding remaining amounts. It is worth mentioning that for a node, initially all resources should be whole (unless there is some special purpose, such as not wanting the cluster to use up all the node’s resources). Then as tasks requiring fractional resources are scheduled, some resources are split—in implementation, this is done by taking one resource from the whole list, splitting it, giving a portion to the task, and putting the rest into the fractional list. Therefore, <strong>there will be no identical IDs in the two lists</strong>, because each ID corresponds to at most one whole resource. If certain fractional resources are released upon task completion, causing some resources with the same ID in the fractional list, such resources will be merged upon return; if they equal 1, they will be moved back to the whole list.</p>
+<p>There are some small principles in resource allocation. For example, when requesting a fractional resource, we first look in the fractional list for one that satisfies the requirement; if not found, we then split one from the whole list.</p>
+<p>Another issue with splitting is that we cannot combine two fractional resources belonging to two different IDs (e.g., ID 0 has 0.5, ID 1 has 0.5) and assign them together to a task requiring a larger resource (e.g., a task requiring 0.75 of a resource). For example, if two GPUs each have half usage remaining, you cannot combine them to assign to a task requiring 0.75 GPU.</p>
+<p>There is also a variable <code>decrement_backlog_</code> used to record all overcommitted resource requests. When others <code>Release</code> resources, these requests will be satisfied first.</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ResourceIds</span> &#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="built_in">ResourceIds</span>();</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// Construct ResourceIds with a given quantity of resources. resource_quantity is either an integer or a pure fraction.</span></span><br><span class="line">  <span class="function"><span class="keyword">explicit</span> <span class="title">ResourceIds</span><span class="params">(<span class="type">double</span> resource_quantity)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// In internal implementation, the whole resource list uses vector&lt;int&gt; to represent all corresponding IDs, each having one whole resource.</span></span><br><span class="line">  <span class="comment">// For fractional resources, a vector&lt;pair&gt; is used to represent an ID and its corresponding resource quantity.</span></span><br><span class="line">  <span class="comment">// Therefore, there are the following three constructors.</span></span><br><span class="line">  <span class="function"><span class="keyword">explicit</span> <span class="title">ResourceIds</span><span class="params">(<span class="type">const</span> std::vector&lt;<span class="type">int64_t</span>&gt; &amp;whole_ids)</span></span>;</span><br><span class="line">  <span class="function"><span class="keyword">explicit</span> <span class="title">ResourceIds</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">      <span class="type">const</span> std::vector&lt;std::pair&lt;<span class="type">int64_t</span>, FractionalResourceQuantity&gt;&gt; &amp;fractional_ids)</span></span>;</span><br><span class="line">  <span class="built_in">ResourceIds</span>(</span><br><span class="line">      <span class="type">const</span> std::vector&lt;<span class="type">int64_t</span>&gt; &amp;whole_ids,</span><br><span class="line">      <span class="type">const</span> std::vector&lt;std::pair&lt;<span class="type">int64_t</span>, FractionalResourceQuantity&gt;&gt; &amp;fractional_ids);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Check whether there are enough resources for the requested resource_quantity. If resource_quantity is an integer, just check the</span></span><br><span class="line">  <span class="comment">// whole resource list. Note that if resource_quantity is a fraction, there must be a single ID with a resource quantity greater than</span></span><br><span class="line">  <span class="comment">// resource_quantity (either a whole resource of at least one, or a fraction greater than resource_quantity).</span></span><br><span class="line">  <span class="comment">// You cannot combine two fractions to exceed resource_quantity, because quantities belonging to two different resource IDs cannot be combined.</span></span><br><span class="line">  <span class="function"><span class="type">bool</span> <span class="title">Contains</span><span class="params">(<span class="type">const</span> FractionalResourceQuantity &amp;resource_quantity)</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Carve out a chunk of resources or reclaim a chunk of resources according to the above principles.</span></span><br><span class="line">  <span class="comment">// Split appropriately when allocating resources.</span></span><br><span class="line">  <span class="comment">// Merge appropriately when reclaiming resources.</span></span><br><span class="line">  <span class="function">ResourceIds <span class="title">Acquire</span><span class="params">(<span class="type">const</span> FractionalResourceQuantity &amp;resource_quantity)</span></span>;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">Release</span><span class="params">(<span class="type">const</span> ResourceIds &amp;resource_ids)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Although the semantics are different, the implementation is the same as Release: add two resource_ids together.</span></span><br><span class="line">  <span class="function">ResourceIds <span class="title">Plus</span><span class="params">(<span class="type">const</span> ResourceIds &amp;resource_ids)</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Get the whole/fractional resource ID lists.</span></span><br><span class="line">  <span class="function"><span class="type">const</span> std::vector&lt;<span class="type">int64_t</span>&gt; &amp;<span class="title">WholeIds</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">  <span class="type">const</span> std::vector&lt;std::pair&lt;<span class="type">int64_t</span>, FractionalResourceQuantity&gt;&gt; &amp;<span class="built_in">FractionalIds</span>()</span><br><span class="line">      <span class="type">const</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Check whether there are no resources in this ID set.</span></span><br><span class="line">  <span class="function"><span class="type">bool</span> <span class="title">TotalQuantityIsZero</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Return the sum of all resources as a FractionalResourceQuantity.</span></span><br><span class="line">  <span class="function">FractionalResourceQuantity <span class="title">TotalQuantity</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="function">std::string <span class="title">ToString</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Update to the specified resource quantity via IncreaseCapacity and DecreaseCapacity; this is done to support users&#x27;</span></span><br><span class="line">  <span class="comment">// dynamic adjustment of custom resources.</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">UpdateCapacity</span><span class="params">(<span class="type">int64_t</span> new_capacity)</span></span>;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">// Determine whether resource_quantity is a whole number.</span></span><br><span class="line">  <span class="function"><span class="type">bool</span> <span class="title">IsWhole</span><span class="params">(<span class="type">double</span> resource_quantity)</span> <span class="type">const</span></span>;</span><br><span class="line">  </span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">IncreaseCapacity</span><span class="params">(<span class="type">int64_t</span> increment_quantity)</span></span>;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">DecreaseCapacity</span><span class="params">(<span class="type">int64_t</span> decrement_quantity)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Two lists</span></span><br><span class="line">  std::vector&lt;<span class="type">int64_t</span>&gt; whole_ids_;</span><br><span class="line">  std::vector&lt;std::pair&lt;<span class="type">int64_t</span>, FractionalResourceQuantity&gt;&gt; fractional_ids_;</span><br><span class="line">  <span class="comment">// Track total capacity, which is represented by FractionalResourceQuantity, also indicating that this class is a refinement of FractionalResourceQuantity.</span></span><br><span class="line">  FractionalResourceQuantity total_capacity_;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// Temporarily record overcommitted resource requests.</span></span><br><span class="line">  <span class="type">int64_t</span> decrement_backlog_;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="Resource-ID-Set-ResourceIdSet">Resource ID Set (ResourceIdSet)</h3>
+<p><code>ResourceIdSet</code> represents a set of available resources with IDs. In implementation, it uses a dictionary <code>unordered_map&lt;string, ResourceIds&gt; available_resources_</code> to map resource types to their quantities (indexed), and defines interfaces similar to those of <code>ResourceIds</code>.</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">ResourceIdSet</span> &#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="comment">// Various constructors, essentially building an unordered_map.</span></span><br><span class="line">  <span class="built_in">ResourceIdSet</span>();</span><br><span class="line">  <span class="built_in">ResourceIdSet</span>(<span class="type">const</span> ResourceSet &amp;resource_set);</span><br><span class="line">  <span class="built_in">ResourceIdSet</span>(<span class="type">const</span> std::unordered_map&lt;std::string, ResourceIds&gt; &amp;available_resources);</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// Contains, acquire, and release. The semantics are the same as the corresponding operations in ResourceIds, except it goes from a single resource type to a set of total resources.</span></span><br><span class="line">  <span class="function"><span class="type">bool</span> <span class="title">Contains</span><span class="params">(<span class="type">const</span> ResourceSet &amp;resource_set)</span> <span class="type">const</span></span>;</span><br><span class="line">  <span class="function">ResourceIdSet <span class="title">Acquire</span><span class="params">(<span class="type">const</span> ResourceSet &amp;resource_set)</span></span>;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">Release</span><span class="params">(<span class="type">const</span> ResourceIdSet &amp;resource_id_set)</span></span>;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">ReleaseConstrained</span><span class="params">(<span class="type">const</span> ResourceIdSet &amp;resource_id_set,</span></span></span><br><span class="line"><span class="params"><span class="function">                          <span class="type">const</span> ResourceSet &amp;resources_total)</span></span>;</span><br><span class="line">  <span class="comment">// Same implementation as Release.</span></span><br><span class="line">  <span class="function">ResourceIdSet <span class="title">Plus</span><span class="params">(<span class="type">const</span> ResourceIdSet &amp;resource_id_set)</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/// Add, delete, and query the quantity of a certain resource type.</span></span><br><span class="line">  <span class="comment">// Add a specified quantity to a certain resource type.</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">AddOrUpdateResource</span><span class="params">(<span class="type">const</span> std::string &amp;resource_name, <span class="type">int64_t</span> capacity)</span></span>;</span><br><span class="line">  <span class="comment">// Delete a certain resource type.</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">DeleteResource</span><span class="params">(<span class="type">const</span> std::string &amp;resource_name)</span></span>;</span><br><span class="line">  <span class="comment">// Clear all resources.</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">Clear</span><span class="params">()</span></span>;</span><br><span class="line">  <span class="comment">// Get all available resources, i.e., return the internal hash table.</span></span><br><span class="line">  <span class="function"><span class="type">const</span> std::unordered_map&lt;std::string, ResourceIds&gt; &amp;<span class="title">AvailableResources</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// CPU is required by all tasks, so it is singled out.</span></span><br><span class="line">  <span class="function">ResourceIdSet <span class="title">GetCpuResources</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Convert a set of resources with IDs to a set of resources described only by quantities.</span></span><br><span class="line">  <span class="function">ResourceSet <span class="title">ToResourceSet</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Printing and serialization.</span></span><br><span class="line">  <span class="function">std::string <span class="title">ToString</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">  <span class="function">std::vector&lt;rpc::ResourceIdSetInfo&gt; <span class="title">ToProtobuf</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">// Mapping from resource type to indexed resource set.</span></span><br><span class="line">  std::unordered_map&lt;std::string, ResourceIds&gt; available_resources_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h3 id="Scheduling-Resource-Class-SchedulingResource">Scheduling Resource Class (SchedulingResource)</h3>
+<p>This class is the ultimate externally responsible class, recording all information about resources available for scheduling or in use on <strong>a certain node</strong> (<code>resources_total_</code>), pending usage resources (<code>resources_load_</code>), and remaining available resources (<code>resources_available_</code>). All three fields above are of type <code>ResourceIdSet</code>.</p>
+<p>The relationships among the three are:</p>
+<ol>
+<li><code>resources_total_ = resouces_used_by_running_tasks + resources_available_</code></li>
+<li><code>resources_load_ is part of resources_available_</code></li>
+</ol>
+<p>The second relationship may look strange; it will be explained in detail later.</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">SchedulingResources</span> &#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="comment">// Default constructor and constructor specifying total capacity.</span></span><br><span class="line">  <span class="built_in">SchedulingResources</span>();</span><br><span class="line">  <span class="built_in">SchedulingResources</span>(<span class="type">const</span> ResourceSet &amp;total);</span><br><span class="line"></span><br><span class="line">  ~<span class="built_in">SchedulingResources</span>();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Getters for total, load, and available quantities.</span></span><br><span class="line">  <span class="function"><span class="type">const</span> ResourceSet &amp;<span class="title">GetAvailableResources</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">  <span class="function"><span class="type">const</span> ResourceSet &amp;<span class="title">GetLoadResources</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">  <span class="function"><span class="type">const</span> ResourceSet &amp;<span class="title">GetTotalResources</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Setters for load and available quantities; total capacity is determined at construction time.</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">SetLoadResources</span><span class="params">(ResourceSet &amp;&amp;newset)</span></span>;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">SetAvailableResources</span><span class="params">(ResourceSet &amp;&amp;newset)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Acquire or release a set of resources: add or delete on available resources.</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">Release</span><span class="params">(<span class="type">const</span> ResourceSet &amp;resources)</span></span>;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">Acquire</span><span class="params">(<span class="type">const</span> ResourceSet &amp;resources)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Dynamically adjust a node&#x27;s total resources: update the total of a certain resource type or delete a certain resource type.</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">UpdateResource</span><span class="params">(<span class="type">const</span> std::string &amp;resource_name, <span class="type">int64_t</span> capacity)</span></span>;</span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">DeleteResource</span><span class="params">(<span class="type">const</span> std::string &amp;resource_name)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="function">std::string <span class="title">DebugString</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  ResourceSet resources_total_;</span><br><span class="line">  ResourceSet resources_available_;</span><br><span class="line">  ResourceSet resources_load_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>Interestingly, from this source code alone, <code>Release</code> and <code>Require</code> only operate on <code>resources_available_</code>; while <code>resources_load_</code> only has whole set and get operations. Of course, you can also get a reference to it via <code>GetLoadResources</code> and directly add or subtract from it.</p>
+<p>After thinking about other source code, it seems Ray wants to use <code>resources_load_</code> to describe the total demand of all tasks in <code>SchedulingQueue::ready_queue_</code>, rather than the demand of currently running tasks. The demand of currently running tasks should be <code>resources_total_ - resources_available_</code>. That is, <strong><code>resources_load_</code> is part of <code>resources_available_</code>, used to describe the total resource demand of all ready tasks</strong>.</p>
+<p>As a typical implementation example, here is the code implementation of <code>UpdateResource</code>, which updates the total capacity of a certain resource type:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">SchedulingResources::UpdateResource</span><span class="params">(<span class="type">const</span> std::string &amp;resource_name,</span></span></span><br><span class="line"><span class="params"><span class="function">                                         <span class="type">int64_t</span> capacity)</span> </span>&#123;</span><br><span class="line">  <span class="type">const</span> FractionalResourceQuantity new_capacity = <span class="built_in">FractionalResourceQuantity</span>(capacity);</span><br><span class="line">  <span class="type">const</span> FractionalResourceQuantity &amp;current_capacity =</span><br><span class="line">      resources_total_.<span class="built_in">GetResource</span>(resource_name);</span><br><span class="line">  <span class="keyword">if</span> (current_capacity &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// If this resource type exists, update its total capacity and available quantity accordingly.</span></span><br><span class="line">    <span class="type">const</span> FractionalResourceQuantity capacity_difference =</span><br><span class="line">        new_capacity - current_capacity;</span><br><span class="line">    <span class="type">const</span> FractionalResourceQuantity &amp;current_available_capacity =</span><br><span class="line">        resources_available_.<span class="built_in">GetResource</span>(resource_name);</span><br><span class="line">    FractionalResourceQuantity new_available_capacity =</span><br><span class="line">        current_available_capacity + capacity_difference;</span><br><span class="line">    <span class="keyword">if</span> (new_available_capacity &lt; <span class="number">0</span>) &#123;</span><br><span class="line">      new_available_capacity = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    resources_total_.<span class="built_in">AddOrUpdateResource</span>(resource_name, new_capacity);</span><br><span class="line">    resources_available_.<span class="built_in">AddOrUpdateResource</span>(resource_name, new_available_capacity);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// If it does not exist, add it directly.</span></span><br><span class="line">    resources_total_.<span class="built_in">AddOrUpdateResource</span>(resource_name, new_capacity);</span><br><span class="line">    resources_available_.<span class="built_in">AddOrUpdateResource</span>(resource_name, new_capacity);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Scheduling-Policy-SchedulingPolicy">Scheduling Policy (SchedulingPolicy)</h2>
+<p>As mentioned earlier, Ray uses a decentralized scheduling policy, meaning each node independently schedules the tasks it sees. <code>SchedulingPolicy</code> describes the scheduling policy of a single node. It obtains a reference to <code>SchedulingQueue</code> mentioned in the previous article through its constructor, thereby obtaining all tasks on this node. Then it obtains an overview of a set of nodes’ resources through GCS (the local node’s is loaded through configuration; for other nodes, when it senses them joining the cluster, it pulls from GCS), represented as <code>unordered_map&lt;ClientID, SchedulingResources&gt; &amp;cluster_resources</code>. It then makes scheduling decisions based on the matching between task resource requirements and node resource availability.</p>
+<p>In addition, there is a <code>SpillOver</code> method. The <code>Schedule</code> method makes decisions for all tasks in the <code>TaskState::PLACEABLE</code> state among <strong>a set of nodes</strong>—so-called <strong>scheduling</strong>. The <code>SpillOver</code> method attempts tasks in the <code>TaskState::INFEASIBLE</code> and <code>TaskState::READY</code> states on a newly joined <strong>single node</strong>—so-called spilling over. Later, as local resources could also be dynamically adjusted, this policy would also be used after local resource adjustments.</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">SchedulingPolicy</span> &#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="comment">// Constructor: obtain a reference to all tasks on this node.</span></span><br><span class="line">  <span class="built_in">SchedulingPolicy</span>(<span class="type">const</span> SchedulingQueue &amp;scheduling_queue);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Make scheduling decisions based on cluster resource distribution and task resource requirements, returning a set of tasks and the nodes they are scheduled to.</span></span><br><span class="line">  <span class="function">std::unordered_map&lt;TaskID, ClientID&gt; <span class="title">Schedule</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">      std::unordered_map&lt;ClientID, SchedulingResources&gt; &amp;cluster_resources,</span></span></span><br><span class="line"><span class="params"><span class="function">      <span class="type">const</span> ClientID &amp;local_client_id)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// After sensing a new node joining or local resource dynamic adjustment, attempt previously unplaceable tasks and offload</span></span><br><span class="line">  <span class="comment">// at most one READY task to the new node.</span></span><br><span class="line">  <span class="function">std::vector&lt;TaskID&gt; <span class="title">SpillOver</span><span class="params">(SchedulingResources &amp;remote_scheduling_resources)</span> <span class="type">const</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">virtual</span> ~<span class="built_in">SchedulingPolicy</span>();</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">// Reference to the task queue.</span></span><br><span class="line">  <span class="type">const</span> SchedulingQueue &amp;scheduling_queue_;</span><br><span class="line">  <span class="comment">/// A random seed.</span></span><br><span class="line">  std::mt19937_64 gen_;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<h4 id="Schedule">Schedule</h4>
+<p>For the <code>Schedule</code> function, the approximate pseudocode is as follows:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> task <span class="keyword">in</span> placeable_tasks_list:</span><br><span class="line">  clients = find_all_available_resources_statisfied_clients() <span class="comment"># available not include load</span></span><br><span class="line">  <span class="keyword">if</span> cliens.is_not_empty():</span><br><span class="line">    decision[task] = random_select_one(clients)</span><br><span class="line">  <span class="keyword">else</span>:</span><br><span class="line">    clients = find_all_total_resources_statisfied_clients() <span class="comment"># node whole resource</span></span><br><span class="line">    <span class="keyword">if</span> clients.is_not_empty():</span><br><span class="line">      decision[task] = random_select_one(clients)</span><br><span class="line"><span class="keyword">return</span> decision</span><br></pre></td></tr></table></figure>
+<p>There are two points worth noting:</p>
+<ol>
+<li>For each task, all nodes are filtered twice in sequence. The first time is against each node’s <strong>truly available</strong> resources (<code>resources_available_ - resources_load_</code>), and the second time is against the node’s total resources (<code>resources_total</code>).</li>
+<li>Although the comments say TODO: <strong>select nodes by weight</strong>. However, the comment is over a year old, and the current strategy in the code is still to randomly select one node from the set of nodes satisfying the resource requirements and dispatch the task there. I guess one possible reason is that under decentralized scheduling decisions, consistency is hard to guarantee, and random selection actually achieves better performance. For example, if nodes are selected by <strong>available resource amount as weight</strong>, when a new node joins, the remaining nodes might rush to dispatch tasks to that node when scheduling, causing the new node to quickly become overloaded. Then that node would dispatch the overloaded tasks out again, resulting in back-and-forth <strong>windmill-like</strong> scheduling.</li>
+</ol>
+<p>The operations for adding and deleting resources are slightly more complex. They are posted here:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> (<span class="type">const</span> <span class="keyword">auto</span> &amp;t : scheduling_queue_.<span class="built_in">GetTasks</span>(TaskState::PLACEABLE)) &#123;</span><br><span class="line">    <span class="type">const</span> <span class="keyword">auto</span> &amp;spec = t.<span class="built_in">GetTaskSpecification</span>();</span><br><span class="line">    <span class="type">const</span> <span class="keyword">auto</span> &amp;resource_demand = spec.<span class="built_in">GetRequiredPlacementResources</span>();</span><br><span class="line">    <span class="type">const</span> TaskID &amp;task_id = spec.<span class="built_in">TaskId</span>();</span><br><span class="line"></span><br><span class="line">    std::vector&lt;ClientID&gt; client_keys;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">const</span> <span class="keyword">auto</span> &amp;client_resource_pair : cluster_resources) &#123;</span><br><span class="line">      ClientID node_client_id = client_resource_pair.first;</span><br><span class="line">      <span class="type">const</span> <span class="keyword">auto</span> &amp;node_resources = client_resource_pair.second;</span><br><span class="line">      ResourceSet available_node_resources = <span class="built_in">ResourceSet</span>(node_resources.<span class="built_in">GetAvailableResources</span>());</span><br><span class="line">      <span class="comment">// 1. Get the node&#x27;s truly available resources (resources_available_ - resources_load_).</span></span><br><span class="line">      available_node_resources.<span class="built_in">SubtractResources</span>(node_resources.<span class="built_in">GetLoadResources</span>());</span><br><span class="line"></span><br><span class="line">      <span class="comment">// Check resource constraints.</span></span><br><span class="line">      <span class="keyword">if</span> (resource_demand.<span class="built_in">IsSubset</span>(available_node_resources)) &#123;</span><br><span class="line">        client_keys.<span class="built_in">push_back</span>(node_client_id);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!client_keys.<span class="built_in">empty</span>()) &#123;</span><br><span class="line">      <span class="comment">// Randomly select an index.</span></span><br><span class="line">      <span class="function">std::uniform_int_distribution&lt;<span class="type">int</span>&gt; <span class="title">distribution</span><span class="params">(<span class="number">0</span>, client_keys.size() - <span class="number">1</span>)</span></span>;</span><br><span class="line">      <span class="type">int</span> client_key_index = <span class="built_in">distribution</span>(gen_);</span><br><span class="line">      <span class="type">const</span> ClientID &amp;dst_client_id = client_keys[client_key_index];</span><br><span class="line">      decision[task_id] = dst_client_id;</span><br><span class="line">      <span class="comment">// 2. Update the corresponding node&#x27;s load resources.</span></span><br><span class="line">      <span class="function">ResourceSet <span class="title">new_load</span><span class="params">(cluster_resources[dst_client_id].GetLoadResources())</span></span>;</span><br><span class="line">      new_load.<span class="built_in">AddResources</span>(resource_demand);</span><br><span class="line">      cluster_resources[dst_client_id].<span class="built_in">SetLoadResources</span>(std::<span class="built_in">move</span>(new_load));</span><br><span class="line">    &#125;</span><br><span class="line">  ...</span><br></pre></td></tr></table></figure>
+<h3 id="SpillOver">SpillOver</h3>
+<p>This function is relatively simple. The pseudocode is as follows:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">spill_over</span>(<span class="params">remote_scheduling_resources</span>):</span><br><span class="line">  decision = []</span><br><span class="line">  new_load = ResourceSet()</span><br><span class="line">  </span><br><span class="line">  <span class="comment"># Attempt previously unplaceable tasks.</span></span><br><span class="line">  <span class="keyword">for</span> task <span class="keyword">in</span> infeasible_task_list:</span><br><span class="line">    <span class="keyword">if</span> task.required_res.is_subset_of(remote_scheduling_resources):</span><br><span class="line">      decision.append(task.<span class="built_in">id</span>)</span><br><span class="line">      new_load.add(task.required_res)</span><br><span class="line">  </span><br><span class="line">  <span class="comment"># Offload at most one ready task.</span></span><br><span class="line">  <span class="keyword">for</span> task <span class="keyword">in</span> ready_task_list:</span><br><span class="line">    <span class="keyword">if</span> task.required_res.is_subset_of(remote_scheduling_resources):</span><br><span class="line">      decision.append(task.<span class="built_in">id</span>)</span><br><span class="line">      new_load.add(task.required_res)</span><br><span class="line">      <span class="keyword">break</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment"># Set the node&#x27;s resource load.</span></span><br><span class="line">  remote_scheduling_resources.set_load(new_load)</span><br><span class="line">  <span class="keyword">return</span> decision</span><br></pre></td></tr></table></figure>
+<p>The scenario this function <strong>initially</strong> addressed is that when a new node comes online, it checks whether some tasks on the local machine can be dispatched there. This includes <strong>unplaceable tasks</strong> (before the node came online, there was no node satisfying the task’s resource requirements) and <strong>at most one</strong> ready task. I guess this is done to compensate for the shortcomings of random scheduling—when a new node comes online, <strong>all other nodes each offload one task to it</strong> (this policy is also quite interesting), so that load is transferred relatively slowly from other nodes to the newly joined node.</p>
+<p>Later, with version iterations, node <strong>static</strong> resources became <strong>dynamic</strong> resources. If a node’s total resources are loaded through configuration at startup and remain unchanged thereafter, it is <strong>static</strong>; if the total resources can still be set at runtime, it is <strong>dynamic</strong>. Under this design, if the local node’s total resources are reset, this function may also be called to retry unplaceable tasks. As for the task offloading operation, in this scenario, it doesn’t really make much sense.</p>
+<p>Finally, don’t forget that the dispatched node needs to have its resource load set, to “reserve” resources so that other scheduling decisions can promptly sense the load changes on the node caused by this scheduling decision.</p>
+<h2 id="Glossary">Glossary</h2>
+<ol>
+<li>Logic and implementation: Logic refers to a class’s external abstraction; implementation refers to its actual internal organization.</li>
+<li>resouce_label/resource_name: Or resource name, a marker marking a certain kind of resource, such as GPU, CPU, Memory, etc.</li>
+<li>ResourceId: Resource ID, assigning IDs to all resources according to 0, 1, … , n-1, to index a certain resource. Typical examples are GPU0, GPU1, etc.</li>
+<li>Static and dynamic resources: This refers to a node’s total resources. If a node’s total resources are loaded through configuration at startup and remain unchanged thereafter, it is <strong>static</strong>; if the total resources can still be set at runtime, it is <strong>dynamic</strong>.</li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/08/10/ray-source-reading-2/" rel="bookmark">Ray 源码解析（二）：资源抽象和调度策略</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/07/28/ray-source-reading-1/" rel="bookmark">Ray 源码解析（一）：任务的状态转移和组织形式</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/04/06/ray/" rel="bookmark">继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2024/07/07/ray-data-2/" rel="bookmark">使用 ray.data 进行大规模数据处理（二）：全局视角</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/04/06/ray/" rel="bookmark">After Spark, UC Berkeley Launches a New Generation AI Compute Engine — Ray</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2024/07/07/ray-data-2/" rel="bookmark">Large-Scale Data Processing With ray.data (Part 2): A Global Perspective</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Ray/" rel="tag"># Ray</a>
+              <a href="/tags/Scheduling-Policy/" rel="tag"># Scheduling Policy</a>
+              <a href="/tags/Distributed-Systems/" rel="tag"># Distributed Systems</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/07/28/ray-source-reading-1/" rel="prev" title="Ray 源码解析（一）：任务的状态转移和组织形式">
+      <i class="fa fa-chevron-left"></i> Ray 源码解析（一）：任务的状态转移和组织形式
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/08/10/ray-source-reading-2/" rel="next" title="Ray 源码解析（二）：资源抽象和调度策略">
+      Ray 源码解析（二）：资源抽象和调度策略 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Scheduling-Resource-Abstraction-SchedulingResources"><span class="nav-number">2.</span> <span class="nav-text">Scheduling Resource Abstraction (SchedulingResources)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Resource-Quantity-FractionalResourceQuantity"><span class="nav-number">2.1.</span> <span class="nav-text">Resource Quantity (FractionalResourceQuantity)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Resource-Set-ResourceSet"><span class="nav-number">2.2.</span> <span class="nav-text">Resource Set (ResourceSet)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Resource-IDs-ResourceIds"><span class="nav-number">2.3.</span> <span class="nav-text">Resource IDs (ResourceIds)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Resource-ID-Set-ResourceIdSet"><span class="nav-number">2.4.</span> <span class="nav-text">Resource ID Set (ResourceIdSet)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Scheduling-Resource-Class-SchedulingResource"><span class="nav-number">2.5.</span> <span class="nav-text">Scheduling Resource Class (SchedulingResource)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Scheduling-Policy-SchedulingPolicy"><span class="nav-number">3.</span> <span class="nav-text">Scheduling Policy (SchedulingPolicy)</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Schedule"><span class="nav-number">3.0.1.</span> <span class="nav-text">Schedule</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SpillOver"><span class="nav-number">3.1.</span> <span class="nav-text">SpillOver</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Glossary"><span class="nav-number">4.</span> <span class="nav-text">Glossary</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2019/08/10/ray-source-reading-2/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'a73d080617c14e7409d6ee85a94113af',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

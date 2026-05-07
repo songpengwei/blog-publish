@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Overview Dynamo is a highly available KV storage system. To ensure high availability and high performance, Dynamo adopts an eventual consistency model, providing developers with a novel API that uses">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Amazon&#39;s Distributed Key-Value Store for Small Objects — Dynamo">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2020/06/13/dynamo/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Overview Dynamo is a highly available KV storage system. To ensure high availability and high performance, Dynamo adopts an eventual consistency model, providing developers with a novel API that uses">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/06/21/HdFhQBOPjX52vl3.png">
+<meta property="og:image" content="https://i.loli.net/2020/06/21/kOE3iGgo5dWLpvI.png">
+<meta property="og:image" content="https://i.loli.net/2020/06/21/9lNkWXtychiO7wH.png">
+<meta property="og:image" content="https://i.loli.net/2020/06/21/jLFs2o6Xh8ZOuxT.png">
+<meta property="og:image" content="https://i.loli.net/2020/06/21/hWz3jksmct9ZwRu.png">
+<meta property="og:image" content="https://i.loli.net/2020/06/21/e9nJWTS6BtoEXhy.png">
+<meta property="article:published_time" content="2020-06-13T07:30:18.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.674Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="Dynamo">
+<meta property="article:tag" content="Amazon">
+<meta property="article:tag" content="Distributed Systems">
+<meta property="article:tag" content="Storage">
+<meta property="article:tag" content="Distributed">
+<meta property="article:tag" content="Key-Value Store">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/06/21/HdFhQBOPjX52vl3.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2020/06/13/dynamo/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="Dynamo,Amazon,Distributed Systems,Storage,Distributed,Key-Value Store">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Amazon's Distributed Key-Value Store for Small Objects — Dynamo",
+    "description": "Overview Dynamo is a highly available KV storage system. To ensure high availability and high performance, Dynamo adopts an eventual consistency model, providing developers with a novel API that uses versioning and resolves conflicts with client-side assistance. Dynamo aims to provide uninterrupted service while guaranteeing performance and scalability. Since Amazon widely adopts a decentralized, highly decoupled microservices architecture, the availability requirements for the storage system underlying these microservices are particularly high. S3 (Simple Storage Service) is another well-known storage service from Amazon. Although it can also be understood as a KV store, its target scenario differs from that of Dynamo. S3 is an object storage service for large files, mainly storing binary files and not providing cross-object transactions. Dynamo, on the other hand, is a document storage service for small files, mainly storing structured data (such as JSON). It allows indexing data and supports transactions across data items. Compared to traditional relational databases, Dynamo can be seen as providing only a primary key index, thereby achieving higher performance and better scalability. To achieve scalability and high availability while ensuring eventual consistency, Dynamo combines the following techniques: Consistent hashing for data partitioning and replication. Versioning mechanism (Vector Clock) to handle data consistency issues. Quorum and decentralized synchronization protocols to maintain consistency among replicas (Merkle Tree). Gossip Protocol for failure detection and replica maintenance. In terms of implementation, Dynamo has the following characteristics: Fully decentralized, with no central node; all nodes are peers. Adopts eventual consistency, using version numbers to resolve conflicts, even requiring users to participate in conflict resolution. Uses hash values for data partitioning, organizing data distribution, and balancing data load.",
+    "url": "https://www.qtmuniao.com/en/2020/06/13/dynamo/",
+    "datePublished": "2020-06-13T15:30:18+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2020/06/13/dynamo/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Amazon's Distributed Key-Value Store for Small Objects — Dynamo | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2020/06/13/dynamo/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2020/06/13/dynamo/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/06/13/dynamo/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Amazon's Distributed Key-Value Store for Small Objects — Dynamo
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-06-13 15:30:18" itemprop="dateCreated datePublished" datetime="2020-06-13T15:30:18+08:00">2020-06-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Overview">Overview</h2>
+<p>Dynamo is a highly available KV storage system. To ensure high availability and high performance, Dynamo adopts an eventual consistency model, providing developers with a novel API that uses versioning and resolves conflicts with client-side assistance. Dynamo aims to provide uninterrupted service while guaranteeing performance and scalability. Since Amazon widely adopts a decentralized, highly decoupled microservices architecture, the availability requirements for the storage system underlying these microservices are particularly high.</p>
+<p>S3 (Simple Storage Service) is another well-known storage service from Amazon. Although it can also be understood as a KV store, its target scenario differs from that of Dynamo. S3 is an object storage service for large files, mainly storing binary files and not providing cross-object transactions. Dynamo, on the other hand, is a document storage service for small files, mainly storing structured data (such as JSON). It allows indexing data and supports transactions across data items.</p>
+<p>Compared to traditional relational databases, Dynamo can be seen as providing only a primary key index, thereby achieving higher performance and better scalability.</p>
+<p>To achieve scalability and high availability while ensuring eventual consistency, Dynamo combines the following techniques:</p>
+<ol>
+<li>Consistent hashing for data partitioning and replication.</li>
+<li>Versioning mechanism (Vector Clock) to handle data consistency issues.</li>
+<li>Quorum and decentralized synchronization protocols to maintain consistency among replicas (Merkle Tree).</li>
+<li>Gossip Protocol for failure detection and replica maintenance.</li>
+</ol>
+<p>In terms of implementation, Dynamo has the following characteristics:</p>
+<ol>
+<li>Fully decentralized, with no central node; all nodes are peers.</li>
+<li>Adopts eventual consistency, using version numbers to resolve conflicts, even requiring users to participate in conflict resolution.</li>
+<li>Uses hash values for data partitioning, organizing data distribution, and balancing data load.</li>
+</ol>
+<span id="more"></span>
+<p><em>Author: MUNIAO <a href="https://www.qtmuniao.com/2020/06/13/dynamo/">https://www.qtmuniao.com/2020/06/13/dynamo/</a>, please cite the source when reposting</em></p>
+<h2 id="Background">Background</h2>
+<h3 id="Goals-and-Assumptions">Goals and Assumptions</h3>
+<p>Different design assumptions and requirements lead to completely different designs. Dynamo’s design goals are as follows:</p>
+<p><strong>Query Model</strong>. Using Dynamo only involves querying by primary key, generally without cross-data-item queries, so a relational model is not needed. Additionally, Dynamo assumes that the data it stores is relatively small, typically less than 1MB.</p>
+<p><strong>ACID Properties</strong>. Traditional relational databases (<span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvREJNUw==">DBMS<i class="fa fa-external-link-alt"></i></span>) usually require ACID properties to ensure the correctness and reliability of transactions. However, support for ACID significantly degrades performance. For high availability, Dynamo only provides weak consistency ©, does not provide isolation (I), and does not allow concurrent updates to a single key.</p>
+<p><strong>Efficiency</strong>. Most services at Amazon have strict latency requirements. To meet the SLAs of such services, Dynamo must be configurable, allowing users to choose among performance, efficiency, availability, and durability themselves.</p>
+<p><strong>Others</strong>. Dynamo is only used within Amazon’s internal services, so security does not need to be considered. Furthermore, many services use independent Dynamo instances, so the initial scalability target is at the level of hundreds of machines.</p>
+<h3 id="SLA">SLA</h3>
+<p>Due to the microservices architecture, rendering each page of the Amazon shopping website typically involves hundreds of services. To ensure user experience, strict limits must be placed on the latency of each service. Amazon adopts a three-nines SLA (99.9% of requests must be under 300ms). The state storage layer of a service is a critical node for providing this SLA. Therefore, a key design of Dynamo is to allow services to customize parameters such as durability and consistency on demand, enabling trade-offs among performance, cost, and correctness.</p>
+<h3 id="Design-Considerations">Design Considerations</h3>
+<p>For multi-replica systems, high availability and strong consistency are a trade-off. Traditional commercial systems often sacrifice some availability to guarantee strong consistency, but Dynamo is built for high availability and therefore chooses an asynchronous replication strategy. However, due to the frequent nature of network and server failures, the system must handle the inconsistencies or conflicts caused by these failures. How these conflicts are resolved mainly involves two aspects: when to resolve them, and who resolves them.</p>
+<p><strong>When to resolve</strong>. Traditional storage systems simplify reads by resolving conflicts on the write side — that is, rejecting writes when conflicts exist. However, to ensure that the shopping business is available to users at any time (for example, being able to add items to the cart at any time; after all, even a slight degradation in such processes affects significant revenue), Dynamo needs to provide an “always writable” guarantee. Therefore, the complexity of conflict resolution is deferred to the <strong>read</strong> time.</p>
+<p><strong>Who resolves</strong>. Should Dynamo resolve it, or should the application side? If Dynamo resolves it, the typical无脑 choice is “last write wins,” using newer changes to overwrite older ones. If the application resolves it, it can act according to its own needs — for example, it can merge multiple add-to-cart operations and return them to the user. Of course, this is optional, as many applications are fine with a general strategy (“last write wins”).</p>
+<p>Other key design principles include:</p>
+<p><strong>Incremental scalability</strong>. Support dynamic addition and removal of nodes with minimal impact on the system and operations.</p>
+<p><strong>Symmetry</strong>. Every node in the system has the same responsibilities; there are no special nodes, simplifying construction and maintenance costs.</p>
+<p><strong>Decentralization</strong>. No central control node; peer-to-peer technology is used to make the system highly available and easy to scale.</p>
+<p><strong>Heterogeneity</strong>. The system must be able to fully utilize heterogeneous nodes and allocate load according to node capacity.</p>
+<h2 id="System-Architecture">System Architecture</h2>
+<p>The discussion centers on distributed technologies such as partitioning algorithms, replication strategies, versioning mechanisms, membership organization, error handling, and scalability.</p>
+<p><img data-src="https://i.loli.net/2020/06/21/HdFhQBOPjX52vl3.png" alt="tech summary"><span class="image-caption">tech summary</span></p>
+<h3 id="System-Interface">System Interface</h3>
+<p>Dynamo exposes two interfaces: <code>put()</code> and <code>get()</code>:</p>
+<p><code>get(key)</code>: Returns a single object corresponding to the key, or a list of objects with version conflicts.</p>
+<p><code>put(key, context, object)</code>: Selects the replica machines where the object should be placed based on the key and persists the data. The context contains some system metadata transparent to the caller, such as the version information of the object. The context is stored together with the object to verify the legitimacy of the put request.</p>
+<p>Dynamo treats both keys and values as byte arrays, and applies the MD5 algorithm to the key to generate a 128-bit identifier for selecting storage nodes.</p>
+<h3 id="Partitioning-Algorithm">Partitioning Algorithm</h3>
+<p>To support incremental scaling, Dynamo uses consistent hashing for load distribution. However, the basic version of consistent hashing has two drawbacks:</p>
+<ol>
+<li>It cannot evenly distribute the load.</li>
+<li>It does not account for differences in node resources.</li>
+</ol>
+<p>To solve these problems, Dynamo uses a variant of consistent hashing: introducing virtual nodes. The specific algorithm is:</p>
+<ol>
+<li>When a node joins the system, it generates a corresponding number of virtual nodes based on its capacity, with each virtual node randomly assigned a node ID.</li>
+<li>All virtual nodes are organized into a ring structure according to the size of their IDs, with the head and tail connected.</li>
+<li>When a request arrives, a data ID is generated within the same ID space as the nodes using the key and some hashing algorithm.</li>
+<li>According to this ID, the system searches clockwise around the virtual node ring for the first virtual node and routes the request to its corresponding physical node.</li>
+<li>When a node leaves, only its corresponding virtual nodes need to be removed, and the load will automatically migrate around the ring.</li>
+</ol>
+<p><img data-src="https://i.loli.net/2020/06/21/kOE3iGgo5dWLpvI.png" alt="Key partitioning and replication in the Dynamo ring"><span class="image-caption">Key partitioning and replication in the Dynamo ring</span></p>
+<p>By assigning different numbers of virtual nodes, differences in node capacity are accommodated. By using a random algorithm to generate virtual node IDs, traffic is evenly distributed when nodes are added or removed.</p>
+<p>To accommodate node additions and deletions and facilitate replication, Dynamo has successively used three partitioning strategies:</p>
+<p><img data-src="https://i.loli.net/2020/06/21/9lNkWXtychiO7wH.png" alt="dynamo partition schema"><span class="image-caption">dynamo partition schema</span></p>
+<ol>
+<li>
+<p><em>Each node is assigned T random numeric values (tokens), one per virtual node. The interval between the tokens of two adjacent virtual nodes in the hash ring constitutes a partition.</em></p>
+<p>This initial strategy has the following drawbacks:</p>
+<ul>
+<li>
+<p><strong>Migration scanning</strong>. When a new node joins the system, it needs to steal some data from other nodes. This requires scanning all data items in the successor nodes of the newly added virtual nodes to obtain the data to be migrated (presumably, to serve get requests, data on a node is generally organized and indexed by user key rather than the hash value of the key, so to get data for a certain hash value range, a full scan is required). This operation is quite heavy. To ensure availability, the running priority of the migration process must be lowered, but this makes the migration process last a long time.</p>
+</li>
+<li>
+<p><strong>Merkle Tree recalculation</strong>. The Merkle Tree, discussed below, can be roughly understood as a hierarchical signature of data on a per-partition basis. When a node joins or leaves the cluster, it causes key range splits or merges, which in turn trigger recalculation of the corresponding Merkle Tree. This is also a compute-intensive operation that causes heavy additional load, which is intolerable in a production system.</p>
+</li>
+<li>
+<p><strong>Difficult global snapshots</strong>. Since the distribution of data in physical nodes is partitioned by the hash value of the key, the data is scattered in key space. It is difficult to take a global snapshot in key space, as this requires a global merge sort of data on all nodes, which is inefficient.</p>
+</li>
+</ul>
+<p>It can be seen that the fundamental problem with this strategy is that data partitioning and data placement are coupled together. Thus, we cannot add or remove nodes independently without affecting data partitioning. Therefore, a natural improvement is to decouple data partitioning from data placement.</p>
+</li>
+<li>
+<p><em>Each node is still randomly assigned T IDs, but the <strong>hash space</strong> is equally divided into partitions.</em></p>
+<p>Under this strategy, the node’s token is only used to construct the virtual node hash ring and is no longer used to cut partitions. The hash space is equally divided into Q parts, where Q &gt;&gt; S*T, and S is the number of physical nodes. That is, each virtual node can hold many partitions. This strategy can be understood from another angle: the smallest unit hosted by a node is no longer a key but a partition. Each time a node is added or removed, the partition is moved as a whole. This solves the problems of migration scanning and Merkle Tree recalculation during node additions and removals.</p>
+<p>For key placement, each time a key is routed, its hash value is first calculated. Based on the last hash value of the partition (key range) where the hash value resides, a lookup is performed in the hash ring. The first N physical nodes encountered clockwise form the preference list.</p>
+</li>
+<li>
+<p><em>Each node gets Q/S random IDs, and the hash space is equally divided into partitions.</em></p>
+<p>Based on the previous strategy, this strategy forces each physical node to have an equal number of partitions. Since the number Q, and even the number of partitions per node (Q/S), is much greater than the number of nodes (S), when a node leaves, it is easy to distribute the partitions it hosts to other nodes while still maintaining this property. When a node joins, it is also easy for each node to give it a share.</p>
+</li>
+</ol>
+<h3 id="Replication-Strategy">Replication Strategy</h3>
+<p>Dynamo replicates each piece of data on N nodes, where N is configurable. For each key, there is a coordinator node responsible for its replication across multiple nodes. Specifically, the coordinator node is responsible for a key range.</p>
+<p>When replicating, the coordinator selects the next N-1 nodes clockwise on the consistent hash ring, along with itself, to store N copies of the data item, as shown in Figure 2. These N nodes are called the <em>preference list</em>. Among them:</p>
+<ol>
+<li>The mapping from key to node differs depending on the three partitioning strategies described above.</li>
+<li>Nodes may crash and restart, so the preference list may sometimes contain more than N nodes.</li>
+<li>Since virtual nodes are used, without intervention, these N nodes might correspond to fewer than N physical machines. Therefore, when selecting nodes, we need to skip to ensure that the N nodes are on N physical machines.</li>
+</ol>
+<h3 id="Data-Versioning">Data Versioning</h3>
+<p>Dynamo provides an eventual consistency guarantee, allowing multi-replica asynchronous synchronization to improve availability. If there are no machine or network failures, multiple replicas will synchronize within a finite time. If failures occur, some replicas may never complete synchronization normally.</p>
+<p>Dynamo provides availability at any time. If the latest data is unavailable, it needs to provide the next newest. To provide this guarantee, Dynamo treats each modification as a new, immutable version. It allows multiple versions of data to coexist. In most cases, newer versions of data can overwrite older ones, allowing the system to automatically select the authoritative version (syntactic reconciliation). However, when failures occur or there are parallel operations, conflicting version branches may appear. At this point, the system cannot automatically merge them and must hand over the task of collapsing multiple version data to the client (semantic reconciliation).</p>
+<p>Dynamo uses a logical clock called a <em>vector clock</em> (<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvVmVjdG9yX2Nsb2Nr">vector clock<i class="fa fa-external-link-alt"></i></span>) to express the causality among multiple versions of the same data. A vector clock consists of a sequence of <em>&lt;node, counter&gt;</em> pairs, corresponding to the synchronized versions of the same data. The relationship among multiple data versions can be determined by their vector clocks: whether they occurred in parallel (parallel branches) or have a causal relationship (casual ordering):</p>
+<ol>
+<li>If the counter in vector clock A is less than the counter for all nodes in vector clock B, then A is the predecessor of B and can be discarded. For example, A is [&lt;node1, 1&gt;] and B is [&lt;node1, 1&gt;, &lt;node2, 2&gt;, &lt;node3, 1&gt;]</li>
+<li>If A is not the predecessor of B, and B is not the predecessor of A, then A and B have a version conflict and need to be reconciled.</li>
+</ol>
+<p>In Dynamo, when a client updates a data object, it must specify the version of the data object to be updated. The specific method is to pass the version information (vector clock) of the same data object obtained from the previous Get into the context of the update operation. Similarly, when a client reads data, if the system cannot perform automatic merging (syntactic reconciliation), it will return multiple version informations to the client via context. Once the client uses this information for a subsequent update, the system considers that the client has merged the multiple versions (semantic reconciliation). The following figure is a detailed example.</p>
+<p><img data-src="https://i.loli.net/2020/06/21/jLFs2o6Xh8ZOuxT.png" alt="Version evolution of a data object"><span class="image-caption">Version evolution of a data object</span></p>
+<p>There are a few points to note:</p>
+<ol>
+<li>Each server node maintains an auto-incrementing counter, which is updated before processing a change request.</li>
+<li>To prevent the size of the vector clock from growing indefinitely, especially when network partitions or server failures occur, Dynamo’s strategy is that when the vector clock sequence exceeds a certain threshold (say, 10), the earliest clock pair in the sequence is discarded.</li>
+</ol>
+<h3 id="get-and-put">get() and put()</h3>
+<p>This section describes the interaction when the system has no failures. It is mainly divided into two processes:</p>
+<ol>
+<li>Select a coordinator in some way.</li>
+<li>The coordinator uses a quorum mechanism for multi-replica data synchronization.</li>
+</ol>
+<h4 id="Selecting-the-Coordinator">Selecting the Coordinator</h4>
+<p>Dynamo exposes services via HTTP. There are mainly two strategies for selecting the coordinator:</p>
+<ol>
+<li>Use a load balancer to select a lightly loaded node.</li>
+<li>Use a partition-aware client to directly route to the corresponding coordinator responsible for the key (i.e., the first in the preference list).</li>
+</ol>
+<p>In the first approach, the client does not need to save server node information. In the second approach, no forwarding is needed, resulting in lower latency.</p>
+<p>For the first approach, if it is a <code>put()</code> request and the selected node S is not among the top N nodes in the preference list, S will forward the request to a machine in the preference list as the coordinator. If it is a <code>get()</code> request, regardless of whether S is in the preference list, it can directly act as the coordinator.</p>
+<h4 id="Quorum-Mechanism">Quorum Mechanism</h4>
+<p>The quorum read-write mechanism is an interesting read-write approach with two key configuration parameters, R and W. Usually, R and W need to satisfy: 1. R + W &gt; N 2. W &gt; N/2, where N is the cluster replication count. It can be understood from two angles: one is an analogy to read-write locks, where the system cannot have multiple concurrent writes or concurrent reads and writes simultaneously, but with a smaller R, multiple reads can occur at the same time; the other is that more than half of the writes need to succeed to meet data durability characteristics. However, in Dynamo, none of these are hard requirements; users can flexibly configure them according to their needs.</p>
+<p>When a <code>put()</code> request arrives, the coordinator generates a new vector clock version for the new data, writes it locally, and then sends the data to the N preferred replica nodes. Once W-1 nodes reply, the request is considered successful.</p>
+<p>When a <code>get()</code> request arrives, the coordinator sends requests to all nodes in the top N preferred nodes (including/excluding itself) that hold the key. Once R nodes return, it returns the multi-version result list to the user. Then, syntactic reconciliation is performed according to the vector clock rules, and the reconciled version is written back.</p>
+<h3 id="Failure-Handling-Hinted-Handoff">Failure Handling: Hinted Handoff</h3>
+<p>If strict quorum mechanisms were used for reads and writes, even a small number of node crashes or network partitions would make the system unavailable. Therefore, Dynamo uses a “sloppy quorum” algorithm that can select the first N healthy nodes in the consistent hash ring from the preference list.</p>
+<p>Furthermore, when the preferred coordinator (say, A) fails, the request routed to another node (D) carries the first choice (A’s information) in its metadata. D has a resident background thread that, upon detecting A coming back online, moves this marked data to the corresponding machine and deletes the corresponding local replica. Through this hinted handoff approach, Dynamo ensures that requests can still be completed normally when there are node or network failures.</p>
+<p>Of course, for high availability, W can be set to 1, so that any available node in the preference list can result in a successful write. But in practice, to ensure durability, it is generally not set this low. The following sections will detail the configuration of N, R, and W.</p>
+<p>In addition, to handle datacenter-level failures, Dynamo configures the preferred node list to span different centers for disaster recovery.</p>
+<h3 id="Permanent-Failure-Handling-Replica-Synchronization">Permanent Failure Handling: Replica Synchronization</h3>
+<p>Hinted Handoff can only handle occasional, temporary node crashes. To handle more severe failures and the consistency issues they bring, Dynamo uses a decentralized anti-entropy algorithm for data synchronization among shard replicas.</p>
+<p>To quickly detect whether replica data is consistent and precisely locate differing areas, Dynamo uses Merkle Trees (also called hash trees, used in blockchain as well) to hierarchically sign all data in a shard on a per-shard basis. All leaf nodes are the hash values of real data, and all intermediate nodes are the hash values of their child nodes. Such a tree has two benefits:</p>
+<ol>
+<li>By comparing only the root node, one can determine whether the two replicas of a shard have consistent data.</li>
+<li>Each intermediate node represents the signature of all data in a certain range; if they are equal, the corresponding data is consistent.</li>
+<li>If there are only a few inconsistencies, one can quickly locate the inconsistent data position starting from the root node.</li>
+</ol>
+<p><img data-src="https://i.loli.net/2020/06/21/hWz3jksmct9ZwRu.png" alt="merkle tree"><span class="image-caption">merkle tree</span></p>
+<p>Dynamo maintains a Merkle Tree for each data partition (key range or shard; shard is the smallest logical storage unit). With the properties of the Merkle Tree, Dynamo can quickly compare whether the replica data of two data partitions is consistent. If not, it can locate the inconsistent position to minimize data transfer.</p>
+<p>The downside of this approach is that if a node joins or leaves the cluster, it causes a large number of key range changes, requiring recalculation of Merkle Trees for the changed key ranges. Of course, as discussed earlier, the improved partitioning strategy mitigates this problem.</p>
+<h3 id="Membership-and-Failure-Detection">Membership and Failure Detection</h3>
+<p><strong>Explicit membership management</strong>. In Amazon’s environment, nodes leaving the cluster due to failures or human error are usually rare or do not last long. If data partition placement were automatically adjusted every time a node went offline, it would cause unnecessary data churn and migration. Therefore, Dynamo adopts explicit membership management, providing corresponding interfaces for administrators to bring physical nodes online or offline. That is, a node going offline due to failure will not cause data partition movement.</p>
+<p><strong>Gossip-like algorithm to broadcast metadata</strong>. Membership changes are first perceived by the node handling the membership addition/deletion request, persisted locally, and then broadcast using a gossip-like algorithm. Each time, a node is randomly selected for propagation, eventually allowing all members to reach consensus on this. In addition, this algorithm is also used by nodes to exchange shard information and data distribution information when they first start up.</p>
+<p>When each node first starts, it only knows its own node information and token information. As various nodes start up one after another and exchange information with each other through the algorithm, the topology of the entire hash ring (the mapping from key range to virtual node, and from virtual node to physical node) is incrementally constructed on each node. Thus, when a request arrives, it can be directly forwarded to the corresponding processing node.</p>
+<p><strong>Seed nodes to avoid logical partitions</strong>. Functional seed nodes are introduced for service discovery; each node connects directly to seed nodes so that each joining node is quickly known to other nodes, avoiding logical partitions caused by joining the cluster simultaneously without knowing each other.</p>
+<p><strong>Failure detection</strong>. To avoid continuously forwarding put/get requests and metadata synchronization requests to unreachable nodes, only local failure detection is sufficient. That is, if A sends a request to B and receives no response, A marks B as failed and starts heartbeats to detect its recovery. If A receives a request that should be forwarded to B and finds B failed, it selects an alternative node in the preference list for that key.</p>
+<p>It can be seen that Dynamo separates <em>permanent departure</em> and <em>temporary departure</em> of nodes. Explicit interfaces are used to add or remove permanent members, and the member topology is broadcast via a gossip algorithm. Simple marking and heartbeats are used to handle occasional failures and appropriately forward traffic. In environments with few failures, such a divide-and-conquer approach can greatly improve the efficiency of reaching consensus and maximize the avoidance of unnecessary data migration caused by occasional node failures and network jitter.</p>
+<h3 id="Adding-and-Removing-Nodes">Adding and Removing Nodes</h3>
+<p>As shown in the figure below, consider the case of three replicas (N=3) and using the simplest partitioning strategy. When a node X is added between nodes A and B, X will be responsible for the Key Ranges: (F,G], (G, A], (A, X]. At the same time, B will no longer be responsible for (F,G], C will no longer be responsible for (G, A], and D will no longer be responsible for (A, X]. Dynamo adapts to X’s joining by having B, C, and D actively push the relevant Key Ranges to X. There is a waiting-for-X-confirmation phase before pushing to avoid duplicate pushes.</p>
+<p><img data-src="https://i.loli.net/2020/06/21/e9nJWTS6BtoEXhy.png" alt="add member"><span class="image-caption">add member</span></p>
+<h2 id="Implementation">Implementation</h2>
+<p>Each node in Dynamo mainly consists of four components: request coordination, membership, failure detection, and a local persistence engine. All components are implemented in Java.</p>
+<p>Dynamo’s local persistence component allows choosing among multiple engines, including Berkeley Database (BDB), MySQL, and an in-memory + persistence-based storage. Users can choose according to their business scenarios; most production environments use BDB.</p>
+<p>The request coordination component is implemented using Java NIO channels, adopting an event-driven model where the processing of a message is divided into multiple stages. A state machine is initialized for each incoming read or write request. For example, for read requests, the following state machine is implemented:</p>
+<ol>
+<li>Send requests to all nodes holding replicas of the shard containing the key.</li>
+<li>Wait for the minimum required number of nodes ® to return for the read request.</li>
+<li>If R responses are not collected within the set time limit, return a failure message to the client.</li>
+<li>Otherwise, collect all version data and determine the version data to be returned.</li>
+<li>If versioning is enabled, perform syntactic reconciliation, and write the reconciled version into the context.</li>
+</ol>
+<p>During the read process, if some replica data is found to be outdated, it is updated along the way. This is called <em>read repair</em>.</p>
+<p>For write requests, one of the top N preferred nodes will act as the coordinator, usually the first one. But to improve throughput and balance load, usually all N nodes can act as coordinators. In particular, since most data is followed by a write shortly after being read (read to get the version, then write using the corresponding version), writes are often scheduled to the node that responded fastest in the last read. This node saved the context information from the read and can respond faster, improving throughput.</p>
+<h2 id="References">References</h2>
+<p>Comparison of S3 and Dynamo: <span class="exturl" data-url="aHR0cHM6Ly9zZXJ2ZXJsZXNzLnB1Yi9zMy1vci1keW5hbW9kYi8=">https://serverless.pub/s3-or-dynamodb/<i class="fa fa-external-link-alt"></i></span></p>
+<p>Optimistic replication: <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvT3B0aW1pc3RpY19yZXBsaWNhdGlvbg==">https://en.wikipedia.org/wiki/Optimistic_replication<i class="fa fa-external-link-alt"></i></span></p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/06/13/dynamo/" rel="bookmark">Amazon 针对小对象的分布式键值存储——Dynamo</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/03/19/wisckey/" rel="bookmark">WiscKey: LSM-Tree Optimizations for SSD Storage</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2021/05/16/distributed-system-material/" rel="bookmark">Distributed Systems Learning Resources</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2021/10/07/facebook-tao/" rel="bookmark">Large-Scale Graph Storage in Social Network Scenarios — Facebook TAO</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/08/10/ray-source-reading-2/" rel="bookmark">Ray Source Code Reading (Part 2): Resource Abstraction and Scheduling Policies</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/12/22/kafka/" rel="bookmark">Kafka —— Bridging the Gap Between Log Processing and Message Queuing</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Dynamo/" rel="tag"># Dynamo</a>
+              <a href="/tags/Amazon/" rel="tag"># Amazon</a>
+              <a href="/tags/Distributed-Systems/" rel="tag"># Distributed Systems</a>
+              <a href="/tags/Storage/" rel="tag"># Storage</a>
+              <a href="/tags/Distributed/" rel="tag"># Distributed</a>
+              <a href="/tags/Key-Value-Store/" rel="tag"># Key-Value Store</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/07/an-old-song/" rel="prev" title="让我们荡起双桨">
+      <i class="fa fa-chevron-left"></i> 让我们荡起双桨
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/06/13/dynamo/" rel="next" title="Amazon 针对小对象的分布式键值存储——Dynamo">
+      Amazon 针对小对象的分布式键值存储——Dynamo <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Background"><span class="nav-number">2.</span> <span class="nav-text">Background</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Goals-and-Assumptions"><span class="nav-number">2.1.</span> <span class="nav-text">Goals and Assumptions</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SLA"><span class="nav-number">2.2.</span> <span class="nav-text">SLA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Design-Considerations"><span class="nav-number">2.3.</span> <span class="nav-text">Design Considerations</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#System-Architecture"><span class="nav-number">3.</span> <span class="nav-text">System Architecture</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#System-Interface"><span class="nav-number">3.1.</span> <span class="nav-text">System Interface</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Partitioning-Algorithm"><span class="nav-number">3.2.</span> <span class="nav-text">Partitioning Algorithm</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Replication-Strategy"><span class="nav-number">3.3.</span> <span class="nav-text">Replication Strategy</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Versioning"><span class="nav-number">3.4.</span> <span class="nav-text">Data Versioning</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#get-and-put"><span class="nav-number">3.5.</span> <span class="nav-text">get() and put()</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Selecting-the-Coordinator"><span class="nav-number">3.5.1.</span> <span class="nav-text">Selecting the Coordinator</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Quorum-Mechanism"><span class="nav-number">3.5.2.</span> <span class="nav-text">Quorum Mechanism</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Failure-Handling-Hinted-Handoff"><span class="nav-number">3.6.</span> <span class="nav-text">Failure Handling: Hinted Handoff</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Permanent-Failure-Handling-Replica-Synchronization"><span class="nav-number">3.7.</span> <span class="nav-text">Permanent Failure Handling: Replica Synchronization</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Membership-and-Failure-Detection"><span class="nav-number">3.8.</span> <span class="nav-text">Membership and Failure Detection</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Adding-and-Removing-Nodes"><span class="nav-number">3.9.</span> <span class="nav-text">Adding and Removing Nodes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Implementation"><span class="nav-number">4.</span> <span class="nav-text">Implementation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">5.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2020/06/13/dynamo/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'eca9e7b80edad1db50173fead36b35cd',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

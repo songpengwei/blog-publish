@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="This article is mainly “compiled” from Chapter 40 of the book Operating Systems: Three Easy Pieces, a very accessible and insightful book recommended to anyone feeling lost about operating systems. T">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Doing a Lot in a Tiny Space: Implementing a 256KB Mini Filesystem">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2024/02/28/mini-filesystem/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="This article is mainly “compiled” from Chapter 40 of the book Operating Systems: Three Easy Pieces, a very accessible and insightful book recommended to anyone feeling lost about operating systems. T">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/GrZPSV15EXOAhbQ.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/bywIskmS9r4aAgt.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/jSclXgo3GHEnPb4.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/D4N1Jh8qSVlb5yz.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/Nea5XHfkJdBcqCh.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/tnqOKpyTjroDfMG.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/lMaDRH9oNuj8wFr.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/l83ZrTzLtAOXcD5.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/MDqE2O5X3FaKwRs.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/7wE8cDb4BUkPYOX.png">
+<meta property="og:image" content="https://s2.loli.net/2024/02/28/1lmRPWpMtF8qaeC.png">
+<meta property="article:published_time" content="2024-02-28T02:22:16.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.678Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="Filesystem">
+<meta property="article:tag" content="Files">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2024/02/28/GrZPSV15EXOAhbQ.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2024/02/28/mini-filesystem/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="Filesystem,Files">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Doing a Lot in a Tiny Space: Implementing a 256KB Mini Filesystem",
+    "description": "This article is mainly “compiled” from Chapter 40 of the book Operating Systems: Three Easy Pieces, a very accessible and insightful book recommended to anyone feeling lost about operating systems. This filesystem is based on a very small disk space, using data structures and read/write workflows as the main thread to derive each basic component from scratch, helping you quickly build an intuition for filesystems. Filesystems are basically built on top of block storage. Of course, some modern distributed filesystems, such as JuiceFS, are based on object storage underneath. But whether block storage or object storage, the essence is addressing and data exchange in terms of “data blocks”. We will first examine the data structure of a complete filesystem on disk, i.e., its layout; then we will connect the various sub-modules through open/close and read/write workflows, thereby covering the key points of a filesystem.",
+    "url": "https://www.qtmuniao.com/en/2024/02/28/mini-filesystem/",
+    "datePublished": "2024-02-28T10:22:16+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2024/02/28/mini-filesystem/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Doing a Lot in a Tiny Space: Implementing a 256KB Mini Filesystem | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2024/02/28/mini-filesystem/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2024/02/28/mini-filesystem/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2024/02/28/mini-filesystem/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Doing a Lot in a Tiny Space: Implementing a 256KB Mini Filesystem
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2024-02-28 10:22:16" itemprop="dateCreated datePublished" datetime="2024-02-28T10:22:16+08:00">2024-02-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Computer-Fundamentals/" itemprop="url" rel="index"><span itemprop="name">Computer Fundamentals</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>This article is mainly “compiled” from Chapter 40 of the book <em><span class="exturl" data-url="aHR0cHM6Ly9wYWdlcy5jcy53aXNjLmVkdS9+cmVtemkvT1NURVAv">Operating Systems: Three Easy Pieces<i class="fa fa-external-link-alt"></i></span></em>, a very accessible and insightful book recommended to anyone feeling lost about operating systems. This filesystem is based on a very small disk space, using <strong>data structures</strong> and <strong>read/write workflows</strong> as the main thread to derive each basic component from scratch, helping you quickly build an intuition for filesystems.</p>
+</blockquote>
+<p>Filesystems are basically built on top of block storage. Of course, some modern distributed filesystems, such as <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2p1aWNlZGF0YS9qdWljZWZz">JuiceFS<i class="fa fa-external-link-alt"></i></span>, are based on object storage underneath. But whether block storage or object storage, the essence is <strong>addressing</strong> and <strong>data exchange</strong> in terms of “data blocks”.</p>
+<p>We will first examine the data structure of a complete filesystem on disk, i.e., its layout; then we will connect the various sub-modules through open/close and read/write workflows, thereby covering the key points of a filesystem.</p>
+<span id="more"></span>
+<p><em>Author: Muniao’s Miscellany <a href="https://www.qtmuniao.com/2024/02/28/mini-filesystem">https://www.qtmuniao.com/2024/02/28/mini-filesystem</a> Please indicate the source when reposting.</em></p>
+<blockquote>
+<p>This article comes from my large-scale data systems column <em><span class="exturl" data-url="aHR0cHM6Ly94aWFvYm90Lm5ldC9wL3N5c3RlbS10aGlua2luZw==">System Thinking<i class="fa fa-external-link-alt"></i></span></em>, focusing on storage, databases, distributed systems, AI Infra, and computer fundamentals. Welcome to subscribe and support to unlock more articles. Your support is my greatest motivation.<br>
+<img data-src="https://s2.loli.net/2024/02/28/GrZPSV15EXOAhbQ.png" alt="海报.png"><span class="image-caption">海报.png</span></p>
+</blockquote>
+<h1>Overall Layout</h1>
+<p>Assume our block size is 4KB, and we have a very small disk with only 64 blocks (so the total size is 64 * 4KB = 256KB), and this disk is dedicated to the filesystem. Since the disk is addressed by blocks, the address space is 0~63.</p>
+<p><img data-src="https://s2.loli.net/2024/02/28/bywIskmS9r4aAgt.png" alt="filesystem-empty.png"><span class="image-caption">filesystem-empty.png</span></p>
+<p>Based on this mini disk, let’s gradually derive this minimal filesystem together.</p>
+<p>The primary purpose of a filesystem is definitely to store user data. For this, we reserve a <strong>Data Region</strong> on the disk. Let’s assume we use the last 56 blocks as the data region. Why 56? As we will see later, it can actually be calculated — we can roughly figure out the ratio of metadata to real data, and then determine the sizes of both parts.</p>
+<p><img data-src="https://s2.loli.net/2024/02/28/jSclXgo3GHEnPb4.png" alt="filesystem-data-region.png"><span class="image-caption">filesystem-data-region.png</span></p>
+<p>Next, we need to save some metadata for <strong>each file</strong> in the system, such as:</p>
+<ol>
+<li>Filename</li>
+<li>File size</li>
+<li>File owner</li>
+<li>Access permissions</li>
+<li>Creation and modification times</li>
+</ol>
+<p>And so on. The data blocks that store this metadata are usually called <strong>inodes</strong> (index nodes). As shown below, we allocate 5 blocks for inodes.</p>
+<p><img data-src="https://s2.loli.net/2024/02/28/D4N1Jh8qSVlb5yz.png" alt="filesystem-inodes.png"><span class="image-caption">filesystem-inodes.png</span></p>
+<p>Metadata takes up relatively little space, such as 128B or 256B; here we assume each inode occupies 256B. Thus each 4KB block can hold 16 inodes, so our filesystem can support at most 5 * 16 = 80 inodes, meaning our mini filesystem can support at most 80 files. However, since directories also occupy inodes, the actual number of available files is less than 80.</p>
+<p>Now that we have the data region and the file metadata region, in a normally used filesystem we still need to track which data blocks are used and which are not. This kind of data structure is called <strong>allocation structures</strong>. Common industry methods include the <strong>free list</strong>, which chains all free blocks together as a linked list. But for simplicity, here we use an even simpler data structure: a <strong>bitmap</strong>. One for the data region, called the <strong>data bitmap</strong>; one for the inode table, called the <strong>inode bitmap</strong>.</p>
+<p>The idea of a bitmap is simple: use one bit for each inode or data block to mark whether it is free: 0 means free, 1 means occupied. A 4KB bitmap can track at most 32K objects. For convenience, we allocate one full block each for the inode table and the data pool (although it won’t be fully used), leading to the figure below.</p>
+<p><img data-src="https://s2.loli.net/2024/02/28/Nea5XHfkJdBcqCh.png" alt="filesystem-bitmap.png"><span class="image-caption">filesystem-bitmap.png</span></p>
+<p>As can be seen, our basic idea is to lay out data from back to front, with one block remaining at the end. This block is intentionally left to serve as the filesystem’s <strong>superblock</strong>. The superblock acts as the <strong>entry point</strong> of a filesystem, usually storing some filesystem-level metadata, such as how many inodes and data blocks this filesystem has (80 and 56), the starting block offset of the inode table (3), and so on.</p>
+<p><img data-src="https://s2.loli.net/2024/02/28/tnqOKpyTjroDfMG.png" alt="filesystem-superblock.png"><span class="image-caption">filesystem-superblock.png</span></p>
+<p>Thus when the filesystem is <strong>mounted</strong>, the operating system first reads the superblock (hence it is placed at the front), initializes a series of parameters based on it, and mounts it as a volume into the filesystem tree. With this basic information, when files in this volume are accessed, their locations can be gradually determined, which is the read/write workflow we will discuss next.</p>
+<p>But before discussing the read/write workflow, we need to zoom in on some key data structures to see their internal layout.</p>
+<h2 id="Inode-Index-Node">Inode (Index Node)</h2>
+<p>An inode is short for <strong>index node</strong>, an index node for files and folders. For simplicity, we use an <strong>array</strong> to organize inodes. Each inode is associated with a <strong>number</strong> (inumber), which is its <strong>index</strong> (offset) in the array.</p>
+<p><img data-src="https://s2.loli.net/2024/02/28/lMaDRH9oNuj8wFr.png" alt="filesystem-inode-table.png"><span class="image-caption">filesystem-inode-table.png</span></p>
+<p>As mentioned briefly above, each inode occupies 256B. Thus given an inumber, we can calculate its offset on disk (<code>12KB + inumber * 256</code>). But since the exchange between internal and external storage is done by blocks, we can further calculate which disk block it resides in.</p>
+<p>An inode mainly stores the filename, some metadata (permission controls, various timestamps, some flag bits), and <strong>data block indexes</strong>. Data block indexes are also metadata in fact; they are singled out because they are very important.</p>
+<p>We use a relatively simple indexing method: the <strong>indirect pointer</strong>. That is, what is saved in the inode is not a pointer directly to a data block, but a pointer to a pointer block (also allocated in the data region, but storing second-level pointers). If the file is large enough, a third-level pointer may be introduced (as for whether our small system needs it, you can estimate).</p>
+<p>But statistics show that in most filesystems, small files make up the majority. How small? Small enough to fit in a single data block.</p>
+<p><img data-src="https://s2.loli.net/2024/02/28/l83ZrTzLtAOXcD5.png" alt="filesystem-statistic.png"><span class="image-caption">filesystem-statistic.png</span></p>
+<p>Therefore in practice, we use a hybrid approach of <strong>direct pointers</strong> and <strong>indirect pointers</strong> in the inode. In our filesystem, we use 12 direct pointers and 1 indirect pointer. So as long as the file size does not exceed 12 data blocks, direct pointers can be used directly. Only when it is too large do we use the indirect pointer, and newly allocate a data block in the data region to store the indirect pointers.</p>
+<p>Our data region is very small, only 56 blocks. Assuming we use 4 bytes for indexing, the two-level pointers can support at most (12 + 1024) · 4K, which is 4144KB files.</p>
+<blockquote>
+<p>Another commonly used method in practice is <strong>extents</strong>. That is, each <strong>contiguous data region</strong> is represented by a starting pointer and a size, and all extents of a file are chained together. But with multiple extents, if you want to access the last extent or do random access, performance will be poor (the pointer to the next extent is stored in the previous one). To optimize access speed, the index linked list of these extents is often kept in memory. The early Windows filesystem FAT did exactly this.</p>
+</blockquote>
+<h2 id="Directory-Organization">Directory Organization</h2>
+<p>In our filesystem, directory organization is very simple — just like files, each directory also occupies an inode. But the data block pointed to by the inode does not store file content; instead it stores information about all files and folders contained in that directory, usually represented as <code>List&lt;entry name, inode number&gt;</code>. Of course, to turn it into actual encoding, we also need to store filename length and other information (because filenames are variable-length).</p>
+<p>Let’s look at a simple example. Suppose we have a folder <code>dir</code> (inode number is 5), containing three files (<code>foor</code>, <code>bar</code>, and <code>foobar</code>), whose corresponding inode numbers are 12, 13, and 24. Then the information stored in the data block of this folder is as follows:</p>
+<p><img data-src="https://s2.loli.net/2024/02/28/MDqE2O5X3FaKwRs.png" alt="filesystem-dir-content.png"><span class="image-caption">filesystem-dir-content.png</span></p>
+<p>Here <code>reclen</code> (record length) is the space occupied by the filename, and <code>strlen</code> is the actual length. Dot and double-dot are two pointers pointing to this folder itself and its parent folder. Recording <code>reclen</code> may seem redundant, but one must consider file deletion (a special inum, such as 0, can be used to mark deletion). If a file or directory under a folder is deleted, holes will appear in the storage. The existence of <code>reclen</code> allows the holes left by deletion to be reused for newly added files later.</p>
+<p>It should be noted that linearly organizing the files in a directory is the simplest way. In practice, there are other methods. For example, in XFS, if a directory contains a particularly large number of files or subfolders, a B+ tree is used for organization. Thus when inserting, it can quickly determine whether a file with the same name already exists.</p>
+<h2 id="Free-Space-Management">Free Space Management</h2>
+<p>When we need to create a new file or directory entry, we need to obtain an available space from the filesystem. Therefore, how to efficiently manage free space is a very important issue. We use two bitmaps for management. The advantage is simplicity; the disadvantage is that each time we must linearly scan to find all free bits, and we can only do so at block granularity — if there is remaining space within a block, it cannot be managed.</p>
+<h1>Read/Write Path</h1>
+<p>Now that we have a grasp of the data structures on disk, let’s connect the different data structures through the read/write workflow. We assume the filesystem has already been mounted: that is, the <strong>superblock</strong> is already in memory.</p>
+<h2 id="Reading-Files">Reading Files</h2>
+<p>Our operation is simple: open a file (such as <code>/foo/bar</code>), read from it, and then close it. For simplicity, let’s assume our file size occupies one block, i.e., 4KB.</p>
+<p>When a system call <code>open(&quot;/foo/bar&quot;, O RDONLY)</code> is issued, the filesystem first needs to find the inode corresponding to file <code>bar</code> to obtain its metadata and data location information. But right now we only have the file path, so what do we do?</p>
+<p>The answer: <strong>traverse downward from the root directory</strong>. The root directory’s inode number is either saved in the superblock or hardcoded (for example, 2; most Unix filesystems start from 2). That is, it must be known in advance (well known).</p>
+<p>Thus the filesystem loads the root directory’s inode from disk into memory, then through the pointers in the inode finds the data blocks it points to, and then from among all the subdirectories and folders it contains finds the <code>foo</code> folder and its corresponding inode. Repeating the above process recursively, the final step of the <code>open</code> system call is to load <code>bar</code>’s inode into memory, perform permission checks (comparing the process user permissions with the inode access control permissions), allocate a <strong>file descriptor</strong>, place it in the process’s open file table, and return it to the user.</p>
+<p>Once the file is opened, a <code>read()</code> system call can then be issued to actually read data. When reading, it first finds the first block based on the file’s inode information (unless the offset was previously modified with <code>lseek()</code>), and then reads. At the same time, some metadata in the inode may be changed, such as access time. Then, the offset of this file descriptor in the process is updated, and reading continues until at some point <code>close()</code> is called to close the file descriptor.</p>
+<p>When a process closes a file, much less work is required; it only needs to release the file descriptor, and there will be no real disk I/O.</p>
+<p>Finally, let’s go over this file reading process again. Starting from the root directory’s inode number, we alternately read inodes and corresponding data blocks until we finally find the target file. Then to read the data, we also need to update metadata such as the inode’s access time and write it back. The table below briefly summarizes this process. As can be seen, the read path does not involve allocation structures at all — the data bitmap and inode bitmap.</p>
+<p><img data-src="https://s2.loli.net/2024/02/28/7wE8cDb4BUkPYOX.png" alt="filesystem-read-timeline.png"><span class="image-caption">filesystem-read-timeline.png</span></p>
+<p>In terms of <strong>depth</strong>, if our target path has many levels, this process grows linearly; in terms of <strong>breadth</strong>, if the folders involved in intermediate lookups contain a particularly large number of directory entries — that is, the file tree is “very wide” — then each lookup within a directory may require reading more than one data block.</p>
+<h2 id="Writing-to-Disk">Writing to Disk</h2>
+<p>Writing files is very similar to reading files: also open the file (find the corresponding file all the way from the root directory); then start writing, and finally close. But unlike reading files, writing requires allocating new data blocks, which involves our previous bitmaps. Typically, a single write requires at least five I/Os:</p>
+<ol>
+<li>Read data bitmap (to find a free block and mark it as used in memory)</li>
+<li>Write back data bitmap (to make it visible to other processes)</li>
+<li>Read inode (to add a new data location pointer)</li>
+<li>Write back inode</li>
+<li>Write data into the found free block</li>
+</ol>
+<p>This is only for writing to an already existing file. If creating and writing to a file that does not yet exist, the workflow is even more complex: an inode must also be created, which introduces a series of new I/Os:</p>
+<ol>
+<li>One read of the inode bitmap (to find a free inode)</li>
+<li>One write back of the inode bitmap (to mark an inode as occupied)</li>
+<li>One write to the inode itself (initialization)</li>
+<li>One read/write of the parent folder’s directory entry data block (adding the newly created file and inode pair)</li>
+<li>One read/write of the parent folder’s inode (updating modification time)</li>
+</ol>
+<p>If the parent folder’s data block is not enough, new space must be allocated, requiring reading the data bitmap and data block again. The figure below shows the I/Os involved in the timeline of creating the <code>/foo/bar</code> file:</p>
+<p><img data-src="https://s2.loli.net/2024/02/28/1lmRPWpMtF8qaeC.png" alt="filesystem-write-timeline.png"><span class="image-caption">filesystem-write-timeline.png</span></p>
+<h2 id="Caching-and-Buffering">Caching and Buffering</h2>
+<p>From the analysis of the read/write workflow above, it can be seen that even such simple read/write operations involve a large amount of I/O, which is unacceptable in practice. To solve this problem, most industrial filesystems make full use of memory, caching important (i.e., frequently accessed) data blocks in memory; at the same time, to avoid frequent disk flushing, modifications are first applied in a memory buffer, and then flushed to disk in batches.</p>
+<p>Early filesystems introduced <strong>fixed-size caches</strong>; when full, they used replacement algorithms such as LRU for page eviction. The disadvantage is that when the cache is not full, space is wasted; when full, frequent paging may occur. We call this style <strong>static partitioning</strong>. Most modern filesystems use <strong>dynamic partitioning</strong> techniques. For example, placing virtual memory pages and filesystem pages into a single pool, called the <strong>unified page cache</strong>, making allocation more elastic for both. With caching in place, for reading multiple files in the same directory, subsequent reads can save a lot of I/O.</p>
+<p>Since the first half of the write workflow involves reading when looking up data blocks by path, it also benefits from caching. But for the writing part, we can use buffering (write buffering) to delay disk flushing. Delayed flushing has many benefits: for example, multiple modifications to the bitmap may only need to be flushed once; accumulating a batch of changes can improve I/O bandwidth utilization; if a file is added and then deleted, the flush may be avoided entirely.</p>
+<p>But these performance gains come at a cost — unexpected crashes may cause data loss. Therefore, although most modern filesystems have read/write buffering enabled, they also provide <strong>direct I/O</strong> to allow users to bypass the cache and write directly to disk. Applications sensitive to data loss can use the corresponding system call <code>fsync()</code> to flush to disk immediately.</p>
+<h1>Summary</h1>
+<p>Thus far, we have completed the implementation of a minimal filesystem. Though “small as a sparrow, it has all its vital organs”; from it we can see some basic design philosophies of filesystems:</p>
+<ol>
+<li>Use inodes to store file-granularity metadata; use data blocks to store real file data</li>
+<li>A directory is a special kind of file; what it stores is not file content, but directory entries of the folder</li>
+<li>Besides inodes and data blocks, some other data structures are needed, such as bitmaps to track free blocks</li>
+</ol>
+<p>Starting from this basic filesystem, we can actually see many points of trade-off and optimization. If interested, you can build on this article to look at the designs of some industrial filesystems.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Filesystem/" rel="tag"># Filesystem</a>
+              <a href="/tags/Files/" rel="tag"># Files</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/02/06/memory-mvcc-serial/" rel="prev" title="MemGraph 背后论文《基于内存和MVCC 的高速可串行化》详细解析（一）">
+      <i class="fa fa-chevron-left"></i> MemGraph 背后论文《基于内存和MVCC 的高速可串行化》详细解析（一）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/02/28/mini-filesystem/" rel="next" title="螺蛳壳里做道场：实现一个256KB的迷你文件系统">
+      螺蛳壳里做道场：实现一个256KB的迷你文件系统 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">Overall Layout</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Inode-Index-Node"><span class="nav-number">1.1.</span> <span class="nav-text">Inode (Index Node)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Directory-Organization"><span class="nav-number">1.2.</span> <span class="nav-text">Directory Organization</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Free-Space-Management"><span class="nav-number">1.3.</span> <span class="nav-text">Free Space Management</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">Read&#x2F;Write Path</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Reading-Files"><span class="nav-number">2.1.</span> <span class="nav-text">Reading Files</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Writing-to-Disk"><span class="nav-number">2.2.</span> <span class="nav-text">Writing to Disk</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Caching-and-Buffering"><span class="nav-number">2.3.</span> <span class="nav-text">Caching and Buffering</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">3.</span> <span class="nav-text">Summary</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2024/02/28/mini-filesystem/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'ac0f7534f57b82ba6968ed3d61eaf6c1',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

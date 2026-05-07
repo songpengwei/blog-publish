@@ -205,6 +205,26 @@
     <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
 
   </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>简体中文</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/page/8/index.html" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/page/8/index.html" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
   </ul>
 </nav>
 
@@ -228,8 +248,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/01/31/shichahai-sunset/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/04/05/crdb-tidb-dist-sql/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -243,7 +263,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2020/01/31/shichahai-sunset/" class="post-title-link" itemprop="url">初冬日暮什刹海</a>
+            <a href="/2022/04/05/crdb-tidb-dist-sql/" class="post-title-link" itemprop="url">CockroachDB 和 TiDB 中 SQL 的分布式执行</a>
         </h2>
 
         <div class="post-meta">
@@ -253,14 +273,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-31 14:28:59" itemprop="dateCreated datePublished" datetime="2020-01-31T14:28:59+08:00">2020-01-31</time>
+              <time title="创建时间：2022-04-05 10:46:02" itemprop="dateCreated datePublished" datetime="2022-04-05T10:46:02+08:00">2022-04-05</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2024-03-04 09:22:33" itemprop="dateModified" datetime="2024-03-04T09:22:33+08:00">2024-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -268,11 +288,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/%E6%91%84%E5%BD%B1/" itemprop="url" rel="index"><span itemprop="name">摄影</span></a>
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
                 </span>
             </span>
 
@@ -287,11 +303,16 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p><img src="https://photo.tuchong.com/15470921/f/488359358.jpg" alt=""></p>
-<p>初冬一个晴朗的午后，从地坛出发，经交道口三条，过圆恩寺胡同，一路走到什刹海。当天天气出奇的好，在太阳的透照下，整个胡同片区懒洋洋的，心里也不由的很轻快。</p>
+          <blockquote>
+<p>计算下推其实是常见的思想：<strong>将计算推到数据旁</strong>。由于在数据库中，逻辑上，计算常在存储层之上，因此将一部分算子推到存储层去做，称为计算下推。其在分布式数据库中尤为重要。</p>
+<p>下面是 CockroachDB 和 TiDB 的解决方案，内容来自于文档和博客，因此可能和最新代码的逻辑并不一致。</p>
+</blockquote>
+<h2 id="CockroachDB">CockroachDB</h2>
+<h3 id="基本概念">基本概念</h3>
+<p>CockroachDB 中相应的模块叫 <a target="_blank" rel="noopener" href="https://github.com/cockroachdb/cockroach/blob/master/docs/RFCS/20160421_distributed_sql.md">DistSQL</a>，其思想来源于<a target="_blank" rel="noopener" href="http://research.google.com/archive/sawzall.html">Sawzall</a>，有点类似 <a target="_blank" rel="noopener" href="https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf">MapReduce</a>。支持的算子叫做 <strong>aggregator</strong>，本质上是对 SQL 聚合算子的一种泛化。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2020/01/31/shichahai-sunset/#more" rel="contents">
+              <a class="btn" href="/2022/04/05/crdb-tidb-dist-sql/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -316,8 +337,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/01/21/mac-fix-keyboard/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/04/05/crdb-tidb-dist-sql/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -331,7 +352,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2020/01/21/mac-fix-keyboard/" class="post-title-link" itemprop="url">真香——MacBook Pro 2016 Genius Bar 更换键盘小记</a>
+            <a href="/en/2022/04/05/crdb-tidb-dist-sql/" class="post-title-link" itemprop="url">Distributed Execution of SQL in CockroachDB and TiDB</a>
         </h2>
 
         <div class="post-meta">
@@ -341,14 +362,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-21 11:42:07" itemprop="dateCreated datePublished" datetime="2020-01-21T11:42:07+08:00">2020-01-21</time>
+              <time title="创建时间：2022-04-05 10:46:02" itemprop="dateCreated datePublished" datetime="2022-04-05T10:46:02+08:00">2022-04-05</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -356,7 +377,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
                 </span>
             </span>
 
@@ -371,13 +392,16 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>研究生毕业时，去网易游戏实习攒了点钱，便想入手垂涎了好久的程序员生产力工具—— MacBook Pro。适逢新版发售，等到 2016 年底，新版甫一上市，便从官网下单了一台 pro 入门版：13 寸两口不带 bar 。不过哪怕是入门版，也要一万多大洋，还两个口，还不带 bar。</p>
-<p><img src="https://i.loli.net/2020/02/09/AYgbZJ7Du1TWn4q.png" alt="mac-buy-info.png"></p>
-<p>不带 bar 尚可接受，毕竟 vim 党还是喜欢能按的下去的 Esc 。但两个口——于是默默了去京东下单了几个扩展口，彼时 tpye c 尚不流行，选择无几。</p>
-<p>到货后满心欢喜打开，惊艳异常，是醉人的新配色——深空灰、是史无前例的轻薄、是类 Unix 系统加上舒服的 UI。于是将之前的小嘀咕抛诸脑后，嗯，真香。</p>
+          <blockquote>
+<p>Computation pushdown is actually a common idea: <strong>push computation to where the data resides</strong>. In databases, logically, computation usually sits above the storage layer, so pushing some operators down to the storage layer is called computation pushdown. This is especially important in distributed databases.</p>
+<p>Below are the solutions from CockroachDB and TiDB, based on documentation and blog posts, so they may not be consistent with the logic in the latest code.</p>
+</blockquote>
+<h2 id="CockroachDB">CockroachDB</h2>
+<h3 id="Basic-Concepts">Basic Concepts</h3>
+<p>The corresponding module in CockroachDB is called <a target="_blank" rel="noopener" href="https://github.com/cockroachdb/cockroach/blob/master/docs/RFCS/20160421_distributed_sql.md">DistSQL</a>, whose idea originates from <a target="_blank" rel="noopener" href="http://research.google.com/archive/sawzall.html">Sawzall</a>, somewhat similar to <a target="_blank" rel="noopener" href="https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf">MapReduce</a>. The supported operators are called <strong>aggregators</strong>, which are essentially a generalization of SQL aggregation operators.</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2020/01/21/mac-fix-keyboard/#more" rel="contents">
+              <a class="btn" href="/en/2022/04/05/crdb-tidb-dist-sql/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -402,8 +426,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/01/18/raft-implement-points/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/02/19/ddia-reading-chapter1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -417,7 +441,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2020/01/18/raft-implement-points/" class="post-title-link" itemprop="url">MIT 6.824 2020 Raft 实现细节备忘</a>
+            <a href="/2022/02/19/ddia-reading-chapter1/" class="post-title-link" itemprop="url">DDIA 读书笔记（一）：可靠、可扩展、可维护</a>
         </h2>
 
         <div class="post-meta">
@@ -427,14 +451,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-18 22:02:26" itemprop="dateCreated datePublished" datetime="2020-01-18T22:02:26+08:00">2020-01-18</time>
+              <time title="创建时间：2022-02-19 23:22:11" itemprop="dateCreated datePublished" datetime="2022-02-19T23:22:11+08:00">2022-02-19</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:15:50" itemprop="dateModified" datetime="2024-03-04T09:15:50+08:00">2024-03-04</time>
+                <time title="修改时间：2024-03-04 09:22:33" itemprop="dateModified" datetime="2024-03-04T09:22:33+08:00">2024-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -446,7 +470,7 @@
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/Raft/" itemprop="url" rel="index"><span itemprop="name">Raft</span></a>
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
                 </span>
             </span>
 
@@ -461,21 +485,14 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="引子">引子</h2>
-<p>18年的时候做过一些 6.824，旧文<a href="https://www.qtmuniao.com/categories/courses/">在此</a>，无奈做到 Part 2C，无论如何也跑不过测试，便一直搁置起来。但在后来的日子，却时时念起此门神课，心下伤感。拖到今日，终于可以来还愿了。</p>
-<p>这次能跑过所有测试，原因有三：一来，之前做过一次，很多原理还留有印象；二来，这一年多在工作上有了很多分布式系统的实践；三来，golang 的驾驭上也精进了一些。但是在做的过程中，仍然遇到了大量令人纠结的细节，为了方便日后回顾，将这些细节梳理一下，记在此处。若能好巧对其他做此门课的人有些微启发，则又是快事一件了。</p>
-<h2 id="6-824-与-Raft">6.824 与 Raft</h2>
-<p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/">6.824</a> 是一门关于分布式系统的非常棒的公开课，做课程实验的过程中时时惊叹于其构思之精巧、材料准备之翔实。MIT 的大师们能将这样精华的课程开放出来，实乃名校和大师们的气度，更是我们计算机人的幸事。</p>
-<p>Raft 是一个面向理解的分布式共识（consensus）协议。分布式共识算法是分布式领域非常非常经典的问题，同时也是分布式系统中非常难的一块，直观的说，就如同流沙上打下分布式系统大楼的地基。不可靠的网络、易故障的主机，造成的状态变化之复杂，实在不是一般人能在脑中模拟得了的。本人愚钝，只能是感性把握加细节堆叠，堪堪有些认识。说回 Raft，有同领域 Paxos 珠玉在前，何以 Raft 仍能脱颖而出？应该是抓住了以下两点：</p>
-<ol>
-<li><strong>易于理解</strong>。Paxos 是出了名的难以理解，因此也就难以飞入寻常百姓家。而 Raft 通过解耦出多个模块，将算法复杂度进行降维，大大降低了一般人的理解难度。此外，Raft 还有很多精巧的设计，以尽可能避免引入复杂度，从而进一步减轻大家的心智负担。</li>
-<li><strong>易于实现</strong>。易于理解客观上会导致利于实现，但不等同于就能据此产出优秀系统。如果理解流于感性，则实现成空中楼阁。Raft 论文的厉害之处就在于既有感性把握又有细节组织，几乎就是一个系统的设计文档，还是详细设计文档。</li>
-</ol>
-<p>要想做好该<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/labs/lab-Raft.html">实验</a>，需要涉猎大量的材料，我把实验中提到的和我看到的汇总在文末。当然，还有英文劝退。虽然我最后测试用例都过了，但仍有很多没实现好的点以及不理解之处。</p>
-<p>注：后续，2023 年<a target="_blank" rel="noopener" href="https://av6huf2e1k.feishu.cn/docx/JCssdlgF4oRADcxxLqncPpRCn5b">又做了一次</a>，终于理清楚了大部分点。</p>
+          <blockquote>
+<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">这里</a>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。</p>
+</blockquote>
+<p>第一章是很容易被跳过的一章，因为概念较多，容易泛泛而谈。但其给出的三个概念，确实是构建系统避不开的三个重点方向。</p>
+<p>ps. <a target="_blank" rel="noopener" href="http://ddia.vonng.com/">开源中文版本</a>有些地方翻译的不是很地道，读起来可能会有些难受，不过这是所有翻译难免的。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2020/01/18/raft-implement-points/#more" rel="contents">
+              <a class="btn" href="/2022/02/19/ddia-reading-chapter1/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -500,8 +517,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/01/06/go-value-pointer-method/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/02/19/ddia-reading-chapter1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -515,7 +532,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2020/01/06/go-value-pointer-method/" class="post-title-link" itemprop="url">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a>
+            <a href="/en/2022/02/19/ddia-reading-chapter1/" class="post-title-link" itemprop="url">DDIA Reading Notes (Chapter 1): Reliability, Scalability, Maintainability</a>
         </h2>
 
         <div class="post-meta">
@@ -525,14 +542,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-01-06 22:05:20" itemprop="dateCreated datePublished" datetime="2020-01-06T22:05:20+08:00">2020-01-06</time>
+              <time title="创建时间：2022-02-19 23:22:11" itemprop="dateCreated datePublished" datetime="2022-02-19T23:22:11+08:00">2022-02-19</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -540,11 +557,11 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Go/" itemprop="url" rel="index"><span itemprop="name">Go</span></a>
+                  <a href="/categories/Distributed-Systems/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
                 </span>
             </span>
 
@@ -559,14 +576,14 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="小引">小引</h2>
-<p>最近在写 Go 代码时需要给某个 struct 定制一个字符串转换方法</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ms MyStruct)</span></span> String() <span class="type">string</span></span><br></pre></td></tr></table></figure>
-<p>但是在实现是考虑选用 value methods 还是 pointer methods 方式时纠结了起来。</p>
-<p>Go 的语法糖使得这两种方式在调用上是一致的，这让我一时难以抉择孰优孰劣，于是决定深入探究一下其背后原理以便之后能写出更<strong>地道</strong>（idiomatic）的 Go 代码。</p>
+          <blockquote>
+<p>DDIA reading group: we will share chapter by chapter, supplemented with some details based on my experience in distributed storage and databases in industry. Sharing roughly every two weeks—welcome to join. Schedule and all transcripts are <a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">here</a>. We have a corresponding distributed systems &amp; database discussion group; notifications will be sent before each session. To join, add my WeChat: qtmuniao, briefly introduce yourself, and note: Distributed Systems Group.</p>
+</blockquote>
+<p>Chapter 1 is easily skipped because it is concept-heavy and tends to speak in generalities. Yet the three concepts it introduces are indeed unavoidable focal points when building systems.</p>
+<p>P.S. The <a target="_blank" rel="noopener" href="http://ddia.vonng.com/">open-source Chinese translation</a> is not very idiomatic in places, which can make for uncomfortable reading—though this is unavoidable in any translation.</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2020/01/06/go-value-pointer-method/#more" rel="contents">
+              <a class="btn" href="/en/2022/02/19/ddia-reading-chapter1/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -591,8 +608,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/12/22/kafka/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/12/12/how-to-write-code-scrutinize-names/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -606,7 +623,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2019/12/22/kafka/" class="post-title-link" itemprop="url">Kafka —— 弥合日志系统和消息队列的鸿沟</a>
+            <a href="/2021/12/12/how-to-write-code-scrutinize-names/" class="post-title-link" itemprop="url">好好写代码之命名篇——推敲</a>
         </h2>
 
         <div class="post-meta">
@@ -616,14 +633,192 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2019-12-22 01:07:10" itemprop="dateCreated datePublished" datetime="2019-12-22T01:07:10+08:00">2019-12-22</time>
+              <time title="创建时间：2021-12-12 15:02:04" itemprop="dateCreated datePublished" datetime="2021-12-12T15:02:04+08:00">2021-12-12</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:15:46" itemprop="dateModified" datetime="2024-03-04T09:15:46+08:00">2024-03-04</time>
+                <time title="修改时间：2024-03-04 09:22:33" itemprop="dateModified" datetime="2024-03-04T09:22:33+08:00">2024-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>（贾）岛初赴举京师，一日驴上得句云：“鸟宿池边树，僧敲月下门”。始欲着“推”字，又欲着“敲”字，练之未定，遂于驴上吟哦，时时引手作推敲之势。</p>
+<p>—— 宋·胡仔《苕溪渔隐丛话》卷十九引《刘公嘉话》</p>
+</blockquote>
+<p>命名，是编码中最为紧要的事情，其之于程序，便如脸面之于少女。好的命名，能清晰的传达代码的意图，甚而，有一种韵律的美感。而懒散随意的起名，则令人如堕云雾，不忍卒读，会一遍遍地消耗维护者的精气神儿。此外，混乱的命名体系，能轻巧的掩藏 BUG，贻祸千里。</p>
+<p>因此，我们在写代码时，有必要花一点时间，对关键命名进行推敲，与人方便，与己方便。对于生命周期越长的项目，其益处便越明显。那么该如何推敲呢？结合自己写代码、看代码、Review 代码的一些经验，聊聊我的一些体会。</p>
+<p>最近写 golang 多一点，因此例子用的都是 golang ，但都是伪代码，有些例子并不不严格遵从语法。此外，例子大多出于现造，因此可能并不是特别贴合。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/12/12/how-to-write-code-scrutinize-names/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/12/12/how-to-write-code-scrutinize-names/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/12/12/how-to-write-code-scrutinize-names/" class="post-title-link" itemprop="url">Writing Good Code: Naming — Scrutinize Every Name</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-12 15:02:04" itemprop="dateCreated datePublished" datetime="2021-12-12T15:02:04+08:00">2021-12-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tech/" itemprop="url" rel="index"><span itemprop="name">tech</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>When Jia Dao first went to the capital for the imperial examination, one day on his donkey he composed a line: “Birds roost by the pond-side tree, a monk knocks at the moonlit door.” At first he wanted to use “push,” then he wanted to use “knock,” and could not decide after much refinement. So he kept chanting it on his donkey, occasionally reaching out to make the gesture of pushing and knocking.</p>
+<p>—— Song · Hu Zi, <em>Tiaoxi Yuyin Conghua</em>, Vol. 19, quoting <em>Liu Gong Jiahua</em></p>
+</blockquote>
+<p>Naming is the most crucial thing in coding; to a program, it is like a face to a young girl. Good naming can clearly convey the intent of the code, and even possess a sense of rhythmic beauty. Slack and casual naming, on the other hand, makes one feel as if fallen into a fog, unbearable to read, consuming the maintainer’s energy again and again. Moreover, a chaotic naming system can effortlessly hide bugs and cause harm far and wide.</p>
+<p>Therefore, when we write code, it is necessary to spend a little time scrutinizing key names — for the convenience of others and ourselves. The longer the lifespan of a project, the more obvious the benefits. So how should we scrutinize? Let me share some of my thoughts, drawing on my experience in writing code, reading code, and reviewing code.</p>
+<p>I’ve been writing more Go recently, so the examples use Go, but they are all pseudocode; some examples do not strictly follow the syntax. Moreover, most examples are made up on the spot, so they may not be particularly apt.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/12/12/how-to-write-code-scrutinize-names/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/12/07/cuckoo-hash-and-cuckoo-filter/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/12/07/cuckoo-hash-and-cuckoo-filter/" class="post-title-link" itemprop="url">布谷鸟哈希和布谷鸟过滤器</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-07 23:51:11" itemprop="dateCreated datePublished" datetime="2021-12-07T23:51:11+08:00">2021-12-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-03-04 09:22:33" itemprop="dateModified" datetime="2024-03-04T09:22:33+08:00">2024-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -650,28 +845,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概览">概览</h2>
-<p>Kafka （该论文发表于2011年6月**[1]**）是日志处理和消息队列系统的集大成者。较低的延迟、极高的容量和吞吐，使其可以应用于在线服务和离线业务。为了兼顾性能和可扩展性，Kafka 做了一些看起来反直觉但是却很实用的设计。例行总结一下其设计特点：</p>
-<ol>
-<li>
-<p><strong>面向存储的消息队列</strong>：意味在近实时的情况下能够将传统消息队列的存储增加几个数量级。实现原理是充分利用了磁盘的顺序写和操作系统自身的缓存；此外为了提高访盘、传输效率，使用了文件分段、段首索引、零拷贝和批量拉取等技术。</p>
-</li>
-<li>
-<p><strong>灵活的生产消费方式</strong>：总体而言是基于主题粒度的发布订阅式架构，并且既支持<strong>组内多消费者</strong>互斥消费，也支持不同<strong>消费者组</strong>间的重复消费。这里面涉及到消息队列的两个核心设计选择：<em>pull</em> 式消费以及客户端侧存储消费进度。拉式消费可能会导致空轮询以及稍微的延迟，好处在于灵活；客户端存储消费进度可以使的 broker 无状态，以进行灵活伸缩和容错。为了简化实现，消费时，每个分区最多为一个消费者所消费。</p>
-</li>
-<li>
-<p><strong>Zookeeper 存储元信息</strong>：利用分布式一致性组件 Zookeeper 以注册表的形式存储系统元信息，包括 broker 和消费者的存活信息、消费者和分区间的对应关系、每个分区的消费进度等等。Zookeeper 作为一个前缀树形式组织 KV、支持发布订阅的高可用组件，可以满足 Kafka 进行消费协调和进度保存的协作需求。</p>
-</li>
-<li>
-<p><strong>分区级别的多副本设计</strong>：这一点在论文中还没实现，应该是后来系统开源演进时加上的。利用该条可以实现对 broker 的容错。</p>
-</li>
-<li>
-<p><strong>简洁强大的消费接口</strong>：Kafka 的客户端一般提供两层接口抽象。包括无需关注<strong>分区</strong>和<strong>偏移量</strong>信息的高层（high-level）<em>简单读写</em>接口，以及可以灵活控制分区组织和消费进度的低层（low-level）接口。论文中只提到了前者，以表现其简洁。</p>
-</li>
-</ol>
+          <h2 id="引子">引子</h2>
+<p>哈希的本质是从一个较大空间映射到一个较小的空间，因此在插入数据足够多之后，根据鸽巢原理，一定会存在位置冲突。常见的<strong>哈希表（Hash Table 或者字典，dictionary）<strong>会通过</strong>链表</strong>、<strong>开放地址探测</strong>等方式来处理冲突。单桶多函数的布谷鸟哈希，便是开放地址法处理冲突的一种哈希表，只不过有冲突后，不是通过线性寻找新的位置，而是通过额外哈希函数来寻找。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2019/12/22/kafka/#more" rel="contents">
+              <a class="btn" href="/2021/12/07/cuckoo-hash-and-cuckoo-filter/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -696,8 +874,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/12/07/bazel-build-golang/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/12/07/cuckoo-hash-and-cuckoo-filter/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -711,7 +889,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2019/12/07/bazel-build-golang/" class="post-title-link" itemprop="url">Bazel 构建 Golang 项目</a>
+            <a href="/en/2021/12/07/cuckoo-hash-and-cuckoo-filter/" class="post-title-link" itemprop="url">Cuckoo Hash and Cuckoo Filter</a>
         </h2>
 
         <div class="post-meta">
@@ -721,14 +899,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2019-12-07 22:47:14" itemprop="dateCreated datePublished" datetime="2019-12-07T22:47:14+08:00">2019-12-07</time>
+              <time title="创建时间：2021-12-07 23:51:11" itemprop="dateCreated datePublished" datetime="2021-12-07T23:51:11+08:00">2021-12-07</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-07-28 08:48:59" itemprop="dateModified" datetime="2024-07-28T08:48:59+08:00">2024-07-28</time>
+                <time title="修改时间：2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -736,11 +914,11 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%8A%80%E6%9C%AF/%E5%B7%A5%E5%85%B7/" itemprop="url" rel="index"><span itemprop="name">工具</span></a>
+                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
                 </span>
             </span>
 
@@ -755,20 +933,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p><img src="https://i.loli.net/2020/02/09/DKg7uSkQoP9U2db.png" alt="bazel-golang.png"></p>
-<h2 id="引子">引子</h2>
-<p><a target="_blank" rel="noopener" href="https://bazel.build/">Bazel</a> 是一款谷歌开源的非常优秀的构建系统。它的定位，用官方的话来说是：</p>
-<blockquote>
-<p>a fast, scalable, multi-language and extensible build system</p>
-</blockquote>
-<p>大意为：</p>
-<blockquote>
-<p>一款<strong>速度极快</strong>、<strong>可伸缩</strong>、<strong>跨语言</strong>并且<strong>可扩展</strong>的构建系统</p>
-</blockquote>
-<p>使用 Bazel 构建 golang 项目，除了 Bazel 本身特性外，还需要了解针对 golang 的扩展包 <em><strong>rules_go</strong></em>。另外，可以使用 <em><strong>bazel gazelle</strong></em> 来进行一些自动生成的工作。</p>
+          <h2 id="Introduction">Introduction</h2>
+<p>The essence of hashing is mapping from a larger space to a smaller space. Therefore, after inserting enough data, according to the pigeonhole principle, there will inevitably be position conflicts. Common <strong>hash tables (Hash Table or dictionary)</strong> handle conflicts through <strong>chaining</strong>, <strong>open addressing</strong>, and other methods. Single-bucket multi-function cuckoo hashing is a type of hash table that uses open addressing to handle conflicts; the difference is that when a conflict occurs, instead of linearly searching for a new position, it uses additional hash functions to find one.</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2019/12/07/bazel-build-golang/#more" rel="contents">
+              <a class="btn" href="/en/2021/12/07/cuckoo-hash-and-cuckoo-filter/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -793,8 +962,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/11/14/rdd/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/11/02/big-water-big-fish/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -808,7 +977,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2019/11/14/rdd/" class="post-title-link" itemprop="url">Spark 系统的理论基石 —— RDD</a>
+            <a href="/2021/11/02/big-water-big-fish/" class="post-title-link" itemprop="url">《水大鱼大》——我们一起经历的黄金十年</a>
         </h2>
 
         <div class="post-meta">
@@ -818,14 +987,198 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2019-11-14 20:32:07" itemprop="dateCreated datePublished" datetime="2019-11-14T20:32:07+08:00">2019-11-14</time>
+              <time title="创建时间：2021-11-02 22:07:58" itemprop="dateCreated datePublished" datetime="2021-11-02T22:07:58+08:00">2021-11-02</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:15:43" itemprop="dateModified" datetime="2024-03-04T09:15:43+08:00">2024-03-04</time>
+                <time title="修改时间：2024-07-28 08:33:49" itemprop="dateModified" datetime="2024-07-28T08:33:49+08:00">2024-07-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%94%9F%E6%B4%BB/%E8%AF%BB%E4%B9%A6/" itemprop="url" rel="index"><span itemprop="name">读书</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>最近有兴致，想看点中国经济的书，受朋友推荐知道这本书。在微信读书上用差不多一周的时间赶着读完，虽然囫囵吞枣，倒也酣畅淋漓。以前看过吴晓波《激荡三十年》的一些章节，本书算是后传，风格一致，但是读起来会更有共鸣，因为这也正是初代九零后我们的人生中的黄金十年。作为“渐有意识”的亲历者，回放感很强。</p>
+</blockquote>
+<h2 id="概述">概述</h2>
+<p>吴晓波很擅长宏大叙事和情绪铺垫，在本书中全景式的再现了 2008~2018 这十年间中国经济和企业的波澜起伏。书名“水大鱼大”乍一看很俗，看完后细想，倒也形象。市场和企业的关系，正是鱼和水的关系——水大容纳了鱼的成长厮杀，鱼大成就了水的鲜活壮阔。</p>
+<p>这十年也是我从懵懂少年到步入青年的一个人生阶段。作为这段经济史的亲身经历者，对于其间的很多现象，有的没太留意，有的不得其解。作者以类似编年体的方式，以更高维的视角，紧扣时空二象，将各种线头有机的组织在一块，并带出了一些当时不广为人知的秘辛。通过这些冰山之下的暗线，让我们在重新审视这段历史时，隐隐然摸到了一些脉络。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/11/02/big-water-big-fish/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/10/18/influence-notes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/10/18/influence-notes/" class="post-title-link" itemprop="url">查理芒格推荐——《影响力》读书笔记+精要分析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-10-18 22:40:16" itemprop="dateCreated datePublished" datetime="2021-10-18T22:40:16+08:00">2021-10-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-07-28 08:34:56" itemprop="dateModified" datetime="2024-07-28T08:34:56+08:00">2024-07-28</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%94%9F%E6%B4%BB/%E8%AF%BB%E4%B9%A6/" itemprop="url" rel="index"><span itemprop="name">读书</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>西奥迪尼在影响力方面对我的影响，其他任何科学家都比不上…… 这本畅销书呈现了六至八种方法，让你古怪精灵的想法不会再阻碍你获得最佳利益。<br>
+——查理·芒格，巴菲特黄金搭档</p>
+</blockquote>
+<p>人类都有一些思维定势或固有模式，一经触发会使我们就像被按下了播放键，之后的行为便可能不受我们控制。其实这些都是源于人类避免思考的趋势。避免思考在人类原始时期确实给人类带来了不少好处，比如它能节省时间，减轻犹豫不决带来的危及生命的后果。但现在，避免思考的本能也恰恰成了最容易被顺从专家们利用的地方。</p>
+<p>其实，不管是那种顺从手法，其应对的核心方法都是一个——思考。首先要从情绪中脱离出来，其次要想清楚自己真正想要的是什么，把表象和实质区分开。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/10/18/influence-notes/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/10/17/bwtree-index/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/10/17/bwtree-index/" class="post-title-link" itemprop="url">微软提出的无锁 B 族树 —— Bw-Tree</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-10-17 22:53:10" itemprop="dateCreated datePublished" datetime="2021-10-17T22:53:10+08:00">2021-10-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-03-04 09:22:17" itemprop="dateModified" datetime="2024-03-04T09:22:17+08:00">2024-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -853,196 +1206,19 @@
 
       
           <h2 id="概述">概述</h2>
-<p>RDD，学名可伸缩的分布式数据集（Resilient Distributed Dataset）。是一种对数据集形态的抽象，基于此抽象，使用者可以在集群中执行一系列计算，而不用将中间结果落盘。而这正是之前 MR 抽象的一个重要痛点，每一个步骤都需要落盘，使得不必要的开销很高。</p>
-<p>对于分布式系统，容错支持是必不可少的。为了支持容错，RDD 只支持粗粒度的变换。即，输入数据集是 immutable （或者说只读）的，每次运算会产生新的输出。不支持对一个数据集中细粒度的更新操作。这种约束，大大简化了容错支持，并且能满足很大一类的计算需求。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2019/11/14/rdd/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/11/03/python3-generator/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/11/03/python3-generator/" class="post-title-link" itemprop="url">Python3 生成器（Generator）概念浅析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-11-03 17:13:39" itemprop="dateCreated datePublished" datetime="2019-11-03T17:13:39+08:00">2019-11-03</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><img src="https://i.loli.net/2020/02/09/eUrTyHxMR9POsJh.png" alt="python-generator.png"></p>
-<h2 id="引子">引子</h2>
-<p>某次面试问候选人：Python 中生成器是什么？答曰：有 yield 关键字的函数。而在我印象中此种函数返回的值是生成器，而函数本身不是。如下：</p>
-<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">In [<span class="number">1</span>]: <span class="keyword">def</span> <span class="title function_">get_nums</span>(<span class="params">n</span>): </span><br><span class="line">   ...:     <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(n): </span><br><span class="line">   ...:         <span class="keyword">yield</span> i </span><br><span class="line">   ...:                                                                                                                                                                  </span><br><span class="line">In [<span class="number">2</span>]: <span class="built_in">type</span>(get_nums)</span><br><span class="line">Out[<span class="number">2</span>]: function</span><br><span class="line">  </span><br><span class="line">In [<span class="number">3</span>]: nums = get_nums(<span class="number">10</span>)   </span><br><span class="line">  </span><br><span class="line">In [<span class="number">4</span>]: <span class="built_in">type</span>(nums)</span><br><span class="line">Out[<span class="number">4</span>]: generator</span><br></pre></td></tr></table></figure>
-<p>但看候选人那么笃定，隐隐然感觉哪里不对，于是有了以下探究。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2019/11/03/python3-generator/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/10/26/split-bst/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/10/26/split-bst/" class="post-title-link" itemprop="url">数据结构与算法（三）：拆分二叉搜索树</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-10-26 22:36:15" itemprop="dateCreated datePublished" datetime="2019-10-26T22:36:15+08:00">2019-10-26</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">数据结构</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/algorithms/" itemprop="url" rel="index"><span itemprop="name">algorithms</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="小引">小引</h2>
-<p>二叉树（Binary Tree）是数据结构中很好玩的一种，可以把玩的地方非常之多。而二叉搜索树（Binary  Serach Tree，下面简称 BST，当然也有叫二叉查找树、查找二叉树等等）又是其中常用的一种，它有很多有趣的<strong>性质</strong>：</p>
+<p>Bw-tree 是 2013 年微软发表的<a target="_blank" rel="noopener" href="https://15721.courses.cs.cmu.edu/spring2017/papers/08-oltpindexes2/bwtree-icde2013.pdf">相关论文</a>提出的数据结构。考虑到多核机器和 SSD 日趋普及，结合两大存储引擎 B±tree 和 LSM-tree 特点，提出了一种 latch-free、delta update、log structured 的 B族树 —— Bw-tree。</p>
+<p>由于上述论文在实现细节上语焉不详，cmu 几个作者在 2015 年时实现了一版基于内存的 Bw-tree，然后又发表了一篇论文，补充了一些实现上的细节，并将代码开源在了 github 上，称为 <a target="_blank" rel="noopener" href="https://github.com/wangziqi2013/BwTree">open bwtree</a>。</p>
+<p>例行地总结下（太长不看版），Bw tree 的主要特点有：</p>
 <ol>
-<li>左皆小，右皆大。</li>
-<li>中序遍历有序。</li>
-<li>投影升序。</li>
+<li>总体分三层：bwtree 索引层，缓存控制层和 Flash 存储层。</li>
+<li>bwtree 在整体上是一棵 B+ 树，同时借鉴了 B-link 树的思想，每个节点存在一个指向右兄弟的 side pointer。</li>
+<li>bwtree 在单个树节点上表现为类似 LSM-tree 的 Log-Structure，每个逻辑节点由 a base node + a delta records chain 组成。</li>
+<li>bwtree 实现 latch-free 的核心数据结构叫 Mapping Table，通过 CAS 进行 installing 操作，修改一个 mapping entry 可以同时完成多个逻辑指针的修改。</li>
+<li>bwtree flash 层也使用 Log-Structure Store （append only）对逻辑页的物理存储（base page 和 delta record）进行管理。</li>
 </ol>
-<p>当然，加上<strong>平衡</strong>会引入更多的特性，这里先按下不表。今天先从个小题入手把玩一番。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2019/10/26/split-bst/#more" rel="contents">
+              <a class="btn" href="/2021/10/17/bwtree-index/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1067,8 +1243,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/10/20/boil-hawthorn/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/10/17/bwtree-index/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -1082,7 +1258,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2019/10/20/boil-hawthorn/" class="post-title-link" itemprop="url">煮红果记</a>
+            <a href="/en/2021/10/17/bwtree-index/" class="post-title-link" itemprop="url">Microsoft's Latch-Free B-Tree Family — Bw-Tree</a>
         </h2>
 
         <div class="post-meta">
@@ -1092,14 +1268,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2019-10-20 18:57:40" itemprop="dateCreated datePublished" datetime="2019-10-20T18:57:40+08:00">2019-10-20</time>
+              <time title="创建时间：2021-10-17 22:53:10" itemprop="dateCreated datePublished" datetime="2021-10-17T22:53:10+08:00">2021-10-17</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
+                <time title="修改时间：2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -1107,11 +1283,11 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
                 </span>
                   ，
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/%E7%BE%8E%E9%A3%9F/" itemprop="url" rel="index"><span itemprop="name">美食</span></a>
+                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
                 </span>
             </span>
 
@@ -1126,189 +1302,20 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>季秋时节，各种果子纷至沓来。山楂，我们那叫山里红，北京好像称红果。老北京一道有名的菜便是“炒红果”。这天去菜市场，发现今年的个大成色好，便赶紧买了些来。</p>
+          <h2 id="Overview">Overview</h2>
+<p>Bw-tree is a data structure proposed in a <a target="_blank" rel="noopener" href="https://15721.courses.cs.cmu.edu/spring2017/papers/08-oltpindexes2/bwtree-icde2013.pdf">paper</a> published by Microsoft in 2013. Considering the increasing prevalence of multi-core machines and SSDs, and combining the characteristics of the two major storage engines B±tree and LSM-tree, it proposes a latch-free, delta-update, log-structured B-tree family — Bw-tree.</p>
+<p>Since the original paper is vague on implementation details, several authors from CMU implemented an in-memory version of Bw-tree in 2015, and then published another paper to supplement some implementation details, open-sourcing the code on GitHub as <a target="_blank" rel="noopener" href="https://github.com/wangziqi2013/BwTree">open bwtree</a>.</p>
+<p>As usual, here is a summary (TL;DR). The main characteristics of Bw-tree are:</p>
+<ol>
+<li>Overall three layers: Bw-tree index layer, cache control layer, and Flash storage layer.</li>
+<li>Bw-tree is globally a B+ tree, while borrowing ideas from the B-link tree: each node has a side pointer to its right sibling.</li>
+<li>At the individual tree node level, Bw-tree resembles an LSM-tree-like log structure: each logical node consists of a base node + a delta records chain.</li>
+<li>The core data structure enabling latch-free operation in Bw-tree is called the Mapping Table. Installing is done via CAS; modifying a mapping entry can simultaneously update multiple logical pointers.</li>
+<li>The Bw-tree flash layer also uses a Log-Structure Store (append-only) to manage the physical storage of logical pages (base pages and delta records).</li>
+</ol>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2019/10/20/boil-hawthorn/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/10/16/hexo-theme-landscaping/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/10/16/hexo-theme-landscaping/" class="post-title-link" itemprop="url">Hexo Next 主题进阶设置</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-10-16 22:50:50" itemprop="dateCreated datePublished" datetime="2019-10-16T22:50:50+08:00">2019-10-16</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" itemprop="url" rel="index"><span itemprop="name">搭建博客</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/Hexo/" itemprop="url" rel="index"><span itemprop="name">Hexo</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>在使用 github pages + hexo + next 搭建了 <a href="https://www.qtmuniao.com/2019/02/17/%E4%BD%BF%E7%94%A8hexo%E5%BC%95%E6%93%8E%E9%85%8D%E7%BD%AE%E9%9D%99%E6%80%81%E5%8D%9A%E5%AE%A2/">Hexo 博客</a> 并用了一段时间后，想对博客进一步进行定制和美化，记录在这里。过程中发现英文文档要比中文文档详细很多，基本上 thems/next/_config.yaml 中所涉及到的所有设置都有讲解，所以如果英文不错，还是看英文文档吧：<a target="_blank" rel="noopener" href="https://theme-next.org/docs/">https://theme-next.org/docs/</a> 。</p>
-<p>此外，每次修改后记得及时用 <code>hexo s</code> 在本地<code>http://localhost:4000/</code>部署查看效果，看是否达到了自己的预期。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2019/10/16/hexo-theme-landscaping/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2019/08/10/ray-source-reading-2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/08/10/ray-source-reading-2/" class="post-title-link" itemprop="url">Ray 源码解析（二）：资源抽象和调度策略</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-08-10 18:36:04" itemprop="dateCreated datePublished" datetime="2019-08-10T18:36:04+08:00">2019-08-10</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-09-12 23:12:39" itemprop="dateModified" datetime="2024-09-12T23:12:39+08:00">2024-09-12</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/Ray/" itemprop="url" rel="index"><span itemprop="name">Ray</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>上一篇讲了待调度任务的组织形式，这一篇来继续挑软骨头啃：节点资源抽象和调度策略。</p>
-<h2 id="引子">引子</h2>
-<p>由于 Ray 支持对任务进行<strong>显式的资源约束</strong>，因此需要对所有节点的资源进行硬件无关的抽象，将所有资源归一化管理，以在逻辑层面对资源进行增删。当有节点加入，需要感知其资源总量大小；当有任务调度，需要寻找满足约束节点；当任务调度成功，可以获取剩余可用资源等等。</p>
-<p>Ray 除了对标准资源如 CPU，GPU 的支持，还支持对用户自定义 label 的资源的调度。用户在启动节点（<code>ray start --resources &lt;resources&gt;</code>）指定该节点具有<strong>某种类别的资源</strong>（比如说 memory，bandwidth，某种型号的 GPU 等等）的总量，在定义 remote 函数时指定任务使用多少该类别的资源，Ray 的调度器在调度该任务时，就会按照用户自定义的资源需求将其调度到特定的机器上去。这是一种<strong>用户代码和调度器交互的一种有趣设计</strong>。</p>
-<p>对于调度策略，由于 Ray 是去中心化的调度，很容易存在不一致状态。最简单的在实践中反而是统计最优的——对于每个任务找到符合资源约束的节点，随机选择一个，将任务调度过去。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2019/08/10/ray-source-reading-2/#more" rel="contents">
+              <a class="btn" href="/en/2021/10/17/bwtree-index/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1333,7 +1340,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/7/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span><a class="page-number" href="/page/9/">9</a><a class="page-number" href="/page/10/">10</a><a class="extend next" rel="next" href="/page/9/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/7/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span><a class="page-number" href="/page/9/">9</a><span class="space">&hellip;</span><a class="page-number" href="/page/18/">18</a><a class="extend next" rel="next" href="/page/9/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1401,19 +1408,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">120</span>
+          <span class="site-state-item-count">216</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">41</span>
+        <span class="site-state-item-count">105</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">198</span>
+        <span class="site-state-item-count">283</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1486,8 +1493,6 @@
 
     <footer class="footer">
       <div class="footer-inner">
-        
-
         
 
 <div class="copyright">

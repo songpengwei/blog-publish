@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Introduction Following Spark, the UC Berkeley AMP Lab has launched another heavyweight high-performance AI compute engine — Ray, claiming to support millions of task schedules per second. How does it">
+<meta property="og:type" content="article">
+<meta property="og:title" content="After Spark, UC Berkeley Launches a New Generation AI Compute Engine — Ray">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2019/04/06/ray/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Introduction Following Spark, the UC Berkeley AMP Lab has launched another heavyweight high-performance AI compute engine — Ray, claiming to support millions of task schedules per second. How does it">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/3WdenGAt7vhRkKL.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/EKbF13u4v5hOZra.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/4Hkz5GqyQutLJRV.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/cFVRq9BxZgpOhyi.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/Fq6Vwvf1Thg5Ayc.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/hqzG1DUIvf2i4LV.png">
+<meta property="article:published_time" content="2019-04-06T07:10:10.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.673Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="distributed system">
+<meta property="article:tag" content="Ray">
+<meta property="article:tag" content="AI engine">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/3WdenGAt7vhRkKL.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2019/04/06/ray/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="distributed system,Ray,AI engine">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "After Spark, UC Berkeley Launches a New Generation AI Compute Engine — Ray",
+    "description": "Introduction Following Spark, the UC Berkeley AMP Lab has launched another heavyweight high-performance AI compute engine — Ray, claiming to support millions of task schedules per second. How does it achieve this? After trying it out, here is a brief summary: Minimalist Python API: By adding the ray.remote decorator to function or class definitions and making some minor changes, single-machine code can be turned into distributed code. This means not only can pure functions be executed remotely, but a class can also be registered remotely (Actor model), maintaining a large amount of context (member variables) within it, and remotely calling its member methods to change that context. Efficient Data Storage and Transmission: On each node, a local object store is maintained through shared memory (multi-process access without copying), and data exchange between different nodes is performed using the specially optimized Apache Arrow format. Dynamic Graph Computation Model: Thanks to the first two points, the future handles returned by remote calls are passed to other remote functions or actor methods. That is, complex computation topologies are built through nested remote function calls, and dynamic triggered execution is based on the publish-subscribe model of the object store. Global State Maintenance: The global control state (rather than data) is maintained using Redis shards, allowing other components to easily scale smoothly and recover from failures. Of course, each Redis shard avoids single points of failure through chain-replica. Two-level Scheduling Architecture: Divided into local scheduler and global scheduler; task requests are first submitted to the local scheduler, which tries to execute tasks locally to reduce network overhead. When resource constraints, data dependencies, or load conditions do not meet expectations, they are forwarded to the global scheduler for global scheduling. Of course, there are still areas for optimization, such as Job-level encapsulation (for multi-tenant resource allocation), the garbage collection algorithm to be optimized (for the object store, currently just a crude LRU), multi-language support (Java was recently supported, but it is unclear how well it works), etc. However, its flaws do not hide its merits; its architectural design and implementation ideas still have many aspects worth learning from.",
+    "url": "https://www.qtmuniao.com/en/2019/04/06/ray/",
+    "datePublished": "2019-04-06T15:10:10+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2019/04/06/ray/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>After Spark, UC Berkeley Launches a New Generation AI Compute Engine — Ray | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2019/04/06/ray/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2019/04/06/ray/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2019/04/06/ray/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          After Spark, UC Berkeley Launches a New Generation AI Compute Engine — Ray
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-04-06 15:10:10" itemprop="dateCreated datePublished" datetime="2019-04-06T15:10:10+08:00">2019-04-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Introduction">Introduction</h2>
+<p>Following Spark, the UC Berkeley AMP Lab has launched another heavyweight high-performance AI compute engine — Ray, claiming to support millions of task schedules per second. How does it achieve this? After trying it out, here is a brief summary:</p>
+<ol>
+<li><em><strong>Minimalist Python API</strong></em>: By adding the <code>ray.remote</code> decorator to function or class definitions and making some minor changes, single-machine code can be turned into distributed code. This means not only can <strong>pure functions</strong> be executed remotely, but a class can also be registered remotely (<strong>Actor model</strong>), maintaining a large amount of context (member variables) within it, and remotely calling its member methods to change that context.</li>
+<li><em><strong>Efficient Data Storage and Transmission</strong></em>: On each node, a local <strong>object store</strong> is maintained through <strong>shared memory</strong> (multi-process access without copying), and data exchange between different nodes is performed using the specially optimized <strong>Apache Arrow</strong> format.</li>
+<li><em><strong>Dynamic Graph Computation Model</strong></em>: Thanks to the first two points, the future handles returned by remote calls are passed to other remote functions or actor methods. That is, complex computation topologies are built through nested remote function calls, and dynamic triggered execution is based on the <strong>publish-subscribe</strong> model of the object store.</li>
+<li><em><strong>Global State Maintenance</strong></em>: The global control state (rather than data) is maintained using Redis shards, allowing other components to easily scale smoothly and recover from failures. Of course, each Redis shard avoids single points of failure through <strong>chain-replica</strong>.</li>
+<li><em><strong>Two-level Scheduling Architecture</strong></em>: Divided into local scheduler and global scheduler; task requests are first submitted to the local scheduler, which tries to execute tasks locally to reduce network overhead. When resource constraints, data dependencies, or load conditions do not meet expectations, they are forwarded to the global scheduler for global scheduling.</li>
+</ol>
+<p>Of course, there are still areas for optimization, such as Job-level encapsulation (for multi-tenant resource allocation), the garbage collection algorithm to be optimized (for the object store, currently just a crude LRU), multi-language support (Java was recently supported, but it is unclear how well it works), etc. However, its flaws do not hide its merits; its <em><strong>architectural design</strong></em> and <em><strong>implementation ideas</strong></em> still have many aspects worth learning from.</p>
+<span id="more"></span>
+<p><em>Author: Muniao’s Notes <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, please indicate the source when reposting</em></p>
+<h2 id="Motivation-and-Requirements">Motivation and Requirements</h2>
+<p>(<em>The motivation for developing Ray started with <strong>reinforcement learning (RL)</strong>, but due to the powerful expressiveness of its computation model, its use is by no means limited to RL. This section uses the description of RL system requirements as an opportunity to introduce Ray’s initial design direction. However, since I am not very familiar with reinforcement learning, some terms may be inaccurately expressed or translated. If you are only interested in its architecture, you can skip this section entirely.</em>)</p>
+<p><img data-src="https://i.loli.net/2020/02/09/3WdenGAt7vhRkKL.png" alt="RL system example"><span class="image-caption">RL system example</span></p>
+<p><em>Figure 1: An example of an RL system</em></p>
+<p>We start by considering the basic components of an RL system and gradually refine Ray’s requirements. As shown in <em>Figure 1</em>, in the setting of an RL system, an <em>agent</em> repeatedly interacts with an <em>environment</em>. The agent’s goal is to learn a policy that maximizes <em>reward</em>. A <em>policy</em> is essentially a mapping from states in the environment to <em>actions</em>. As for the environment, agent, state, action, and reward value definitions, these are determined by the specific application.</p>
+<p>To learn a policy, the agent typically performs two steps: 1) <em>policy evaluation</em> and 2) <em>policy improvement</em>. To evaluate a policy, the agent continuously interacts with the environment (usually a simulated environment) to produce <em>trajectories</em>. A trajectory is a sequence of pairs (state, reward value) generated under the current environment and given policy. Then, the agent uses these trajectories to feedback and optimize the policy, that is, updating the policy in the gradient direction of maximizing the reward value. <em>Figure 2</em> shows pseudocode for an example of how an agent learns a policy. This pseudocode evaluates the policy by calling <code>rollout(environment, policy)</code>, thereby generating simulated trajectories. <code>train_policy()</code> then uses these trajectories as input, calling <code>policy.update(trajectories)</code> to optimize the current policy. This process is repeated iteratively until the policy converges.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// evaluate policy by interacting with env. (e.g., simulator) </span></span><br><span class="line">rollout(policy, environment):</span><br><span class="line">    trajectory = []</span><br><span class="line">    state = environment.initial_state()</span><br><span class="line">    <span class="keyword">while</span> (not environment.has_terminated()):</span><br><span class="line">        action = policy.compute(state) <span class="comment">// Serving</span></span><br><span class="line">        state, reward = environment.step(action) <span class="comment">// Simulation </span></span><br><span class="line">        trajectory.append(state, reward)</span><br><span class="line">    <span class="keyword">return</span> trajectory</span><br><span class="line">    </span><br><span class="line"><span class="comment">// improve policy iteratively until it converges </span></span><br><span class="line">train_policy(environment):</span><br><span class="line">    policy = initial_policy()</span><br><span class="line">    <span class="keyword">while</span> (policy has not converged):</span><br><span class="line">        trajectories = [] </span><br><span class="line">        <span class="keyword">for</span> i from <span class="number">1</span> to k:</span><br><span class="line">            <span class="comment">// evaluate policy by generating k rollouts </span></span><br><span class="line">            trajectories.append(rollout(policy, environment)) </span><br><span class="line">            <span class="comment">// improve policy</span></span><br><span class="line">            policy = policy.update(trajectories) <span class="comment">// Training </span></span><br><span class="line">    <span class="keyword">return</span> policy</span><br></pre></td></tr></table></figure>
+<p><em>Figure 2: Typical pseudocode for learning a policy</em></p>
+<p>From this perspective, a computation framework for RL applications needs to efficiently support model training (training), <em>online prediction (serving)</em>, and <em>platform simulation (simulation)</em> (as shown in Figure 1). Next, we briefly explain these workloads.</p>
+<p><em>Model training</em> generally involves running stochastic gradient descent (SGD) models in a distributed environment to update the policy. Distributed SGD usually relies on allreduce aggregation steps or a parameter server.</p>
+<p><em>Online prediction</em> uses a trained policy to make action decisions based on the current environment. Prediction systems typically require reduced prediction latency and increased decision frequency. To support scaling, it is best to distribute the load across multiple nodes for collaborative prediction.</p>
+<p>Finally, most existing RL applications use <em>simulations</em> to evaluate policies — because existing RL algorithms are not sufficient to efficiently sample from interactions with the physical world alone. These simulators span a wide range of complexity. Some may only take a few milliseconds (such as simulating moves in a chess game), while others may take several minutes (such as simulating a realistic environment for an autonomous driving vehicle).</p>
+<p>Compared with supervised learning, where model training and online prediction can be handled in different systems, in RL <em>all three workloads are tightly coupled in a single application</em>, and the latency requirements between different workloads are very strict. None of the existing systems can support all three workloads simultaneously. In theory, multiple dedicated systems could be combined to provide all capabilities, but in practice, the latency of result transfer between subsystems is intolerable in RL. Therefore, RL researchers and practitioners have had to build multiple one-off dedicated systems for each requirement separately.</p>
+<p>These current situations require the development of a brand-new distributed framework for RL that can effectively support training, prediction, and simulation. In particular, such a framework should have the following capabilities:</p>
+<p><em>Support fine-grained, heterogeneous computation</em>. RL computations often run for durations ranging from a few milliseconds (performing a simple action) to several hours (training a complex policy). In addition, model training usually requires various heterogeneous hardware support (such as CPU, GPU, or TPU).</p>
+<p><em>Provide a flexible computation model</em>. RL applications have both stateful and stateless types of computation. Stateless computation can be executed on any node in the system, thereby facilitating load balancing and on-demand data transfer. Therefore, stateless computation is very suitable for fine-grained simulation and data processing, such as extracting features from video or images. In contrast, stateful computation is suitable for implementing parameter servers, performing repeated iterations on data supporting GPU computation, or running third-party simulators that do not expose internal state parameters.</p>
+<p><em>Dynamic execution capability</em>. Many modules in RL applications require dynamic execution because the order in which their computations complete is not always predetermined (for example, the completion order of simulations), and the result of one computation can determine whether several future computations are executed (for example, the result of a simulation will determine whether we run more simulations).</p>
+<p>In addition, we propose two additional requirements. First, to efficiently utilize large clusters, the framework must support <em>millions of task schedules per second</em>. Second, the framework is not meant to support implementing deep neural networks or complex simulators from scratch, but must seamlessly integrate with existing simulators (such as OpenAI gym) and deep learning frameworks (such as TensorFlow, MXNet, Caffe, PyTorch).</p>
+<h2 id="Language-and-Computation-Model">Language and Computation Model</h2>
+<p>Ray implements a dynamic task graph computation model, that is, Ray models an application as a task graph that dynamically generates dependencies during execution. On top of this model, Ray provides the actor model and the task-parallel programming paradigm. Ray’s support for mixed computation paradigms distinguishes it from systems like <span class="exturl" data-url="aHR0cDovL3d3dy5jcy5wcmluY2V0b24uZWR1L2NvdXJzZXMvYXJjaGl2ZS9mYWxsMTMvY29zNTE4L3BhcGVycy9jaWVsLnBkZg==">CIEL<i class="fa fa-external-link-alt"></i></span>, which only provides parallel task abstractions, and <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2RvdG5ldC9vcmxlYW5z">Orleans<i class="fa fa-external-link-alt"></i></span> or <span class="exturl" data-url="aHR0cHM6Ly9ha2thLmlvLw==">Akka<i class="fa fa-external-link-alt"></i></span>, which only provide actor model abstractions.</p>
+<h3 id="Programming-Model">Programming Model</h3>
+<p><strong>Task Model</strong>. A <em>task</em> represents a remote function executed on a stateless worker process. When a remote function is called, a <em><span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRnV0dXJlc19hbmRfcHJvbWlzZXM=">future<i class="fa fa-external-link-alt"></i></span></em> representing the task result is immediately returned (that is, all remote function calls are asynchronous, returning a task handle immediately after the call). Futures can be passed to <code>ray.get()</code> to obtain results in a blocking manner, or futures can be passed as arguments to other remote functions for non-blocking, event-triggered execution (the latter is the essence of constructing dynamic topology graphs). These two features of futures allow users to specify dependencies while constructing parallel tasks. The following table lists all of Ray’s APIs (quite concise and powerful, but there are many pitfalls in implementation, since all functions or classes decorated with <code>ray.remote</code> and their contexts must be serialized and sent to remote nodes, using the same cloudpickle as PySpark).</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th style="text-align:left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><em>futures</em> = f.remote(<em>args</em>)</td>
+<td style="text-align:left">Execute function <em>f</em> remotely. f.remote() can take objects or futures as inputs and returns one or more futures. This is non-blocking.</td>
+</tr>
+<tr>
+<td><em>objects</em> = ray.get(<em>futures</em>)</td>
+<td style="text-align:left">Return the values associated with one or more futures. This is blocking.</td>
+</tr>
+<tr>
+<td><em>ready futures</em> = ray.wait(<em>futures</em>, <em>k</em>, <em>timeout</em>)</td>
+<td style="text-align:left">Return the futures whose corresponding tasks have completed as soon as either <em>k</em> have completed or the timeout expires.</td>
+</tr>
+<tr>
+<td><em>actor</em> = Class.remote(<em>args</em>)<br/><em>futures</em> = <em>actor</em>.method.remote(<em>args</em>)</td>
+<td style="text-align:left">Instantiate class <em>Class</em> as a remote actor, and return a handle to it. Call a method on the remote actor and return one or more futures. Both are non-blocking.</td>
+</tr>
+</tbody>
+</table>
+<p><em>Table 1 Ray API</em></p>
+<p>Remote functions act on immutable objects and should be stateless and side-effect free: the output of these functions depends only on their inputs (<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvUHVyZV9mdW5jdGlvbg==">pure functions<i class="fa fa-external-link-alt"></i></span>). This means idempotence (<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvSWRlbXBvdGVuY2U=">idempotence<i class="fa fa-external-link-alt"></i></span>); if an error occurs while obtaining a result, the function only needs to be re-executed, thereby simplifying fault-tolerant design.</p>
+<p><strong><span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQWN0b3JfbW9kZWw=">Actor Model<i class="fa fa-external-link-alt"></i></span> (Actors)</strong>. An <em>actor object</em> represents a stateful computation process. Each actor object exposes a set of member methods that can be called remotely and executed sequentially in the order they are called (that is, within the same actor object, execution is serial to ensure the actor state is correctly updated). The execution process of an actor method is the same as a normal task; it is also executed remotely (each actor object corresponds to a remote process) and immediately returns a future; but unlike tasks, actor methods run on a <em>stateful</em> worker process. An actor object’s <em>handle</em> can be passed to other actor objects or remote tasks, allowing them to call these member functions on the actor object.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Tasks</th>
+<th style="text-align:center">Actors</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Fine-grained load balancing</td>
+<td style="text-align:center">Coarse-grained load balancing</td>
+</tr>
+<tr>
+<td style="text-align:center">Support object locality (object store cache)</td>
+<td style="text-align:center">Poor locality support</td>
+</tr>
+<tr>
+<td style="text-align:center">High overhead for small updates</td>
+<td style="text-align:center">Low overhead for small updates</td>
+</tr>
+<tr>
+<td style="text-align:center">Efficient error handling</td>
+<td style="text-align:center">Higher overhead due to checkpoint recovery</td>
+</tr>
+</tbody>
+</table>
+<p><em>Table 2 Task Model vs. Actor Model</em></p>
+<p><em>Table 2</em> compares the task model and the actor model across different dimensions. The task model achieves fine-grained load balancing using <em>cluster node load information</em> and <em>dependency data location information</em>, that is, each task can be scheduled to an idle node that stores its required parameter objects; and it does not require much additional overhead because there is no need to set checkpoints and recover intermediate states. In contrast, the actor model provides extremely efficient fine-grained update support because these updates act on internal state (i.e., context information maintained by actor member variables) rather than external objects (such as remote objects, which need to be synchronized to local first). The latter usually requires serialization and deserialization (as well as network transmission, which is often time-consuming). For example, the actor model can be used to implement parameter servers (<span class="exturl" data-url="aHR0cHM6Ly93d3cuY3MuY211LmVkdS9+bXVsaS9maWxlL3BhcmFtZXRlcl9zZXJ2ZXJfb3NkaTE0LnBkZg==">parameter servers<i class="fa fa-external-link-alt"></i></span>) and GPU-based iterative computations (such as training). In addition, the actor model can be used to wrap third-party simulators or other objects that are difficult to serialize (such as certain models).</p>
+<p>To satisfy heterogeneity and scalability, we have enhanced the API design in three aspects. First, to handle concurrent tasks of varying lengths, we introduced <code>ray.wait()</code>, which can return as soon as the first k results are satisfied; unlike <code>ray.get()</code>, which must wait until all results are satisfied before returning. Second, to handle tasks with different resource dimension (resource-heterogeneous) requirements, we allow users to specify the required resource amount (for example, decorator: <code>ray.remote(gpu_nums=1)</code>), so that the scheduling system can manage resources efficiently (providing a means of interaction so that the scheduling system is relatively less blind when scheduling tasks). Finally, for flexibility, we allow the construction of <em>nested remote functions</em>, meaning one remote function can call another remote function within it. This is crucial for achieving high scalability because it allows multiple processes to call each other in a distributed manner (this is very powerful; through proper function design, all parallelizable parts can be turned into remote functions, thereby improving parallelism).</p>
+<h3 id="Computation-Model">Computation Model</h3>
+<p>Ray adopts a dynamic graph computation model, in which remote functions and actor methods are automatically triggered for execution when inputs are available (i.e., all input objects that the task depends on have been synchronized to the node where the task is located). In this section, we describe in detail how to build a computation graph (<em>Figure 4</em>) from a user program (<em>Figure 3</em>). This program uses the APIs in <em>Table 1</em> to implement the pseudocode in <em>Figure 2</em>.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ray.remote</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">create_policy</span>():</span><br><span class="line"><span class="comment"># Initialize the policy randomly. return policy</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@ray.remote(<span class="params">num_gpus=<span class="number">1</span></span>)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Simulator</span>(<span class="title class_ inherited__">object</span>):</span><br><span class="line">  <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">  <span class="comment"># Initialize the environment. self.env = Environment()</span></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">rollout</span>(<span class="params">self, policy, num_steps</span>):</span><br><span class="line">      observations = []</span><br><span class="line">      observation = self.env.current_state()</span><br><span class="line">      <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(num_steps):</span><br><span class="line">        action = policy(observation)</span><br><span class="line">        observation = self.env.step(action)</span><br><span class="line">        observations.append(observation)</span><br><span class="line">      <span class="keyword">return</span> observations</span><br><span class="line"></span><br><span class="line"><span class="meta">@ray.remote(<span class="params">num_gpus=<span class="number">2</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">update_policy</span>(<span class="params">policy, *rollouts</span>):</span><br><span class="line">  <span class="comment"># Update the policy.</span></span><br><span class="line">  <span class="keyword">return</span> policy</span><br><span class="line"></span><br><span class="line"><span class="meta">@ray.remote</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">train_policy</span>():</span><br><span class="line">  <span class="comment"># Create a policy.</span></span><br><span class="line">  policy_id = create_policy.remote()</span><br><span class="line">  <span class="comment"># Create 10 actors.</span></span><br><span class="line">  simulators = [Simulator.remote() <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">10</span>)] <span class="comment"># Do 100 steps of training.</span></span><br><span class="line">  <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">100</span>):</span><br><span class="line">      <span class="comment"># Perform one rollout on each actor.</span></span><br><span class="line">      rollout_ids = [s.rollout.remote(policy_id)</span><br><span class="line">                     <span class="keyword">for</span> s <span class="keyword">in</span> simulators]</span><br><span class="line">      <span class="comment"># Update the policy with the rollouts.</span></span><br><span class="line">      policy_id =</span><br><span class="line">          update_policy.remote(policy_id, *rollout_ids)</span><br><span class="line">   <span class="keyword">return</span> ray.get(policy_id)</span><br></pre></td></tr></table></figure>
+<p><em>Figure 3: Code implementing the logic of Figure 2 in Ray. Note that the @ray.remote decorator declares the annotated method or class as a remote function or actor object. After calling a remote function or actor method, a future handle is immediately returned, which can be passed to subsequent remote functions or actor methods to express data dependencies. Each actor object contains an environment object self.env, whose state is shared by all actor methods.</em></p>
+<p>Without considering actor objects, there are two types of nodes in a computation graph: data objects and remote function calls (or tasks). Similarly, there are two types of edges: data edges and control edges. Data edges express dependency relationships between data objects and tasks. More precisely, if data object <em>D</em> is the output of task <em>T</em>, we add an edge from <em>T</em> to <em>D</em>. Similarly, if <em>D</em> is the input of task <em>T</em>, we add an edge from <em>D</em> to <em>T</em>. Control edges express computation dependencies caused by nested remote function calls, that is, if task <em>T1</em> calls task <em>T2</em>, we add a control edge from <em>T1</em> to <em>T2</em>.</p>
+<p>In the computation graph, actor method calls are also represented as nodes. Except for one key difference, their dependency relationships with task calls are basically the same. To express the state dependency relationship formed by consecutive method calls on the same actor object, we add a third type of edge to the computation graph: on the same actor object, if actor method <em>Mj</em> is called immediately after <em>Mi</em>, we add a state edge from <em>Mi</em> to <em>Mj</em> (<em>that is, after Mi is called, certain states in the actor object are changed, or member variables; then these changed member variables serve as implicit inputs for the Mj call; thus, an implicit dependency relationship is formed between Mi and Mj</em>). In this way, all method calls acting on the same actor object will form a call chain (chain, see <em>Figure 4</em>) connected by state edges. This call chain expresses the sequential dependency relationship of method calls on the same actor object.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/EKbF13u4v5hOZra.png" alt="task graph"><span class="image-caption">task graph</span></p>
+<p><em>Figure 4</em>: <em>This graph corresponds to the <code>train_policy.remote()</code> call in Figure 3. Remote function calls and actor method calls correspond to tasks in the graph. The figure shows two actor objects A10 and A20; each actor object’s method calls (tasks marked as A1i and A2i) are connected by stateful edges, indicating that these calls share mutable actor state. There are control edges connecting from <code>train_policy</code> to the tasks it calls. To train multiple policies in parallel, we can call <code>train_policy.remote()</code> multiple times</em>.</p>
+<p>State edges allow us to embed actor objects into a stateless task graph because they express the implicit data dependency relationship between two actor method calls that share state and are sequential. The addition of state edges also allows us to maintain a lineage graph; like other dataflow systems, we track data lineage for reconstruction when necessary. By explicitly introducing state edges into the data lineage graph, we can conveniently reconstruct data, regardless of whether the data is produced by remote functions or actor methods (this will be discussed in detail in Section 4.2.3).</p>
+<h2 id="Architecture">Architecture</h2>
+<p>Ray’s architecture consists of two parts:</p>
+<ol>
+<li>The application layer that implements the API, currently including versions implemented in Python and Java.</li>
+<li>The system layer that provides high scalability and fault tolerance, written in C++ and embedded in the package as CPython.</li>
+</ol>
+<p><img data-src="https://i.loli.net/2020/02/09/4Hkz5GqyQutLJRV.png" alt="ray architecture"><span class="image-caption">ray architecture</span></p>
+<p><em>Figure 5: Ray’s architecture consists of two parts: the system layer and the application layer. The former implements the API and computation model; the latter implements task scheduling and data management to meet performance and fault tolerance requirements.</em></p>
+<h3 id="Application-Layer">Application Layer</h3>
+<p>The application layer includes three types of processes:</p>
+<ul>
+<li><strong>Driver</strong>: Used to execute user programs.</li>
+<li><strong>Worker</strong>: A <strong>stateless process</strong> used to execute tasks assigned by the Driver or other Workers (remote functions, i.e., functions decorated with <code>@ray.remote</code> in user code). Workers are automatically started when nodes start, and generally the same number of Workers as CPUs are started on each physical machine (there are still some issues here: if the node is a container, it still gets the CPU count of the physical machine it resides on). When a remote function is declared, it is registered globally and pushed to all Workers. Each Worker executes tasks sequentially and does not maintain local state.</li>
+<li><strong>Actor</strong>: A stateful process used to execute actor methods. Unlike Workers, which are started automatically, each Actor is explicitly started by a Worker or Driver on demand (i.e., when called). Like Workers, Actors also execute tasks sequentially; the difference is that the execution of the next task depends on the state generated or changed by the previous task (i.e., the member variables of the Actor).</li>
+</ul>
+<h3 id="System-Layer">System Layer</h3>
+<p>The system layer includes three main components: the Global Control Store (GCS), the distributed scheduler, and the distributed object store. All components can scale horizontally and support fault tolerance.</p>
+<h4 id="Global-Control-Store-GCS">Global Control Store (GCS)</h4>
+<p>The global state store maintains global control state information for the system and is an original component of our system. Its core is a publish-subscribe key-value store. We use sharding to cope with scaling, and each shard uses <span class="exturl" data-url="aHR0cHM6Ly93d3cuY3MuY29ybmVsbC5lZHUvaG9tZS9ydnIvcGFwZXJzL09TREkwNC5wZGY=">chain replication<i class="fa fa-external-link-alt"></i></span> (organizing all data replicas into a linked list to ensure strong consistency, see a 2004 paper) for fault tolerance. The motivation for proposing and designing such a GCS is to enable the system to perform millions of task creations and schedules per second, with low latency and convenient fault tolerance.</p>
+<p>Fault tolerance for node failures requires a scheme that can record lineage information. Existing lineage-based solutions focus on coarse-grained parallelism (such as Spark’s RDD), so lineage information can be stored on a single node (such as Master or Driver) without affecting performance. However, this design is not suitable for fine-grained, dynamic workload types like simulation. Therefore, we decouple lineage information storage from other system modules so that it can scale independently and dynamically.</p>
+<p>Maintaining low latency means minimizing task scheduling overhead as much as possible. Specifically, a scheduling process includes selecting a node, dispatching the task, pulling remote dependency objects, etc. Many existing information flow systems centrally store all object location, size, and other information on the scheduler, coupling the above scheduling processes together. When the scheduler is not a bottleneck, this is a very simple and natural design. However, considering the data volume and data granularity that Ray needs to handle, the central scheduler needs to be removed from the critical path (otherwise, if all scheduling goes through the global scheduler, it will definitely become a bottleneck). For primitives like allreduce, which are important for distributed training (frequent transmission, latency-sensitive), the overhead of going through the scheduler for each object transmission is intolerable. Therefore, we store object metadata in the GCS rather than the central scheduler, completely decoupling task dispatch from task scheduling.</p>
+<p>Overall, the GCS greatly simplifies Ray’s overall design because it takes on all the state, <em>thereby making all other parts of the system stateless</em>. This not only simplifies fault tolerance support (i.e., each failed node only needs to read lineage information from the GCS when recovering), but also allows the distributed object store and scheduler to scale independently (because all components can obtain necessary information through the GCS). Another additional benefit is that it is more convenient to develop debugging, monitoring, and visualization tools.</p>
+<h4 id="Bottom-up-Distributed-Scheduler">Bottom-up Distributed Scheduler</h4>
+<p>As mentioned earlier, Ray needs to support millions of task schedules per second; these tasks may last only a few milliseconds. Most known scheduling strategies do not meet these requirements. Common cluster computing frameworks such as <span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9zeXN0ZW0vZmlsZXMvY29uZmVyZW5jZS9uc2RpMTIvbnNkaTEyLWZpbmFsMTM4LnBkZg==">Spark<i class="fa fa-external-link-alt"></i></span>, <span class="exturl" data-url="aHR0cDovL3d3dy5jcy5wcmluY2V0b24uZWR1L2NvdXJzZXMvYXJjaGl2ZS9mYWxsMTMvY29zNTE4L3BhcGVycy9jaWVsLnBkZg==">CIEL<i class="fa fa-external-link-alt"></i></span>, and <span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9sZWdhY3kvZXZlbnQvb3NkaTA4L3RlY2gvZnVsbF9wYXBlcnMveXVfeS95dV95LnBkZg==">Dryad<i class="fa fa-external-link-alt"></i></span> all implement a central scheduler. These schedulers have good locality characteristics but often have latencies of tens of milliseconds. Distributed schedulers like <span class="exturl" data-url="aHR0cDovL3N1cGVydGVjaC5jc2FpbC5taXQuZWR1L3BhcGVycy9zdGVhbC5wZGY=">work stealing<i class="fa fa-external-link-alt"></i></span>, <span class="exturl" data-url="aHR0cHM6Ly9jcy5zdGFuZm9yZC5lZHUvfm1hdGVpL3BhcGVycy8yMDEzL3Nvc3Bfc3BhcnJvdy5wZGY=">Sparrow<i class="fa fa-external-link-alt"></i></span>, and <span class="exturl" data-url="aHR0cHM6Ly9oY2kuc3RhbmZvcmQuZWR1L2NzdHIvcmVwb3J0cy8yMDE2LTAxLnBkZg==">Canary<i class="fa fa-external-link-alt"></i></span> can indeed achieve high concurrency, but they often do not consider data locality, or assume tasks belong to different jobs, or assume the computation topology is known in advance.</p>
+<p>To meet the above requirements, we designed a two-level scheduling architecture, including a <em>global scheduler</em> and a <em>local scheduler</em> on each node. To avoid overloading the global scheduler, tasks created on each node are first submitted to the local scheduler. The local scheduler always tries to execute tasks locally unless its machine is overloaded (for example, the task queue exceeds a predefined threshold) or cannot satisfy the task’s resource requirements (for example, lacking a GPU). If the local scheduler finds that a task cannot be executed locally, it forwards it to the global scheduler. Since the scheduling system tends to schedule tasks locally first (i.e., at the leaf nodes of the scheduling structure hierarchy), we call it a bottom-up scheduling system (as can be seen, the local scheduler only schedules based on local load information of the node, while the global scheduler dispatches tasks based on global load; of course, the premise is that resource constraints must first be satisfied).</p>
+<p><img data-src="https://i.loli.net/2020/02/09/cFVRq9BxZgpOhyi.png" alt="ray distributed scheduler"><span class="image-caption">ray distributed scheduler</span></p>
+<p><em>Figure 6 This is a schematic diagram of the scheduling system. Tasks are submitted bottom-up: tasks are first submitted by Drivers or Workers to the local scheduler, and then forwarded to the global scheduler for processing when needed. The thickness of the arrows in the figure represents the busyness of the requests.</em></p>
+<p>The global scheduler determines scheduling strategy based on the load status of each node and resource request constraints. To elaborate, the global scheduler first determines all nodes that satisfy the task’s resource requirements, then selects the one with the smallest <em>estimated waiting time</em>, and schedules the task there. On a given node, the <em>estimated waiting time</em> is the sum of the following two times: 1) the task’s queuing time on the node (task queue length multiplied by average execution time); 2) the estimated transfer time for remote objects that the task depends on (size of all remote inputs divided by average bandwidth). The global scheduler obtains each node’s task queuing and available resource information through heartbeats, and gets the location and size of all task inputs from the GCS. Then, the global scheduler calculates the average task execution time and average transmission bandwidth using <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvTW92aW5nX2F2ZXJhZ2U=">exponential moving average<i class="fa fa-external-link-alt"></i></span>. If the global scheduler becomes a system bottleneck, we can instantiate more replicas to share the load; they share global state information through the GCS. In this way, our scheduling architecture has extremely high scalability.</p>
+<h5 id="Task-Lifecycle">Task Lifecycle</h5>
+<p>(Note: This part is translated from the design document in the code; note that this is only the design as of 2019.04.21)</p>
+<p>During implementation, each task has the following states. At any point in time, a task will be in one of these states.</p>
+<ul>
+<li><strong>Placeable</strong>: The task is ready to be scheduled to a (local or remote) node; how exactly it is scheduled was explained in the previous paragraph. Note that this state does not mean the placement location is finalized; it may be scheduled out from somewhere again.</li>
+<li><strong>WaitActorCreation</strong>: An actor method (task) waits for its actor to be instantiated. Once the actor is created, the task is forwarded to the remote machine running the actor for processing.</li>
+<li><strong>Waiting</strong>: Waiting for the task’s parameter requirements to be satisfied, that is, waiting for all remote parameter objects to be transferred to the local object store.</li>
+<li><strong>Ready</strong>: The task is ready to be run, meaning all required parameters are already in the local object store.</li>
+<li><strong>Running</strong>: The task has been dispatched and is running in the local worker process or actor process.</li>
+<li><strong>Blocked</strong>: The current task is blocked because its dependent data is unavailable. For example, in a nested call, the task starts another remote task and waits for it to complete to obtain the result.</li>
+<li><strong>Infeasible</strong>: The task’s resource requirements cannot be satisfied on any machine.</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">                                  ---------------------------------</span><br><span class="line">                                 |                                 |</span><br><span class="line">                                 |     forward                     | forward</span><br><span class="line">                                 |----------------                 |</span><br><span class="line">node with                  ------|                |   arguments    |</span><br><span class="line">resources          forward|      |   resource     |     local      |   actor/worker</span><br><span class="line">joins                     |      v  available     |    --------&gt;   |    available</span><br><span class="line">  ---------------------- Placeable ----------&gt; Waiting           Ready ---------&gt; Running</span><br><span class="line">|                       | |  ^                    ^    &lt;--------   ^               |   ^</span><br><span class="line">|             |---------  |  |                    |    local arg   |               |   |</span><br><span class="line">|             |           |  |                    |     evicted    |        worker |   | worker</span><br><span class="line">|             |     actor |  |                    |                |       blocked |   | unblocked</span><br><span class="line">|   resources |   created |  | actor              | ---------------                |   |</span><br><span class="line">|  infeasible |           |  | created            | actor                          |   |</span><br><span class="line">|             |           |  | (remote)           | created                        v   |</span><br><span class="line">|             |           v  |                    | (local)                              Blocked</span><br><span class="line">|             |     WaitForActorCreation----------</span><br><span class="line">|             v</span><br><span class="line"> ----Infeasible</span><br></pre></td></tr></table></figure>
+<h4 id="In-Memory-Distributed-Object-Store">In-Memory Distributed Object Store</h4>
+<p>To reduce task latency, we implemented an in-memory distributed storage system to store the inputs and outputs of each task (a stateless computation process). On each node, we implemented the object store using <em>shared memory</em>. This allows different tasks on the same node to share data with zero-copy overhead. As for the data format, we chose <span class="exturl" data-url="aHR0cHM6Ly9hcnJvdy5hcGFjaGUub3JnLw==">Apache Arrow<i class="fa fa-external-link-alt"></i></span>.</p>
+<p>If a task’s inputs (i.e., the function’s parameter objects) are not local, before the task is executed, the inputs are copied to the local object store. At the same time, after task execution, the outputs are also written to the local object store. Object copying eliminates potential bottlenecks caused by hot data and shortens execution time by restricting task data reads and writes to local memory. These practices increase the throughput of compute-intensive workloads, and many AI applications are compute-intensive. To reduce latency, we keep all used objects in memory, and only evict some objects from memory using the LRU algorithm when memory is insufficient (from the API, it can be seen that each node’s memory limit can be specified through parameters when starting the node. In addition, using LRU as a garbage collection algorithm is still a bit crude; if different types of task workloads run on the same Ray cluster, it may lead to resource contention, causing a large amount of resource swapping out and then reconstruction, thereby seriously affecting efficiency).</p>
+<p>Like existing cluster computing frameworks (such as Spark, Dryad), the object store only accepts <em>immutable data</em>. This design avoids the need for complex consistency protocols (because object data never needs to be updated) and simplifies data fault tolerance support. When a node fails, Ray recovers any <em>required</em> objects by re-executing the object lineage graph (that is, it does not need to recover all states of the failed node, only the data required for subsequent computations needs to be recovered on demand; data that is not used can be lost). Before work begins, lineage information stored in the GCS tracks all stateless tasks and stateful actors; we use the former to reconstruct lost objects (combining with the previous paragraph, if a task has a large number of iterations and all are executed remotely, it will produce a large number of intermediate result objects, causing memory to burst, thereby squeezing out less frequently used but possibly later needed global variables, so LRU is a bit crude; I heard that a reference-counting-based GC is being considered).</p>
+<p>To simplify implementation, our object store does not support distributed objects. That is, each object must fit in a single node’s memory and exist only on a single node. For large objects such as large matrices and tree structures, they can be split and processed at the application layer, for example, implemented as a collection.</p>
+<h4 id="Implementation">Implementation</h4>
+<p>Ray is an active open-source project developed by UC Berkeley. Ray is deeply integrated with Python; you can install Ray via <code>pip install ray</code>. The entire code implementation includes approximately 40K lines, of which 72% is the system layer implemented in C++ and 28% is the application layer implemented in Python (as of now, support for Java has also been added). Each shard of the GCS uses a Redis key-val store and is only designed for single key-value pair operations. GCS tables are smoothly scaled by sharding according to task ID and data object collections. Each shard uses <span class="exturl" data-url="aHR0cHM6Ly93d3cuY3MuY29ybmVsbC5lZHUvaG9tZS9ydnIvcGFwZXJzL09TREkwNC5wZGY=">chained replication<i class="fa fa-external-link-alt"></i></span> for fault tolerance. We implemented both the local scheduler and the global scheduler as single-threaded, event-driven processes. The local scheduler caches local object metadata, blocked task queues, and task queues waiting to be scheduled. To seamlessly transfer very large objects between object stores on different nodes, we slice large objects and use multiple TCP connections for parallel transmission.</p>
+<h3 id="Putting-All-the-Pieces-Together">Putting All the Pieces Together</h3>
+<p><em>Figure 7</em> demonstrates Ray’s end-to-end workflow through a simple example of adding <code>a</code> and <code>b</code> (<code>a</code> and <code>b</code> can be scalars, vectors, or matrices) and returning <code>c</code>. The remote function <code>add()</code> is automatically registered in the GCS during initialization (<code>ray.init</code>) and then distributed to every worker process in the cluster. (Step 0 in <em>Figure 7a</em>)</p>
+<p><em>Figure 7a</em> shows each step of Ray’s operation when a driver process calls <code>add.remote(a, b)</code>, and <code>a</code> and <code>b</code> are on nodes <em>N1</em> and <em>N2</em> respectively. The driver process submits the task <code>add(a, b)</code> to the local scheduler (step 1), and then the task request is forwarded to the global scheduler (step 2) (<strong>as mentioned earlier, if the local task queue does not exceed the set threshold, the task can also be executed locally</strong>). Then, the global scheduler begins to look up the locations of parameters <code>a</code> and <code>b</code> in the GCS for the <code>add(a, b)</code> request (step 3), and decides to schedule the task to node <em>N2</em> (because <em>N2</em> has one of the parameters, <code>b</code>) (step 4). After the local scheduler on node <em>N2</em> receives the request (<em>finding that the local scheduling policy conditions are met, such as satisfying resource constraints and the queue not exceeding the threshold, it will start executing the task locally</em>), it checks whether all input parameters for task <code>add(a, b)</code> exist in the local object store (step 5). Since object <code>a</code> is not in the local object store, the worker process looks up the location of <code>a</code> in the GCS (step 6). At this point, it finds that <code>a</code> is stored in <em>N1</em>, so it synchronizes it to the local object store (step 7). Since all input parameter objects for task <code>add()</code> exist in the local store, the local scheduler executes <code>add()</code> in the local worker process (step 8), accessing the input parameters through shared storage (step 9).</p>
+<p><img data-src="https://i.loli.net/2020/02/09/Fq6Vwvf1Thg5Ayc.png" alt="ray execute example"><span class="image-caption">ray execute example</span></p>
+<p>Figure 7b shows the step-by-step operations triggered by executing <code>ray.get()</code> on <em>N1</em> and executing <code>add()</code> on <em>N2</em>. Once <code>ray.get(id)</code> is called, the user driver process on <em>N1</em> checks whether the object <code>c</code> corresponding to this id (<em>that is, the future value returned by the remote call <code>add()</code>. All object IDs are globally unique, which the GCS can guarantee</em>) exists in the local object store (step 1). Since object <code>c</code> is not in the local object store, the driver process goes to the GCS to look up the location of <code>c</code>. At this point, it finds that <code>c</code> does not exist in the GCS, because <code>c</code> has not been created yet. So, the object store on <em>N1</em> registers a callback function in the Object Table in the GCS to listen for the creation event of object <code>c</code> (step 2). Meanwhile, on node <em>N2</em>, the <code>add()</code> task completes execution, stores the result <code>c</code> in its local object store (step 3), and also adds the location information of <code>c</code> to the object store table in the GCS (step 4). The GCS detects the creation of <code>c</code> and triggers the callback function previously registered by the object store on <em>N1</em> (step 5). Next, the object store on <em>N1</em> synchronizes <code>c</code> from <em>N2</em> (step 6), thus completing the task.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/hqzG1DUIvf2i4LV.png" alt="ray execute example b"><span class="image-caption">ray execute example b</span></p>
+<p>Although this example involves a large number of RPC calls, in most cases the number of RPCs will be much smaller, because most tasks will be scheduled and executed locally, and the object information replied by the GCS will be cached by the local scheduler and global scheduler (but on the other hand, after executing a large number of remote tasks, the local object store is easily overwhelmed).</p>
+<h2 id="Terminology-Cross-Reference">Terminology Cross-Reference</h2>
+<p><strong>workloads</strong>: Workload, i.e., describing the work a task needs to do.</p>
+<p><strong>GCS</strong>: Global Control Store, global control information storage.</p>
+<p><strong>Object Table</strong>: An object table existing in the GCS, recording the location and other information of all objects (objectId -&gt; location).</p>
+<p><strong>Object Store</strong>: Local object store, called Plasma in the implementation, i.e., the instance storing objects required by tasks.</p>
+<p><strong>Lineage</strong>: Bloodline information, pedigree information; i.e., the successive relationship graph of data transformations during computation.</p>
+<p><strong>Node</strong>: Node; each physical node in the Ray cluster.</p>
+<p><strong>Driver, Worker</strong>: Driver process and worker process; physically, both are processes on a Node. However, the former is generated when the user side uses <code>ray.init</code> and is destroyed when <code>ray.shutdown</code> is called. The latter is a stateless resident worker process started on each node when ray starts, generally the same number as the physical machine’s CPUs.</p>
+<p><strong>Actor</strong>: Actor object; at the language level, it is a class; at the physical level, it is manifested as an actor process on a certain node, maintaining all context within the actor object (actor member variables).</p>
+<p><strong>Actor method</strong>: Actor method; at the language level, it is a member method of a class; all its inputs include explicit function parameters and implicit member variables.</p>
+<p><strong>Remote function</strong>: Remote function, i.e., a function registered to the system via @ray.remote. When it is scheduled, it is called a Task.</p>
+<p><strong>Job, Task</strong>: The text uses the concepts of Job and Task a lot, but these two concepts are actually rather vaguely defined in CS, not as clear as processes and threads. In this paper, a Task is the encapsulation of a remote function (remote action) or an actor’s remote method (remote method). A Job does not currently exist in the implementation; it is only a logical concept, meaning the collection of all generated Tasks and produced states involved in running a piece of user-side code.</p>
+<p><strong>Scheduler</strong>: The paper uniformly uses scheduler, but sometimes refers to a part (local scheduler and global scheduler), which I translate as <strong>scheduler</strong>, and sometimes refers to the entirety of all schedulers in Ray, which I translate as <strong>scheduling system</strong>.</p>
+<p><strong>exponential averaging</strong>: I translated it as exponential moving average, although it does not say moving. For the past n items, a weighted average is performed with weights that increase exponentially over time. During calculation, it can be conveniently recursively calculated using the concept of a sliding window.</p>
+<p><strong>Future</strong>: This is not easy to translate; the general meaning is the return value handle in an asynchronous call. For more information, see Wikipedia <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRnV0dXJlc19hbmRfcHJvbWlzZXM=">Future and promise<i class="fa fa-external-link-alt"></i></span>.</p>
+<h2 id="References">References</h2>
+<p>[1] Official documentation: <span class="exturl" data-url="aHR0cHM6Ly9yYXkucmVhZHRoZWRvY3MuaW8vZW4vbGF0ZXN0Lw==">https://ray.readthedocs.io/en/latest/<i class="fa fa-external-link-alt"></i></span></p>
+<p>[2] System paper: <span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9zeXN0ZW0vZmlsZXMvb3NkaTE4LW1vcml0ei5wZGY=">https://www.usenix.org/system/files/osdi18-moritz.pdf<i class="fa fa-external-link-alt"></i></span></p>
+<p>[3] System source code: <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3JheS1wcm9qZWN0L3JheQ==">https://github.com/ray-project/ray<i class="fa fa-external-link-alt"></i></span></p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/04/06/ray/" rel="bookmark">继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/distributed-system/" rel="tag"># distributed system</a>
+              <a href="/tags/Ray/" rel="tag"># Ray</a>
+              <a href="/tags/AI-engine/" rel="tag"># AI engine</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/04/05/python-default-parameter-values/" rel="prev" title="Python函数的默认参数的那些"坑"">
+      <i class="fa fa-chevron-left"></i> Python函数的默认参数的那些"坑"
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/04/06/ray/" rel="next" title="继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray">
+      继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Motivation-and-Requirements"><span class="nav-number">2.</span> <span class="nav-text">Motivation and Requirements</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Language-and-Computation-Model"><span class="nav-number">3.</span> <span class="nav-text">Language and Computation Model</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Programming-Model"><span class="nav-number">3.1.</span> <span class="nav-text">Programming Model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Computation-Model"><span class="nav-number">3.2.</span> <span class="nav-text">Computation Model</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Architecture"><span class="nav-number">4.</span> <span class="nav-text">Architecture</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Application-Layer"><span class="nav-number">4.1.</span> <span class="nav-text">Application Layer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#System-Layer"><span class="nav-number">4.2.</span> <span class="nav-text">System Layer</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Global-Control-Store-GCS"><span class="nav-number">4.2.1.</span> <span class="nav-text">Global Control Store (GCS)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Bottom-up-Distributed-Scheduler"><span class="nav-number">4.2.2.</span> <span class="nav-text">Bottom-up Distributed Scheduler</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Task-Lifecycle"><span class="nav-number">4.2.2.1.</span> <span class="nav-text">Task Lifecycle</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#In-Memory-Distributed-Object-Store"><span class="nav-number">4.2.3.</span> <span class="nav-text">In-Memory Distributed Object Store</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Implementation"><span class="nav-number">4.2.4.</span> <span class="nav-text">Implementation</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Putting-All-the-Pieces-Together"><span class="nav-number">4.3.</span> <span class="nav-text">Putting All the Pieces Together</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Terminology-Cross-Reference"><span class="nav-number">5.</span> <span class="nav-text">Terminology Cross-Reference</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">6.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2019/04/06/ray/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '3b0b61a3b7fb6ca7cae46eeef408ed7f',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

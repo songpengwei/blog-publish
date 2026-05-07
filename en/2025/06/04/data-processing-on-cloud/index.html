@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="As cloud infrastructure continues to mature, emerging companies typically move their infrastructure to the cloud in order to achieve business goals quickly. Developing on the cloud is actually quite d">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Some Practices for Large-Scale Data Processing on the Cloud">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2025/06/04/data-processing-on-cloud/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="As cloud infrastructure continues to mature, emerging companies typically move their infrastructure to the cloud in order to achieve business goals quickly. Developing on the cloud is actually quite d">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2025-06-04T15:35:51.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.679Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="Cloud">
+<meta property="article:tag" content="Large-scale Data Processing">
+<meta property="article:tag" content="Practices">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2025/06/04/data-processing-on-cloud/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="Cloud,Large-scale Data Processing,Practices">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Some Practices for Large-Scale Data Processing on the Cloud",
+    "description": "As cloud infrastructure continues to mature, emerging companies typically move their infrastructure to the cloud in order to achieve business goals quickly. Developing on the cloud is actually quite different from traditional development using physical machines directly. The cloud emphasizes sharing and elasticity more, and as scale grows, isolation becomes important as well. These changes also force us to make some adjustments when developing. For large-scale data processing on the cloud, I mainly have experience with Spark and Ray, using Python as the primary language. Starting from these technology stacks, I’d like to share some development practices that have proven to be fairly effective. When using Ray for large-scale data processing on the cloud, the basic idea is: build the minimum parallelizable unit, perform functional and performance testing, and then scale using ray.data (e.g., map, map_batches). When using Spark, it’s slightly different; compared to Ray, Spark is somewhat less flexible but has better abstraction and encapsulation. You can think about data processing from the perspective of the dataset as a whole, and Spark will automatically scale and handle fault tolerance based on the number of partitions and parallelism you set.",
+    "url": "https://www.qtmuniao.com/en/2025/06/04/data-processing-on-cloud/",
+    "datePublished": "2025-06-04T23:35:51+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2025/06/04/data-processing-on-cloud/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Some Practices for Large-Scale Data Processing on the Cloud | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2025/06/04/data-processing-on-cloud/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2025/06/04/data-processing-on-cloud/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2025/06/04/data-processing-on-cloud/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Some Practices for Large-Scale Data Processing on the Cloud
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2025-06-04 23:35:51" itemprop="dateCreated datePublished" datetime="2025-06-04T23:35:51+08:00">2025-06-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Technology/" itemprop="url" rel="index"><span itemprop="name">Technology</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Technology/Cloud/" itemprop="url" rel="index"><span itemprop="name">Cloud</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>As cloud infrastructure continues to mature, emerging companies typically move their infrastructure to the cloud in order to achieve business goals quickly. Developing on the cloud is actually quite different from traditional development using physical machines directly. The cloud emphasizes <strong>sharing</strong> and <strong>elasticity</strong> more, and as scale grows, <strong>isolation</strong> becomes important as well. These changes also force us to make some adjustments when developing. For large-scale data processing on the cloud, I mainly have experience with Spark and Ray, using Python as the primary language. Starting from these technology stacks, I’d like to share some development practices that have proven to be fairly effective.</p>
+<p>When using Ray for large-scale data processing on the cloud, the basic idea is: build the minimum parallelizable unit, perform functional and performance testing, and then scale using <span class="exturl" data-url="aHR0cDovL3JheS5kYXRh">ray.data<i class="fa fa-external-link-alt"></i></span> (e.g., <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnJheS5pby9lbi9sYXRlc3QvZGF0YS9hcGkvZG9jL3JheS5kYXRhLkRhdGFzZXQubWFwLmh0bWw=">map<i class="fa fa-external-link-alt"></i></span>, <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnJheS5pby9lbi9sYXRlc3QvZGF0YS9hcGkvZG9jL3JheS5kYXRhLkRhdGFzZXQubWFwX2JhdGNoZXMuaHRtbA==">map_batches<i class="fa fa-external-link-alt"></i></span>). When using Spark, it’s slightly different; compared to Ray, Spark is somewhat less flexible but has better abstraction and encapsulation. You can think about data processing from the perspective of the dataset as a whole, and Spark will automatically scale and handle fault tolerance based on the number of partitions and parallelism you set.</p>
+<span id="more"></span>
+<p><em>Author: 木鸟杂记 <a href="https://www.qtmuniao.com/2025/06/14/data-processing-on-cloud/">https://www.qtmuniao.com/2025/06/14/data-processing-on-cloud/</a> Please indicate the source when reposting</em></p>
+<h1>Sharing</h1>
+<p>Sharing can be roughly divided into two aspects: on one hand, the sharing of environments across multiple development machines; on the other hand, the sharing between development and production environments. Why is there a need for multiple development machines to share environments? First, we always have various reasons for needing to migrate development machines; second, there may be distinctions between CPU and GPU machines; third, colleagues, development machines, and production machines occasionally want to share things through the file system.</p>
+<p>If you switch machines for development, you’ve likely encountered some pain points: the environment you painstakingly configured on one machine has to be redone on another. Of course, some might solidify this process into a script that runs on each startup. But even if this process can be standardized and automated, each installation still takes some time and can’t achieve an out-of-the-box experience.</p>
+<p>Just like Java’s slogan “Write Once, Run Anywhere,” when configuring development machine environments, can we achieve an “configure once, switch machines freely” effect? Below, I share a rather crude practice.</p>
+<p>To achieve multi-machine sharing, you can apply to the cloud provider for a large shared cloud disk that supports POSIX semantics and multi-point read/write. Then place all user directories on this cloud disk. When a new development machine is available, simply mount this disk and symlink your user directory to the local user root directory (<code>/home</code>). This solves the <strong>data sharing</strong> problem. Going further, can the <strong>account system</strong> also be shared? If accounts across multiple machines are not unified, it means the same data directories need to be authorized differently for multiple accounts on multiple machines. Authorization is manageable, but ownership can only belong to one entity—granting it to one machine’s account means it can’t be given to another machine’s account. The root of this problem lies in the fact that account IDs (uid and gid) on different machines may conflict. Therefore, to truly achieve seamless multi-machine user directory sharing, we also need to implement a shared account system.</p>
+<p>Studying the Linux user system reveals that the minimal set of all user information resides in two files:</p>
+<ol>
+<li>Basic user information: <code>/etc/passwd</code></li>
+<li>User group information: <code>/etc/group</code></li>
+</ol>
+<p>As long as all machines share these two files, they can share the account system. But new problems arise: where is this information generated? What if a user maliciously modifies its contents?</p>
+<p>For the first problem, referencing common operations in distributed systems, you can have one development machine act as the “master”—all users are created by this machine. Other machines are called “followers,” which mount these two files to replace the original system user information files. UIDs/GIDs generated by the unique master thus avoid conflicts in the account system.</p>
+<p>For the second problem, group administrators control the unified creation of accounts. But we can’t deny other users sudo privileges (otherwise installing things locally would be troublesome), so casually modifying the permissions of these two files still can’t be fully controlled—this can only be handled by verbal agreement among team members.</p>
+<p>In this way, we initially achieve our goal of “configure once, switch machines freely.”</p>
+<p>But under this system, there are still some practical issues to solve, such as using tools like conda as much as possible to install all environments and dependencies into your own user directory rather than the system disk of each machine. We’ll elaborate on this in the Isolation section.</p>
+<h1>Elasticity</h1>
+<p>This is also one of the cloud’s biggest selling points: on-demand elasticity, pay-as-you-go. But reality is never that rosy.</p>
+<h2 id="Cost">Cost</h2>
+<p>From a cost perspective, <strong>elastic resources</strong> are always much more expensive than <strong>reserved instances</strong> (annual/monthly subscriptions). Therefore, as cloud provider users, we typically purchase some reserved instances to meet most scenario requirements, and then temporarily use elastic resources when occasionally needed. But if your load doesn’t converge, you face a dilemma: sizing the reserved pool close to the upper demand limit results in a lot of idle waste; sizing it close to the lower demand limit means frequently using elastic resources, which is also expensive. If your resource usage is relatively stable, you can save money consistently; but if it’s quite variable, sorry—the cloud’s elasticity only solves the problem of availability, not cost. For regular usage, in order to reduce costs and increase efficiency, you still need to precisely calculate and manage your resource consumption.</p>
+<p>If the number of machines is relatively large, we typically use container technology to pool all machine resources and use Kubernetes to orchestrate and schedule tasks. Thanks to Kubernetes’ openness, most computing frameworks can now be deployed on k8s with customized Operators at the push of a button, such as <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3JheS1wcm9qZWN0L2t1YmVyYXk=">kuberay<i class="fa fa-external-link-alt"></i></span> and <span class="exturl" data-url="aHR0cHM6Ly9zcGFyay5hcGFjaGUub3JnL2RvY3MvMy41LjQvcnVubmluZy1vbi1rdWJlcm5ldGVzLmh0bWw=">spark on k8s<i class="fa fa-external-link-alt"></i></span>. This approach allows for better pooling and allocation of resources. This leads to another classic problem—scheduling. In the scheduling domain, we can consider the attributes of each pending task in terms of <strong>urgency</strong> and <strong>resource amount</strong>. Here are a few usage scenarios:</p>
+<ol>
+<li>
+<p><strong>Preemption</strong>: Suppose resources are now exhausted and many tasks are queued, but a new urgent task arrives. To quickly obtain resources, it needs to use a higher priority and jump ahead of others, grabbing resources as soon as they become available. Going further, if the need is even more urgent, you can use high priority + preemptive scheduling to directly snatch resources from lower-priority tasks. Of course, a better approach is manual intervention—actively killing some (not all) non-urgent task pods to temporarily yield resources. Therefore, in distributed systems, retrying subtasks on different machines is a hard requirement.</p>
+</li>
+<li>
+<p><strong>Deadlock</strong>: Scheduling can have deadlocks? Yes. Consider this scenario: there are 100 CPUs remaining in the cluster, and there are two Ray tasks—task A needs 80 cores, task B needs 60 cores. Either single task can be scheduled into the cluster and start, but if task A grabs 70 cores and task B grabs 30 cores, neither can start. At this point, you need to introduce <strong>gang scheduling</strong> (e.g., <span class="exturl" data-url="aHR0cHM6Ly92b2xjYW5vLnNoL3poLw==">volcano<i class="fa fa-external-link-alt"></i></span>), where resources are allocated to a task all at once only after all required resources are satisfied—just like a lock. With this guarantee, either A gets scheduled or B gets scheduled, but the deadlock-like situation above won’t occur.</p>
+</li>
+<li>
+<p><strong>Elasticity</strong>: When using k8s to run computing frameworks, elasticity is typically at the task level—if there are more resources in the pool, use more; if fewer, run with lower concurrency and slower. Spark does this very well. As for KubeRay’s elastic scheduling, it’s currently a joke—we’ll see about the future. But Spark’s good elasticity brings a problem: if a user allocates a lot of resources for a large task without setting a priority, it can easily consume the entire pool.</p>
+</li>
+</ol>
+<p>Therefore, for large task scheduling on the cloud, a task scheduler that supports gang scheduling, priority scheduling, and has relatively high scheduling efficiency (e.g., Spark spinning up tens of thousands of pods at once without choking) is essential.</p>
+<h2 id="Code">Code</h2>
+<p>From a code perspective, scaling programs to large scale is not without cost. Of course, this cost is getting lower and lower. In ancient times, there was Hadoop MapReduce; later, for low latency and ease of use, there was Spark and Flink; in the machine learning era, Ray became prevalent. In concept, Ray is like a large distributed computer, adopting the classic <a href="https://www.qtmuniao.com/2021/07/03/distributed-system-1-master-workers/">master-worker architecture</a>, collecting all memory to provide object-level KV abstraction called the object store; collecting all GPU/CPU to provide the foundation for concurrent execution, supporting fractional logical allocation.</p>
+<p>Ray supports very fine-grained parallelism with maximum flexibility, thus meeting the complex and ever-changing data processing needs of the large model era. But the cost is that some common high-level abstractions in other distributed systems have to be built by yourself in Ray:</p>
+<ol>
+<li>
+<p><strong>Logical scheduling</strong>. Ray uses quantifiable labels for logical scheduling (interested readers can refer to this <a href="https://www.qtmuniao.com/2019/08/10/ray-source-reading-2/">blog post</a>). The gap between logical and physical resources needs to be filled by your own tuning. For example, if your actor/worker logically declares the need for 10G of memory, but the physical need far exceeds 10G, then multiple such workers scheduled onto one machine can easily cause that machine’s memory to explode. CPU/GPU overcommitment may not explode the machine, but the disunity between logical and physical resources either causes waste or severe contention.</p>
+</li>
+<li>
+<p><strong>Upstream-downstream coordination</strong>. To better support data processing, Ray wrapped the ray.data library on top of ray core. But if the production-consumption speed of upstream and downstream operators is not well controlled, it can easily result in either upstream accumulation gradually blowing up machine memory, or downstream idleness causing resource waste.</p>
+</li>
+<li>
+<p><strong>Non-standard data items</strong>. When doing large-scale data processing, you often find after processing for a long time that one or two anomalous data items kill the task. Without proper error handling or checkpoint/resume, you’ll pay a painful price. Of course, Ray provides silent error configuration, but the cost is conserved—if you don’t deal with this, downstream colleagues will have to.</p>
+</li>
+</ol>
+<h2 id="Debugging">Debugging</h2>
+<p>In large-scale parallel systems, errors are very common; but reproducing errors is usually difficult—too much data, too complex an environment, too time-consuming to reproduce, etc. To quickly locate problems when they occur, you need to build an observable system:</p>
+<ol>
+<li>
+<p><strong>Log collection</strong>. Output logs for all critical path steps, dividing the entire processing code into “cells” through logs, so that when an error occurs, the relevant <strong>code segment</strong> can be quickly located.</p>
+</li>
+<li>
+<p><strong>Metrics statistics</strong>. Data processing is typically divided into multiple stages. When OOM occurs, it’s likely that some stage has data accumulation that blows up the machine. If you can collect statistics on some key processing metrics, you can quickly find the cause when performance issues arise. Of course, metrics statistics can be divided into application-level and system-level. The above refers to the application level at the user code layer. For the system level, going one layer deeper, such as Ray actor’s resource usage over time; going another layer deeper, such as each node’s resource usage and network IO over time; expanding outward, the dependent storage systems, such as object storage read/write traffic by bucket/prefix, etc.</p>
+</li>
+</ol>
+<p>With these logs and metrics, when problems occur, you can easily obtain the error time based on logs and then perform time retrospection to examine various metrics at that time. After collecting sufficient information, simple cases can be directly located; for more complex cases, if data items were printed, you can use that data item for <strong>minimal reproduction</strong>, while solidifying this reproduction as a unit test.</p>
+<p>Another common debugging need is performance. There may be multiple reasons for this:</p>
+<ol>
+<li>The minimum execution unit’s performance is not very good</li>
+<li>Resource allocation is unreasonable during scaling, causing resource contention</li>
+<li>Upstream and downstream production-consumption speeds don’t match</li>
+</ol>
+<p>The latter two are actually common problems in distributed systems. Mature computing platforms can solve these issues at the framework level (backpressure), but this somewhat reduces flexibility. Flexibility and ease of use are always two ends of a trade-off, and due to its design philosophy and somewhat immature state, Ray requires us to handle these problems manually.</p>
+<p>Additionally, if there’s unexplained slowdown or even hanging, you can directly log into the machine and use some Linux command-line tools to check system resource usage; use tools like py-spy to see what the code is actually doing; and thus determine what problem the system has and where it’s hanging.</p>
+<h1>Isolation</h1>
+<p>From a lifecycle perspective, it can mainly be divided into isolation during the development phase and the runtime phase.</p>
+<h2 id="Development-Phase">Development Phase</h2>
+<p>As previously mentioned, during the development phase, multiple developers may share one development machine. Where there is sharing, there is a need for isolation. The most natural solution is to make full use of Linux’s own account system to isolate development machines. Some teams, for convenience, use root across the board. Since everyone has their own development habits, version conflicts can easily arise when installing tools and dependencies later. Therefore, I suggest that everyone avoid using root, and install all software using tools like conda into their own user directories as much as possible. This facilitates migration across different machines on one hand, and avoids affecting other users on the same machine on the other—that is, the isolation we’re discussing now.</p>
+<p>Additionally, a single user often faces multiple conflicting environments. Taking Python development as an example, if you install all project dependencies into the user directory, conflicts are inevitable as long as there are multiple projects. Even within the same project, conflicts can occasionally arise when developing across multiple branches. Therefore, tools like virtualenv or conda are also needed to isolate dependencies.</p>
+<h2 id="Runtime-Phase">Runtime Phase</h2>
+<p>With the help of containerization technology, pooling a batch of physical machines and on-demand instant isolation of a logical runtime environment is now trivially easy. Moreover, using container technology and some dependency management toolchains (such as poetry and uv), we no longer need to worry about the dependency inconsistencies between development and production environments that frequently occurred in the past. That is:</p>
+<ol>
+<li>Use the <strong>same</strong> <code>pyproject.toml</code> file to manage project development dependencies</li>
+<li>During development, use poetry/uv and this file to install dependencies</li>
+<li>During online runtime, use poetry/uv in the Dockerfile for dependency management</li>
+</ol>
+<p>Of course, the above only covers Python dependencies; there will certainly be other OS-level library dependencies like CUDA. But the principle is the same—<strong>use the Dockerfile as the single source of truth for project dependencies</strong>, using the commands in that Dockerfile for both development environments and image building.</p>
+<p>More radically, you can even directly use the Dockerfile in the project to temporarily spin up an environment for development, thus achieving complete unity between development and runtime. You can also think about this problem from another angle:</p>
+<ol>
+<li>During development, the image should be writable</li>
+<li>But in production, the image is read-only</li>
+</ol>
+<p>So dependency management during development and runtime is still slightly different.</p>
+<h1>Summary</h1>
+<p>Developing in cloud environments changes some paradigms, giving rise to many new development practices. This article only briefly organizes some common problems and practices from the author’s experience, using large-scale data processing on the cloud as an entry point. If it can provide you with a little inspiration, the goal is achieved. Due to limited experience and space, there are certainly areas not covered—welcome to leave comments for discussion and additions.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Cloud/" rel="tag"># Cloud</a>
+              <a href="/tags/Large-scale-Data-Processing/" rel="tag"># Large-scale Data Processing</a>
+              <a href="/tags/Practices/" rel="tag"># Practices</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/03/18/streamlit/" rel="prev" title="数据可视化利器—— Streamlit 的有趣哲学">
+      <i class="fa fa-chevron-left"></i> 数据可视化利器—— Streamlit 的有趣哲学
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2025/06/04/data-processing-on-cloud/" rel="next" title="在云上进行大规模数据处理的一些实践">
+      在云上进行大规模数据处理的一些实践 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">Sharing</span></a></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">Elasticity</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Cost"><span class="nav-number">2.1.</span> <span class="nav-text">Cost</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Code"><span class="nav-number">2.2.</span> <span class="nav-text">Code</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Debugging"><span class="nav-number">2.3.</span> <span class="nav-text">Debugging</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">3.</span> <span class="nav-text">Isolation</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Development-Phase"><span class="nav-number">3.1.</span> <span class="nav-text">Development Phase</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Runtime-Phase"><span class="nav-number">3.2.</span> <span class="nav-text">Runtime Phase</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">4.</span> <span class="nav-text">Summary</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2025/06/04/data-processing-on-cloud/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '696dd5ddb6e4199ed3500768c652bcf0',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

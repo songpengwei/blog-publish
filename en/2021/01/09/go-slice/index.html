@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Overview In Golang, a slice is very similar to arrays in other languages, yet differs in many ways. As a result, beginners often develop misunderstandings and unwittingly fall into various pitfalls wh">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Golang Notes (III): A Model for Understanding Slice">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2021/01/09/go-slice/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Overview In Golang, a slice is very similar to arrays in other languages, yet differs in many ways. As a result, beginners often develop misunderstandings and unwittingly fall into various pitfalls wh">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png">
+<meta property="og:image" content="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png">
+<meta property="og:image" content="https://i.loli.net/2021/01/20/OIygENcWpd8S6ZB.png">
+<meta property="article:published_time" content="2021-01-09T06:51:46.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.675Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="golang">
+<meta property="article:tag" content="go">
+<meta property="article:tag" content="slice">
+<meta property="article:tag" content="golang programming paradigm">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2021/01/09/go-slice/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="golang,go,slice,golang programming paradigm">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Golang Notes (III): A Model for Understanding Slice",
+    "description": "Overview In Golang, a slice is very similar to arrays in other languages, yet differs in many ways. As a result, beginners often develop misunderstandings and unwittingly fall into various pitfalls when using slices. This short article first starts from the official Go blog, laying out the slice-related syntax provided by the official documentation. Next, it presents a model for understanding slices using diagrams. Finally, it summarizes and analyzes some special usage scenarios, aiming to provide a clearer profile of slices from multiple perspectives. If you do not wish to read the lengthy narrative, you can jump directly to the summary at the end.",
+    "url": "https://www.qtmuniao.com/en/2021/01/09/go-slice/",
+    "datePublished": "2021-01-09T14:51:46+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2021/01/09/go-slice/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Golang Notes (III): A Model for Understanding Slice | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2021/01/09/go-slice/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2021/01/09/go-slice/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/01/09/go-slice/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Golang Notes (III): A Model for Understanding Slice
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-01-09 14:51:46" itemprop="dateCreated datePublished" datetime="2021-01-09T14:51:46+08:00">2021-01-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/" itemprop="url" rel="index"><span itemprop="name">Programming Languages</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/Go/" itemprop="url" rel="index"><span itemprop="name">Go</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Overview">Overview</h2>
+<p>In Golang, a slice is very similar to arrays in other languages, yet differs in many ways. As a result, beginners often develop misunderstandings and unwittingly fall into various pitfalls when using slices. This short article first starts from the official Go blog, laying out the slice-related syntax provided by the official documentation. Next, it presents a model for understanding slices using diagrams. Finally, it summarizes and analyzes some special usage scenarios, aiming to provide a clearer profile of slices from multiple perspectives.</p>
+<p>If you do not wish to read the lengthy narrative, you can jump directly to the summary at the end.</p>
+<p><img data-src="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png" alt="go-slice-view-derive.png"><span class="image-caption">go-slice-view-derive.png</span></p>
+<span id="more"></span>
+<p><em>Author: 木鸟杂记 <a href="https://www.qtmuniao.com/2021/01/09/go-slice/">https://www.qtmuniao.com/2021/01/09/go-slice/</a>, please indicate the source when reposting</em></p>
+<h2 id="Basic-Syntax">Basic Syntax</h2>
+<p>This section is mainly based on the <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmdvbGFuZy5vcmcvc2xpY2VzLWludHJv">official Go blog<i class="fa fa-external-link-alt"></i></span>. In Go, slices and arrays are closely related; slices are built on top of arrays but are more flexible. Therefore, in Go, the underlying arrays of slices are rarely used directly. However, to understand slices, we must start with arrays.</p>
+<h3 id="Arrays">Arrays</h3>
+<p>Arrays in Go are defined by <strong>type + length</strong>. Unlike C and C++, arrays of different lengths in Go are different types, and the variable name is not a pointer to the first element of the array.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Several ways to initialize arrays</span></span><br><span class="line"><span class="keyword">var</span> a [<span class="number">4</span>]<span class="type">int</span>             <span class="comment">// variable a is of type [4]int, each element is automatically initialized to the zero-value of int</span></span><br><span class="line">b := [<span class="number">5</span>]<span class="type">int</span>&#123;<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>&#125;     <span class="comment">// variable b is of type [5]int, a different type from [4]int, and b[4] is automatically initialized to the zero-value of int</span></span><br><span class="line">c := [...]<span class="type">int</span>&#123;<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>&#125; <span class="comment">// variable c is inferred as type [5]int, the same type as b</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">echo</span><span class="params">(x [4]<span class="type">int</span>)</span></span> &#123;</span><br><span class="line">  fmt.Println(x)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">echo(a)         <span class="comment">// when calling echo, all elements of a are copied because Go function calls are pass-by-value</span></span><br><span class="line">echo(b)         <span class="comment">// error</span></span><br><span class="line">echo(([<span class="number">4</span>]<span class="type">int</span>)c) <span class="comment">// error</span></span><br></pre></td></tr></table></figure>
+<p>To summarize, Go arrays have the following characteristics:</p>
+<ol>
+<li>The length is part of the type, so variables of type <code>[4]int</code> and <code>[5]int</code> cannot be assigned to each other, nor can they be cast to each other.</li>
+<li>An array variable is not a pointer, so passing it as an argument causes a full copy. Of course, you can avoid this copy by using the corresponding pointer type as the parameter type.</li>
+</ol>
+<p>It can be seen that due to the shackles of length, the usefulness of Go arrays is greatly limited. Go cannot, like C/C++, convert arrays of arbitrary lengths into pointers to the corresponding type and then perform subscript operations. Of course, Go does not need to do this, because it has a higher-level abstraction—the slice.</p>
+<h3 id="Slices">Slices</h3>
+<p>Slices are very common in Go code, but slices are based on arrays underneath:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> slice <span class="keyword">struct</span> &#123;</span><br><span class="line">    array unsafe.Pointer <span class="comment">// pointer to the underlying array; yes, golang also has pointers</span></span><br><span class="line">    <span class="built_in">len</span>   <span class="type">int</span>            <span class="comment">// length of the slice</span></span><br><span class="line">    <span class="built_in">cap</span>   <span class="type">int</span>            <span class="comment">// length of the underlying array</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Several ways to initialize slices</span></span><br><span class="line">s0 := <span class="built_in">make</span>([]<span class="type">byte</span>, <span class="number">5</span>)       <span class="comment">// using the make function, where len = cap = 5, each element is initialized to the zero-value of byte</span></span><br><span class="line">s1 := []<span class="type">byte</span>&#123;<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>&#125; <span class="comment">// literal initialization, where len = cap = 5</span></span><br><span class="line"><span class="keyword">var</span> s2 []<span class="type">byte</span>               <span class="comment">// automatically initialized to the &quot;zero-value&quot; of slice: nil</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// make method specifying both len/cap, must satisfy len &lt;= cap</span></span><br><span class="line">s3 := <span class="built_in">make</span>([]<span class="type">byte</span>, <span class="number">0</span>, <span class="number">5</span>) <span class="comment">// slice length len = 0, underlying array cap = 5</span></span><br><span class="line">s4 := <span class="built_in">make</span>([]<span class="type">byte</span>, <span class="number">5</span>, <span class="number">5</span>) <span class="comment">// equivalent to make([]byte, 5)</span></span><br></pre></td></tr></table></figure>
+<p>Compared to arrays, slices have the following advantages:</p>
+<ol>
+<li>Flexible operations; as the name suggests, they support powerful slicing operations.</li>
+<li>Free from the restriction of length; when passed as parameters, slices of different lengths can all be passed in the form of <code>[]T</code>.</li>
+<li>When <strong>assigning</strong> or <strong>passing</strong> a slice, the entire underlying array is not copied; only the slice struct itself described above is copied.</li>
+<li>With the help of some built-in functions, such as append/copy, they can be easily extended and moved as a whole.</li>
+</ol>
+<p><strong>Slice Operations</strong>. Using slice operations, you can quickly extract, extend, assign, and move slices.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Slicing operation, left-closed and right-open; if starting from the beginning or ending at the end, the corresponding index can be omitted</span></span><br><span class="line"><span class="comment">// The newly obtained slice shares the underlying array with the original slice, thus avoiding element copying</span></span><br><span class="line">b := []<span class="type">byte</span>&#123;<span class="string">&#x27;g&#x27;</span>, <span class="string">&#x27;o&#x27;</span>, <span class="string">&#x27;l&#x27;</span>, <span class="string">&#x27;a&#x27;</span>, <span class="string">&#x27;n&#x27;</span>, <span class="string">&#x27;g&#x27;</span>&#125;</span><br><span class="line">b1 := b[<span class="number">1</span>:<span class="number">4</span>] <span class="comment">// b1 == []byte&#123;&#x27;o&#x27;, &#x27;l&#x27;, &#x27;a&#x27;&#125;</span></span><br><span class="line">b2 := b[:<span class="number">2</span>]  <span class="comment">// b2 == []byte&#123;&#x27;g&#x27;, &#x27;o&#x27;&#125;</span></span><br><span class="line">b3 := b[<span class="number">2</span>:]  <span class="comment">// b3 == []byte&#123;&#x27;l&#x27;, &#x27;a&#x27;, &#x27;n&#x27;, &#x27;g&#x27;&#125;</span></span><br><span class="line">b4 := b[:]   <span class="comment">// b4 == b</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Extension operation, requires the append function</span></span><br><span class="line"><span class="comment">// May cause reallocation of the underlying array, which will be analyzed in detail later</span></span><br><span class="line"><span class="comment">// Equivalent to b = append(b, []byte&#123;&#x27;,&#x27;, &#x27;h&#x27;, &#x27;i&#x27;&#125;...)</span></span><br><span class="line">b = <span class="built_in">append</span>(b, <span class="string">&#x27;,&#x27;</span>, <span class="string">&#x27;h&#x27;</span>, <span class="string">&#x27;i&#x27;</span>) <span class="comment">// b is now &#123;&#x27;g&#x27;, &#x27;o&#x27;, &#x27;l&#x27;, &#x27;a&#x27;, &#x27;n&#x27;, &#x27;g&#x27;, &#x27;,&#x27;, &#x27;h&#x27;, &#x27;i&#x27;&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Assignment operation, requires the copy function</span></span><br><span class="line"><span class="built_in">copy</span>(b[:<span class="number">2</span>], []<span class="type">byte</span>&#123;<span class="string">&#x27;e&#x27;</span>, <span class="string">&#x27;r&#x27;</span>&#125;)  <span class="comment">// b is now &#123;&#x27;e&#x27;, &#x27;r&#x27;, &#x27;l&#x27;, &#x27;a&#x27;, &#x27;n&#x27;, &#x27;g&#x27;, &#x27;,&#x27;, &#x27;h&#x27;, &#x27;i&#x27;&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Move operation, requires copy</span></span><br><span class="line"><span class="built_in">copy</span>(b[<span class="number">2</span>:], b[<span class="number">6</span>:])  <span class="comment">// move length takes min(len(dst), len(src))</span></span><br><span class="line">b = b[:<span class="number">5</span>]           <span class="comment">// b is now &#123;&#x27;e&#x27;, &#x27;r&#x27;, &#x27;,&#x27;, &#x27;h&#x27;, &#x27;i&#x27;&#125;</span></span><br></pre></td></tr></table></figure>
+<p><strong>Parameter Passing</strong>. Slices of different lengths and capacities can all be passed in the form of <code>[]T</code>.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">b := []<span class="type">int</span>&#123;<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>&#125;</span><br><span class="line">c := []<span class="type">int</span>&#123;<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>&#125; </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">echo</span><span class="params">(x []<span class="type">int</span>)</span></span> &#123;</span><br><span class="line">  fmt.Println(x)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">echo(b) <span class="comment">// when passing parameters, a new slice struct sharing the underlying array with the same len and cap is created</span></span><br><span class="line">echo(c)</span><br></pre></td></tr></table></figure>
+<p><strong>Related Functions</strong>. The main built-in functions related to slices are:</p>
+<ol>
+<li><strong>make</strong> for creation</li>
+<li><strong>append</strong> for extension</li>
+<li><strong>copy</strong> for moving</li>
+</ol>
+<p>Let us discuss their characteristics separately.</p>
+<p>The signature of the <strong>make</strong> function when creating slices (it can also be used to create many other built-in structures) is <code>func make([]T, len, cap) []T</code>. This function first creates an array of length <code>cap</code>, then creates a new slice struct pointing to that array, and initializes <code>len</code> and <code>cap</code> according to the parameters.</p>
+<p><strong>append</strong> modifies the underlying array of the slice, but does not change the original slice; instead, it returns a new slice struct with a new length. Why not modify the original slice in place? Because functions in Go are pass-by-value; of course, this also reflects a certain functional-style preference in Go. Therefore, <code>append(s, 'a', b'')</code> will not modify the slice <code>s</code> itself; to achieve the purpose of modifying the variable <code>s</code>, you need to reassign <code>s</code>: <code>s = append(s, 'a', b'')</code>.</p>
+<p>Note that when appending, if the capacity (<code>cap</code>) of the underlying array is insufficient, a new array large enough to hold all elements will be created, similar to the underlying mechanism of <code>vector</code> in C++, and the values of the original array will be copied over before appending. If the underlying array of the original slice is no longer referenced by other slice variables, it will be reclaimed during GC.</p>
+<p>The <strong>copy</strong> function is more like syntactic sugar, encapsulating batch assignment to slices into a function. Note that the copy length takes the smaller of the two slices. Moreover, you do not need to worry about overlapping when moving sub-slices of the same slice. For example:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">  <span class="string">&quot;fmt&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Intuitively assumed implementation of the copy function</span></span><br><span class="line"><span class="comment">// But this implementation would cause overlapping when copying sub-slices of the same slice</span></span><br><span class="line"><span class="comment">// Therefore, the actual implementation of copy should use extra space or copy from back to front</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">myCopy</span><span class="params">(dst, src []<span class="type">int</span>)</span></span> &#123;</span><br><span class="line">  l := <span class="built_in">len</span>(dst)</span><br><span class="line">  <span class="keyword">if</span> <span class="built_in">len</span>(src) &lt; l &#123;</span><br><span class="line">    l = <span class="built_in">len</span>(src)</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; l; i++ &#123;</span><br><span class="line">    dst[i] = src[i]</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  a := []<span class="type">int</span>&#123;<span class="number">0</span>,<span class="number">1</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>,<span class="number">6</span>&#125;</span><br><span class="line">  </span><br><span class="line">  <span class="built_in">copy</span>(a[<span class="number">3</span>:], a[<span class="number">2</span>:])      <span class="comment">// a = [0 1 3 3 4 5]</span></span><br><span class="line">  <span class="comment">// myCopy(a[3:], a[2:]) // a = [0 1 3 3 3 3]</span></span><br><span class="line">  fmt.Println(a)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>A common usage scenario for <code>copy</code> is when you need to insert an element into the middle of a slice; use <code>copy</code> to move the fragment after the insertion point backward as a whole.</p>
+<h2 id="A-Model-for-Understanding-Slices">A Model for Understanding Slices</h2>
+<p>When first using slices, one often feels that the rules are complex and difficult to remember entirely; so I often wondered if there is a suitable model to capture the essence of slices.</p>
+<p>One day, an immature idea suddenly popped up: a slice is a linear <strong>read-write view</strong> that hides the underlying array. This view avoids the common pointer arithmetic operations in C/C++, because users can derive slices without calculating offsets.</p>
+<p>A slice uses only three variables, <code>ptr/cap/len</code>, to depict a window view, where <code>ptr</code> and <code>ptr+cap</code> are the start and end boundaries of the window, and <code>len</code> is the currently visible length of the window. A new view can be extracted by subscripting, and Go will automatically calculate the new ptr/len/cap. All views derived through slice expressions point to the same underlying array.</p>
+<p><img data-src="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png" alt="go slice view"><span class="image-caption">go slice view</span></p>
+<p>Slice derivation <strong>automatically</strong> shares the underlying array to avoid array copying and improve efficiency; when appending elements, if the capacity of the underlying array is insufficient, <code>append</code> will <strong>automatically</strong> create a new array and return a slice view pointing to the new array, while the original slice view still points to the original array.</p>
+<h2 id="Slice-Usage">Slice Usage</h2>
+<p>This section summarizes some interesting points about using slices.</p>
+<p><strong>Zero-value and Empty-value</strong>. In Go, all types have a zero-value, which is used as the default value during initialization. The zero-value of a slice is nil.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">add</span><span class="params">(a []<span class="type">int</span>)</span></span> []<span class="type">int</span> &#123; <span class="comment">// nil can be passed as an argument to the []int slice type</span></span><br><span class="line">  <span class="keyword">return</span> <span class="built_in">append</span>(a, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  fmt.Println(add(<span class="literal">nil</span>)) <span class="comment">// [0 1 2]</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>You can create an empty slice using <code>make</code>, with the same len/cap as the zero-value, but there are also the following small differences. If both are acceptable, nil is recommended.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  a := <span class="built_in">make</span>([]<span class="type">int</span>, <span class="number">0</span>)</span><br><span class="line">  <span class="keyword">var</span> b []<span class="type">int</span></span><br><span class="line">  </span><br><span class="line">  fmt.Println(a, <span class="built_in">len</span>(a), <span class="built_in">cap</span>(a)) <span class="comment">// [] 0 0</span></span><br><span class="line">  fmt.Printf(<span class="string">&quot;%#v\n&quot;</span>, a)         <span class="comment">// []int&#123;&#125;</span></span><br><span class="line">  fmt.Println(a==<span class="literal">nil</span>)            <span class="comment">// false</span></span><br><span class="line">  </span><br><span class="line">  fmt.Println(b, <span class="built_in">len</span>(b), <span class="built_in">cap</span>(b)) <span class="comment">// [] 0 0</span></span><br><span class="line">  fmt.Printf(<span class="string">&quot;%#v\n&quot;</span>, b)         <span class="comment">// []int(nil)</span></span><br><span class="line">  fmt.Println(b==<span class="literal">nil</span>)            <span class="comment">// true</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>append Semantics</strong>. <code>append</code> first appends elements to the underlying array, then constructs a new slice and returns it. That is to say, even if we do not use the return value, the corresponding values will still be appended to the underlying array.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  a := <span class="built_in">make</span>([]<span class="type">int</span>, <span class="number">0</span>, <span class="number">5</span>)</span><br><span class="line">  _ = <span class="built_in">append</span>(a, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">  fmt.Println(a)     <span class="comment">// []</span></span><br><span class="line">  fmt.Println(a[:<span class="number">5</span>]) <span class="comment">// [0 1 2 0 0]; by using a slice expression to expand the window length, the appended values can be seen</span></span><br><span class="line">  fmt.Println(a[:<span class="number">6</span>]) <span class="comment">// panic; length out of bounds</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>Generating a Slice from an Array</strong>. You can generate a slice <code>s</code> of the desired length from an array <code>a</code> using slice syntax. At this point: <strong>the underlying array of s is a</strong>. In other words, <strong>using slice syntax on an array will not cause the array to be copied</strong>.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  a := [<span class="number">7</span>]<span class="type">int</span>&#123;<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>&#125;</span><br><span class="line">  s := a[:<span class="number">4</span>]</span><br><span class="line">  fmt.Println(s) <span class="comment">// [1 2 3 0]</span></span><br><span class="line">  </span><br><span class="line">  a[<span class="number">3</span>] = <span class="number">4</span>       <span class="comment">// modifying a, the corresponding value in s also changes, indicating that the underlying array of s is a</span></span><br><span class="line">  fmt.Println(s) <span class="comment">// [1 2 3 4]</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>Modifying the Right Boundary of a Slice View</strong>. In the view model proposed above, when performing a slice operation, the <strong>left boundary</strong> of the newly generated slice changes with the <code>start</code> parameter, but the <strong>right boundary</strong> remains unchanged, which is the end of the underlying array. If we want to modify its right boundary, we can use the three-parameter slice (Full slice Expression), adding a limited-capacity parameter.</p>
+<p>A usage scenario for this feature is that if we want the new slice not to affect the original array when appending, we can modify its right boundary so that when appending, if the capacity is insufficient, a new underlying array is forced to be created.</p>
+<p><img data-src="https://i.loli.net/2021/01/20/OIygENcWpd8S6ZB.png" alt="go-full-slice-view-derive.png"><span class="image-caption">go-full-slice-view-derive.png</span></p>
+<h2 id="Summary">Summary</h2>
+<p>The core purpose of this article is to propose an easy-to-remember and easy-to-understand model for slices, to break down the ever-changing complexity of slice usage. To summarize, when understanding slices, we can approach it from two levels:</p>
+<ol>
+<li>Underlying data (underlying array)</li>
+<li>Upper view (slice)</li>
+</ol>
+<p>The view has three key variables: array pointer (ptr), valid length (len), and view capacity (cap).</p>
+<p>Through slice expressions, slices can be generated from arrays and from slices. This operation does not cause copying of array data. Through the append operation, whether array copying is performed depends on the cap of this view, and a view pointing to the new array is returned.</p>
+<h2 id="References">References</h2>
+<ol>
+<li>酷壳 coolshell: <span class="exturl" data-url="aHR0cHM6Ly9jb29sc2hlbGwuY24vYXJ0aWNsZXMvMjExMjguaHRtbA==">Go编程模式：切片，接口，时间和性能<i class="fa fa-external-link-alt"></i></span></li>
+<li>The Go Blog: <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmdvbGFuZy5vcmcvc2xpY2VzLWludHJv">Go slices: usage and internals<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+<hr>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/01/09/go-slice/" rel="bookmark">Golang 笔记（三）：一种理解 Slice 的模型</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/12/07/bazel-build-golang/" rel="bookmark">Bazel 构建 Golang 项目</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/01/06/go-value-pointer-method/" rel="bookmark">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/07/12/go-context/" rel="bookmark">Golang 笔记（二）：Context 源码剖析</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/04/02/bolt-transaction/" rel="bookmark">Boltdb 源码导读（三）：Boltdb 事务实现</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/golang/" rel="tag"># golang</a>
+              <a href="/tags/go/" rel="tag"># go</a>
+              <a href="/tags/slice/" rel="tag"># slice</a>
+              <a href="/tags/golang-programming-paradigm/" rel="tag"># golang programming paradigm</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/12/14/bolt-index-design/" rel="prev" title="Boltdb 源码导读（二）：Boltdb 索引设计">
+      <i class="fa fa-chevron-left"></i> Boltdb 源码导读（二）：Boltdb 索引设计
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/01/09/go-slice/" rel="next" title="Golang 笔记（三）：一种理解 Slice 的模型">
+      Golang 笔记（三）：一种理解 Slice 的模型 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Basic-Syntax"><span class="nav-number">2.</span> <span class="nav-text">Basic Syntax</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Arrays"><span class="nav-number">2.1.</span> <span class="nav-text">Arrays</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Slices"><span class="nav-number">2.2.</span> <span class="nav-text">Slices</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#A-Model-for-Understanding-Slices"><span class="nav-number">3.</span> <span class="nav-text">A Model for Understanding Slices</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Slice-Usage"><span class="nav-number">4.</span> <span class="nav-text">Slice Usage</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Summary"><span class="nav-number">5.</span> <span class="nav-text">Summary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">6.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2021/01/09/go-slice/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '6ad305fe989da27028111761cacff4ed',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

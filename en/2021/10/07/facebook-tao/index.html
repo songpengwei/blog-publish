@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Overview Facebook TAO[1], short for The Associations and Objects, uses nodes (Objects) and edges (Associations) — the most fundamental abstractions in a “graph” — making the name fitting for Facebook’">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Large-Scale Graph Storage in Social Network Scenarios — Facebook TAO">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2021/10/07/facebook-tao/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Overview Facebook TAO[1], short for The Associations and Objects, uses nodes (Objects) and edges (Associations) — the most fundamental abstractions in a “graph” — making the name fitting for Facebook’">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2021/10/07/7pSWBqb4Vm2IPUO.png">
+<meta property="og:image" content="https://i.loli.net/2021/10/07/HohFUZujB7J28ig.png">
+<meta property="article:published_time" content="2021-10-07T07:04:05.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.676Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="facebook">
+<meta property="article:tag" content="TAO">
+<meta property="article:tag" content="Distributed Systems">
+<meta property="article:tag" content="Storage">
+<meta property="article:tag" content="Graph Storage">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/10/07/7pSWBqb4Vm2IPUO.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2021/10/07/facebook-tao/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="facebook,TAO,Distributed Systems,Storage,Graph Storage">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Large-Scale Graph Storage in Social Network Scenarios — Facebook TAO",
+    "description": "Overview Facebook TAO[1], short for The Associations and Objects, uses nodes (Objects) and edges (Associations) — the most fundamental abstractions in a “graph” — making the name fitting for Facebook’s graph storage. In summary, TAO is Facebook’s solution for updating ultra-large data and reading associations in social scenarios. Its core characteristics are: Provides a graph API specialized for Facebook’s social feed scenarios, such as point queries, first-degree association queries, and time-based range queries. Two-layer architecture: MySQL as the storage layer and MemCache as the caching layer; the caching layer can be further divided into primary and secondary layers. Can be extended across multiple data centers, highly optimized for read performance, and provides only eventual consistency guarantees.",
+    "url": "https://www.qtmuniao.com/en/2021/10/07/facebook-tao/",
+    "datePublished": "2021-10-07T15:04:05+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2021/10/07/facebook-tao/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Large-Scale Graph Storage in Social Network Scenarios — Facebook TAO | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2021/10/07/facebook-tao/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2021/10/07/facebook-tao/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/10/07/facebook-tao/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Large-Scale Graph Storage in Social Network Scenarios — Facebook TAO
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-10-07 15:04:05" itemprop="dateCreated datePublished" datetime="2021-10-07T15:04:05+08:00">2021-10-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Overview">Overview</h2>
+<p>Facebook TAO[1], short for The Associations and Objects, uses nodes (Objects) and edges (Associations) — the most fundamental abstractions in a “graph” — making the name fitting for Facebook’s graph storage.</p>
+<p>In summary, TAO is Facebook’s solution for updating ultra-large data and reading associations in social scenarios. Its core characteristics are:</p>
+<ol>
+<li>Provides a graph API specialized for Facebook’s social feed scenarios, such as point queries, first-degree association queries, and time-based range queries.</li>
+<li>Two-layer architecture: MySQL as the storage layer and MemCache as the caching layer; the caching layer can be further divided into primary and secondary layers.</li>
+<li>Can be extended across multiple data centers, highly optimized for read performance, and provides only eventual consistency guarantees.</li>
+</ol>
+<span id="more"></span>
+<p><em>Author: Woodpecker’s Notes <a href="https://www.qtmuniao.com/2021/10/07/facebook-tao/">https://www.qtmuniao.com/2021/10/07/facebook-tao/</a>, please indicate the source when reposting</em></p>
+<h2 id="Historical-Evolution">Historical Evolution</h2>
+<p>Facebook’s early data was stored on MySQL[2]. When MySQL could no longer handle the load, Zuckerberg introduced MemCache as a caching layer in 2005 to cope with higher-frequency read requests. Since then, MySQL and MemCache have become part of Facebook’s storage technology stack.</p>
+<p>Facebook’s data request workloads typically exhibit temporal locality (i.e., recently updated data is most likely to be accessed) rather than spatial locality. However, data in MySQL is usually not stored in time order, so MySQL’s InnoDB engine’s built-in block cache does not match this characteristic. In addition, MemCache itself only provides an in-memory KV access model. To utilize this memory more efficiently, Facebook needed to customize caching strategies for social scenarios to maximize read request hits.</p>
+<p>Exposing these engineering details — including the two-layer storage cluster and self-organized caching — to application-layer engineers brought significant engineering complexity, caused more bugs, and reduced product iteration speed. To solve this problem, Facebook built an abstraction layer on the server side using PHP in 2007, based on a graph storage model and providing APIs around nodes (objects) and edges (associations). Since social scenarios such as likes, events, and pages can be conveniently expressed through a graph model, this abstraction layer greatly reduced the cognitive burden on application-layer engineers.</p>
+<p>However, as more APIs were needed, the drawbacks of separating the graph model layer (on the web server) from the data layer (on the MySQL and MemCache clusters) gradually became apparent:</p>
+<ol>
+<li>A tiny update to an edge set would cause the entire edge set to be invalidated, reducing cache hit rates.</li>
+<li>Requesting a tiny subset of an edge list also required pulling the entire edge list from the storage side to the server side.</li>
+<li>Cache consistency was difficult to maintain.</li>
+<li>The MemCache cluster at the time could hardly cooperatively support a pure client-side thundering herd avoidance strategy.</li>
+</ol>
+<p>All these problems could be solved by redesigning a unified, graph-model-based storage layer. Starting in 2009, TAO began to be incubated within a team at Facebook. Since then, TAO has gradually evolved into a distributed service supporting tens of billions of reads per second and millions of writes, deployed across massive numbers of machines in multiple regions.</p>
+<h2 id="Graph-Model-API">Graph Model &amp; API</h2>
+<p>The most basic components of a graph are nodes and edges, which in TAO correspond to <strong>Objects</strong> and <strong>Associations</strong>. Both objects and associations can contain a series of attributes represented by key-value pairs.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Object: (id) → (otype, (key  value)*)</span><br><span class="line">Assoc.: (id1, atype, id2) → (time, (key  value)*)</span><br></pre></td></tr></table></figure>
+<p><strong>Note</strong>: Edges in TAO are all directed edges.</p>
+<p>Taking a social network as an example, objects can be users, check-ins, locations, and comments, while associations can be friend relationships, commenting, checking in, and checking in at a location, etc.</p>
+<p>As shown in figure a) below, suppose there is an event on Facebook: <em>Alice and Bob checked in at the Golden Gate Bridge, Cathy commented: “Wish I was there too.” David liked this comment</em>.</p>
+<p>After representing it with a graph model, as shown in figure b):</p>
+<p><img data-src="https://i.loli.net/2021/10/07/7pSWBqb4Vm2IPUO.png" alt="An Example"><span class="image-caption">An Example</span></p>
+<p>As you can see, all data entries such as users, locations, check-ins, and comments are represented as <strong>typed objects</strong>, while relationships between objects such as LIKED_BY, FRIEND, and COMMENT are represented as <strong>typed associations</strong>.</p>
+<p>In addition, although associations in TAO are unidirectional, most relationships in practice are bidirectional. In this case, an inverse edge can be added to represent such a bidirectional relationship.</p>
+<p>Finally, because associations are triples, there can be multiple edges of different types between two objects, but only one edge of the same type. However, in some non-social scenarios, multiple edges of the same type may be needed.</p>
+<h3 id="Object-API">Object API</h3>
+<p>Operations around Objects are the common CRUD (<code>create / delete / set-fields / get</code>).</p>
+<p>Objects of the same <strong>object type</strong> have the same <strong>set of attributes</strong> (fields, i.e., the <code>(key value)*</code> mentioned above), meaning that one object type corresponds to a fixed set of attributes. You can add or remove attributes by modifying the object type’s schema.</p>
+<h3 id="Association-API">Association API</h3>
+<p>The basic operations around Associations are also CRUD. The create, delete, and update operations are as follows:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">assoc_add(id1, atype, id2, time, (k→v)*) – add or overwrite</span><br><span class="line"><span class="title function_">assoc_delete</span><span class="params">(id1, atype, id2)</span> – delete</span><br><span class="line"><span class="title function_">assoc_change_type</span><span class="params">(id1, atype, id2, newtype)</span> - modify</span><br></pre></td></tr></table></figure>
+<p>It is worth mentioning that if its inverse edge (<code>(id1, inv(atype), id2)</code>) exists, the above API will simultaneously apply to the inverse edge. Since associations in most scenarios are bidirectional, Facebook’s default behavior for edge APIs is to apply to both edges.</p>
+<p>In addition, each Association is automatically stamped with an important special attribute: <strong>association time</strong>. Because Facebook’s workload has temporal locality, this timestamp can be used to optimize cached datasets to improve cache hit rates.</p>
+<h3 id="Association-Query-API">Association Query API</h3>
+<p>The query APIs around Associations are TAO’s core APIs and carry the most traffic. The workload types include:</p>
+<ol>
+<li>Point query specifying <code>(id1, type, id2)</code>, usually used to determine whether a corresponding association exists between two objects, or to get the attributes of the corresponding association.</li>
+<li>Range query specifying <code>(id1, type)</code>, requiring the result set to be sorted in descending order by time. For example, a common scenario: <em>What are the 50 most recent comments on this post?</em> In addition, it is best to provide iterator-style access.</li>
+<li>Out-edge count query specifying <code>(id1, type)</code>. For example, querying <em>How many likes does a comment have?</em> This kind of query is very common, so it is best to store it directly so that the result can be returned in constant time.</li>
+</ol>
+<p>Although there are countless associations, recent ranges are the focus of queries (temporal locality), so the association query APIs mainly revolve around time-based range queries.</p>
+<p>For this purpose, TAO defines the most basic <strong>association set</strong> as an Association List. An Association List is the set of all associations starting from <code>id1</code> with out-edge type <code>atype</code>, sorted in <strong>descending order by time</strong>.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Association List: (id1, atyle) -&gt; [a_new, ..., a_old]</span><br></pre></td></tr></table></figure>
+<p>Based on this, several more fine-grained interfaces are defined:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Returns the set of associations starting from id1 and ending at points contained in id2set</span></span><br><span class="line"><span class="comment">// whose creation time satisfies low &lt;= time &lt;= high.</span></span><br><span class="line">assoc_get(id1, atype, id2set, high?, low?) </span><br><span class="line"></span><br><span class="line"><span class="comment">// Returns the count of the association set</span></span><br><span class="line">assoc_count(id1, atype)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Returns the subset of the association set with indices satisfying [pos, pos+limit)</span></span><br><span class="line"><span class="comment">// pos is the index in the Association List</span></span><br><span class="line">assoc_range(id1, atype, pos, limit) </span><br><span class="line"></span><br><span class="line"><span class="comment">// Returns associations whose creation time satisfies, starting from time &lt;= high in **descending** order,</span></span><br><span class="line"><span class="comment">// ending at time &gt;= low, with at most limit associations</span></span><br><span class="line">assoc_time_range(id1, atype, high, low, limit)</span><br></pre></td></tr></table></figure>
+<p>Why is the result set sorted in descending order by time? Because when displaying a Facebook page feed, the newest content is always shown first, and then older data is loaded sequentially as the user scrolls down.</p>
+<p>For example:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">• <span class="string">&quot;50 most recent comments on Alice&#x27;s checkin&quot;</span> ⇒ assoc_range(<span class="number">632</span>, COMMENT, <span class="number">0</span>, <span class="number">50</span>)</span><br><span class="line">• <span class="string">&quot;How many checkins at the GG Bridge?&quot;</span> ⇒ assoc_count(<span class="number">534</span>, CHECKIN)</span><br></pre></td></tr></table></figure>
+<h2 id="Architecture">Architecture</h2>
+<p><img data-src="https://i.loli.net/2021/10/07/HohFUZujB7J28ig.png" alt="TAO Architecture"><span class="image-caption">TAO Architecture</span></p>
+<p>TAO’s architecture is divided into two layers overall: the caching layer and the storage layer.</p>
+<h3 id="Storage-Layer">Storage Layer</h3>
+<p>Due to the historical reasons mentioned above, TAO uses MySQL as the storage layer.</p>
+<p>Therefore, TAO’s external APIs are eventually translated into MySQL statements that act on the storage layer, but the queries to MySQL are relatively simple. Of course, the storage layer could also use a NoSQL storage engine like LevelDB, in which case the queries would be translated into prefix traversals. Of course, choosing a storage engine depends not only on how convenient the API translation is, but also on non-API factors such as data backup, bulk import/export, and multi-replica synchronization.</p>
+<p>A single MySQL service certainly cannot store all TAO data, so TAO uses a MySQL cluster to support the storage layer. To distribute data evenly across multiple MySQL machines, TAO uses consistent hashing to logically shard the data. Each shard is stored in one MySQL database. Each Object is associated with a shard when created, and the shard_id is embedded into the object_id, so the object’s shard will not change throughout its lifecycle.</p>
+<p>Specifically, the data stored in MySQL mainly consists of two tables: a node table and an edge table. Nodes and their out-edges are stored in the same MySQL database to minimize the cost of association queries. All node attributes are serialized into a column called data when saved. This allows Objects of different types to be stored in one table. Edges are saved similarly to nodes, but an additional index is created on the <code>id1, atype, andtime</code> fields to facilitate range queries on out-edges based on a specific node. In addition, to avoid the high overhead of querying the count of associations, an additional table is used to store the count of associations.</p>
+<h3 id="Cache-Layer">Cache Layer</h3>
+<p><strong>Read-through and write-through.</strong> TAO’s storage layer implements all external APIs, completely shielding the storage layer from clients. That is, Clients only interact with the caching layer, and the caching layer is responsible for synchronizing data to the storage layer. The caching layer is also composed of multiple cache servers; a group of cache servers that can serve any TAO request is called a Tier. A single request is routed to a single cache server and does not span multiple servers.</p>
+<p><strong>Caching strategy</strong> uses the classic LRU. It is worth mentioning that because TAO’s edges are bidirectional by default, when a Client writes an edge, the caching layer is responsible for turning it into two directed edges — an out-edge and an inverse edge — but TAO does not guarantee their atomicity. Failures will delete intermediate results through garbage collection.</p>
+<p><strong>Two-layer architecture.</strong> Each logical shard in TAO is basically homogeneous. The caching layer of each logical shard consists of a group of cache servers, composed of a single Leader cache server and a group of Follower cache servers.</p>
+<p>Among them, Follower cache servers are the outer layer, and Leader servers are the inner layer. All clients only interact with Followers. Follower cache servers themselves are only responsible for read requests; if a read miss occurs or there is a write request, it is forwarded to the corresponding Leader cache server.</p>
+<p>If read request load continues to increase, you only need to scale out the Follower cache servers.</p>
+<p>If certain objects are accessed significantly more than others, TAO will identify them by recording access frequency, then perform client-side caching, and maintain consistency through version numbers.</p>
+<p><strong>Consistency.</strong> After receiving parallel write requests from multiple Followers, the Leader will sequence them, serialize them, and then perform synchronous reads and writes to the storage layer before returning. For write requests, it will also <strong>asynchronously</strong> notify other Follower servers to update the corresponding data. Therefore, TAO can ultimately only provide eventual consistency guarantees. The benefit of this is high throughput for read requests.</p>
+<p><strong>Multi-region extension.</strong> Because TAO’s read request frequency is about 25 times its write frequency, and a single data center cannot satisfy Facebook’s global scenarios. Therefore, TAO uses a primary-secondary architecture overall: two data centers each deploy a storage layer + caching layer as primary and secondary (Primary-Secondary). All write requests must be routed from the secondary data center’s Leader Cache to the primary data center (see figure above), and then the primary data center’s storage layer <strong>asynchronously</strong> syncs back to the secondary data center. However, the secondary data center’s Leader Cache does not wait for the local storage layer to sync back data before updating and notifying Followers to Refill from itself. TAO’s design maximizes the chance that a read request is satisfied within a single data center, at the cost of clients potentially reading stale data. That is, it sacrifices consistency to reduce request latency and improve throughput.</p>
+<h2 id="Consistency">Consistency</h2>
+<p>When making trade-offs between consistency and availability, TAO chose the latter. For high availability and extreme performance, it chose a weaker consistency model — eventual consistency. Because in most of Facebook’s scenarios, unavailability is worse than incorrectness. In most common scenarios, TAO can achieve stronger read-after-write consistency.</p>
+<p>For the same piece of data in TAO, first, it is backed up in a Master-Slave Region; second, in the same Region, a two-layer Leader-Follower Cache is used. During updates, data at different locations is not synchronized, which causes data inconsistency. In TAO, after an update, given enough time, all data replicas will converge to consistency and reflect the latest update. Usually, this time interval does not exceed 1s. This is acceptable in most scenarios at Facebook.</p>
+<p>For those scenarios with special consistency requirements, the application layer can mark requests as critical. When TAO receives a request with this mark, it will forward it to the Master Region for processing, thereby obtaining strong consistency.</p>
+<h2 id="References">References</h2>
+<p>[1] TAO paper: <span class="exturl" data-url="aHR0cHM6Ly93d3cudXNlbml4Lm9yZy9zeXN0ZW0vZmlsZXMvY29uZmVyZW5jZS9hdGMxMy9hdGMxMy1icm9uc29uLnBkZg==">https://www.usenix.org/system/files/conference/atc13/atc13-bronson.pdf<i class="fa fa-external-link-alt"></i></span></p>
+<p>[2] Facebook Engineering Blog, TAO — The Power of the Graph: <span class="exturl" data-url="aHR0cHM6Ly9lbmdpbmVlcmluZy5mYi5jb20vMjAxMy8wNi8yNS9jb3JlLWRhdGEvdGFvLXRoZS1wb3dlci1vZi10aGUtZ3JhcGgv">https://engineering.fb.com/2013/06/25/core-data/tao-the-power-of-the-graph/<i class="fa fa-external-link-alt"></i></span></p>
+<p>[3] meetup TAO: <span class="exturl" data-url="aHR0cHM6Ly93d3cubm90aW9uLnNvL01lZXR1cC0xLUZhY2Vib29rLVRBTy0yOGU4ODgzNmEzZjY0OWJhOWIzZTNlYTgzODU4YzU5Mw==">https://www.notion.so/Meetup-1-Facebook-TAO-28e88836a3f649ba9b3e3ea83858c593<i class="fa fa-external-link-alt"></i></span></p>
+<p>[4] Stanford 6.S897 slides: <span class="exturl" data-url="aHR0cHM6Ly9jcy5zdGFuZm9yZC5lZHUvfm1hdGVpL2NvdXJzZXMvMjAxNS82LlM4OTcvc2xpZGVzL3Rhby5wZGY=">https://cs.stanford.edu/~matei/courses/2015/6.S897/slides/tao.pdf<i class="fa fa-external-link-alt"></i></span></p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/10/07/facebook-tao/" rel="bookmark">社交网络场景下大规模图存储实践——Facebook TAO</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/03/19/wisckey/" rel="bookmark">WiscKey: LSM-Tree Optimizations for SSD Storage</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/06/13/dynamo/" rel="bookmark">Amazon's Distributed Key-Value Store for Small Objects — Dynamo</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2021/05/16/distributed-system-material/" rel="bookmark">Distributed Systems Learning Resources</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/08/10/ray-source-reading-2/" rel="bookmark">Ray Source Code Reading (Part 2): Resource Abstraction and Scheduling Policies</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/12/22/kafka/" rel="bookmark">Kafka —— Bridging the Gap Between Log Processing and Message Queuing</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/facebook/" rel="tag"># facebook</a>
+              <a href="/tags/TAO/" rel="tag"># TAO</a>
+              <a href="/tags/Distributed-Systems/" rel="tag"># Distributed Systems</a>
+              <a href="/tags/Storage/" rel="tag"># Storage</a>
+              <a href="/tags/Graph-Storage/" rel="tag"># Graph Storage</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/07/10/memory-photos/" rel="prev" title="忆影流年">
+      <i class="fa fa-chevron-left"></i> 忆影流年
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/10/07/facebook-tao/" rel="next" title="社交网络场景下大规模图存储实践——Facebook TAO">
+      社交网络场景下大规模图存储实践——Facebook TAO <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Historical-Evolution"><span class="nav-number">2.</span> <span class="nav-text">Historical Evolution</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Graph-Model-API"><span class="nav-number">3.</span> <span class="nav-text">Graph Model &amp; API</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Object-API"><span class="nav-number">3.1.</span> <span class="nav-text">Object API</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Association-API"><span class="nav-number">3.2.</span> <span class="nav-text">Association API</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Association-Query-API"><span class="nav-number">3.3.</span> <span class="nav-text">Association Query API</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Architecture"><span class="nav-number">4.</span> <span class="nav-text">Architecture</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Storage-Layer"><span class="nav-number">4.1.</span> <span class="nav-text">Storage Layer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Cache-Layer"><span class="nav-number">4.2.</span> <span class="nav-text">Cache Layer</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Consistency"><span class="nav-number">5.</span> <span class="nav-text">Consistency</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">6.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2021/10/07/facebook-tao/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'd246734cd98f424f264340810fc9484f',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

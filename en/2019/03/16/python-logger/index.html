@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Introduction Before using Logging, let’s first sort out our common logging output requirements. As the saying goes, design without considering requirements is hooliganism.  Be able to locate the orig">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Python Logging Library Analysis">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2019/03/16/python-logger/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Introduction Before using Logging, let’s first sort out our common logging output requirements. As the saying goes, design without considering requirements is hooliganism.  Be able to locate the orig">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/zMtSnoRFshGc6dl.png">
+<meta property="og:image" content="https://docs.python.org/3/_images/logging_flow.png">
+<meta property="article:published_time" content="2019-03-16T01:46:27.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.672Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="logger">
+<meta property="article:tag" content="logging">
+<meta property="article:tag" content="logging module">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/zMtSnoRFshGc6dl.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2019/03/16/python-logger/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="Python,logger,logging,logging module">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Python Logging Library Analysis",
+    "description": "Introduction Before using Logging, let’s first sort out our common logging output requirements. As the saying goes, design without considering requirements is hooliganism. Be able to locate the origin (code file &amp; line number) and generation time of an Event, for debugging and tracing. A single log can be simultaneously sent to multiple destination outputs. Log output can be filtered by different levels or finer-grained conditions. Third-party module log output can be conveniently controlled. While achieving all of the above, configuration/setup should be as simple as possible. Python’s Logging module perfectly achieves the above five points through its magical modular design, organized in a tree structure.",
+    "url": "https://www.qtmuniao.com/en/2019/03/16/python-logger/",
+    "datePublished": "2019-03-16T09:46:27+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2019/03/16/python-logger/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Python Logging Library Analysis | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2019/03/16/python-logger/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2019/03/16/python-logger/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2019/03/16/python-logger/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Python Logging Library Analysis
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-03-16 09:46:27" itemprop="dateCreated datePublished" datetime="2019-03-16T09:46:27+08:00">2019-03-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/" itemprop="url" rel="index"><span itemprop="name">Programming Languages</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img data-src="https://i.loli.net/2020/02/09/zMtSnoRFshGc6dl.png" alt="python-learn.png"><span class="image-caption">python-learn.png</span></p>
+<h2 id="Introduction">Introduction</h2>
+<p>Before using Logging, let’s first sort out our common logging output requirements. As the saying goes, design without considering requirements is hooliganism.</p>
+<ol>
+<li>Be able to locate the origin (code file &amp; line number) and generation time of an <a href="#logevent">Event</a>, for debugging and tracing.</li>
+<li>A single log can be simultaneously sent to multiple <a href="#dstout">destination outputs</a>.</li>
+<li>Log output can be filtered by different levels or finer-grained conditions.</li>
+<li>Third-party module log output can be conveniently controlled.</li>
+<li>While achieving all of the above, configuration/setup should be as simple as possible.</li>
+</ol>
+<p>Python’s Logging module perfectly achieves the above five points through its magical modular design, organized in a <a href="#tree">tree</a> structure.</p>
+<span id="more"></span>
+<p><em>Author: Woodpecker Miscellany <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, please indicate the source when reposting</em></p>
+<h2 id="Module-Design">Module Design</h2>
+<p>Python’s logger abstracts several subordinate meta-concepts—Logger, Handler, Filter, and Formatter—as the cornerstone of the logger implementation.</p>
+<ol>
+<li>Loggers provide the interfaces that application code can directly use.</li>
+<li>Handlers dispatch (logger-generated) log records to appropriate outputs.</li>
+<li>Filters provide fine-grained control over which logs are output.</li>
+<li>Formatters determine the final appearance of log records in the output.</li>
+</ol>
+<h3 id="Loggers">Loggers</h3>
+<p>The <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9saWJyYXJ5L2xvZ2dpbmcuaHRtbCNsb2dnaW5nLkxvZ2dlcg==">Logger<i class="fa fa-external-link-alt"></i></span> class serves as the basic module of the logging library and can do three small things:</p>
+<ul>
+<li>It is the class called in user code for log output, exposing interfaces such as <code>debug()</code>, <code>info()</code>, etc.;</li>
+<li>Based on the log level and filter class, it decides whether to create a log record (LogRecord) and pass the log output event when the user calls the class (<code>logger.info(msg)</code>);</li>
+<li>As a node in the logging module tree, it passes the event upward toward the root. All Handlers added to all logger nodes on the propagation path (this logger -&gt; parent logger -&gt; … -&gt; root logger) will respond to the event. Of course, setting a logger’s <code>propagate = False</code> or having no parent logger can prevent event propagation.</li>
+</ul>
+<h3 id="Handlers">Handlers</h3>
+<p><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9saWJyYXJ5L2xvZ2dpbmcuaHRtbCNsb2dnaW5nLkhhbmRsZXI=">Handler<i class="fa fa-external-link-alt"></i></span> is responsible for dispatching log messages that meet the level requirements to various target outputs specified by the handler. Logger instances can add zero or more Handlers via the <code>addHandler</code> method. <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9ob3d0by9sb2dnaW5nLmh0bWwjdXNlZnVsLWhhbmRsZXJz">Common Handler subclasses<i class="fa fa-external-link-alt"></i></span> that can be added include <code>StreamHandler</code>, <code>FileHandler</code>, <code>BaseRotatingHandler</code>, etc.</p>
+<p>Imagine a scenario: an application wants to output all level log information to a file, display error level and above logs on standard output, and send all severity level and above logs via email alerts. Then three handlers can be set up, each responsible for capturing messages of different levels and sending them to different target outputs.</p>
+<p>The most commonly used methods of Handler:</p>
+<ul>
+<li><code>setLevel()</code> — Like the same-name method of logger, it sets the minimum effective level. The difference is that a logger’s behavior is to send log messages above this level to all its handlers, while a handler’s behavior is to output log messages above this level to the corresponding target output.</li>
+<li><code>setFormatter()</code> — Selects the layout and format of this handler’s output.</li>
+<li><code>addFilter()</code> and <code>removeFilter</code> — Add or remove filtering rules to determine whether a certain log message should be filtered out.</li>
+</ul>
+<p>Applications should not directly use the <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9saWJyYXJ5L2xvZ2dpbmcuaHRtbCNsb2dnaW5nLkhhbmRsZXI=">Handler<i class="fa fa-external-link-alt"></i></span> class; this is just a base class that defines some interfaces and default behaviors.</p>
+<h3 id="Formatters">Formatters</h3>
+<p>Unlike Handler, user programs can directly instantiate and use the <code>logging.Formatter</code> class:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">logging.Formatter.__init__(fmt=<span class="literal">None</span>, datefmt=<span class="literal">None</span>, style=<span class="string">&#x27;%&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>Where <code>fmt</code> specifies the message layout and format, <code>datefmt</code> specifies the date display format, and <code>style</code> specifies the variable parsing method in the <code>fmt</code> string.</p>
+<p>A few points worth mentioning:</p>
+<ul>
+<li><code>fmt</code> can not only specify the format; when outputting to a terminal, <code>ColoredFormatter</code> can be used to set a color scheme, making command-line output look cool.</li>
+<li><code>style</code> is one of <code>%, '&#123;' or '$'</code>, with the default being <code>%</code>. However, Python 3 recommends using the <code>str.format</code> style for string formatting, so you can change it to <code>style = '&#123;'</code>.</li>
+</ul>
+<h3 id="Filters">Filters</h3>
+<p>Fine-grained log filtering control won’t be covered here; advanced players can refer to the official documentation themselves.</p>
+<h2 id="Tree-Organization">Tree Organization</h2>
+<p>The Logging library leverages the naturally existing tree-like hierarchical structure among Python Modules to build a logging system with Loggers as tree nodes. This is manifested in:</p>
+<ol>
+<li>Loggers and module_name have a one-to-one correspondence.</li>
+<li>A logger’s “effective level” is determined by traversing upward in the tree.</li>
+<li>Loggers pass events (writing a certain log) upward along the tree structure, and all logger nodes containing handlers will respond.</li>
+</ol>
+<p>In addition, the logging module has a built-in root node, which provides a default implementation for all module log output behaviors. It can be obtained via <code>root_logger = Logging.getLogger()</code>, i.e., <code>module_name = None</code>. This root_logger has a default effective log level of <code>WARNING</code>, and has a default handler added, which is bound to a simple formatter.</p>
+<p>That is, users don’t need any configuration; as long as they obtain the <code>root_logger</code> via <code>root_logger = Logging.getLogger()</code>, they can perform log output. Users with additional needs can then finely configure the output location and layout format for different modules through the aforementioned mechanisms. This <strong>out-of-the-box + incremental fine-tuning</strong> design is a common technique in program frameworks, which can simultaneously cater to the different needs of beginners and advanced players.</p>
+<h3 id="One-to-One-Correspondence">One-to-One Correspondence</h3>
+<p>Each logger is a singleton corresponding one-to-one with a Python module_name. That is, in the same process, the smap_logger obtained from different locations via:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">smap_logger = logging.getLogger()</span><br></pre></td></tr></table></figure>
+<p>is the same instance.</p>
+<h3 id="Effective-Level">Effective Level</h3>
+<p>Loggers have the concept of an <strong>effective level</strong>. When a logger has not been explicitly set to a log level (<code>setLevel</code>), it will use its parent logger’s log level. If its parent logger’s log level has also not been explicitly set, it will continue to look at its grandparent node. This repeats until a logger node with an explicitly set effective level is found. Of course, no matter what, this search process will end at the root node, which has a default level of <code>WARNING</code>.</p>
+<p>When a logger receives a log output event, it determines whether the event will be dispatched to all handlers added to that logger based on its effective level.</p>
+<h3 id="Event-Propagation">Event Propagation</h3>
+<p>Child loggers pass log events along the path in the tree toward their ancestors. Therefore, it is not necessary to bind handlers to all loggers; just adding handlers to a few appropriate key top-level nodes can cause all log nodes on their child branches to perform log output according to that handler’s behavior.</p>
+<p>Of course, you can also prevent a node from propagating log events upward by setting that logger’s <em>propagate</em> attribute to <code>False</code>.</p>
+<p>The log output flow can be illustrated with the following diagram:</p>
+<p><img data-src="https://docs.python.org/3/_images/logging_flow.png" alt="Logging Flow"><span class="image-caption">Logging Flow</span></p>
+<h2 id="Practice">Practice</h2>
+<h3 id="An-Example">An Example</h3>
+<p>A most basic example provided by the official documentation:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> logging</span><br><span class="line"></span><br><span class="line"><span class="comment"># create logger</span></span><br><span class="line">logger = logging.getLogger(<span class="string">&#x27;simple_example&#x27;</span>)</span><br><span class="line">logger.setLevel(logging.DEBUG)</span><br><span class="line"></span><br><span class="line"><span class="comment"># create console handler and set level to debug</span></span><br><span class="line">ch = logging.StreamHandler()</span><br><span class="line">ch.setLevel(logging.DEBUG)</span><br><span class="line"></span><br><span class="line"><span class="comment"># create formatter</span></span><br><span class="line">formatter = logging.Formatter(<span class="string">&#x27;%(asctime)s - %(name)s - %(levelname)s - %(message)s&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># add formatter to ch</span></span><br><span class="line">ch.setFormatter(formatter)</span><br><span class="line"></span><br><span class="line"><span class="comment"># add ch to logger</span></span><br><span class="line">logger.addHandler(ch)</span><br><span class="line"></span><br><span class="line"><span class="comment"># &#x27;application&#x27; code</span></span><br><span class="line">logger.debug(<span class="string">&#x27;debug message&#x27;</span>)</span><br><span class="line">logger.info(<span class="string">&#x27;info message&#x27;</span>)</span><br><span class="line">logger.warning(<span class="string">&#x27;warn message&#x27;</span>)</span><br><span class="line">logger.error(<span class="string">&#x27;error message&#x27;</span>)</span><br><span class="line">logger.critical(<span class="string">&#x27;critical message&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>In addition, like Java logging frameworks such as log4j, these configurations can be done via configuration files. Including basic format and YAML format. The <strong>official documentation</strong> covers all of this.</p>
+<h3 id="My-Own-Example">My Own Example</h3>
+<p>When I was writing the smap (slice-map, a computing framework that shards datasets and distributes them to multiple machines for map execution) Python library, I wanted to implement a feature that would allow users to dynamically set the library’s log level when using it. At the time, I went to great lengths to pass the log level as a parameter into the framework, and then set the module’s logger to that effective level before each use.</p>
+<p>If I had known earlier about the logging library’s module-level singleton and tree organization design, then basically nothing would need to be done to implement this feature; I would just need to tell users that I am using the logging library. Users could then simply do:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> logging</span><br><span class="line"></span><br><span class="line">smap_logger = logging.getLogger()</span><br><span class="line">smap_logger.setLevel(logging.INFO)</span><br></pre></td></tr></table></figure>
+<p>And that’s it.</p>
+<h2 id="Notes">Notes</h2>
+<p><span id="tree">「<strong>Tree</strong>」</span>: A commonly used data structure in computers, used to simulate a <strong>data set</strong> with tree-like structural properties. It looks like an upside-down tree with the root facing up and the leaves facing down. See <span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU2JUEwJTkxXyglRTYlOTUlQjAlRTYlOEQlQUUlRTclQkIlOTMlRTYlOUUlODQp">Wikipedia<i class="fa fa-external-link-alt"></i></span> for details.</p>
+<p>「<strong>Parent Node, Ancestor Node</strong>」: Both are concepts within the scope of the tree data structure.</p>
+<p><span id="logevent">「<strong>Log Event</strong>」</span>: Generated by API calls such as <code>logger.info()</code>, sent to the logging system, allowing the system to decide how to respond to the event and output it at an appropriate location with an appropriate layout and format. Other terms such as <strong>Message</strong> and <strong>LogRecord</strong> essentially mean similar things.</p>
+<p><span id="dstout">「<strong>Destination Output</strong>」</span>: Various output destinations, such as standard output (stdout), file (File), database (db), email (email), centralized log service (log service), etc.</p>
+<h2 id="References">References</h2>
+<ol>
+<li><span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvMy9ob3d0by9sb2dnaW5nLmh0bWw=">Logging facility for Python<i class="fa fa-external-link-alt"></i></span>, most of this article is derived from this, just translated and reorganized.</li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/16/python-logger/" rel="bookmark">Python Logging 库分析</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/02/23/python-closure/" rel="bookmark">Python 闭包</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/06/python-mixins/" rel="bookmark">Python 混入类 Mix-Ins</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/04/05/python-default-parameter-values/" rel="bookmark">Python函数的默认参数的那些"坑"</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/02/23/python-closure/" rel="bookmark">Python Closures</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/03/06/python-mixins/" rel="bookmark">Python Mix-Ins</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Python/" rel="tag"># Python</a>
+              <a href="/tags/logger/" rel="tag"># logger</a>
+              <a href="/tags/logging/" rel="tag"># logging</a>
+              <a href="/tags/logging-module/" rel="tag"># logging module</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/03/06/python-mixins/" rel="prev" title="Python 混入类 Mix-Ins">
+      <i class="fa fa-chevron-left"></i> Python 混入类 Mix-Ins
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/03/16/python-logger/" rel="next" title="Python Logging 库分析">
+      Python Logging 库分析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Module-Design"><span class="nav-number">2.</span> <span class="nav-text">Module Design</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Loggers"><span class="nav-number">2.1.</span> <span class="nav-text">Loggers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Handlers"><span class="nav-number">2.2.</span> <span class="nav-text">Handlers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Formatters"><span class="nav-number">2.3.</span> <span class="nav-text">Formatters</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Filters"><span class="nav-number">2.4.</span> <span class="nav-text">Filters</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Tree-Organization"><span class="nav-number">3.</span> <span class="nav-text">Tree Organization</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#One-to-One-Correspondence"><span class="nav-number">3.1.</span> <span class="nav-text">One-to-One Correspondence</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Effective-Level"><span class="nav-number">3.2.</span> <span class="nav-text">Effective Level</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Event-Propagation"><span class="nav-number">3.3.</span> <span class="nav-text">Event Propagation</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Practice"><span class="nav-number">4.</span> <span class="nav-text">Practice</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#An-Example"><span class="nav-number">4.1.</span> <span class="nav-text">An Example</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#My-Own-Example"><span class="nav-number">4.2.</span> <span class="nav-text">My Own Example</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Notes"><span class="nav-number">5.</span> <span class="nav-text">Notes</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">6.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2019/03/16/python-logger/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'd575b6600e09c6867741b6344f8e32e9',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

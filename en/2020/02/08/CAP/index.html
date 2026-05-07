@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Introduction I was once asked in an interview to explain my understanding of CAP. At the time, relying on second-hand information I had googled while preparing for the interview, I stammered out a fe">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Distributed Systems Fundamentals (Part 1): Understanding CAP">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2020/02/08/CAP/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Introduction I was once asked in an interview to explain my understanding of CAP. At the time, relying on second-hand information I had googled while preparing for the interview, I stammered out a fe">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png">
+<meta property="article:published_time" content="2020-02-08T06:01:05.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.674Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="CAP">
+<meta property="article:tag" content="Distributed Systems">
+<meta property="article:tag" content="CAP Theorem">
+<meta property="article:tag" content="Consistency">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2020/02/08/CAP/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="CAP,Distributed Systems,CAP Theorem,Consistency">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Distributed Systems Fundamentals (Part 1): Understanding CAP",
+    "description": "Introduction I was once asked in an interview to explain my understanding of CAP. At the time, relying on second-hand information I had googled while preparing for the interview, I stammered out a few words like a schoolchild reciting a textbook. The interviewer smiled wryly and concisely summarized the key points he was looking for, leaving me feeling deeply embarrassed. Naturally, I didn’t get the job. Later, while working, I occasionally came across this term. At first I couldn’t grasp its essence, but after understanding and verifying it from different sources and perspectives, I gradually pieced together a clearer picture. Here, I’d like to organize my thoughts and put this shadow onto paper for future reference. The interviewer roughly summarized it this way: In a distributed system, failures are inevitable, and partition tolerance (P) is absolutely necessary; therefore, when designing a system, you need to make a trade-off between availability (A) and consistency ©. At the time, the lesson left a deep impression on me. Looking back now, this summary merely points out the tip of the iceberg.",
+    "url": "https://www.qtmuniao.com/en/2020/02/08/CAP/",
+    "datePublished": "2020-02-08T14:01:05+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2020/02/08/CAP/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Distributed Systems Fundamentals (Part 1): Understanding CAP | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2020/02/08/CAP/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2020/02/08/CAP/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/02/08/CAP/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Distributed Systems Fundamentals (Part 1): Understanding CAP
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-02-08 14:01:05" itemprop="dateCreated datePublished" datetime="2020-02-08T14:01:05+08:00">2020-02-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/Fundamentals/" itemprop="url" rel="index"><span itemprop="name">Fundamentals</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img data-src="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png" alt="cap-consistency-example.png"><span class="image-caption">cap-consistency-example.png</span></p>
+<h2 id="Introduction">Introduction</h2>
+<p>I was once asked in an interview to explain my understanding of CAP. At the time, relying on second-hand information I had googled while preparing for the interview, I stammered out a few words like a schoolchild reciting a textbook. The interviewer smiled wryly and concisely summarized the key points he was looking for, leaving me feeling deeply embarrassed. Naturally, I didn’t get the job. Later, while working, I occasionally came across this term. At first I couldn’t grasp its essence, but after understanding and verifying it from different sources and perspectives, I gradually pieced together a clearer picture. Here, I’d like to organize my thoughts and put this shadow onto paper for future reference.</p>
+<p>The interviewer roughly summarized it this way: <em>In a distributed system, failures are inevitable, and partition tolerance (P) is absolutely necessary; therefore, when designing a system, you need to make a trade-off between availability (A) and consistency ©.</em> At the time, the lesson left a deep impression on me. Looking back now, this summary merely points out the tip of the iceberg.</p>
+<span id="more"></span>
+<p><em>Author: 木鸟杂记 <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, please indicate the source when reposting</em></p>
+<h2 id="History">History</h2>
+<p><span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU1JTlGJTgzJUU5JTg3JThDJUU1JTg1JThCJUMyJUI3JUU1JUI4JTgzJUU5JUIyJTgxJUU1JUIwJTk0">Eric Brewer<i class="fa fa-external-link-alt"></i></span> (which is why the CAP theorem is also known as <strong>Brewer’s theorem</strong>) had the initial idea around 1998, then published it as a principle in 1999, and finally formally proposed it as a conjecture at PODC in 1999. In 2002, <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3cvaW5kZXgucGhwP3RpdGxlPVNldGhfR2lsYmVydCZhbXA7YWN0aW9uPWVkaXQmYW1wO3JlZGxpbms9MQ==">Seth Gilbert<i class="fa fa-external-link-alt"></i></span> and <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvTmFuY3lfTHluY2g=">Nancy Lynch<i class="fa fa-external-link-alt"></i></span> from MIT provided a proof under very restrictive conditions, turning it into a theorem.</p>
+<p>One point worth making here is that when people refer to the <strong>CAP principle</strong> (similar meaning, this is an off-the-cuff name I’m giving it), they may mean a broadly defined, widely applicable principle that inspires distributed systems design. But the <strong>CAP theorem</strong> belongs to the realm of <strong>theoretical computer science</strong>, where each property has a strict mathematical definition and the conclusions are rigorously derived. Most people intend to express the former but use the terminology of the latter. Martin Kleppmann, author of DDIA, even <span class="exturl" data-url="aHR0cHM6Ly9tYXJ0aW4ua2xlcHBtYW5uLmNvbS8yMDE1LzA1LzExL3BsZWFzZS1zdG9wLWNhbGxpbmctZGF0YWJhc2VzLWNwLW9yLWFwLmh0bWw=">wrote a piece griping about this<i class="fa fa-external-link-alt"></i></span>.</p>
+<h2 id="Concepts">Concepts</h2>
+<p>The CAP principle states that a distributed storage system cannot simultaneously satisfy the following three properties:</p>
+<ol>
+<li><strong>Consistency</strong> (<em>Consistency</em>): For requests to different nodes, the system either returns a response containing the latest modification or returns an error.</li>
+<li><strong>Availability</strong> (<em>Available</em>): Every request receives a non-error response, but the timeliness of the response data is not guaranteed.</li>
+<li><strong>Partition Tolerance</strong> (<em>Partition tolerance</em>): When a <em>network partition</em> occurs between nodes in the system, the system can still respond to requests normally.</li>
+</ol>
+<h3 id="Consistency">Consistency</h3>
+<p>Distributed systems typically contain multiple data nodes (<em>Data Server</em>). There are three common methods for distributing a dataset (<em>Dataset</em>) across multiple nodes:</p>
+<ol>
+<li><strong>Replication</strong> (<em>Replication</em>): Store an identical full copy of the dataset on multiple nodes; each copy is called a <strong>replica</strong> (<em>Replica</em>).</li>
+<li><strong>Partitioning</strong> (<em>Partition</em>**): Split the dataset into several appropriately sized shards and store them on different nodes.</li>
+<li><strong>Replication and Partitioning</strong>: Split the dataset into multiple shards, each of which is replicated multiple times and stored on different nodes.</li>
+</ol>
+<p>It is precisely the multi-machine replication and partitioning of data that gives rise to the consistency problem in distributed systems. Let’s illustrate with a simple example:</p>
+<p>Take a strategy with only data replication. Suppose we have a data system consisting of three nodes, <em>S0</em>, <em>S1</em>, and <em>S2</em>, which store three replicas of a dataset D: <em>D0</em>, <em>D1</em>, and <em>D2</em>. This dataset is a simple <strong>key-value</strong> (<em>Key-value</em>) collection. Initially, the collection contains <code>&quot;a&quot; = 0</code>. At some time t, client C0 sends a write request <code>set(&quot;a&quot;, 1)</code> to <em>S0</em> and receives a successful response; immediately after t, another client <em>C1</em> sends a read request <code>get(&quot;a&quot;)</code> to <em>S1</em>.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png" alt="cap-consistency-example.png"><span class="image-caption">cap-consistency-example.png</span></p>
+<p>If the system is designed as follows:</p>
+<ol>
+<li><em>S0</em> changes the value of “a” and synchronizes it to <em>S1</em>, so <em>C1</em> receives a response with the <strong>globally latest</strong> data <code>&quot;a&quot; = 1</code>.</li>
+<li>The system detects that <em>S1</em> has not yet synchronized the latest data, so it returns an <strong>error response</strong> to <em>C1</em>, prompting it to retry.</li>
+</ol>
+<p>Then the system satisfies consistency.</p>
+<h3 id="Availability">Availability</h3>
+<p>This property is relatively easy to understand: the system must return a <strong>non-error response</strong> within <strong>finite time</strong>. If the response time exceeds the tolerable limit by several orders of magnitude, the service is essentially unavailable. If the system responds quickly but returns an error response, such as bad file, data stale, etc., the service is still unavailable.</p>
+<h3 id="Partition-Tolerance">Partition Tolerance</h3>
+<p>This property used to trouble me quite a bit (and still does, to be honest), and I still cannot give a precise description of it. I can only characterize it from a few different angles.</p>
+<p>The difficulty here lies in understanding <strong>network partitioning</strong> (<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvTmV0d29ya19wYXJ0aXRpb24=">network partitioning<i class="fa fa-external-link-alt"></i></span>).</p>
+<p>First, a simple understanding is that if one part of the system becomes network-isolated from other parts and can no longer communicate, and thus cannot complete data synchronization in a timely manner, then a network partition can be considered to have occurred. In the example above, if {<em>S0</em>} and {<em>S1</em>, <em>S2</em>} experience network isolation, the updated data in {<em>S0</em>} cannot be synchronized to {<em>S1</em>, <em>S2</em>} in time, resulting in a partition between {<em>S0</em>} and {<em>S1</em>, <em>S2</em>}.</p>
+<p>Then, if we relax the constraints further: if there exist two parts of the system between which communication latency is so large that they cannot reach agreement within the time limit, a network partition can still be considered to have occurred. In the example above, after {<em>S0</em>} updates the data but before it synchronizes to {<em>S1</em>, <em>S2</em>}, <em>C1</em>’s request arrives, and the user will still access the old data. This too can be considered a partition between {<em>S0</em>} and {<em>S1</em>, <em>S2</em>}.</p>
+<p>If the system can still provide service normally after a network partition occurs, then the system has <strong>partition tolerance</strong>.</p>
+<p>Abstractly speaking, if the <strong>communication latency</strong> between <strong>system components</strong> is greater than the interval of <strong>system events</strong> (such as system requests), then a network partition will occur. This is the normal state of distributed systems. In the extreme case, if a system runs on a single machine, but the communication latency between components such as memory and CPU is very high, then this single machine can be considered a distributed system that has experienced a network partition.</p>
+<p>All of the above are practical understandings. The theoretically strict definition of the conditions under which a network partition occurs is more stringent and will be explained in detail later.</p>
+<h2 id="Explanation">Explanation</h2>
+<p>In a distributed system, network failures and node crashes are the norm, so network partitions are bound to occur. When a network partition occurs, based on business requirements, the system must choose between availability and consistency:</p>
+<ol>
+<li><strong>Prioritize availability</strong>. The network partition makes some nodes unreachable, preventing the system from synchronizing data in time. Although the requested node attempts to return the latest data within its visible scope, it still cannot guarantee that this data is globally the latest—thus sacrificing consistency to ensure availability.</li>
+<li><strong>Prioritize consistency</strong>. When the network partition prevents the requested node from guaranteeing that the data is globally the latest, it returns an error message to the user; or it returns nothing at all until the client times out.</li>
+</ol>
+<p>But this principle does not mean that the system must abandon one of CAP at all times. For example, when the network is in good condition, there is no need to make a trade-off among the three; at this point, partition tolerance is not required, and both consistency and availability can be achieved.</p>
+<p>To deeply understand this principle, one must grasp two key factors in distributed systems design: <strong>network environment</strong> and <strong>business requirements</strong>. It is especially important to note that principles are assertions under ideal conditions, while practice is about trade-offs in real-world scenarios. The CAP principle merely points out three important directions for system design trade-offs.</p>
+<p><strong>Network environment</strong>: Different systems face vastly different network environments.</p>
+<p>If the network is in good condition and network partitions rarely occur, then partition tolerance does not need to be overly considered in system design. For example, the system could simply be designed to stop service when a partition occurs, or slightly better, allow the client to retry, etc. This may seem to sacrifice availability, but note that this situation rarely occurs, so the system may still be able to provide N-nines of service.</p>
+<p>If the network is in poor condition and the cluster is very large, with network disconnections and node crashes being the norm, then the trade-off between availability and consistency in the event of a network partition must be carefully considered in system design. Here, it is worth emphasizing again that <strong>partition tolerance in the CAP theorem</strong> is highly idealized:</p>
+<blockquote>
+<p>The network will be allowed to drop arbitrarily many messages sent from one node to another. — Gilbert, Lynch</p>
+</blockquote>
+<p>If the network arbitrarily drops messages between nodes, classical distributed consensus protocols (such as Paxos and Raft) will be unable to stably elect a leader and provide normal service; industrial-grade distributed database systems (such as HBase and Dynamo) will also be unable to synchronize data across machines and provide normal storage services. But the network environments faced by most systems are not this bad. Therefore, we can achieve <strong>some degree</strong> of availability and consistency through consensus algorithms, redundant backups, and other means.</p>
+<p>And this “some degree” is the business requirement we are about to discuss.</p>
+<p><strong>Business requirements</strong>: Designing for different business scenarios and preferences has given rise to the wide variety of distributed system middleware available on the market. Here, we only consider the two requirements of availability and consistency. It is also worth emphasizing again that in practice, most systems do not require <strong>atomic consistency</strong> (<em>atomic consistency</em>) or <strong>perfect availability</strong> (<em>perfect availability</em>).</p>
+<p>For consistency, depending on requirements, there are choices such as strong consistency, weak consistency, and eventual consistency. Industrial-grade systems, in order to provide high availability, often choose weak consistency or eventual consistency within the tolerable range of the business, such as Amazon’s key-value store <a href="https://www.qtmuniao.com/2020/06/13/dynamo/">Dynamo</a>.</p>
+<p>For availability, aspects such as the volume of user requests, concurrency levels, and data size must be considered to define the system’s availability. No system can cover all scenarios. As long as the system design meets the business scenarios it targets, it can be said to satisfy the availability requirements. For example, a private cloud object storage service may face traffic of only a few dozen QPS per day, with reads far exceeding writes and very low concurrency. In this case, we can achieve both consistency and availability without making the system overly complex. But if this service were used in a scenario like Taobao’s Singles’ Day (11.11), the system’s availability would basically vanish.</p>
+<h2 id="Conclusion">Conclusion</h2>
+<p>Before distributed systems became widely popular, CAP summarized the important directions for trade-offs in distributed systems design. Today, with cloud computing and big data in full swing, a large number of excellent distributed systems have emerged, giving us more directions and practical details to consider in system design. Nowadays, when doing system design, there is no need to be too constrained by the CAP principle. Based on the business scenarios you face, make bold trade-offs.</p>
+<h2 id="Recommended-Reading">Recommended Reading</h2>
+<ol>
+<li>Wikipedia, CAP theorem: <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQ0FQX3RoZW9yZW0=">https://en.wikipedia.org/wiki/CAP_theorem<i class="fa fa-external-link-alt"></i></span></li>
+<li>Distributed Systems for Fun and Profit: <span class="exturl" data-url="aHR0cDovL2Jvb2subWl4dS5uZXQvZGlzdHN5cy9hYnN0cmFjdGlvbnMuaHRtbA==">http://book.mixu.net/distsys/abstractions.html<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly93d3cuc29tZXRoaW5nc2ltaWxhci5jb20vYWJvdXQ=">Jeff Hodges<i class="fa fa-external-link-alt"></i></span>, Notes on Distributed Systems for Young Bloods: <span class="exturl" data-url="aHR0cHM6Ly93d3cuc29tZXRoaW5nc2ltaWxhci5jb20vMjAxMy8wMS8xNC9ub3Rlcy1vbi1kaXN0cmlidXRlZC1zeXN0ZW1zLWZvci15b3VuZy1ibG9vZHMvI2NhcA==">https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/#cap<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9jb2RhaGFsZS5jb20veW91LWNhbnQtc2FjcmlmaWNlLXBhcnRpdGlvbi10b2xlcmFuY2Uv">https://codahale.com/you-cant-sacrifice-partition-tolerance/<i class="fa fa-external-link-alt"></i></span></li>
+<li>Recommended by 左耳朵耗子 (Chen Hao), Classic distributed systems architecture resources: <span class="exturl" data-url="aHR0cHM6Ly93d3cuaW5mb3EuY24vYXJ0aWNsZS8yMDE4LzA1L2Rpc3RyaWJ1dGVkLXN5c3RlbS1hcmNoaXRlY3R1cmU=">https://www.infoq.cn/article/2018/05/distributed-system-architecture<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/02/08/CAP/" rel="bookmark">分布式基础（一）：CAP 的理解</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/02/16/not-cp-or-ap/" rel="bookmark">（译）请不要再称数据库为 CP 和 AP</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/02/16/not-cp-or-ap/" rel="bookmark">Please Stop Calling Databases CP or AP</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/08/10/ray-source-reading-2/" rel="bookmark">Ray Source Code Reading (Part 2): Resource Abstraction and Scheduling Policies</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/12/22/kafka/" rel="bookmark">Kafka —— Bridging the Gap Between Log Processing and Message Queuing</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/03/19/wisckey/" rel="bookmark">WiscKey: LSM-Tree Optimizations for SSD Storage</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/CAP/" rel="tag"># CAP</a>
+              <a href="/tags/Distributed-Systems/" rel="tag"># Distributed Systems</a>
+              <a href="/tags/CAP-Theorem/" rel="tag"># CAP Theorem</a>
+              <a href="/tags/Consistency/" rel="tag"># Consistency</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/01/31/shichahai-sunset/" rel="prev" title="初冬日暮什刹海">
+      <i class="fa fa-chevron-left"></i> 初冬日暮什刹海
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/02/08/CAP/" rel="next" title="分布式基础（一）：CAP 的理解">
+      分布式基础（一）：CAP 的理解 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#History"><span class="nav-number">2.</span> <span class="nav-text">History</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Concepts"><span class="nav-number">3.</span> <span class="nav-text">Concepts</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Consistency"><span class="nav-number">3.1.</span> <span class="nav-text">Consistency</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Availability"><span class="nav-number">3.2.</span> <span class="nav-text">Availability</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Partition-Tolerance"><span class="nav-number">3.3.</span> <span class="nav-text">Partition Tolerance</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Explanation"><span class="nav-number">4.</span> <span class="nav-text">Explanation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Conclusion"><span class="nav-number">5.</span> <span class="nav-text">Conclusion</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Recommended-Reading"><span class="nav-number">6.</span> <span class="nav-text">Recommended Reading</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2020/02/08/CAP/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'f0b21ad958008b96caae37759d7d8461',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

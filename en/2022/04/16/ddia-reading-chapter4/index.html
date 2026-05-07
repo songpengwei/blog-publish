@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="The DDIA Reading Group shares chapter by chapter, combining some of my experience in distributed storage and databases in the industry to supplement details. Sharing occurs approximately every two we">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DDIA Reading Notes (Chapter 4): Encoding and Evolution">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter4/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="The DDIA Reading Group shares chapter by chapter, combining some of my experience in distributed storage and databases in the industry to supplement details. Sharing occurs approximately every two we">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/zDLbrhSIuscaQpO.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/VC1ckpB3fi7FPQ6.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/IvwdYEu8ZqHJeCP.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/8NZAFpMU4PRfGqa.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/amgw7pUeodGhisb.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/2rfkGMa3dDWq7YZ.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/KZt8aSOpivxuJbB.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/WTvpoenYzxJhqOB.png">
+<meta property="article:published_time" content="2022-04-16T01:57:28.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.676Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="DDIA">
+<meta property="article:tag" content="Reading Notes">
+<meta property="article:tag" content="Designing Data-Intensive Applications">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2022/04/16/zDLbrhSIuscaQpO.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter4/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="DDIA,Reading Notes,Designing Data-Intensive Applications">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "DDIA Reading Notes (Chapter 4): Encoding and Evolution",
+    "description": "The DDIA Reading Group shares chapter by chapter, combining some of my experience in distributed storage and databases in the industry to supplement details. Sharing occurs approximately every two weeks; welcome to join. The schedule and all transcripts are here. We have a corresponding distributed systems &amp; database discussion group; notifications will be sent in the group before each sharing session. If you would like to join, you can add my WeChat: qtmuniao, briefly introduce yourself, and note: Distributed Systems Group. Chapter 3 discussed storage engines; this chapter continues to dig deeper, exploring encoding-related issues. All places involving cross-process communication require data to be encoded (Encoding), or serialized (Serialization). Because persistent storage and network transmission are both byte-stream-oriented. Serialization is essentially a “dimensionality reduction” operation, reducing high-dimensional data structures in memory to a single-dimensional byte stream, so that underlying hardware and related protocols only need to handle one-dimensional information.",
+    "url": "https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter4/",
+    "datePublished": "2022-04-16T09:57:28+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter4/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>DDIA Reading Notes (Chapter 4): Encoding and Evolution | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2022/04/16/ddia-reading-chapter4/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2022/04/16/ddia-reading-chapter4/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DDIA Reading Notes (Chapter 4): Encoding and Evolution
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2022-04-16 09:57:28" itemprop="dateCreated datePublished" datetime="2022-04-16T09:57:28+08:00">2022-04-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>The DDIA Reading Group shares chapter by chapter, combining some of my experience in distributed storage and databases in the industry to supplement details. Sharing occurs approximately every two weeks; welcome to join. The schedule and all transcripts are <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">here<i class="fa fa-external-link-alt"></i></span>. We have a corresponding distributed systems &amp; database discussion group; notifications will be sent in the group before each sharing session. If you would like to join, you can add my WeChat: qtmuniao, briefly introduce yourself, and note: Distributed Systems Group.</p>
+</blockquote>
+<p>Chapter 3 discussed storage engines; this chapter continues to dig deeper, exploring encoding-related issues.</p>
+<p>All places involving cross-process communication require data to be <strong>encoded</strong> (<strong>Encoding</strong>), or <strong>serialized</strong> (<strong>Serialization</strong>). Because persistent storage and network transmission are both byte-stream-oriented. Serialization is essentially a “<strong>dimensionality reduction</strong>” operation, reducing high-dimensional data structures in memory to a single-dimensional byte stream, so that underlying hardware and related protocols only need to handle one-dimensional information.</p>
+<span id="more"></span>
+<p><em>Author: Muniao Notes <a href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter4">https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter4</a> Please cite the source when reposting</em></p>
+<p>Encoding mainly involves two aspects:</p>
+<ol>
+<li>How to encode to save space and improve performance.</li>
+<li>How to encode to accommodate data evolution and compatibility.</li>
+</ol>
+<p>The first section takes several common encoding tools (JSON, XML, Protocol Buffers, and Avro) as examples, discussing one by one how they perform encoding and how to achieve multi-version compatibility. Here, two very important concepts are introduced:</p>
+<ol>
+<li>Backward compatibility: current code can read data written by older versions of the code.</li>
+<li>Forward compatibility: current code can read data written by newer versions of the code.</li>
+</ol>
+<blockquote>
+<p>After translation into Chinese, these are easily confused, mainly due to the ambiguity of “后” (hòu)—does it mean <strong>behind</strong> (the past) or <strong>after</strong> (the future)? Personally, I think it would be better to translate them as <em>compatible with the past</em> and <em>compatible with the future</em>. But for the sake of convention, I will still use backward/forward compatibility in the following text.</p>
+</blockquote>
+<p>Among them, backward compatibility is more common, because time always moves forward, versions always upgrade, and after upgrading, the code must always handle historical backlog data, naturally producing backward compatibility issues. Forward compatibility is relatively rare; the example given in the book is rolling upgrades across multiple instances, but even then the duration is very short.</p>
+<p>The second section combines several specific application scenarios—databases, services, and messaging systems—to discuss the encoding and evolution involved in the relevant data flows.</p>
+<h1>Data Encoding Formats</h1>
+<p><img data-src="https://s2.loli.net/2022/04/16/zDLbrhSIuscaQpO.png" alt="ddia4-encoding-decoding.png"><span class="image-caption">ddia4-encoding-decoding.png</span></p>
+<p>Encoding has many names, such as <strong>serialization</strong> or <strong>marshalling</strong>. Correspondingly, decoding also has many aliases: <strong>parsing</strong>, <strong>deserialization</strong>, <strong>unmarshalling</strong>.</p>
+<ul>
+<li>
+<p>Why is data in memory so different from data in external storage and on the network?</p>
+<p>With the help of compilers, we can interpret memory as various data structures; but in file systems and networks, we can only stream-read byte streams through a few limited operations like seek/read. What about mmap?</p>
+</li>
+<li>
+<p>Encoding and serialization colliding?</p>
+<p>In transactions, there are also terms related to serialization, so here we specifically use “encoding” to avoid ambiguity.</p>
+</li>
+<li>
+<p>Encoding and encryption?</p>
+<p>The research scopes are somewhat different. Encoding is for persistence or transmission, focusing on format and evolution; whereas encryption is for security, focusing on safety and preventing cracking.</p>
+</li>
+</ul>
+<h2 id="Language-Built-ins">Language Built-ins</h2>
+<p>Many programming languages have built-in default encoding methods:</p>
+<ol>
+<li>Java has <code>java.io.Serializable</code></li>
+<li>Ruby has <code>Marshal</code></li>
+<li>Python has <code>pickle</code></li>
+</ol>
+<p>If you are certain that your data will only be read by a specific language, then these built-in encoding methods work well. For example, deep learning researchers basically all use Python, so they often pass data around in <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnB5dGhvbi5vcmcvemgtY24vMy9saWJyYXJ5L3BpY2tsZS5odG1s">pickle<i class="fa fa-external-link-alt"></i></span> format.</p>
+<p>But these programming language built-in encoding formats have the following disadvantages:</p>
+<ol>
+<li>Bound to a specific language</li>
+<li>Security issues</li>
+<li>Insufficient compatibility support</li>
+<li>Low efficiency</li>
+</ol>
+<h2 id="JSON-XML-and-Their-Binary-Variants">JSON, XML, and Their Binary Variants</h2>
+<p>JSON, XML, and CSV belong to commonly used <strong>text encoding</strong> formats. Their advantage is human readability; their disadvantage is that they are not compact enough and take up more space.</p>
+<p>JSON was originally introduced by JavaScript, so it is used more in Web Services. Of course, with the popularity of the web, it has now become a relatively general encoding format—for example, many log formats are JSON.</p>
+<p>XML is quite old and even more redundant than JSON. It is sometimes used in configuration files, but overall it is being used less and less.</p>
+<p>CSV (delimited by commas, TABs, and newlines) is fairly compact, but its expressiveness is limited. It is sometimes used for database table exports.</p>
+<p>In addition to not being compact enough, <strong>text encoding</strong> has the following disadvantages:</p>
+<ol>
+<li><strong>Insufficient support for numeric types</strong>. CSV and XML simply do not support them—everything is a string. Although JSON distinguishes between strings and numbers, it does not further distinguish between subtypes of numeric types. This is understandable; after all, text encoding is mainly string-oriented.</li>
+<li><strong>Insufficient support for binary data</strong>. It supports Unicode but not binary strings well, which may display as garbled text. Although this can be bypassed via Base64 encoding, it feels somewhat like doing useless work.</li>
+<li><strong>XML and JSON support additional schemas</strong>. A schema describes the data types and tells you how to understand the data. Cooperating with these schema languages can make XML and JSON powerful, but greatly increases complexity.</li>
+<li><strong>CSV has no schema at all</strong>.</li>
+</ol>
+<p>Everything is about being good enough. In many scenarios, data readability is required and encoding efficiency is not a concern, so these encoding formats are sufficient.</p>
+<h3 id="Binary-Encoding">Binary Encoding</h3>
+<p>If data is only read by a single program, does not need to be exchanged, and readability is not a concern, then binary encoding can be used. After the data volume reaches a certain level, the space savings and speed improvements brought by binary encoding are considerable.</p>
+<p>Therefore, JSON has many binary variants: MessagePack, BSON, BJSON, UBJSON, BISON, and Smile, etc.</p>
+<p>For the following example,</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;userName&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Martin&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;favoriteNumber&quot;</span><span class="punctuation">:</span> <span class="number">1337</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;interests&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;daydreaming&quot;</span><span class="punctuation">,</span> <span class="string">&quot;hacking&quot;</span><span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>If encoded using MessagePack, it becomes:</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/VC1ckpB3fi7FPQ6.png" alt="ddia-4-messagepack-enc.png"><span class="image-caption">ddia-4-messagepack-enc.png</span></p>
+<p>It can be seen that the basic encoding strategy is: encode in the order of type, length, bit string, removing useless colons, quotation marks, and curly braces.</p>
+<p>Thus, the 81 bytes of JSON encoding are reduced to 66 bytes, a slight improvement.</p>
+<h2 id="Thrift-and-Protocol-Buffers">Thrift and Protocol Buffers</h2>
+<p>Thrift was originally open-sourced by Facebook, and ProtoBuf by Google around 2007–2008. Both have corresponding RPC frameworks and encoding/decoding tools. Their expressiveness is similar, and their syntax is similar; before encoding, both need to describe the schema using an Interface Definition Language (IDL):</p>
+<figure class="highlight protobuf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">struct Person &#123;</span><br><span class="line">    <span class="number">1</span>: <span class="keyword">required</span> <span class="type">string</span>       userName,</span><br><span class="line">    <span class="number">2</span>: <span class="keyword">optional</span> i64          favoriteNumber,</span><br><span class="line">    <span class="number">3</span>: <span class="keyword">optional</span> list&lt;<span class="type">string</span>&gt; interests</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight protobuf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">message </span><span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="keyword">required</span> <span class="type">string</span> user_name       = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">optional</span> <span class="type">int64</span>  favorite_number = <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">repeated</span> <span class="type">string</span> interests       = <span class="number">3</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>IDL is programming-language-agnostic. Using relevant code generation tools, the above IDL can be translated into code for a specified language. That is, by integrating this generated code, no matter what language is used, the same format can be used for encoding and decoding.</p>
+<p>This is also the foundation that allows different services to use different programming languages and still communicate with each other.</p>
+<p>In addition, Thrift supports multiple different encoding formats, commonly used ones being: Binary, Compact, and JSON. This allows users to make their own trade-offs among encoding speed, space usage, and readability.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/IvwdYEu8ZqHJeCP.png" alt="ddia4-thrift-binary-enc.png"><span class="image-caption">ddia4-thrift-binary-enc.png</span></p>
+<p>Its characteristics can be seen:</p>
+<ol>
+<li><strong>Encoding using field tags</strong>. A field tag actually implies the field <strong>type</strong> and <strong>name</strong>.</li>
+<li>Encoding in the order of type, tag, length, and bit array.</li>
+</ol>
+<p><img data-src="https://s2.loli.net/2022/04/16/8NZAFpMU4PRfGqa.png" alt="ddia4-thrift-compact-enc.png"><span class="image-caption">ddia4-thrift-compact-enc.png</span></p>
+<p>Compared to Binary Protocol, Compact Protocol has the following optimizations:</p>
+<ol>
+<li>The field tag only records the delta.</li>
+<li>Thus compressing the field tag and type into one byte.</li>
+<li>Using variable-length encoding and <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi9wcm90b2J1Zi1lbmNvZGUtdmFyaW50LWFuZC16aWd6YWc=">Zigzag encoding<i class="fa fa-external-link-alt"></i></span> for numbers.</li>
+</ol>
+<p>ProtoBuf is very similar to Thrift Compact Protocol in encoding, also using variable-length encoding and Zigzag encoding. But ProtoBuf’s handling of arrays is significantly different from Thrift’s, using a repeated prefix rather than a true array—the benefits of which will be discussed later.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/amgw7pUeodGhisb.png" alt="ddia4-pb-enc.png"><span class="image-caption">ddia4-pb-enc.png</span></p>
+<h3 id="Field-Tags-and-Schema-Evolution">Field Tags and Schema Evolution</h3>
+<p><strong>Schema</strong>, that is, what fields there are and what type each field is.</p>
+<p>As time goes by, business always changes, and we inevitably <strong>add or delete fields</strong>, <strong>modify field types</strong>—that is, <strong>schema evolution</strong>.</p>
+<p>After the schema changes, we need:</p>
+<ol>
+<li><strong>Backward compatibility</strong>: new code, while processing new incremental data formats, must also handle old stock data.</li>
+<li><strong>Forward compatibility</strong>: old code, if it encounters new data formats, must not crash.</li>
+</ol>
+<ul>
+<li>
+<p>How do ProtoBuf and Thrift solve these two problems?</p>
+<p><strong>Field tags</strong> + <strong>qualifiers</strong> (optional, required)</p>
+<p>Backward compatibility: newly added fields must be optional. This way, when parsing old data, there will be no missing field situation.</p>
+<p>Forward compatibility: field tags cannot be modified, only appended. This way, when old code sees an unrecognized tag, it can simply skip it.</p>
+</li>
+</ul>
+<h3 id="Data-Types-and-Schema-Evolution">Data Types and Schema Evolution</h3>
+<p>Modifying data types is quite troublesome: modifications can only be made among compatible types.</p>
+<p>For example, a string cannot be changed to an integer, but modifications within integers are allowed: 32-bit to 64-bit integers.</p>
+<p>ProtoBuf does not have a list type, but rather a repeated type. Its benefit is that while <strong>being compatible with array types</strong>, it supports modifying an optional <strong>single-value field</strong> to a <strong>multi-value field</strong>. After modification, when old code sees the new multi-value field, it will only use the last element.</p>
+<p>Although Thrift’s list type does not have this flexibility, it can be <strong>nested</strong>.</p>
+<h2 id="Avro">Avro</h2>
+<p>Apache Avro is a subproject of Apache Hadoop, specifically designed for data-intensive scenarios, with good support for schema evolution. It supports two schema languages: <strong>Avro IDL</strong> and <strong>JSON</strong>; the former is suitable for manual editing, and the latter is suitable for machine reading.</p>
+<figure class="highlight protobuf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">record Person &#123;</span><br><span class="line">    <span class="type">string</span>                userName;</span><br><span class="line">    union &#123; null, long &#125;  favoriteNumber = null;</span><br><span class="line">    array&lt;<span class="type">string</span>&gt;         interests;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;record&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Person&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;fields&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">        <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;userName&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;string&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;favoriteNumber&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;null&quot;</span><span class="punctuation">,</span> <span class="string">&quot;long&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span> <span class="attr">&quot;default&quot;</span><span class="punctuation">:</span> <span class="literal"><span class="keyword">null</span></span><span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">        <span class="punctuation">&#123;</span><span class="attr">&quot;name&quot;</span><span class="punctuation">:</span> <span class="string">&quot;interests&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="punctuation">&#123;</span><span class="attr">&quot;type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;array&quot;</span><span class="punctuation">,</span> <span class="attr">&quot;items&quot;</span><span class="punctuation">:</span> <span class="string">&quot;string&quot;</span><span class="punctuation">&#125;</span><span class="punctuation">&#125;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>It can be seen that Avro does not use field tags.</p>
+<ul>
+<li>
+<p>Still encoding the previous example, Avro only uses 32 bytes. Why?</p>
+<p>It does not encode the types.</p>
+</li>
+</ul>
+<p><img data-src="https://s2.loli.net/2022/04/16/2rfkGMa3dDWq7YZ.png" alt="ddia4-avro-enc.png"><span class="image-caption">ddia4-avro-enc.png</span></p>
+<p>Therefore, Avro must work with a schema definition to parse, such as Client-Server exchanging data schemas during the handshake phase of communication.</p>
+<h3 id="Writer-Schema-and-Reader-Schema">Writer Schema and Reader Schema</h3>
+<ul>
+<li>
+<p>Without field tags, how does Avro support schema evolution?</p>
+<p>The answer is to <strong>explicitly</strong> use two schemas.</p>
+</li>
+</ul>
+<p>That is, when encoding data (writing to a file or transmitting), use schema A, called the <strong>writer schema</strong>; when decoding data (reading from a file or the network), use schema B, called the <strong>reader schema</strong>; and the two do not need to be identical, only compatible.</p>
+<p>In other words, as long as the schemas are <strong>compatible</strong> during evolution, Avro can handle both backward and forward compatibility.</p>
+<p><strong>Backward compatibility</strong>: new code reads old data. That is, when reading, the writer schema of the old data (i.e., the old schema) is first obtained, then compared with the reader schema (i.e., the new schema) to obtain a transformation mapping, which is then used to parse the old data.</p>
+<p><strong>Forward compatibility</strong>: old code reads new data. The principle is similar, except that a reverse mapping needs to be obtained.</p>
+<p>When establishing the mapping from the writer schema to the reader schema, there are some rules:</p>
+<ol>
+<li><strong>Match using field names</strong>. Therefore, the field name order in the writer schema and reader schema does not matter.</li>
+<li><strong>Ignore extra fields</strong>.</li>
+<li><strong>Fill in default values for missing fields</strong>.</li>
+</ol>
+<p><img data-src="https://s2.loli.net/2022/04/16/KZt8aSOpivxuJbB.png" alt="ddia-4avro-map.png"><span class="image-caption">ddia-4avro-map.png</span></p>
+<h3 id="Schema-Evolution-Rules">Schema Evolution Rules</h3>
+<ul>
+<li>So how to ensure the compatibility of the writer schema?
+<ol>
+<li>When adding or deleting fields, you can only add or delete fields that have default values.</li>
+<li>When changing a field type, Avro needs to support the corresponding type conversion.</li>
+</ol>
+</li>
+</ul>
+<p>Avro does not have optional and required qualifiers like ProtoBuf and Thrift; instead, it uses a union to specify default values and even multiple types:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">union</span> &#123;</span>null, <span class="type">long</span>, <span class="built_in">string</span>&#125; field;</span><br></pre></td></tr></table></figure>
+<p><strong>Note</strong>: The default value must be of the type of the first branch of the union.</p>
+<p>Changing a field name and adding a type to a union are both backward compatible, but not forward compatible. Think about why?</p>
+<h3 id="How-to-Obtain-the-Writer-Schema-from-Encoded-Data">How to Obtain the Writer Schema from Encoded Data</h3>
+<p>For a given piece of Avro-encoded data, how does the Reader obtain its corresponding writer schema?</p>
+<p>This depends on different application scenarios.</p>
+<ul>
+<li>
+<p><strong>Large files where all data entries are homogeneous</strong></p>
+<p>Typical of the Hadoop ecosystem. If all records in a large file are encoded using the same schema, then the writer schema only needs to be included once in the file header.</p>
+</li>
+<li>
+<p><strong>Database tables that support schema changes</strong></p>
+<p>Since database tables allow schema modifications, the rows in them may have been written during different schema stages. For this situation, an extra schema version number (e.g., auto-incrementing) can be recorded at encoding time, and all schema versions can be stored somewhere.</p>
+<p>When decoding, the corresponding writer schema can be queried by version.</p>
+</li>
+<li>
+<p><strong>Sending data over the network</strong></p>
+<p>During the handshake phase of communication between two processes, exchange the writer schemas. For example, exchange schemas at the beginning of a session, and then use this schema throughout the session lifecycle.</p>
+</li>
+</ul>
+<h3 id="Schemas-in-Dynamically-Generated-Data">Schemas in Dynamically Generated Data</h3>
+<p>One advantage of Avro not using field tags is that there is no need to manually maintain the mapping from field tags to field names, which is friendly for dynamically generated data schemas.</p>
+<p>The example given in the book is exporting backups from a database—note that this is different from the database itself using Avro encoding; here it refers to the exported data being encoded using Avro.</p>
+<p>Before and after changes to the database table schema, Avro only needs to perform corresponding conversions based on the schema at the time of export and generate the corresponding schema data. But if PB were used, you would need to handle the mapping from field tags to field names across multiple backup files yourself. The essence is that Avro’s data schema can coexist with the data, whereas ProtoBuf’s data schema can only be reflected in the generated code and requires manual maintenance of the mapping between old and new versions of backup data and the PB-generated code.</p>
+<h3 id="Code-Generation-and-Dynamic-Languages">Code Generation and Dynamic Languages</h3>
+<p>Thrift and Protobuf generate encoding/decoding code for a given language based on the language-agnostic IDL-defined schema. This is very useful for static languages, because it allows using IDEs and compilers for type checking and can improve encoding/decoding efficiency.</p>
+<p><strong>The essence of the above approach is to internalize the schema into the generated code.</strong></p>
+<p>But for dynamic languages, or interpreted languages, such as JavaScript, Ruby, or Python, since there is no compile-time check, the significance of generated code is not as great, and it actually introduces some redundancy. At this time, frameworks like Avro that support not generating code save some effort; it can write the schema into the data file, and use Avro for dynamic parsing when reading.</p>
+<h2 id="Advantages-of-Schemas">Advantages of Schemas</h2>
+<p><strong>The essence of a schema is explicit type constraints—that is, there must be a schema before there can be data.</strong></p>
+<p>Compared to text encodings like JSON, XML, and CSV that have no type constraints, binary encodings based on explicit definitions like Protocol Buffers, Thrift, and Avro have the following advantages:</p>
+<ol>
+<li>Omit field names, making them more compact.</li>
+<li>The schema is an annotation or documentation of the data, and is always up-to-date.</li>
+<li>The data schema allows low-cost compatibility checks by comparing schemas only, without reading the data.</li>
+<li>For static types, code generation can be used for compile-time type checking.</li>
+</ol>
+<p>Schema Evolution vs. Schema on Read</p>
+<h1>Several Data Flow Models</h1>
+<p>Data can flow from one system to another in many forms, but what remains unchanged is that encoding and decoding are always required during flow.</p>
+<p>When data flows, there will be schema matching issues between the encoding and decoding parties; the previous subsection has already discussed this. This subsection mainly explores several typical inter-process data flow methods:</p>
+<ol>
+<li>Through databases</li>
+<li>Through service calls</li>
+<li>Through asynchronous message passing</li>
+</ol>
+<h2 id="Data-Flow-Through-Databases">Data Flow Through Databases</h2>
+<p>Programs accessing databases may:</p>
+<ol>
+<li><strong>Be accessed by only the same process</strong>. Then the database can be understood as an intermediary through which the process sends data to the future.</li>
+<li><strong>Be accessed by multiple processes</strong>. Then some processes may be old versions and some new versions; at this time, the database needs to consider forward and backward compatibility issues.</li>
+</ol>
+<p>There is also a rather tricky situation: at some point, you add a field to a table; newer code writes rows with that field, and then older code overwrites them into rows missing that field. At this point, a problem arises: we updated a field A, and after the update, we find that field B is gone.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/WTvpoenYzxJhqOB.png" alt="ddia-4-update-by-old.png"><span class="image-caption">ddia-4-update-by-old.png</span></p>
+<h3 id="Data-Written-at-Different-Times">Data Written at Different Times</h3>
+<p>For applications, it may take only a short time to replace the old version with the new version. But for data, the amount of data written by old versions of code may be very large, accumulated over years. After changing the schema, because this old-schema data volume is very large, the cost of fully updating and aligning it to the new version is very high.</p>
+<p>We call this situation: <strong>the lifetime of the data exceeds the lifetime of its corresponding code</strong>.</p>
+<p>When reading, databases generally handle old data missing the corresponding column by:</p>
+<ol>
+<li>Filling in the <strong>default value</strong> for the new version field</li>
+<li>If there is no default value, filling in <strong>null</strong> (nullable)</li>
+</ol>
+<p>Then returning it to the user. Generally, when changing the schema (e.g., alter table), the database does not allow adding columns that have neither a default value nor allow null.</p>
+<h3 id="Storage-Archiving">Storage Archiving</h3>
+<p>Sometimes it is necessary to back up a database to external storage. When making a backup (or snapshot), although there may be data generated at different points in time, various versions of data are usually transformed and aligned to the latest version. After all, since you are doing a full data copy anyway, you might as well do the conversion at the same time.</p>
+<p>As mentioned before, for this scenario, what is generated is one-time immutable backup or snapshot data, so using Avro is more appropriate. This is also a good opportunity to output data in the desired format, such as column-oriented storage formats for analytics: <span class="exturl" data-url="aHR0cHM6Ly9wYXJxdWV0LmFwYWNoZS5vcmcvZG9jcy9maWxlLWZvcm1hdC8=">Parquet<i class="fa fa-external-link-alt"></i></span>.</p>
+<h2 id="Data-Flow-Through-Services-REST-and-RPC">Data Flow Through Services: REST and RPC</h2>
+<p>When communicating over a network, there are usually two roles involved: server and client.</p>
+<p>Generally speaking, services exposed to the public internet are mostly HTTP services, while RPC services are often used internally.</p>
+<p>A server can also be a client at the same time:</p>
+<ol>
+<li>As a client accessing a database.</li>
+<li>As a client accessing other services.</li>
+</ol>
+<p>The latter is because we often split a large service into a set of functionally independent, relatively decoupled services—this is <strong>service-oriented architecture (SOA)</strong>, or the more recently popular <strong>microservices architecture</strong>. There are some differences between the two, but they will not be elaborated on here.</p>
+<p>Services are somewhat similar to databases in that they allow clients to store and query data in some way. But the difference is that databases usually provide some flexible query language, whereas services can only provide relatively rigid APIs.</p>
+<h3 id="Web-Services">Web Services</h3>
+<p>When a service uses HTTP as its communication protocol, we usually call it a <strong>web service</strong>. But it is not limited to the web; it also includes:</p>
+<ol>
+<li>User terminals (such as mobile terminals) making requests to servers via HTTP.</li>
+<li>A service within the same organization sending HTTP requests to another service (microservices architecture, some of whose components are sometimes called middleware).</li>
+<li>Data exchange between services of different organizations. This generally requires some means of verification, such as OAuth.</li>
+</ol>
+<p>There are two methods for designing HTTP APIs: REST and SOAP.</p>
+<ol>
+<li><strong>REST is not a protocol, but a design philosophy</strong>. It emphasizes simple API formats, using URLs to identify resources and HTTP actions (GET, POST, PUT, DELETE) to perform CRUD operations on resources. Due to its concise style, it is becoming increasingly popular.</li>
+<li>SOAP is an XML-based protocol. Although it uses HTTP, its purpose is to be independent of HTTP. It is mentioned less frequently now.</li>
+</ol>
+<h3 id="Problems-Faced-by-RPC">Problems Faced by RPC</h3>
+<p>RPC wants to make calling remote services as natural as calling local (same-process) functions. Although the idea is good and it is now widely used, there are also some problems:</p>
+<ol>
+<li>A local function call either succeeds or fails. But RPC, because it goes through the network, may encounter various complex situations, such as lost requests, lost responses, hanging until timeout, etc. Therefore, retries may be needed.</li>
+<li>If retrying, the <strong>idempotency</strong> issue needs to be considered. Because the previous request may have already reached the server, but the response did not return successfully. Then multiple calls to the remote function must ensure that no additional side effects are caused.</li>
+<li>Remote call latency is unpredictable and greatly affected by the network.</li>
+<li>The programming languages used by the client and server may be different, but if some types are not available in both languages, there will be problems.</li>
+</ol>
+<p>The advantage of REST over RPC is that it does not try to hide the network; it is more explicit, making it less easy for users to overlook the impact of the network.</p>
+<h3 id="Current-Directions-of-RPC">Current Directions of RPC</h3>
+<p>Despite the above problems, in engineering, most of the time these situations are within tolerable ranges:</p>
+<ol>
+<li>For example, local area network networks are usually fast and controllable.</li>
+<li>For multiple calls, idempotency is used to solve the problem.</li>
+<li>For cross-language issues, RPC framework IDLs can be used to solve them.</li>
+</ol>
+<p>But RPC programs need to consider the extreme cases mentioned above; otherwise, they may occasionally produce a very difficult-to-predict BUG.</p>
+<p>In addition, RPC based on binary encoding is usually more efficient than HTTP-based services. But HTTP services, or more specifically, RESTful APIs, have the advantage of a good ecosystem and a large number of tool supports. RPC APIs are usually highly related to code generated by the RPC framework, so they are difficult to exchange and upgrade painlessly across different organizations.</p>
+<p>Therefore, as stated at the beginning of this section: services exposed to the public internet are mostly HTTP services, while RPC services are often used internally.</p>
+<h3 id="Data-Encoding-and-Evolution-of-RPC">Data Encoding and Evolution of RPC</h3>
+<p>Data flow through services can usually assume: all servers are updated first, and then clients are updated. Therefore, only backward compatibility needs to be considered in requests, and forward compatibility in responses:</p>
+<ol>
+<li>Thrift, gRPC (Protobuf), and Avro RPC can evolve according to the compatibility rules of their encoding formats.</li>
+<li>RESTful APIs usually use JSON as the request/response format; JSON is relatively easy to add new fields for evolution and compatibility.</li>
+<li>SOAP will not be discussed.</li>
+</ol>
+<p>For RPC, service compatibility is relatively difficult because once the RPC service’s SDK is released, you cannot control its lifecycle: there will always be users who, for various reasons, will not actively upgrade. Therefore, it may be necessary to maintain compatibility for a long time, or give advance notice and keep announcing, or maintain multiple versions of the SDK and gradually phase out earlier versions.</p>
+<p>For RESTful APIs, a common compatibility method is to put the version number in the URL or in the HTTP request header.</p>
+<h2 id="Data-Flow-via-Message-Passing">Data Flow via Message Passing</h2>
+<p>Earlier we studied different encoding/decoding methods:</p>
+<ol>
+<li>Database: one process writes (encodes), and a process in the future reads (decodes)</li>
+<li>RPC and REST: one process sends a request over the network (encoded before sending) to another process (decoded after receiving) and synchronously waits for a response.</li>
+</ol>
+<p>This section studies <strong>asynchronous messaging systems</strong> that lie between databases and RPC: one storage (message broker, message queue for temporary message storage) + two RPCs (one for the producer, one for the consumer).</p>
+<p>Compared to RPC, the advantages of using message queues are:</p>
+<ol>
+<li>If the consumer is temporarily unavailable, they can act as a temporary storage system.</li>
+<li>When the consumer crashes and restarts, messages are automatically resent.</li>
+<li>The producer does not need to know the consumer’s IP and port.</li>
+<li>A single message can be sent to multiple consumers.</li>
+<li>Producers and consumers are decoupled.</li>
+</ol>
+<h3 id="Message-Queues">Message Queues</h3>
+<p>The book uses <strong>Message Broker</strong>, but another name, message queue, may be more familiar to everyone; therefore, the following text will use message queue.</p>
+<p>In the past, message queues were monopolized by large companies. But in recent years, more and more open-source message queues have emerged to adapt to different scenarios, such as RabbitMQ, ActiveMQ, HornetQ, NATS, and Apache Kafka, etc.</p>
+<p>The <strong>delivery guarantees</strong> of message queues vary by implementation and configuration, including:</p>
+<ol>
+<li><strong>At-least-once</strong>: the same piece of data may be delivered to the consumer multiple times.</li>
+<li><strong>At-most-once</strong>: the same piece of data will be delivered to the consumer at most once, and may be lost.</li>
+<li><strong>Exactly-once</strong>: the same piece of data is guaranteed to be delivered to the consumer once and at most once.</li>
+</ol>
+<p>The logical abstraction of a message queue is called a <strong>Queue</strong> or <strong>Topic</strong>; commonly used consumption methods are of two types:</p>
+<ol>
+<li>Multiple consumers mutually exclusively consume one Topic</li>
+<li>Each consumer exclusively consumes one Topic</li>
+</ol>
+<p><strong>Note</strong>: We sometimes distinguish these two concepts: calling point-to-point mutual consumption a Queue, and many-to-many publish-subscribe a Topic, but this is not universal, or rather, has not formed a consensus.</p>
+<p>A Topic provides a unidirectional data flow, but multiple Topics can be combined to form complex data flow topologies.</p>
+<p>Message queues are usually byte-array-oriented, so you can encode messages in any format. If the encoding is forward and backward compatible, the message format of the same topic can be flexibly evolved.</p>
+<h3 id="Distributed-Actor-Frameworks">Distributed Actor Frameworks</h3>
+<p>The <strong>Actor model</strong> is a concurrent programming model based on message passing. An Actor is usually composed of three parts: State, Behavior, and Mailbox (which can be considered a message queue):</p>
+<ol>
+<li>State: the state information contained in the Actor.</li>
+<li>Behavior: the computation logic of the Actor on the state.</li>
+<li>Mailbox: the buffer where the Actor receives messages.</li>
+</ol>
+<p>Because Actors interact with the outside world only through messages, they are inherently parallel and do not require locks.</p>
+<p>Distributed Actor frameworks essentially integrate message queues and the Actor programming model together. Naturally, when rolling upgrading Actors, forward and backward compatibility issues also need to be considered.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA Reading Notes (Chapter 1): Reliability, Scalability, Maintainability</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA Reading Notes (Chapter 3): B-Trees and LSM-Trees</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA Reading Notes (V): Replication</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="bookmark">DDIA 读书笔记（三）： TP AP 和列存</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DDIA/" rel="tag"># DDIA</a>
+              <a href="/tags/Reading-Notes/" rel="tag"># Reading Notes</a>
+              <a href="/tags/Designing-Data-Intensive-Applications/" rel="tag"># Designing Data-Intensive Applications</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="prev" title="DDIA 读书笔记（三）： TP AP 和列存">
+      <i class="fa fa-chevron-left"></i> DDIA 读书笔记（三）： TP AP 和列存
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/04/16/ddia-reading-chapter4/" rel="next" title="DDIA 读书笔记（四）：编码和演进">
+      DDIA 读书笔记（四）：编码和演进 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">Data Encoding Formats</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Language-Built-ins"><span class="nav-number">1.1.</span> <span class="nav-text">Language Built-ins</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JSON-XML-and-Their-Binary-Variants"><span class="nav-number">1.2.</span> <span class="nav-text">JSON, XML, and Their Binary Variants</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Binary-Encoding"><span class="nav-number">1.2.1.</span> <span class="nav-text">Binary Encoding</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Thrift-and-Protocol-Buffers"><span class="nav-number">1.3.</span> <span class="nav-text">Thrift and Protocol Buffers</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Field-Tags-and-Schema-Evolution"><span class="nav-number">1.3.1.</span> <span class="nav-text">Field Tags and Schema Evolution</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Types-and-Schema-Evolution"><span class="nav-number">1.3.2.</span> <span class="nav-text">Data Types and Schema Evolution</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Avro"><span class="nav-number">1.4.</span> <span class="nav-text">Avro</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Writer-Schema-and-Reader-Schema"><span class="nav-number">1.4.1.</span> <span class="nav-text">Writer Schema and Reader Schema</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Schema-Evolution-Rules"><span class="nav-number">1.4.2.</span> <span class="nav-text">Schema Evolution Rules</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#How-to-Obtain-the-Writer-Schema-from-Encoded-Data"><span class="nav-number">1.4.3.</span> <span class="nav-text">How to Obtain the Writer Schema from Encoded Data</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Schemas-in-Dynamically-Generated-Data"><span class="nav-number">1.4.4.</span> <span class="nav-text">Schemas in Dynamically Generated Data</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Code-Generation-and-Dynamic-Languages"><span class="nav-number">1.4.5.</span> <span class="nav-text">Code Generation and Dynamic Languages</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Advantages-of-Schemas"><span class="nav-number">1.5.</span> <span class="nav-text">Advantages of Schemas</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">Several Data Flow Models</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Data-Flow-Through-Databases"><span class="nav-number">2.1.</span> <span class="nav-text">Data Flow Through Databases</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Written-at-Different-Times"><span class="nav-number">2.1.1.</span> <span class="nav-text">Data Written at Different Times</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Storage-Archiving"><span class="nav-number">2.1.2.</span> <span class="nav-text">Storage Archiving</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Data-Flow-Through-Services-REST-and-RPC"><span class="nav-number">2.2.</span> <span class="nav-text">Data Flow Through Services: REST and RPC</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Web-Services"><span class="nav-number">2.2.1.</span> <span class="nav-text">Web Services</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Problems-Faced-by-RPC"><span class="nav-number">2.2.2.</span> <span class="nav-text">Problems Faced by RPC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Current-Directions-of-RPC"><span class="nav-number">2.2.3.</span> <span class="nav-text">Current Directions of RPC</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Encoding-and-Evolution-of-RPC"><span class="nav-number">2.2.4.</span> <span class="nav-text">Data Encoding and Evolution of RPC</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Data-Flow-via-Message-Passing"><span class="nav-number">2.3.</span> <span class="nav-text">Data Flow via Message Passing</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Message-Queues"><span class="nav-number">2.3.1.</span> <span class="nav-text">Message Queues</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Distributed-Actor-Frameworks"><span class="nav-number">2.3.2.</span> <span class="nav-text">Distributed Actor Frameworks</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter4/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'f6524eae55a0c4ca5487ebc381e602dd',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

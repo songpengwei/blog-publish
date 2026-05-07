@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="一个喜欢摄影的大规模数据系统工程师">
+<meta property="og:type" content="website">
+<meta property="og:title" content="木鸟杂记">
+<meta property="og:url" content="https://www.qtmuniao.com/en/page/5/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="一个喜欢摄影的大规模数据系统工程师">
+<meta property="og:locale" content="en_US">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="分布式系统, 数据库内核, 存储, 大模型, DDIA精读, Ray, 机器学习架构, 系统工程, 后端技术, 论文导读, 读书笔记, 系统设计, 木鸟杂记, 大规模数据系统，数据工程，数据算法">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/page/5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : true,
+    isPost : false,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="分布式系统, 数据库内核, 存储, 大模型, DDIA精读, Ray, 机器学习架构, 系统工程, 后端技术, 论文导读, 读书笔记, 系统设计, 木鸟杂记, 大规模数据系统，数据工程，数据算法">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+
+  <title>木鸟杂记 - 大规模数据系统</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/page/5/index.html" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/page/5/index.html" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content index posts-expand">
+            
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/07/03/distributed-system-1-master-workers/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/07/03/distributed-system-1-master-workers/" class="post-title-link" itemprop="url">Distributed System Architecture (1) — Master-Workers Architecture</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-07-03 18:22:02" itemprop="dateCreated datePublished" datetime="2021-07-03T18:22:02+08:00">2021-07-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-system/" itemprop="url" rel="index"><span itemprop="name">distributed system</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-system/architecture/" itemprop="url" rel="index"><span itemprop="name">architecture</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>Distributed systems have many classic patterns, also known as design patterns. Each pattern solves a classic category of problems; with enough accumulated knowledge, one can make variations and trade-offs to design architectures that fit specific requirements. However, there don’t seem to be many shared experiences in this area, so I plan to summarize some lessons from work and study—partly as notes, and partly hoping they may be helpful to others. Given space constraints and my own limitations, it is difficult to be exhaustive or precise. Corrections are welcome for any inaccuracies.</p>
+<p>Each post will analyze a topic through background overview, architecture modules, and summary/extensions. This is the first post: the Master-Workers architecture.</p>
+</blockquote>
+<h2 id="Overview">Overview</h2>
+<p>The Master-Workers architecture (loosely translated as <strong>primary-secondary architecture</strong>) is a common organizational pattern in distributed systems, such as the Master and ChunkServers in GFS, and the Master and Workers in MapReduce. Faced with a cluster of separate machine resources in a distributed system, the primary-secondary architecture is the most natural and straightforward way to organize them—like a group of people with a leader who makes decisions and coordinates, thereby maximizing the group’s collective output.</p>
+<p>This is also a manifestation of the common divide-and-conquer philosophy in computer systems. A complex system is broken down into several relatively high-cohesion, low-coupling sub-modules, with clearly defined <strong>functional boundaries</strong> and <strong>interaction interfaces</strong>, making the system easier to understand, maintain, and extend. In the primary-secondary architecture, the <strong>primary (Master)</strong> typically maintains cluster metadata and uses it for scheduling, while the <strong>secondaries (Workers)</strong> are usually responsible for reading and writing specific <strong>data shards</strong> (in storage systems) or serving as execution units for <strong>sub-tasks</strong> (in compute systems).</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/07/03/distributed-system-1-master-workers/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/06/14/paxos-zhixing/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/06/14/paxos-zhixing/" class="post-title-link" itemprop="url">Paxos Made Simple: A Guided Reading</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-06-14 18:48:18" itemprop="dateCreated datePublished" datetime="2021-06-14T18:48:18+08:00">2021-06-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/" itemprop="url" rel="index"><span itemprop="name">distributed systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/paper-reading/" itemprop="url" rel="index"><span itemprop="name">paper reading</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="Introduction">Introduction</h2>
+<p>Paxos is an unavoidable algorithm in distributed systems, but it is notoriously difficult to understand. So I had always been avoiding it, but after doing so for a long time, I began to feel some regret. Thus, over the past week, I spent my spare time collecting a lot of materials and trying many different approaches, and finally got a preliminary grasp of it. While it’s still fresh in my mind, I’ll put my understanding down on paper as a brief summary for future reference.</p>
+<p>The inventor of the Paxos algorithm, <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Leslie_Lamport">Leslie Lamport</a>, is one of the founding figures of distributed systems, with many interesting anecdotes. You can catch a glimpse of this just from the name Paxos: Paxos is a fictional ancient Greek city-state that Lamport invented to introduce the consensus problem in distributed systems. After the initial related paper, <a target="_blank" rel="noopener" href="https://lamport.azurewebsites.net/pubs/lamport-paxos.pdf">The Part-Time Parliament</a>, was published in 1998, many people said they couldn’t understand it. So in 2001, Lamport restated the core ideas using relatively concise language and logic, resulting in <a target="_blank" rel="noopener" href="https://lamport.azurewebsites.net/pubs/paxos-simple.pdf">Paxos Made Simple</a>.</p>
+<p>The abstract of Lamport’s <em>Paxos Made Simple</em> paper contains only one sentence:</p>
+<blockquote>
+<p>The Paxos algorithm, when presented in plain English, is very simple</p>
+</blockquote>
+<p>Yet, I cannot understand this kind of simple.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/06/14/paxos-zhixing/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/05/31/zookeeper/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/05/31/zookeeper/" class="post-title-link" itemprop="url">Distributed System Coordination Kernel — Zookeeper</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-05-31 22:59:37" itemprop="dateCreated datePublished" datetime="2021-05-31T22:59:37+08:00">2021-05-31</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1>Zookeeper</h1>
+<p>This post introduces the paper by Patrick Hunt et al. published in 2010, still widely used today, positioned as a <strong>distributed system coordination component</strong> —— Z<a target="_blank" rel="noopener" href="https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf">ooKeeper: Wait-free coordination for Internet-scale systems</a>. When programming with multiple threads and processes, we inevitably need synchronization and mutual exclusion; common methods include shared memory, message queues, locks, semaphores, etc. In distributed systems, different components also inevitably need similar coordination mechanisms, and thus Zookeeper was born. Combined with client libraries, Zookeeper can provide dynamic parameter configuration (configuration metadata), distributed locks, shared registers (shared register), service discovery, group membership, leader election, and a series of other distributed system coordination services.</p>
+<p>Overall, Zookeeper has the following characteristics:</p>
+<ol>
+<li>Zookeeper is a distributed coordination kernel with relatively cohesive functionality, keeping the API simple and efficient.</li>
+<li>Zookeeper provides a set of high-performance, FIFO-guaranteed, event-driven non-blocking APIs.</li>
+<li>Zookeeper organizes data using a filesystem-like directory tree, offering powerful expressiveness and making it convenient for clients to build more complex coordination primitives.</li>
+<li>Zookeeper is a self-contained fault-tolerant system, using the Zab atomic broadcast (atomic broadcast) protocol to ensure high availability and consistency.</li>
+</ol>
+<p>This article follows the order of the paper, briefly introducing Zookeeper’s service interface design and rough module implementation. For more details, please refer to the <a target="_blank" rel="noopener" href="https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf">paper</a> and the <a target="_blank" rel="noopener" href="https://zookeeper.apache.org/">open source project homepage</a>.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/05/31/zookeeper/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/05/16/distributed-system-material/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/05/16/distributed-system-material/" class="post-title-link" itemprop="url">Distributed Systems Learning Resources</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-05-16 01:32:04" itemprop="dateCreated datePublished" datetime="2021-05-16T01:32:04+08:00">2021-05-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="Introduction">Introduction</h2>
+<p>Nowadays, with the development of communication technology, the proliferation of mobile Internet, and the rise of IoT, connected vehicles, and AI, the amount of data generated daily is growing explosively. Data at this scale cannot be processed independently by traditional single-machine systems; it can only be handled by large-scale distributed systems. As a result, distributed systems have gradually become a prominent field of study. However, as a beginner in distributed systems, it is easy to feel overwhelmed when faced with the vast, unclassified sea of learning materials available online.</p>
+<p>But distributed systems have their fundamental research areas and unique evolutionary threads, such as:</p>
+<ol>
+<li>Some fundamental research problems: ordering, consistency, fault tolerance, consensus algorithms, concurrency control, etc.</li>
+<li>Some fundamental theorems: CAP, PACELC, FLP</li>
+<li>Gradually evolving industrial systems: MapReduce, Spark, GFS, Dynamo, Cosmos</li>
+</ol>
+<p>Therefore, by grasping distributed systems along the two dimensions of “time” and “space,” one can master the essentials and learn more clearly. “<strong>Time</strong>” refers to the evolutionary thread of distributed systems, which can be understood by reading papers from different periods in academia and industry. “<strong>Space</strong>” refers to the decomposition of fundamental problems studied in distributed systems, which can be understood by reading books to build a knowledge system. This article briefly summarizes some materials I collected during my study of distributed systems, categorized for your reference. The materials are listed in no particular order; please adopt them as needed.</p>
+<p><strong>Note:</strong> Most of the recommended materials are in English. If you have difficulty reading them, I recommend using the Chrome browser with the “<a target="_blank" rel="noopener" href="https://chrome.google.com/webstore/detail/google-translate/aapbdbdomjkkjkaonfhkkikfgjllcleb">Google Translate</a>” extension installed, which allows one-click “Translate this page.”</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/05/16/distributed-system-material/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/05/09/levedb-data-structures-lru-cache/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/05/09/levedb-data-structures-lru-cache/" class="post-title-link" itemprop="url">A Casual Discussion on LevelDB Data Structures (III): LRU Cache (LRUCache)</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-05-09 23:15:48" itemprop="dateCreated datePublished" datetime="2021-05-09T23:15:48+08:00">2021-05-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Source-Code-Reading/" itemprop="url" rel="index"><span itemprop="name">Source Code Reading</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Source-Code-Reading/leveldb/" itemprop="url" rel="index"><span itemprop="name">leveldb</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>I had heard of LevelDB a while ago, but this time, on a whim, I went through the code with some reference materials, and it really lives up to its reputation. Whether you are interested in storage, want to use C++ elegantly, or want to learn how to architect a project, I highly recommend taking a look. Not to mention that the authors are Sanjay Ghemawat and Jeff Dean.<br>
+If I don’t write something after reading through it once, given my memory, I’ll surely forget it soon. So I wanted to write something about the wonders of LevelDB, but I didn’t want to take the usual approach: starting with an architectural overview and ending with module analysis. While reading the code, I kept thinking about where to start writing. When I was just finishing up, what impressed me most were actually all the exquisite data structures in LevelDB: tailored to the scenario, built from scratch, appropriately trimmed, and precisely coded. Why not start the LevelDB series with these little corner pieces?<br>
+This series mainly wants to share three classic data structures commonly used in engineering in LevelDB: the Skip List used for fast read/write to the memtable, the Bloom Filter used for fast filtering of sstables, and the LRUCache used for partially caching sstables. This is the third article, on LRUCache.</p>
+</blockquote>
+<h2 id="Introduction">Introduction</h2>
+<p>LRU is a data structure commonly seen in engineering, often used in caching scenarios. In recent years, LRU has also become a hot interview question, first because it is widely used in engineering, second because the code volume is relatively small, and third because the data structures involved are very typical. There is a corresponding problem on LeetCode: <a target="_blank" rel="noopener" href="https://leetcode.com/problems/lru-cache/">lru-cache</a>. Compared to real-world scenarios, the problem has been simplified: essentially, it requires maintaining a time-ordered key-value collection, where both keys and values are integers. The classic solution is to use a hash table (unordered_map) and a doubly linked list; the hash table solves the indexing problem, and the doubly linked list maintains the access order. Here is a <a target="_blank" rel="noopener" href="https://github.com/songpengwei/Algorithms/blob/master/engineering/lru-cache.cc">solution</a> I wrote at the time, which is characterized by using two helper functions and being able to return the node itself to support chaining, thereby simplifying the code.</p>
+<p>Returning to the LevelDB source code, as an industrial-grade product, what optimizations and changes have been made to its LRUCache? Let’s break down the LRUCache used in LevelDB together and see what the differences are.</p>
+<p>This article first clarifies how LRUCache is used, then gives an overview of the implementation ideas of LRUCache, and finally details the implementation of the relevant data structures.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/05/09/levedb-data-structures-lru-cache/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/05/08/adjust-scene-photo/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/05/08/adjust-scene-photo/" class="post-title-link" itemprop="url">Photo Editing Tips for Programmers on May Day</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-05-08 21:57:20" itemprop="dateCreated datePublished" datetime="2021-05-08T21:57:20+08:00">2021-05-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Life/" itemprop="url" rel="index"><span itemprop="name">Life</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>The patched-together May Day holiday is coming to an end, and the annual social media photo-sharing competition is about to kick off. Although smartphones’ built-in auto-<em>enhancement</em> features are getting increasingly powerful, they can’t satisfy us programmers’ desire for fine-grained control over everything. Below, I’ll share some of my humble color-grading experience, using a photo I took at Tianxin Pavilion in Changsha as an example, to teach you a dragon-slaying technique for landscape color grading that turns a fake into the real deal. Finally, I’ll give a brief summary of photo editing principles to explore the essence behind image color grading.</p>
+<h2 id="Before-After">Before &amp; After</h2>
+<p>To show that photo color grading really works wonders, here’s a side-by-side comparison for an intuitive feel:</p>
+<p><img src="https://i.loli.net/2021/05/08/6m34cMHoDyUuKEf.jpg" alt="对比图-调色前.jpg"></p>
+<p><img src="https://i.loli.net/2021/05/08/SQ19HFBJnIr3bER.jpg" alt="对比图-调色后.jpg"></p>
+<p>This photo was taken at Tianxin Pavilion, the commanding height of old Changsha. That day, dark clouds gathered and a storm was approaching. Looking into the distance from the second floor of Tianxin Pavilion, yellow tiles and blue sky, bustling traffic — motion and stillness intertwined, as if with the momentum of thunder.</p>
+<p>Below I’ll explain the color grading process and principles step by step, keeping it as concise as possible, with reference materials for those interested in digging deeper.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/05/08/adjust-scene-photo/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/04/17/storage-interview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/04/17/storage-interview/" class="post-title-link" itemprop="url">Distributed Storage Interview Experience</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-04-17 15:53:25" itemprop="dateCreated datePublished" datetime="2021-04-17T15:53:25+08:00">2021-04-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>I changed jobs a while ago for some reasons and interviewed for several distributed storage-related positions. I noticed there are relatively few experience-sharing posts on this topic, so I decided to share mine. Due to company privacy policies, I won’t list questions by company; instead, I’ll briefly summarize the general directions and contents of the interviews. Given my limited experience and expertise, please feel free to point out any mistakes in the comments.</p>
+<h2 id="Related-Positions">Related Positions</h2>
+<p>Distributed storage positions cover a wide range, and can generally be categorized by direction as follows:</p>
+<ol>
+<li>Distributed File Storage</li>
+<li>Object Storage</li>
+<li>Distributed KV or Cache</li>
+<li>Distributed Database (NewSQL)</li>
+<li>Table Storage</li>
+<li>Block Storage</li>
+</ol>
+<p>Their positioning and directions also differ slightly:</p>
+<p><strong>Distributed File Storage</strong>. Supports POSIX semantics or trimmed POSIX. It can serve as a storage base for disaggregated storage and compute, or be used directly by applications, such as deep learning training and intermediate storage for big data processing. Common products include Pangu File System, Polarfs, JuiceFS, etc.</p>
+<p><strong>Object Storage</strong>. Generally stores unstructured data such as images and videos, usually compatible with Amazon’s S3 API. Common products include Amazon S3, Alibaba Cloud OSS, and Tencent Cloud COS.</p>
+<p><strong>Distributed KV or Cache</strong>. Usually compatible with the Redis interface, or a more simplified KV interface. Generally seeks speed, based on memory or SSD, or even new hardware like persistent memory. Used for low-latency business caching or as the base for disaggregated storage and compute systems. Products include ByteDance’s ABase, Alibaba Cloud’s Tair, and PingCAP’s TiKV.</p>
+<p><strong>Distributed Database (or NewSQL)</strong>. Usually provides a SQL interface and unlimited horizontal scalability. Common products include PingCAP’s TiDB, Alibaba Cloud’s PolarDB, and Tencent Cloud’s TDSQL.</p>
+<p><strong>Table Storage</strong>. The classic interface can refer to column-oriented HBase, which is widely used in the big data field. Products include HBase and ByteDance’s ByteTable.</p>
+<p><strong>Block Storage</strong>. Provides a block device interface, generally used for the system disk of cloud hosts. Products include SmartX’s hyper-converged solution.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/04/17/storage-interview/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/04/02/bolt-transaction/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/04/02/bolt-transaction/" class="post-title-link" itemprop="url">Boltdb Source Code Guide (3): Transaction Implementation</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-04-02 21:46:55" itemprop="dateCreated datePublished" datetime="2021-04-02T21:46:55+08:00">2021-04-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/source-reading/" itemprop="url" rel="index"><span itemprop="name">source reading</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/source-reading/boltdb/" itemprop="url" rel="index"><span itemprop="name">boltdb</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>boltdb is one of the few pure-Go, single-node KV libraries on the market. boltdb is based on Howard Chu’s LMDB project, with a clean implementation; excluding unit tests and adapter code, the core code is just a little over four thousand lines. A simple API and minimalist implementation—that is precisely the author’s intent. Due to the author’s limited bandwidth, the original boltdb has been archived and is no longer updated. If you want to improve it and submit new PRs, the etcd-maintained fork, bbolt, is recommended.</p>
+<p>For convenience, this series of guide articles is still based on the original, unchanging repo. The project is small but complete: with just over four thousand lines of code, it implements a single-node KV engine based on B+ tree indexing and supporting single-writer, multiple-reader transactions. The code itself is simple and unadorned, with adequate comments. If you are a Go enthusiast or interested in KV stores, boltdb is absolutely a repo not to be missed.</p>
+<p>This series is planned as three articles, sequentially focusing on <a href="https://www.qtmuniao.com/2020/11/29/bolt-data-organised/"><strong>data organization</strong></a>, <a href="https://www.qtmuniao.com/2020/12/14/bolt-index-design/"><strong>index design</strong></a>, and <strong>transaction implementation</strong>—the three main aspects of boltdb source code analysis. Since these three aspects are not fully orthogonal and decoupled, the narrative will inevitably interweave them. If something is unclear, just skip it for now and come back to sort it out once you have the full picture. This article is the third: boltdb transaction implementation.</p>
+</blockquote>
+<h2 id="Introduction">Introduction</h2>
+<p>Before analyzing boltdb’s transactions, it is necessary to define the concept of a transaction to clarify the scope of our discussion. A <strong>database transaction</strong> (abbreviated: <strong>transaction</strong>) is a logical unit of work in the execution process of a database management system, consisting of a finite <a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93">database</a> operation sequence[^1]. The Wikipedia definition is a bit convoluted; you only need to grasp a few key points when understanding it:</p>
+<ol>
+<li>Execution: at the computation level</li>
+<li>Logical unit: implies indivisibility</li>
+<li>Finite operation sequence: generally not too large in granularity</li>
+</ol>
+<p>Why do we need transactions? Transactions emerged in the 1970s to free database users from cognitive burden: transactions help users organize a set of operations and automatically clean up when something goes wrong. Later, NoSQL and some distributed storage systems sacrificed full transaction support for higher performance. However, history spirals upward—the convenience of transactions led NewSQL and other next-generation distributed databases to bring them back.</p>
+<p>Speaking of transactions, the most famous concept is the four ACID properties. In fact, ACID is more like an easy-to-remember slogan than a strict description, because the properties are not very symmetric conceptually and depend on contextual interpretation. This article will still analyze boltdb’s transaction support from these four aspects, but at the beginning of each section, I will first draw on Martin Kleppmann’s talk[^2] to try to explain their meaning from different angles; then I will analyze how boltdb implements them.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/04/02/bolt-transaction/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/03/30/beijing-hiking-big-crack/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/03/30/beijing-hiking-big-crack/" class="post-title-link" itemprop="url">Hiking Around Beijing — Peach Blossoms in the Haze</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-03-30 23:17:19" itemprop="dateCreated datePublished" datetime="2021-03-30T23:17:19+08:00">2021-03-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/life/" itemprop="url" rel="index"><span itemprop="name">life</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/life/hiking/" itemprop="url" rel="index"><span itemprop="name">hiking</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>There are an awful lot of wild peach trees on the mountains around Beijing, scattered densely across the slopes and huddled in the valleys like an invasive species. During other seasons, I didn’t have any particular feelings about them while hiking, but in spring alone, I was greatly delighted. From afar, they looked like wisps of pink smoke, ethereal and faint. However, in the early spring of the capital, just as the pandemic was settling down, the smog returned. I watched the mountains covered in peach blossoms with my own eyes, yet could only imagine the beautiful scenery under a clear sky.</p>
+<p><img src="http://photo.tuchong.com/15470921/f/1147079771.jpg" alt="Although the peach blossoms are gorgeous, they cannot compete with the old smog"></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/03/30/beijing-hiking-big-crack/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/03/14/facebook-delos/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/03/14/facebook-delos/" class="post-title-link" itemprop="url">Virtual Consensus in Facebook Delos</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-03-14 23:12:27" itemprop="dateCreated datePublished" datetime="2021-03-14T23:12:27+08:00">2021-03-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>This article is based on the OSDI 2020 “Virtual Consensus in Delos” paper presentation. It explores the control-plane storage system in distributed systems and proposes a distributed architecture based on layered abstraction. The core idea is to introduce a logical protocol layer, allowing the physical layer to be implemented and migrated on demand—somewhat analogous to how virtual memory relates to physical memory in a single-machine system.</p>
+</blockquote>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/03/14/facebook-delos/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/02/15/cmu15445-introduction/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/02/15/cmu15445-introduction/" class="post-title-link" itemprop="url">Cmu15445 Course Introduction</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-02-15 22:13:33" itemprop="dateCreated datePublished" datetime="2021-02-15T22:13:33+08:00">2021-02-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Databases/" itemprop="url" rel="index"><span itemprop="name">Databases</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Databases/Open-Courses/" itemprop="url" rel="index"><span itemprop="name">Open Courses</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="Introduction">Introduction</h2>
+<p>In college, I didn’t study databases very deeply. What I still remember are only a few conceptual ideas on the <strong>usage</strong> side, such as SQL, ER diagrams, normal forms, and transactions. I never had a systematic understanding of their <strong>implementation</strong>. But since I’ve embarked on the storage path, I definitely need to fill in my database knowledge. Previously, I saw many people on Zhihu recommending this cmu15445 course, and I had already bookmarked the course homepage, but never found the time to look at it. “Constant thinking leads to a response” — during this holiday, coinciding with a job change, I finally have some large blocks of time to make a start.</p>
+<h2 id="Syllabus">Syllabus</h2>
+<p>A brief introduction to the <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/syllabus.html">syllabus</a> of <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/">cmu15445</a>. This course uses <a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">Database System Concepts</a> as a supplementary textbook, and covers all aspects of the design and implementation of Database Management Systems (DBMS), including:</p>
+<ol>
+<li>Data models (relational, document, key-value)</li>
+<li>Storage models (n-ary, decomposition, i.e., row-oriented and column-oriented)</li>
+<li>Query languages (SQL, stored procedures)</li>
+<li>Storage structures (heaps, log-structured)</li>
+<li>Index design (sorted trees, hash tables)</li>
+<li>Transaction processing (ACID, concurrency control)</li>
+<li>Data recovery (logging, snapshots)</li>
+<li>Execution engines (joins, sorting, aggregation, optimization)</li>
+<li>Concurrency architectures (multi-core, distributed)</li>
+</ol>
+<p>As you can see, the content is very comprehensive. The course uses an open-source educational database as a case study to deeply explore the trade-offs made in database design across all these aspects. This course places great emphasis on programming practice, with a series of interconnected yet concise <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/assignments.html">programming assignments</a>.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/02/15/cmu15445-introduction/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/01/09/go-slice/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/01/09/go-slice/" class="post-title-link" itemprop="url">Golang Notes (III): A Model for Understanding Slice</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-01-09 14:51:46" itemprop="dateCreated datePublished" datetime="2021-01-09T14:51:46+08:00">2021-01-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/" itemprop="url" rel="index"><span itemprop="name">Programming Languages</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/Go/" itemprop="url" rel="index"><span itemprop="name">Go</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="Overview">Overview</h2>
+<p>In Golang, a slice is very similar to arrays in other languages, yet differs in many ways. As a result, beginners often develop misunderstandings and unwittingly fall into various pitfalls when using slices. This short article first starts from the official Go blog, laying out the slice-related syntax provided by the official documentation. Next, it presents a model for understanding slices using diagrams. Finally, it summarizes and analyzes some special usage scenarios, aiming to provide a clearer profile of slices from multiple perspectives.</p>
+<p>If you do not wish to read the lengthy narrative, you can jump directly to the summary at the end.</p>
+<p><img src="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png" alt="go-slice-view-derive.png"></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/01/09/go-slice/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+
+  
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/en/page/4/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/en/">1</a><span class="space">&hellip;</span><a class="page-number" href="/en/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/en/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/en/page/8/">8</a><a class="extend next" rel="next" href="/en/page/6/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+  </nav>
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+
+</body>
+</html>

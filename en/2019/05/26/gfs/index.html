@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Introduction GFS is a distributed large-file storage system custom-built by Google for its business needs, supporting elastic scaling and designed for massive data. It runs on clusters of inexpensive">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GFS — the Art of Trade-Offs">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2019/05/26/gfs/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Introduction GFS is a distributed large-file storage system custom-built by Google for its business needs, supporting elastic scaling and designed for massive data. It runs on clusters of inexpensive">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/BnLY4kVzAIOX5Si.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/03/21/tsEkSRB5vdx27jO.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/rtYVFlPubGpaSqL.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/BnLY4kVzAIOX5Si.jpg">
+<meta property="article:published_time" content="2019-05-25T16:10:06.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.673Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="distributed system">
+<meta property="article:tag" content="storage">
+<meta property="article:tag" content="gfs">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/BnLY4kVzAIOX5Si.jpg">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2019/05/26/gfs/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="distributed system,storage,gfs">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "GFS — the Art of Trade-Offs",
+    "description": "Introduction GFS is a distributed large-file storage system custom-built by Google for its business needs, supporting elastic scaling and designed for massive data. It runs on clusters of inexpensive commodity servers, features automatic fault tolerance, and supports concurrent access from a large number of clients. GFS is designed for large files and read-heavy workloads. Although it supports file modifications, it only optimizes for appends. It does not support POSIX semantics but implements a similar file operation API. It was a groundbreaking industrial-scale storage system developed by Google around the same time as MapReduce to solve large-scale data storage problems such as indexing.",
+    "url": "https://www.qtmuniao.com/en/2019/05/26/gfs/",
+    "datePublished": "2019-05-26T00:10:06+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2019/05/26/gfs/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>GFS — the Art of Trade-Offs | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2019/05/26/gfs/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2019/05/26/gfs/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2019/05/26/gfs/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          GFS — the Art of Trade-Offs
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-05-26 00:10:06" itemprop="dateCreated datePublished" datetime="2019-05-26T00:10:06+08:00">2019-05-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img data-src="https://i.loli.net/2020/02/09/BnLY4kVzAIOX5Si.jpg" alt="write control and data flow"><span class="image-caption">write control and data flow</span></p>
+<h2 id="Introduction">Introduction</h2>
+<p>GFS is a distributed large-file storage system custom-built by Google for its business needs, supporting elastic scaling and designed for massive data. It runs on clusters of inexpensive commodity servers, features automatic fault tolerance, and supports concurrent access from a large number of clients.</p>
+<p>GFS is designed for large files and read-heavy workloads. Although it supports file modifications, it only optimizes for appends. It does not support POSIX semantics but implements a similar file operation API. It was a groundbreaking industrial-scale storage system developed by Google around the same time as MapReduce to solve large-scale data storage problems such as indexing.</p>
+<span id="more"></span>
+<p>Its main design details are as follows:</p>
+<ul>
+<li><strong>Simplified system metadata</strong>: The Master maintains two important mappings: file path to logical chunk, and the relationship between logical chunks and their multiple replicas.</li>
+<li><strong>Large chunk size</strong>: It chose 64 MB, which was considered quite large at the time, as the basic unit of data storage to reduce metadata.</li>
+<li><strong>Relaxed consistency</strong>: It allows content inconsistency among multiple replicas to simplify implementation and improve performance, ensuring corrupted data remains invisible to users through read verification.</li>
+<li><strong>Efficient replica synchronization</strong>: When synchronizing multiple replicas, the control flow and data flow are separated to improve synchronization efficiency using network topology.</li>
+<li><strong>Leases to distribute pressure</strong>: The Master delegates some authority to a Chunkserver via a lease, which is responsible for read/write control among the multiple replicas of a chunk.</li>
+<li><strong>Concurrent append optimization</strong>: Multiple clients concurrently append to the same file, guaranteeing data atomicity and at-least-once semantics.</li>
+<li><strong>Fast snapshot support</strong>: Uses a COW (copy-on-write) strategy to implement snapshot operations, and performs copy-on-write through chunk reference counting.</li>
+<li><strong>Per-node lock control</strong>: For each operation, read locks must be acquired node by node along the file path, with a read or write lock acquired at the leaf node; of course, file paths are prefix-compressed.</li>
+<li><strong>Asynchronous garbage collection</strong>: Data deletion and other master maintenance operations (corrupted chunk cleanup, expired chunk removal) are unified into a periodic process.</li>
+<li><strong>Version number marking</strong>: Helps clients identify stale data.</li>
+<li><strong>Chunk checksums</strong>: A 32-bit checksum is computed for every 64 KB block.</li>
+</ul>
+<p><em>Author: 木鸟杂记 <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, please indicate the source when reposting</em></p>
+<h2 id="Overview">Overview</h2>
+<h3 id="Basic-Assumptions">Basic Assumptions</h3>
+<p>Like any system, the scenarios it targets require some core assumptions, so that all subsequent designs can make trade-offs based on them. So what are the basic assumptions of GFS as a distributed file system? We can look at it from several aspects: error handling, file size, modification patterns, and consistency model.</p>
+<h4 id="Error-Handling">Error Handling</h4>
+<p>One of the innovations of this file system is abandoning expensive industrial-grade hardware and choosing clusters of inexpensive commodity server disks as the storage medium. Therefore, it is necessary to shield the unreliability of this cheap hardware at the software layer and provide a reliable storage service for upper-layer applications—this is the same problem faced by computing frameworks like MapReduce. In addition, at the software layer, there are usually hundreds or thousands of clients accessing the cluster simultaneously, and they may be distributed across an equally large number of other machines.</p>
+<p>In other words, when building a system of this scale on such storage media, component failures should not be treated as exceptions but as the norm. For example, user code may have bugs, the operating system may have bugs, and disks, memory, networks, and even power supplies may all fail.</p>
+<p>Therefore, when designing the system, we must introduce continuous monitoring to monitor the health of various software and hardware components; integrate error detection, fault tolerance, and automatic recovery mechanisms to alert, handle, and automatically recover from basic errors.</p>
+<h4 id="Targeting-Large-Files">Targeting Large Files</h4>
+<p>GFS is designed for single files ranging from tens of megabytes to several gigabytes. This was considered very large at the time (2003). Of course, with the further development of the Internet and communication infrastructure, and the explosive growth of non-textual data such as images and videos, this assumption now seems quite ordinary; but it also shows the foresight of Google’s system evolution.</p>
+<p>Returning to the scenario at the time, for millions of KB-sized files, even if the file system could support their storage, it would be difficult to manage them efficiently. Therefore, GFS readjusted some basic designs of conventional file systems: including the size of file blocks and the process of I/O operations.</p>
+<h4 id="Append-Only">Append-Only</h4>
+<p>In the scenarios targeted by GFS, all file modification types are basically dominated by <strong>appends</strong>, with rarely any overwriting of existing parts. As for random writes, although supported, they are rare. Generally speaking, once writing is complete, the file becomes read-only and is <strong>read sequentially</strong>.</p>
+<p>There are many such scenarios, such as data streams generated by continuously running applications, archived data, and intermediate datasets produced by some machines for other machines to consume synchronously or asynchronously. Considering these access patterns are all for large data files, how to guarantee the <strong>concurrency</strong> and <strong>atomicity</strong> of <strong>append operations</strong> becomes a key point of file system design; whereas the traditional approach of caching at the client side for data locality is not so attractive here, and no additional optimization is needed for it.</p>
+<h4 id="Co-design">Co-design</h4>
+<p>Through co-design of the system side and the application side, the flexibility of the system can be greatly improved. For example, GFS weakens the consistency model, greatly simplifying the system design without burdening user code; another example is that GFS introduces atomic append operations, allowing multiple clients to concurrently append to the same file without additional synchronization operations.</p>
+<h4 id="High-Throughput">High Throughput</h4>
+<p>The design prioritizes high throughput over low latency. Therefore, to guarantee throughput, latency can be sacrificed appropriately. That is, GFS is more suitable for batch tasks than real-time tasks.</p>
+<h3 id="Interface">Interface</h3>
+<p>Although GFS does not implement POSIX (Portable Operating System Interface) semantics, its API is similar to that of a file system, including create, delete, open, close, read, and write. In addition, a rather special operation is record append, which is quite powerful, or rather specifically optimized by Google for its scenarios—it supports concurrent writes from multiple clients, and can greatly improve throughput during the reduce disk-write phase of MapReduce tasks.</p>
+<p>So what does GFS cut compared to POSIX file system semantics? For example, fine-grained permission control, multi-user and group-user control, symbolic links, and so on.</p>
+<h3 id="Architecture-Diagram">Architecture Diagram</h3>
+<p><img data-src="https://i.loli.net/2020/03/21/tsEkSRB5vdx27jO.png" alt="gfs-architecture.png"><span class="image-caption">gfs-architecture.png</span></p>
+<p>The picture tells a great deal; we can see a lot of information from it:</p>
+<ol>
+<li><strong>Physically</strong>, the system has three <strong>roles</strong>: <strong>Client, Master node, and Chunkserver node</strong>. There is only one Master node; the others have multiple instances. Essentially, both Chunkserver and Client appear as one or a group of processes on a Linux system. Therefore, Client and Chunkserver may be on the same Linux machine.</li>
+<li><strong>Logically</strong>, the system has two major parts: <strong>metadata and data</strong>. Metadata mainly includes the file system namespace, access control information, and the mapping from files to their constituent chunks. This data structure resides on the Master. Data includes the actual data of each file; each file is divided into fixed-size chunks, which are distributed across Chunkservers in some manner.</li>
+<li>The Client side consists of two parts: user code and the GFS Client Library. The latter is provided as a library for the former to call. For each file operation, the Client first queries the Master for file metadata, then goes to the corresponding Chunkserver to find the data based on the obtained location information.</li>
+</ol>
+<p>There are also some things not detailed in the diagram but very important in implementation:</p>
+<ol>
+<li>The Master maintains some system events with Chunkservers, including lease management, orphan chunk reclamation, chunk migration, and so on. The Master and Chunkservers use heartbeats to collect metadata and issue the above control information.</li>
+<li>Each file chunk is replicated three times across different machine racks—this is the most direct and brute-force approach to fault tolerance. But it brings many other benefits, such as concurrent reads, which will be discussed in detail later.</li>
+<li>Neither the Client nor the Chunkserver caches recently accessed data at the GFS level, as in a computer’s storage hierarchy. First, this simplifies the design; second, the chunks are too large for caching to be useful; third, the Linux system’s own cache can be utilized.</li>
+</ol>
+<h3 id="Single-Master">Single Master</h3>
+<p>Everyone says single points are bad, so why does GFS still use a single Master? Because it greatly simplifies the design. If there is global information, complex global control policies can be easily implemented. But of course, the disadvantages are also obvious: what if the Master goes down? What if the Master’s outbound bandwidth is too small?</p>
+<p>For the former, backups can be done in multiple ways. In the MapReduce paper analysis, several methods were analyzed: snapshot+log, primary-backup, externalized state, and heartbeat recovery. GFS probably uses 1, 3, and 4.</p>
+<p>For the latter, the approach is to minimize the request interaction and data transfer between the Client and the Master. GFS’s main methods:</p>
+<ol>
+<li>The Client does not exchange actual file data with the Master; it only requests metadata, such as the location information of the primary chunk, and then goes to the corresponding Chunkserver.</li>
+<li>The Client caches metadata for a limited time, so that for a series of consecutive requests from the same client, the number of metadata requests is minimized.</li>
+</ol>
+<p>Let me now detail the read flow (filename+offset):</p>
+<ol>
+<li>The Client translates the file offset into chunk id + offset within the chunk.</li>
+<li>The Client interacts with the Master to get the locations of all replicas of this chunk through filename + chunk id + inner chunk offset. The Client caches this information in a dictionary mapping filename+chunk id -&gt; replica locations.</li>
+<li>The Client then selects the nearest replica (of course, if it fails, it will try the next one), sends it a request with the chunk handle + byte range, and reads the data.</li>
+</ol>
+<p>Because of the above cache, as long as it has not expired, subsequent accesses to the same chunk do not need to go through the Master. And this can be further optimized: for example, a Client can request the locations of multiple chunks in a single request; or when the Master returns, it not only returns the replica locations of the requested chunk but also returns the replica locations of the next few chunks in the same file. These can all effectively reduce the Master’s load.</p>
+<h3 id="Chunk-Size">Chunk Size</h3>
+<p><strong>Chunk size selection is a core design point</strong>. It chose 64 MB, which was considered relatively large at the time, as the fixed size of a chunk. Each chunk is physically a file under a Linux system. There are three benefits to this:</p>
+<ol>
+<li><strong>Reduce the number of interactions between the Client and the Master</strong>: The Client requests information from the Master on a per-chunk basis. Therefore, given a fixed amount of requested data, the larger the chunk, the fewer the requests.</li>
+<li><strong>Reduce cross-chunk reads for a single request</strong>: This is also easy to understand—the larger the chunk, the more likely the byte range of the same request falls within a single chunk.</li>
+<li><strong>Reduce the total metadata size for chunks</strong>: To store a fixed total size of data, the larger the individual chunk, the fewer chunks are needed. The metadata for a single chunk is relatively fixed, so the total metadata size becomes smaller. With the Master’s memory unchanged, more metadata can be stored, thereby increasing the system’s capacity limit.</li>
+</ol>
+<p>Any design involves trade-offs. Since choosing large chunks has the above benefits, it also brings the following drawbacks:</p>
+<ol>
+<li><strong>Internal fragmentation</strong>. For example, if a large number of small files need to be stored, and the size of each small file is less than one chunk size, in GFS it still occupies at least one chunk, resulting in a lot of internal fragmentation. Of course, the last chunk of each file will likely also have some fragmentation.</li>
+<li><strong>Small file hot spots</strong>. If there are a large number of small files in the system and they are allocated to a single Chunkserver, that Chunkserver may become a hot spot (because the number of chunks each Chunkserver can store is fixed, and if each file occupies fewer chunks, the number of files it serves will be larger). Generally, this is not a problem. If it really happens, the number of replicas for small files can be <strong>temporarily increased</strong> (so there are more alternatives to distribute requests). Other possible solutions that Google started brainstorming: solve it in a P2P-like manner, that is, <strong>a Client can read data from other Clients</strong>.</li>
+</ol>
+<p>However, for GFS, small files are not the main target traffic.</p>
+<h3 id="Metadata">Metadata</h3>
+<p>It mainly includes several collections and mappings, all stored in the Master’s memory. Therefore, <strong>Master memory</strong> and <strong>the amount of metadata per unit of data</strong> determine the system’s capacity.</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1.</span> file <span class="built_in">list</span> <span class="keyword">and</span> logic chunk <span class="built_in">list</span></span><br><span class="line"><span class="number">2.</span> file name -&gt; chunks(identify by <span class="built_in">id</span>)</span><br><span class="line"><span class="number">3.</span> chunk <span class="built_in">id</span> -&gt; chunk replica location</span><br></pre></td></tr></table></figure>
+<p>Here GFS learned from common database practice and persisted any changes to the first two data structures in an <strong>operation log</strong>, for recovery when necessary. As for the last mapping, it adopts another strategy: every time the Master recovers, this mapping is built and maintained through heartbeats from each Chunkserver. Why is there this difference? I’ll leave it as a cliffhanger; I’ll explain below.</p>
+<h4 id="In-Memory-Data-Structures">In-Memory Data Structures</h4>
+<p>Storing all metadata in the Master’s memory has many benefits:</p>
+<ol>
+<li>The most direct one is <strong>simplicity</strong>. Often, simplicity is power: it means easy maintenance, easy extension, good performance, and so on.</li>
+<li>The Master can easily obtain global information, which can be used to: <strong>reclaim orphan chunks to free space, re-replicate chunks to deal with failures, and continuously migrate chunks to balance load</strong>.</li>
+<li>If memory becomes a bottleneck, just add more memory.</li>
+</ol>
+<p>The downside is that Master memory can indeed become a bottleneck and a single point. The single point issue will not be discussed in detail here. Regarding the capacity bottleneck, first, the storage scale that GFS faced at the time was not as large as it is now; second, every 64 MB file chunk can be compressed to an average of only 64 bits of metadata. Finally, most files are assumed to occupy many chunks. Overall, <strong>the goal is to compress the metadata per unit of data as much as possible, thereby maximizing system capacity under limited Master memory</strong>. This seems to have been mentioned above—well, Google’s paper repeats things over and over. After all, for writing, echoing is beauty.</p>
+<h4 id="Chunk-Locations">Chunk Locations</h4>
+<p>At first, GFS also intended to persist the location information of each replica of a chunk on the Master. Later, it was found that passively collecting this from each Chunkserver every time was simpler and more direct. Because each Chunkserver naturally knows the information about the chunk replicas in its own domain, having them report to the Master each time keeps the information most consistent. Suppose this information is persisted on the Master; when the Master recovers after a crash, it restores this information from local storage. But during this downtime, many Chunkservers may have gone down, and many Chunkservers may have joined the cluster, making the information inconsistent. It would still need to be synchronized to consistency through heartbeats, so why not build it through heartbeats from the start?</p>
+<p>After some thought, I believe the core point of this persistence design for the chunk id -&gt; chunk replica location mapping is that, unlike the filename and file -&gt; chunk mappings, <strong>it cannot be updated while the Master is down</strong>; whereas due to the unreliability of a single Chunkserver in a large-scale cluster and the uncertainty of various operations, it is <strong>constantly changing</strong>. This is an inherent characteristic of distributed clusters, so this design can be said to be a stroke of genius.</p>
+<h4 id="Operation-Log">Operation Log</h4>
+<p>The operation log is used to persist the file namespace and the file name -&gt; chunk mapping, and serves two purposes:</p>
+<ol>
+<li>As mentioned above, it is used to persist the above metadata and reconstruct the metadata after a Master crash recovery.</li>
+<li>For concurrent operations, it is used to determine the operation order, equivalent to a “lock” concept.</li>
+</ol>
+<p>Therefore, for files, chunks, and version numbers in GFS, they can all be uniquely determined by the order in which they are written to the operation log.</p>
+<p>The operation log is so important that we cannot just back it up on the Master’s hard disk—what if the Master is completely destroyed? It must also be synchronized to other remote machines. As mentioned earlier, this log is somewhat similar to a WAL (Write Ahead Log): all modification operations must first be written to the operation log before they can be applied to the Master’s in-memory data structure and then exposed to the Client. Otherwise, during crash recovery, the information obtained by the Client and the Master is often inconsistent. (Of course, to avoid frequent disk flushing affecting normal request performance, some operations can be batched before flushing, but this also brings inconsistency issues, so these considerations need to be flexibly adjusted according to actual business scenarios.)</p>
+<p><strong>Where there is an operation log, there is a checkpoint</strong>. Because a large system faces so many requests, if every time the Master recovers it has to read the operation log from the very beginning, the process would be extremely long. To compress the operation log, a natural idea is to periodically checkpoint, persisting the <strong>state machine</strong> or <strong>in-memory data structure</strong> corresponding to the log before a certain point in time in some way. GFS chose a B-tree because it can be loaded directly into memory without transformation (for example, building a dictionary from key-value pairs), thereby further speeding up recovery time.</p>
+<p>When doing a snapshot, GFS uses a small trick to avoid conflicting with the current write to the operation log (after all, modifying the same file requires locking). When it’s time to do a checkpoint, the operation log is switched to a new file. Then a new thread is started to convert the old file into a checkpoint in the background.</p>
+<p>Although old snapshots can be released after the latest checkpoint is done, it’s better to be safe than sorry. In practice, GFS often keeps a few extra checkpoints.</p>
+<h3 id="Consistency-Model">Consistency Model</h3>
+<p>This part was rather difficult for me to understand when I first read the paper, but later I realized it was very clever—by appropriately relaxing consistency constraints while <strong>meeting application requirements</strong>, the implementation can be <strong>greatly simplified</strong>.</p>
+<p>Before detailing the GFS design, we must first clarify one question: <strong>what gives rise to the consistency problem</strong>? If this question is not clear, then all the following GFS designs may make no sense at all, which was the reason I couldn’t understand this part at first. The answer is <strong>multiple replicas</strong>; any system with multiple replicas must face the consistency problem. Because of the unreliability of the network, the unreliability of the Client, and the unreliability of the Chunkserver—in short, every node in a distributed system and the communication between nodes is unreliable. Synchronizing a piece of content to multiple replicas takes time (therefore this operation is <strong>not atomic</strong>, and may leave the system in an awkward intermediate state). During this time, if any component (Client, Chunkserver, or network) has a problem, inconsistency among different replicas will occur. When subsequent Clients read the data, they will be troubled by the inconsistent replicas—which one should be taken as the standard?</p>
+<h4 id="GFS’s-Guarantees">GFS’s Guarantees</h4>
+<p>GFS believes that there is no need to provide full POSIX file system semantics; only the following basic guarantees are sufficient for the targeted scenarios:</p>
+<ol>
+<li><strong>Changes to the file namespace (such as file creation operations) are atomic</strong>.</li>
+</ol>
+<p>For the first point, the simplest implementation is to add a big lock outside the file namespace data structure in the Master. All operations are mutually exclusive, so any change to it is atomic, and the operation log can determine an order for all operations. However, too coarse a lock granularity will inevitably affect performance, so in the file directory tree, each node actually has a lock; the specific locking process will be detailed later.</p>
+<ol start="2">
+<li><strong>The state of a modified chunk depends on the type of modification, whether the modification succeeded or failed, and whether it was a concurrent modification</strong>.</li>
+</ol>
+<p><img data-src="https://i.loli.net/2020/02/09/rtYVFlPubGpaSqL.png" alt="modified file state"><span class="image-caption">modified file state</span></p>
+<p>As shown in the figure, a chunk has three states, in descending order of consistency level: defined, undefined but consistent, and inconsistent. Understanding these levels requires some background, which is mentioned in different places in the paper; here I reorganize it:</p>
+<ol>
+<li><strong>Modification operations</strong>. Include write operations and append operations. Write operations need to specify chunk+offset. After a successful append operation, the system will return the offset of the successful append to the client.</li>
+<li><strong>Concurrent writes</strong>. If two clients simultaneously write to the same offset of the same chunk, there is an ordering issue. If they are nearly simultaneous, the system does not guarantee the concurrent order. Then when the client reads back, it may not necessarily read the data it just wrote.</li>
+<li><strong>Append failure</strong>. The append operation guarantees at least one success. During an append operation, assuming three replicas are configured but only two replicas are written successfully and the last replica times out (possibly because the corresponding chunk server is down; of course, after restarting, GFS will mark it as stale using the chunk version and skip that offset), then the append operation will retry, and the failed data <strong>will not be deleted</strong>. However, GFS has an alignment operation: after the retry succeeds, the starting offset of the appended data in the three replicas is defined (i.e., consistent). Then the replica that failed last time will have a hole, which the system will fill with special characters.</li>
+</ol>
+<p>With this background in mind, let me first state a conclusion: <strong>defined/undefined refers to the overwrite ordering problem when multiple clients concurrently write to the same offset; consistent/inconsistent refers to whether the content at the same offset is the same across multiple replicas</strong>. Let me explain these terms in detail:</p>
+<ol>
+<li><strong>Defined</strong>: After a client writes to an offset and then reads the data at that offset, what is read must be what it just wrote.</li>
+<li><strong>Undefined but consistent</strong>: Multiple clients concurrently write to the same offset; it is uncertain who will overwrite whom (this order is arranged by the Chunkserver where the Primary Replica resides, which will be discussed later). That is, after writing and then reading, it is uncertain whether what is read is what was written by itself or overwritten by someone else. But eventual consistency is guaranteed: after the concurrent writes are completed, the final replicas are consistent.</li>
+<li><strong>Inconsistent</strong>: After a modification operation, the data at the same offset in all replicas is not exactly the same.</li>
+</ol>
+<p>It is also worth mentioning that because the client caches chunk locations, it may read stale information. Of course, expiration events and reopening the file will refresh this information, but there is a window where stale information can be obtained. However, since most GFS scenarios are appends, stale data is generally not read.</p>
+<h4 id="Impact-on-User-Code">Impact on User Code</h4>
+<p>By using other technical means: relying on <strong>appends</strong> rather than random writes, <strong>checkpoint</strong> techniques, and <strong>self-checking, self-locating</strong> record writes (i.e., doing checksums and IDs in the application layer or library), the above relaxed consistency model can be used with confidence. Let me explain these techniques in detail below.</p>
+<ol>
+<li>
+<p><strong>Append writes and checkpoints</strong></p>
+<p>The scenario GFS actually faces is far more appends than random writes. Then in a scenario with almost only appends, the strategy for maintaining consistency can be much simpler. A typical scenario is a writer writing from beginning to end. Using two small tricks can guarantee consistency: <strong>a. rename after writing; b. checkpoint periodically.</strong> The former can guarantee the atomicity of file writing: either it is fully visible or not visible at all. For the latter, each checkpoint is actually defined and naturally consistent. Readers can safely read up to the last checkpoint. Even if the writer fails and restarts, it can incrementally write from the last checkpoint. During this process, readers will not read inconsistent data.</p>
+</li>
+<li>
+<p><strong>Self-checking and self-locating</strong></p>
+<p>Another classic scenario is multiple writers concurrently appending to merge sharded results or act as a producer-consumer queue. As mentioned earlier, for append writes, GFS provides an <strong>at-least-once</strong> semantic guarantee. Since record writes are retried on failure but not deleted, there must be some failed records (manifested as failed records on some replicas and padding on others).</p>
+<p>GFS’s strategy is to leave the handling of these erroneous records to the reader. The specific handling method is: for corrupted records, the checksum written by the writer can be used to verify and skip them; for duplicate records, the writer provides a record id, which the reader can use to filter during reading.</p>
+<p>Of course, the code for the above logic is built into the library functions, and application-layer code can call it conveniently.</p>
+</li>
+</ol>
+<h2 id="System-Interactions">System Interactions</h2>
+<p>All read and write flow designs have a basic principle—minimize the participation of the Master node. Because the Master node easily becomes a single-point bottleneck. Next, I will describe in detail how the client, master node, and chunk servers interact to complete <em>data changes</em>, <em>atomic record appends</em>, and <em>snapshot operations</em>.</p>
+<h3 id="Leases-and-Mutation-Order">Leases and Mutation Order</h3>
+<p>File modifications on a distributed system include <strong>metadata modifications</strong> and <strong>chunk writes and appends</strong>. Chunk modification operations act on all its replicas, and an order needs to be determined when writing to different replicas. As mentioned earlier, we need to reduce the Master’s involvement as much as possible, so this decision cannot be made directly by the Master. GFS uses the mechanism of <strong>leases</strong>: the Master periodically authorizes a chunk’s replica on a certain server (with a timeout, hence called a lease). The replica that receives the authorization is called the <strong>primary replica</strong>, which arranges the write order. In this way, the Master delegates <em>some authority</em> to the server where a certain replica resides for a <em>period of time</em>. That is, there are two restrictions:</p>
+<ol>
+<li><strong>Scope of authority</strong>. Only for all read and write operations of this chunk.</li>
+<li><strong>Lease duration</strong>. There is a timeout (initially 60s) and needs to be renewed periodically. Generally, as long as it is alive, the Master will agree to its renewal request. However, occasionally the Master will actively revoke a lease to prevent a specific chunk from being modified, for example, before taking a snapshot.</li>
+</ol>
+<p>Using leases does reduce the interaction between the client and the Master node, but it heavily relies on <strong>clock synchronization among multiple nodes</strong>. For example, suppose each lease carries a timestamp of its expiration. This timestamp is generated on the Master and checked on the primary replica. If the primary replica’s clock is slow, the Master may consider the lease expired before it renews, and thus authorize the lease to another replica. At this point, there are two primary replicas simultaneously, which can cause some problems. In addition, if the network between the Master and the primary replica is disconnected, the Master authorizes the lease to another node, while the client still caches the address of the original primary replica and can communicate with that node, which will also cause problems.</p>
+<p>Let me now explain the write flow step by step with reference to the flowchart:</p>
+<p><img data-src="https://i.loli.net/2020/02/09/BnLY4kVzAIOX5Si.jpg" alt="write control and data flow"><span class="image-caption">write control and data flow</span></p>
+<ol>
+<li>The client asks the Master for the locations of the <strong>primary replica and other replicas</strong> of the chunk to be written. If there is no primary replica yet, the Master authorizes one through a lease.</li>
+<li>After the Master sends this information to the client, the client caches it. And unless the primary replica is unreachable or its lease expires, the client will not send further requests to the Master.</li>
+<li>The client pushes the data to be written to the chunk servers where each replica resides. A noteworthy design is that GFS <strong>decouples the data flow from the control flow</strong>, that is, the client can push data in any order without having to go through the primary replica first and then the secondary replicas, as with the control flow. This allows us to optimize the data flow independently and even push in parallel; this is very beneficial for large chunk writes and will be discussed in detail in the following chapters. Each Chunkserver does not immediately write to disk upon receiving data, but places it in a cache using an LRU strategy. This is also an operation to decouple network I/O from disk I/O—one is to improve efficiency, and the other is to wait for the <strong>primary replica to arrange the write order</strong>.</li>
+<li>When the client is informed that all replicas have received the data push, it sends a write (flush to disk) request to the primary replica server. The primary replica server arranges a write order for the write requests from multiple concurrent clients (if any) (assigning a <strong>serial number</strong> to each write request) and writes it to the operation log mentioned earlier.</li>
+<li>The primary replica server forwards the client’s write request and serial number to the other replica servers. With this uniquely corresponding serial number, the flush order of all replicas can be kept consistent.</li>
+<li>All secondary replica servers report back to the primary replica server after flushing to disk.</li>
+<li>The primary replica server replies to the client. If any replica write has a problem, it will be reported to the client. If a problem is encountered, there are two possibilities: a. none of the replica data has been flushed to disk. b. some replica data has been flushed successfully. For the latter, an inconsistent state will appear. The client’s <strong>library code</strong> (meaning no application code handling is needed) detects the error and retries. Therefore, before truly successful writing, steps 3~7 may be repeated multiple times.</li>
+</ol>
+<p>It should be noted that there is a special case: if the data to be written is too large and exceeds the designed chunk size, it is split into multiple writes. The flow of each write is the same as above, so the data order of all replicas will definitely be consistent. But if other clients are also writing at the same time, <strong>then the data of this write request may be interleaved, resulting in the consistent but undefined state mentioned earlier</strong>.</p>
+<h3 id="Data-Flow">Data Flow</h3>
+<p>GFS decouples control flow and data flow to fully utilize network bandwidth. Control flow always goes from the primary replica to the secondary replicas, but data flow can be dynamically adjusted according to the actual situation. The main goal is to maximize the use of network bandwidth, avoid network bottlenecks, and minimize data transfer latency.</p>
+<p>GFS’s main means are:</p>
+<ol>
+<li>Use network topology to organize the transfer order.</li>
+<li>Transfer data in a linear, pipelined manner.</li>
+</ol>
+<p>For the first point, GFS uses IP organization to reflect network topology—that is, the relationship between IPs can determine the network proximity of nodes.</p>
+<p>For the second point, tree-shaped transmission may cause the root node’s load to be too heavy and fail to distribute load and network bandwidth evenly. But if it is simply linear synchronization without pipeline parallelism, the efficiency will be very low.</p>
+<h3 id="Record-Append">Record Append</h3>
+<p>GFS provides an atomic append operation called <strong>Record Append</strong>. Unlike a write operation that needs to specify an offset and data, a record append operation only needs to <strong>specify the data</strong>. After a successful write, the offset of the successfully written record will be returned to the client. If multiple clients concurrently write to the same area, it is highly likely to cause data overlap: that is, the data in the overlapping area partly comes from client A and partly from client B, resulting in inconsistency. But for the record append operation, the system guarantees the <strong>atomicity</strong> of the written data (i.e., the content of a single record comes from only one client) and <strong>reliability</strong> through the following means:</p>
+<ol>
+<li>If multiple clients are encountered concurrently, the system uniformly arranges the append order, and a single record append will not be interrupted.</li>
+<li>If an append fails due to node or network failure, the record will be retried, that is, guaranteed to be written successfully at least once.</li>
+</ol>
+<p>This setting is a bit like in the Linux file system, where multiple threads use the <code>O_APPEND</code> flag for file append operations. After setting this flag, the Linux system call guarantees that <strong>moving to the end of the file and appending data</strong> is an <strong>atomic call</strong>. For the record append operation, GFS also provides a similar atomicity guarantee. It’s just that Linux is for multiple processes, while GFS is for multiple clients that may be across nodes.</p>
+<p>GFS’s applications with multiple clients distributed across multiple machines concurrently writing to a file heavily rely on this operation. If GFS only supported traditional write operations, such applications would have to perform mutually exclusive writes themselves to ensure data does not overlap—for example, distributed locks, but the code complexity would go up, and performance would likely go down. In the scenarios faced by GFS, the characteristic of atomic record append is often used to treat <strong>files on GFS</strong> as a multi-producer, single-consumer queue, or as a medium for multiple clients to merge results (for example, the merge of results after multiple Partition Reduces in MR).</p>
+<p>Specifically, in implementation, only slight modifications to the data flow mentioned in Figure 2 above are needed. After data is pushed to each backup node, the client sends a flush request to the primary backup node. The primary backup node first checks whether the current chunk will exceed the specified chunk size (64 MB) after the data is written. If it exceeds, it does not flush to disk but fills the remaining space of the current chunk with padding (for example, filling in special characters), and then prompts the client to retry. Therefore, append writes have a requirement on the maximum size of a record: it cannot exceed one quarter of the chunk size, so that each append write wastes at most one quarter of each chunk.</p>
+<p>If the record fails to write on any backup node, the client will retry the append operation. This may result in more than one copy of the record data existing in a certain backup. As mentioned in the consistency section earlier, <strong>GFS does not strictly guarantee byte-by-byte consistency among all backups; it only guarantees that the record is atomically written successfully once as a whole</strong>, and the offsets of this successful data in each backup are consistent. Only in this way can a single offset be returned to the client, and the next operation can perform the next write from the same offset.</p>
+<p>According to the consistency model defined earlier, for the record append operation, successfully written requests are defined and therefore consistent. Unsuccessfully written requests are inconsistent, that is, undefined. As for how applications handle these failed write parts when reading, this has been discussed earlier and will not be detailed here.</p>
+<h3 id="Snapshot">Snapshot</h3>
+<p>The snapshot operation can quickly make a copy of a single file or a file directory tree. Note that this interface is exposed to users, rather than being used only by the system for its own backups as in some systems. Users usually use this operation to copy large datasets and to back up before experimental operations.</p>
+<p>In implementation, like AFS, it uses copy-on-write (COW) technology. When a snapshot operation is to be performed, the Master recalls the leases of all chunks contained in the files to be copied, temporarily freezing writes to these files to perform the copy. During copying, only the metadata of these files is copied; the copied metadata logically becomes a new file, but its data still points to the original file.</p>
+<p>After the snapshot operation, when a client wants to write to a file that has been snapshotted, it first asks the Master for the lease holder. The Master notices that the <strong>reference count of this chunk exceeds 1</strong>, so instead of authorizing the lease immediately, it instructs the chunk C and its replica servers to make a local copy of the chunk on each of their replicas, producing a new chunk C’. The Master then modifies the file reference to the new chunk and authorizes a lease to one of the replicas, then returns the authorized replica to the client.</p>
+<p>In this way, the Client can write a new file without awareness. And all copy-on-write occurs locally to speed up copying and reduce network overhead.</p>
+<h2 id="Master-Operations">Master Operations</h2>
+<p>The Master is responsible for all file namespace operations. In addition, it is responsible for managing system-wide operations related to chunk replicas, including:</p>
+<ol>
+<li>Replica placement decisions</li>
+<li>Chunk creation</li>
+<li>Re-replication of replicas</li>
+<li>Load balancing among chunk servers</li>
+<li>Reclaiming useless resources</li>
+</ol>
+<p>The above will be discussed one by one below.</p>
+<h3 id="Namespace-Management-and-Locking">Namespace Management and Locking</h3>
+<p>Some operations on the Master, such as snapshot operations, are very time-consuming because they need to recall the leases of all related chunks. But GFS does not want these time-consuming operations to interrupt other operations, while at the same time ensuring that operations do not interfere with each other. So there can only be one solution—<strong>region-based locking</strong>. When multiple operations act on different file regions, they can proceed in parallel; when they act on the same file region, they need to be mutually exclusive through locks.</p>
+<p>Unlike traditional file systems, GFS does not have a dedicated data structure for each directory (such as an inode) to list all files in that directory. GFS also does not have operations for aliases of files or directories (corresponding to hard links and symbolic links in Unix-like file systems). GFS uses a lookup table to store the mapping from <strong>file paths</strong> to their metadata, and uses <strong>prefix compression</strong> to optimize storage (so it seems likely to use a compressed <strong>trie</strong> as the data structure?).</p>
+<p>Valid nodes in the namespace tree are either a file path or a directory path. GFS assigns a read-write lock to each node as the data structure foundation for namespace mutually exclusive operations. Specifically, whenever a namespace change operation (rename, file creation/deletion, etc.) is involved, locks must be acquired node by node along the file path from front to back. For example, for the path <code>/d1/d2/…/dn/leaf</code>, the Master will acquire read locks for <code>/d1</code>, <code>/d1/d2</code>, …, <code>/d1/d2/../dn</code> in turn, and then acquire a read or write lock for <code>/d1/d2/…/dn/leaf</code> based on the <strong>operation type</strong>. Of course, the leaf may be a file or a directory.</p>
+<p>Using this lock acquisition strategy can guarantee that when <code>/home/user</code> is snapshotted to <code>/save/user</code>, <code>/home/user/foo</code> cannot be created at the same time. According to the strategy described above, GFS will acquire read locks for <code>/home</code> and <code>/save</code> and write locks for <code>/home/user</code> and <code>/save/user</code> when doing a snapshot. When creating <code>/home/user/foo</code>, it will need to acquire read locks for <code>/home</code> and <code>/home/user</code> and a write lock for <code>/home/user/foo</code>. Therefore, these two operations must be mutually exclusive, because they can only have one operation acquire the lock for <code>/home/user</code> at the same time.</p>
+<p>One question is, for “parent” nodes on the path, only a <strong>read lock</strong> is needed. Because GFS does not have a true file system hierarchical organization or inode-like concept. Therefore, it is only necessary to acquire a read lock for the parent node to prevent it from being deleted, rather than acquiring a write lock for the inode as in traditional file systems to exclusively change its metadata. Another benefit of this is that multiple <strong>clients can concurrently write multiple files to a directory</strong>, because each client only needs to acquire the directory’s read lock, thereby preventing the directory from being <strong>deleted, renamed, or snapshotted</strong>, which is sufficient. For the same file, a write lock needs to be acquired, thereby <strong>serializing</strong> multiple clients’ modification requests to the same file (meaning arranging a specific order, not serialization in the sense of data structure serialization/deserialization).</p>
+<p>Another natural question is, will acquiring so many locks for each operation cause deadlocks? The answer is no, because for the same file region (for example, the same file path), the <strong>order of lock acquisition is the same</strong> for each operation (according to the file path, different layers are from top to bottom, and the same layer is in alphabetical order). Therefore, for the same resource, the hold-and-wait situation will not occur, and the conditions for deadlock are not met. Since each operation needs to acquire many locks, and GFS wants to ensure as high throughput and concurrency as possible, it is necessary to release unused locks in a timely manner to avoid unnecessary waiting.</p>
+<h3 id="Replica-Placement">Replica Placement</h3>
+<p>The physical environment faced by GFS is multi-level: a single GFS cluster may span thousands of machines on multiple racks in multiple data centers, so there are three levels: data center -&gt; rack -&gt; physical machine. But generally, a GFS cluster is limited to a single data center, so there are also two levels. Thus, communication between different chunk servers may cross racks through switches. And the intra-rack network bandwidth is generally greater than the inter-rack network bandwidth. This multi-level network topology poses great challenges for GFS to maintain <strong>scalability, reliability, and availability</strong>—of course, <strong>this is also a problem faced by any distributed system design</strong>.</p>
+<p>Based on this, GFS’s replica placement strategy has two major goals:</p>
+<ol>
+<li>Maximize the reliability and availability of large data.</li>
+<li>Maximize the utilization of network bandwidth.</li>
+</ol>
+<p>To satisfy the first point, we can’t put all our eggs in one basket—that is, Chunkservers in the same cluster cannot be placed in only one rack, to tolerate entire rack failures. At the same time, this means there will be a large number of cross-rack read and write requests, which can fully utilize network bandwidth on the one hand, but cross-rack read and write requests will have some performance issues on the other hand. In short, it’s all about <strong>trade-offs</strong>.</p>
+<h3 id="Creation-Re-replication-and-Rebalancing">Creation, Re-replication, and Rebalancing</h3>
+<p>Chunks are created in three situations: initial chunk creation, re-replication, and cross-node rebalancing.</p>
+<p>First, when the Master is choosing locations for a newly created chunk replica, it considers the following factors:</p>
+<ol>
+<li><strong>Node disk utilization</strong>. To make data distribution balanced.</li>
+<li><strong>The number of recent replicas on the node</strong>. Most scenarios faced by GFS are multiple reads after a single write. To balance the load, recent writes should be distributed across as many nodes as possible.</li>
+<li><strong>Multi-rack distribution of multiple replicas</strong>.</li>
+</ol>
+<p>Second, when the actual number of surviving replicas of a chunk is less than the system-set value, the re-replication process is started. There are many reasons for re-replication, such as certain machines going down, certain disks failing, or the set value for certain chunks increasing, and so on. There are generally many chunks in GFS, so there may be many chunks needing re-replication at the same time. Therefore, we must arrange a priority for all re-replication requests. When arranging the order, there are several points to consider:</p>
+<ol>
+<li><strong>The difference between the surviving number and the set value</strong>. The more replicas are missing, the higher the priority. This is not hard to understand: after all, the more missing, the greater the danger that the chunk cannot be recovered.</li>
+<li><strong>The activity status of the file</strong>. Take two extreme examples: if a file has been very active recently, such as being created, then re-replication of the chunks contained in that file is prioritized. If a file has just been deleted, then obviously we no longer need to operate on it.</li>
+<li><strong>Whether it blocks the current client operation</strong>. If a client is waiting because the number of replicas of a certain chunk is insufficient, then the re-replication request for this chunk is prioritized.</li>
+</ol>
+<p>After sorting all re-replication requests according to the above three factors, the Master gradually selects the highest-weight request and instructs a certain chunk server to perform replica copying. The placement strategy after copying is generally the same as the initial creation placement strategy. In order not to affect normal client requests, GFS limits the number of replica copying processes both cluster-wide and within a single chunk server. At the same time, it also limits the total bandwidth for re-replication at the bandwidth level.</p>
+<p>Finally, the Master periodically performs system-wide chunk migration to <strong>fully utilize disk space and balance the load</strong>. At the same time, this periodic operation also slowly fills a newly joined node in the cluster, rather than directly directing all write requests there to quickly fill the node. The latter can easily cause request oscillation and increased system complexity. When deleting replicas, it tends to target nodes with less remaining disk space than the average; when adding replicas, the strategy is roughly the same as at creation time.</p>
+<h3 id="Garbage-Collection">Garbage Collection</h3>
+<p>When a file on GFS is deleted, GFS does not immediately reclaim the corresponding physical storage. Instead, unused storage is reclaimed at both the file level and the chunk level through a periodic garbage collection program. Decoupling deletion and reclamation makes the system simpler and more robust. As for why, let me explain one by one.</p>
+<h4 id="Basic-Mechanism">Basic Mechanism</h4>
+<p>Like other operations, when a GFS user deletes a file, the Master immediately records it in the operation log. The difference is that GFS does not actually delete the file and reclaim the corresponding resources immediately, but renames the file to a hidden file and tags it with the deletion operation timestamp. GFS’s file system namespace has periodic checks. When a hidden file has existed for more than three days (this is a configurable item for operators), its metadata is deleted. Note that at this point, the data corresponding to the file is still on the chunk servers; we just can’t find them anymore.</p>
+<p>Like the periodic checks of the namespace on the Master (file path to logical chunk), the Master also checks all chunks (logical chunk to physical replica). When it finds that certain logical chunks cannot be accessed through any file (combined with the Snapshot operation mentioned earlier, we can guess that logical chunks maintain a file reference count, so as long as the reference count drops to 0, it means the logical chunk is no longer referenced by any file and becomes an <strong>orphan chunk</strong>), it deletes the information of that logical chunk. Note that at this point, it still does not <strong>synchronously</strong> delete the data on the chunk servers.</p>
+<p>Each chunk server periodically reports the information of the physical chunk replicas it holds to the Master. After receiving this information, the Master looks up the corresponding information in the chunk-to-physical-replica set mentioned above one by one, and brings this information back in the heartbeat RPC response. After the chunk server gets the information of all orphan physical replicas on its machine, it truly deletes these replicas (I’m not sure if this step is synchronous; most likely not).</p>
+<h4 id="Additional-Discussion">Additional Discussion</h4>
+<p>Although garbage collection is a complex topic for programming languages, under GFS’s assumptions, locating garbage chunks is quite simple. Its tracking mainly relies on the <strong>two data structures</strong> mentioned earlier. One is the mapping from file path to logical chunk; all chunks not referenced in this mapping are useless chunks. The other is the mapping from logical chunk to physical replica (stored in the form of Linux files), which is built from heartbeat reports from each chunk server. All chunks existing on chunk servers but unknown to the Master (i.e., their corresponding logical chunks are no longer in the first mapping) can be considered garbage.</p>
+<p>Compared to synchronous deletion responses, asynchronous garbage collection has many benefits:</p>
+<ol>
+<li><strong>In large clusters with various errors, garbage collection is simpler and more reliable</strong>. In an unreliable environment, creation may fail, deletion may fail, and modifications may also fail, so these operations may all leave garbage. For synchronous deletion, if an error occurs, the erroneous data must be recorded and retried continuously. Garbage collection can provide a unified way to recover the garbage left by the above errors. If synchronous deletion were used to handle garbage left by other errors, a lot of redundant and similar code would be generated.</li>
+<li><strong>Garbage collection turns scattered deletion operations into regular centralized cleanup</strong>. Batch reclamation may be more efficient. And because all garbage collection operations are centralized in the Master’s periodic checks, the specific timing of operations can be chosen to avoid peak periods of normal user requests.</li>
+<li><strong>Asynchronous, lazy garbage collection can also handle accidental deletion operations.</strong></li>
+</ol>
+<p>Everything has its pros and cons. The asynchronous, lazy garbage collection strategy is quite frustrating when we really want to delete certain data immediately. In addition, if a large number of temporary small files are generated, it will greatly affect cluster utilization. To solve these problems, the following optimizations can be made:</p>
+<ol>
+<li>After a deleted file becomes a hidden file, if it is explicitly deleted again, we will speed up its deletion pace.</li>
+<li>Divide and conquer by file namespace. For example, users can specify that files under certain directories are not multi-replicated; or they can stipulate that files under other directories will be truly deleted immediately after deletion.</li>
+</ol>
+<p>Of course, this will bring additional logic and implementation complexity. How to implement it elegantly in an unreliable environment and how to make it compatible with existing code logic are other, less pleasant things to do.</p>
+<h3 id="Stale-Replica-Detection">Stale Replica Detection</h3>
+<p>When a chunk server goes down and recovers, some chunks it stores may have been modified during this period, causing the replicas of the corresponding chunks on that server to become stale. To solve this problem, GFS introduces versions for logical chunks to identify whether different replicas of the same chunk are stale.</p>
+<p>The specific approach is that every time the Master authorizes a lease for a chunk, it increments the version number and notifies all replicas to update it. Both the Master and all replicas persist the latest version number. Then the Master sends the lease-holding replica and the updated version number to the client. When the client reads or writes data, it checks all replicas one by one against the latest version number to see if they are the latest replicas. All stale replicas are treated as non-existent, and the garbage collection program mentioned above periodically clears them.</p>
+<h2 id="Fault-Tolerance-and-Diagnosis">Fault Tolerance and Diagnosis</h2>
+<p>A major challenge in the design and construction of GFS is that individual components are unreliable while the number of components is particularly large. We can neither fully trust machines nor fully trust disks. Component failures can lead to system failures and even data corruption. Next, let’s talk about the problems GFS encountered in this regard and its solutions.</p>
+<h3 id="High-Availability">High Availability</h3>
+<p>For clusters composed of hundreds of machines, component failures may occur at any given moment. To deal with these problems, GFS uses two strategies that seem simple but are effective: <strong>data replication and fast recovery</strong>.</p>
+<h4 id="Fast-Recovery">Fast Recovery</h4>
+<p>There are three roles in the GFS system: Master, Chunkserver, and Client. The first two are designed to quickly recover their state no matter how they die; the last one will do some retry strategies through the provided system library when encountering problems. In fact, GFS does not distinguish between manual shutdown, accidental exit, or occasional timeout; all failed components will be quickly restarted, retried, and reconnected (for the client).</p>
+<h4 id="Chunk-Replication">Chunk Replication</h4>
+<p>As mentioned earlier, chunks are replicated three times by default, but the application side can adjust the number of chunk replicas by namespace (for example, under a certain directory). In the GFS system, the Master controls keeping the number of chunk replicas meeting the requirements. That is, when the number of chunk replicas falls below the set value due to Chunkserver downtime, checksum errors, user settings, and so on, the Master will instruct a <strong>Chunkserver to add replicas</strong>. Sometimes, even if the number of replicas meets fault tolerance requirements, GFS will increase the number of replicas for high concurrency and other needs. In addition, <strong>EC and other cross-machine redundancy methods have also been explored</strong>. Of course, GFS hopes to implement these additional designs in a loosely coupled manner, after all, GFS traffic faces appends and sequential reads rather than random writes.</p>
+<h4 id="Master-Redundancy">Master Redundancy</h4>
+<p>The Master’s state is persisted locally in the form of an operation log and synchronized to multiple other physical machines. An operation in GFS is only considered applied to the file system after being committed to the operation log; however, to avoid affecting normal file operations and background work, these are done by additional processes. If a process dies, it will be quickly restarted. If the Master disk or system fails and cannot provide service, GFS’s external infrastructure will detect it in time, restart a Master on another machine, and recover its state through operation log replicas. So how does the client discover the new Master? GFS uses a host name rather than a specific IP for the client to connect to the Master, so only the internal DNS needs to be modified to point the Master host name to the new machine IP.</p>
+<p>In addition, shadow Masters can be used to offload read pressure. Shadow Masters will sacrifice some latency, usually around one second. Therefore, they are suitable for dealing with traffic for files that don’t change much or are not very sensitive to slightly stale data. All decisions (mainly the location decisions of each replica) depend on the real Master. Shadow Masters only do passive information synchronization, that is, either by loading operation logs or by handshaking with chunk servers to obtain information.</p>
+<h3 id="Data-Integrity">Data Integrity</h3>
+<p>Chunk data servers use checksums to discover corrupted chunks. Considering that a GFS cluster usually consists of thousands of hard disks spanning hundreds of machines, encountering corrupted data blocks during reads and writes is normal. GFS will recover corrupted replicas through other replicas, but byte-by-byte verification of different replicas to ensure data correctness is not feasible. First, the performance cannot tolerate it; second, GFS does not guarantee byte-by-byte consistency of multiple replicas (for example, incomplete data blocks left by parallel append retries). Therefore, each chunk server verifies the chunks under its jurisdiction separately through checksums.</p>
+<p>Each chunk is divided into small blocks of 64 KB, and a corresponding 32-bit checksum is constructed as metadata stored in memory and persisted through the operation log. That is, the checksum and the actual user data are stored separately.</p>
+<p>Before reading, mainly including client reads or other chunk server reads, the chunk server verifies the checksums of all small blocks corresponding to the read data range. If the verification is inconsistent, the chunk server returns an error and reports it to the Master, so data corruption does not propagate among chunk servers. After receiving the error report, the requester will read other replicas, and the Master will instruct a selected chunk server to copy it to maintain the effective number of replicas. After the new replica is in place, the corrupted replica will be treated as garbage and reclaimed. The impact of checksums on read performance is not significant. First, the additional storage and computation overhead is not large. Second, the checksums are all stored in memory, and their calculation and verification do not consume additional I/O and can be performed in parallel with data flow I/O.</p>
+<p>Write requests include conventional writes and parallel append writes. The latter is the main traffic of GFS, and GFS has highly optimized checksum handling for it. Each time, only the checksum of the last small block needs to be continuously updated. But for overwrite writes at a specified offset, before writing, the first and last small blocks corresponding to the write range must be verified first, <strong>because they may be partial writes. If directly partially overwritten without verification, the fact that the original data block was already corrupted may be hidden</strong>.</p>
+<p>Finally, chunk servers periodically verify inactive chunks. If any inconsistency is detected, it will report to the Master as described in the previous process, re-backup the chunk, and then delete the corrupted chunk.</p>
+<h3 id="Diagnostic-Tools">Diagnostic Tools</h3>
+<p>GFS saves additional system logs for problem diagnosis, bug debugging, and performance analysis. This brings very little extra space overhead. But without saving these logs, it may be difficult to understand some system behaviors between machines afterwards. Due to the complexity of the network and the instability of ordinary commercial machines, the scenarios at the time may be difficult to reproduce. Of course, how to record appropriate log events also requires some experience and skill. GFS records some machine-critical events (chunk server up/down), all RPC requests and responses, and so on. As long as space permits, GFS saves as many system logs as possible.</p>
+<p>By collecting all RPC requests, the history of system interactions between GFS components can be reconstructed to assist in problem diagnosis. We can also mine logs to track their load distribution. Once again, recording these logs does not have much impact on normal client requests, because all logs are recorded asynchronously and sequentially. All real-time state information is stored in memory and presented to users in the form of monitoring pages.</p>
+<h2 id="Glossary">Glossary</h2>
+<p><strong>Master</strong>: The master node, the central node in a GFS cluster used to maintain file system metadata and central control, actually manifested as a group of processes on the Master node.</p>
+<p><strong>Client</strong>: The client, specifically referring in this article to the application connecting to the GFS cluster to perform file operations.</p>
+<p><strong>Chunkserver</strong>: The chunk server, a data node that stores chunks in ordinary Linux files (actually a process running on the node).</p>
+<p><strong>consistent but undefined</strong>: Sometimes refers to a certain replica of a chunk; sometimes refers to the server where a certain replica of a chunk resides.</p>
+<p><strong>Operation Log</strong>: The operation log, used for error recovery and determining the order of concurrent writes.</p>
+<p><strong>consistent but undefined</strong>: Consistent but undefined, referring to when multiple clients write concurrently. Although the final data order of the replicas is consistent, if a client reads the data again, it does not know whether it can read the data it wrote or the data overwritten by other clients.</p>
+<p><strong>Primary Replica</strong>: The primary replica/backup, or the node where the primary replica/backup resides.</p>
+<p><strong>Re-replication</strong>: Translated as replica/backup replenishment.</p>
+<h2 id="References">References</h2>
+<ol>
+<li>GFS paper: <span class="exturl" data-url="aHR0cHM6Ly9zdGF0aWMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL21lZGlhL3Jlc2VhcmNoLmdvb2dsZS5jb20vemgtQ04vL2FyY2hpdmUvZ2ZzLXNvc3AyMDAzLnBkZg==">https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf<i class="fa fa-external-link-alt"></i></span></li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9tZS5jc2RuLm5ldC9xaWFvamlhbGlu">铁头乔<i class="fa fa-external-link-alt"></i></span> GFS consistency summary: <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FpYW9qaWFsaW4vYXJ0aWNsZS9kZXRhaWxzLzcxNTc0MjAz">https://blog.csdn.net/qiaojialin/article/details/71574203<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/05/26/gfs/" rel="bookmark">GFS —— 取舍的艺术</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/distributed-system/" rel="tag"># distributed system</a>
+              <a href="/tags/storage/" rel="tag"># storage</a>
+              <a href="/tags/gfs/" rel="tag"># gfs</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/04/30/map-reduce/" rel="prev" title="MapReduce —— 历久而弥新">
+      <i class="fa fa-chevron-left"></i> MapReduce —— 历久而弥新
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/05/26/gfs/" rel="next" title="GFS —— 取舍的艺术">
+      GFS —— 取舍的艺术 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">2.</span> <span class="nav-text">Overview</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Basic-Assumptions"><span class="nav-number">2.1.</span> <span class="nav-text">Basic Assumptions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Error-Handling"><span class="nav-number">2.1.1.</span> <span class="nav-text">Error Handling</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Targeting-Large-Files"><span class="nav-number">2.1.2.</span> <span class="nav-text">Targeting Large Files</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Append-Only"><span class="nav-number">2.1.3.</span> <span class="nav-text">Append-Only</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Co-design"><span class="nav-number">2.1.4.</span> <span class="nav-text">Co-design</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#High-Throughput"><span class="nav-number">2.1.5.</span> <span class="nav-text">High Throughput</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Interface"><span class="nav-number">2.2.</span> <span class="nav-text">Interface</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Architecture-Diagram"><span class="nav-number">2.3.</span> <span class="nav-text">Architecture Diagram</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Single-Master"><span class="nav-number">2.4.</span> <span class="nav-text">Single Master</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Chunk-Size"><span class="nav-number">2.5.</span> <span class="nav-text">Chunk Size</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Metadata"><span class="nav-number">2.6.</span> <span class="nav-text">Metadata</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#In-Memory-Data-Structures"><span class="nav-number">2.6.1.</span> <span class="nav-text">In-Memory Data Structures</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Chunk-Locations"><span class="nav-number">2.6.2.</span> <span class="nav-text">Chunk Locations</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Operation-Log"><span class="nav-number">2.6.3.</span> <span class="nav-text">Operation Log</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Consistency-Model"><span class="nav-number">2.7.</span> <span class="nav-text">Consistency Model</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#GFS%E2%80%99s-Guarantees"><span class="nav-number">2.7.1.</span> <span class="nav-text">GFS’s Guarantees</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Impact-on-User-Code"><span class="nav-number">2.7.2.</span> <span class="nav-text">Impact on User Code</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#System-Interactions"><span class="nav-number">3.</span> <span class="nav-text">System Interactions</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Leases-and-Mutation-Order"><span class="nav-number">3.1.</span> <span class="nav-text">Leases and Mutation Order</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Flow"><span class="nav-number">3.2.</span> <span class="nav-text">Data Flow</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Record-Append"><span class="nav-number">3.3.</span> <span class="nav-text">Record Append</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Snapshot"><span class="nav-number">3.4.</span> <span class="nav-text">Snapshot</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Master-Operations"><span class="nav-number">4.</span> <span class="nav-text">Master Operations</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Namespace-Management-and-Locking"><span class="nav-number">4.1.</span> <span class="nav-text">Namespace Management and Locking</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Replica-Placement"><span class="nav-number">4.2.</span> <span class="nav-text">Replica Placement</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Creation-Re-replication-and-Rebalancing"><span class="nav-number">4.3.</span> <span class="nav-text">Creation, Re-replication, and Rebalancing</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Garbage-Collection"><span class="nav-number">4.4.</span> <span class="nav-text">Garbage Collection</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Basic-Mechanism"><span class="nav-number">4.4.1.</span> <span class="nav-text">Basic Mechanism</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Additional-Discussion"><span class="nav-number">4.4.2.</span> <span class="nav-text">Additional Discussion</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Stale-Replica-Detection"><span class="nav-number">4.5.</span> <span class="nav-text">Stale Replica Detection</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Fault-Tolerance-and-Diagnosis"><span class="nav-number">5.</span> <span class="nav-text">Fault Tolerance and Diagnosis</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#High-Availability"><span class="nav-number">5.1.</span> <span class="nav-text">High Availability</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Fast-Recovery"><span class="nav-number">5.1.1.</span> <span class="nav-text">Fast Recovery</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Chunk-Replication"><span class="nav-number">5.1.2.</span> <span class="nav-text">Chunk Replication</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Master-Redundancy"><span class="nav-number">5.1.3.</span> <span class="nav-text">Master Redundancy</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Integrity"><span class="nav-number">5.2.</span> <span class="nav-text">Data Integrity</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Diagnostic-Tools"><span class="nav-number">5.3.</span> <span class="nav-text">Diagnostic Tools</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Glossary"><span class="nav-number">6.</span> <span class="nav-text">Glossary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">7.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2019/05/26/gfs/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '3773265818e0f4356b4fc8feddc65eab',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

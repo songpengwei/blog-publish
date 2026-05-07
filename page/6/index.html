@@ -205,6 +205,26 @@
     <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
 
   </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>简体中文</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/page/6/index.html" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/page/6/index.html" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
   </ul>
 </nav>
 
@@ -228,8 +248,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/04/17/storage-interview/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/12/11/how-to-build-a-database/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -243,7 +263,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/04/17/storage-interview/" class="post-title-link" itemprop="url">分布式存储面试经验</a>
+            <a href="/2022/12/11/how-to-build-a-database/" class="post-title-link" itemprop="url">实现一个数据库需要如何入手？</a>
         </h2>
 
         <div class="post-meta">
@@ -253,14 +273,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-04-17 15:53:25" itemprop="dateCreated datePublished" datetime="2021-04-17T15:53:25+08:00">2021-04-17</time>
+              <time title="创建时间：2022-12-11 11:11:59" itemprop="dateCreated datePublished" datetime="2022-12-11T11:11:59+08:00">2022-12-11</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:19:35" itemprop="dateModified" datetime="2024-03-04T09:19:35+08:00">2024-03-04</time>
+                <time title="修改时间：2024-03-04 09:23:23" itemprop="dateModified" datetime="2024-03-04T09:23:23+08:00">2024-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -268,111 +288,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>前一段时间由于一些原因工作变动，面了一些分布式存储的相关岗位，感觉市面上相关经验分享较少，因此拿出来和大家分享一下。由于公司隐私政策问题，不会按公司对题目进行罗列，仅仅就一些面试的方向和内容进行简单梳理。水平经验所限，谬误之处，可以留言交流指正。</p>
-<h2 id="相关岗位">相关岗位</h2>
-<p>分布式存储方向的岗位涵盖甚广，一般可以按照方向分为：</p>
-<ol>
-<li>分布式文件存储</li>
-<li>对象存储</li>
-<li>分布式 KV or 缓存</li>
-<li>分布式数据库（new sql）</li>
-<li>表格存储</li>
-<li>块存储</li>
-</ol>
-<p>其定位方向也稍有不同：</p>
-<p><strong>分布式文件存储</strong>。支持 POSIX 语义或者裁剪 POSIX。可以作为存储和计算分离的存储基座，也可以直接为应用所用，比如说深度学习的一些训练，大数据处理的一些中间存储。常见产品有盘古文件系统、Polarfs、JuiceFS 等。</p>
-<p><strong>对象存储</strong>。一般是存储图片和视频之类的非结构化数据，通常兼容亚马逊的 S3 接口。常见产品如 Amazon S3、阿里云 OSS、腾讯云 COS。</p>
-<p><strong>分布式 KV or 缓存</strong>。通常兼容 redis 接口，或者更简化 KV 接口。一般求快，基于内存或者SSD，甚至可持久化内存等新硬件。用于低延迟需求的业务缓存或者存储计算分离系统的底座。产品如字节的 ABase、阿里云的 Tair、PingCAP 的 TiKV。</p>
-<p><strong>分布式数据库（or new sql）</strong>。通常提供 SQL 接口以及无限水平扩展能力。常见产品有 PingCAP 的 TiDB、阿里云的 PolarDB、腾讯云的 TDSQL。</p>
-<p><strong>表格存储</strong>。经典的接口可以参考按列存储的 HBase，大数据领域应用比较多。产品如 HBase，字节的 ByteTable。</p>
-<p><strong>块存储</strong>。提供块设备接口，一般用于云主机的系统盘。产品如 smartX 的超融合。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/04/17/storage-interview/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/04/02/bolt-transaction/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/04/02/bolt-transaction/" class="post-title-link" itemprop="url">Boltdb 源码导读（三）：Boltdb 事务实现</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-04-02 21:46:55" itemprop="dateCreated datePublished" datetime="2021-04-02T21:46:55+08:00">2021-04-02</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:18:28" itemprop="dateModified" datetime="2024-03-04T09:18:28+08:00">2024-03-04</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/boltdb/" itemprop="url" rel="index"><span itemprop="name">boltdb</span></a>
+                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
                 </span>
             </span>
 
@@ -388,22 +304,14 @@
 
       
           <blockquote>
-<p>boltdb 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于 Howard Chu’s LMDB 项目 ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 bbolt。</p>
-<p>为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。</p>
-<p>本系列计划分成三篇文章，依次围绕<a href="https://www.qtmuniao.com/2020/11/29/bolt-data-organised/"><strong>数据组织</strong></a>、<a href="https://www.qtmuniao.com/2020/12/14/bolt-index-design/"><strong>索引设计</strong></a>、<strong>事务实现</strong>等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第三篇， boltdb 事务实现。</p>
+<p>知乎上有个问题：如何实现一个数据库？手痒忍不住又水了一篇。以计算机中最常用的分析、理解问题的思想，我们可以从两个维度：<strong>逻辑</strong>和<strong>物理</strong>，来思考如何实现一个数据库。</p>
 </blockquote>
-<h2 id="引子">引子</h2>
-<p>在分析 boltd 的事务之前，我们有必要对事务概念做一个界定，以此来明确我们的讨论范围。<strong>数据库事务</strong>（简称：<strong>事务</strong>）是数据库管理系统执行过程中的一个逻辑单位，由一个有限的<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93">数据库</a>操作序列构成<a href="%E7%BB%B4%E5%9F%BA%E7%99%BE%E7%A7%91%E4%BA%8B%E5%8A%A1%EF%BC%9Ahttps://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1">^1</a>。wiki 上的定义有点拗口，理解时只需抓住几个关键点即可：</p>
-<ol>
-<li>执行：计算层面</li>
-<li>逻辑单位：意味着不可分割</li>
-<li>操作序列有限：一般粒度不会太大</li>
-</ol>
-<p>那为什么要有事务呢？事务出现于上世纪七十年代，是为了解放数据库用户的心智而出现的：事务帮助用户组织一组操作、并在出错时自动进行扫尾。后来，NoSQL 和一些分布式存储为了高性能而舍弃了完整事务的支持。然而，历史是螺旋上升的，事务的便利性让 NewSQL 等新一代分布式数据库又将其重新请回。</p>
-<p>提起事务，最脍炙人口的便是 ACID 四大特性。 其实 ACID 更像一种易于记忆的口号而非严格的描述，因为他们在概念上并不怎么对称，而且依赖于一些上下文阐释。本文仍然会按照这四个方面对 boltdb 对事务的支持进行剖析，但在每个小结开始，会先参考 Martin Kleppmann 的演讲[^2]，试着从不同角度先阐释其内涵；然后在再分析 boltdb 对其实现。</p>
+<h2 id="逻辑维度">逻辑维度</h2>
+<h3 id="数据模型（对外，面向用户）">数据模型（对外，面向用户）</h3>
+<p>想要实现一个数据库，首先你得定义给给用户什么样的<strong>数据模型</strong>？在前些年，这些可能不是个问题，彼时，数据库约等于关系型数据，约等于 Oracle/SQLServer/MySQL/PostgreSQL 。但随着数据量的不断增大、用户需求的不断细化，关系模型已经不能一招鲜、吃遍天。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/04/02/bolt-transaction/#more" rel="contents">
+              <a class="btn" href="/2022/12/11/how-to-build-a-database/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -428,8 +336,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/03/30/beijing-hiking-big-crack/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/12/11/how-to-build-a-database/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -443,7 +351,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/03/30/beijing-hiking-big-crack/" class="post-title-link" itemprop="url">京郊徒步 霾下山桃</a>
+            <a href="/en/2022/12/11/how-to-build-a-database/" class="post-title-link" itemprop="url">How to Approach Building a Database?</a>
         </h2>
 
         <div class="post-meta">
@@ -453,14 +361,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-03-30 23:17:19" itemprop="dateCreated datePublished" datetime="2021-03-30T23:17:19+08:00">2021-03-30</time>
+              <time title="创建时间：2022-12-11 11:11:59" itemprop="dateCreated datePublished" datetime="2022-12-11T11:11:59+08:00">2022-12-11</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-10-27 22:31:59" itemprop="dateModified" datetime="2024-10-27T22:31:59+08:00">2024-10-27</time>
+                <time title="修改时间：2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -468,11 +376,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/%E5%BE%92%E6%AD%A5/" itemprop="url" rel="index"><span itemprop="name">徒步</span></a>
+                  <a href="/categories/Database/" itemprop="url" rel="index"><span itemprop="name">Database</span></a>
                 </span>
             </span>
 
@@ -487,11 +391,15 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>北京周边的山上山桃特别多，像物种入侵一样密密麻麻的散落在山坡上、龟缩在山谷中。其他时节徒步时对此没有特别的感觉，但唯独春天，大为惊喜。远处望去，像团团粉色的烟雾般缥缈。然而疫情初定的帝都春日，雾霾又起。亲眼看着漫山的山桃，却只能凭空想象通透天空下的丽景。</p>
-<p><img src="http://photo.tuchong.com/15470921/f/1147079771.jpg" alt="山桃虽艳 抵不过老霾"></p>
+          <blockquote>
+<p>There is a question on Zhihu: how to implement a database? I couldn’t resist writing another piece. Using the most common way of analyzing and understanding problems in computer science, we can think about how to implement a database from two dimensions: <strong>logical</strong> and <strong>physical</strong>.</p>
+</blockquote>
+<h2 id="Logical-Dimension">Logical Dimension</h2>
+<h3 id="Data-Model-External-User-Facing">Data Model (External, User-Facing)</h3>
+<p>If you want to implement a database, first you need to define what kind of <strong>data model</strong> to provide to users. In earlier years, this might not have been an issue—back then, database roughly equaled relational data, which roughly equaled Oracle/SQL Server/MySQL/PostgreSQL. But as data volumes continue to grow and user demands become increasingly refined, the relational model can no longer be a one-size-fits-all solution.</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/03/30/beijing-hiking-big-crack/#more" rel="contents">
+              <a class="btn" href="/en/2022/12/11/how-to-build-a-database/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -516,8 +424,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/03/14/facebook-delos/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/10/17/ddia-reading-chapter5/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -531,7 +439,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/03/14/facebook-delos/" class="post-title-link" itemprop="url">Facebook Delos 中的虚拟共识协议</a>
+            <a href="/2022/10/17/ddia-reading-chapter5/" class="post-title-link" itemprop="url">DDIA 读书笔记（五）：冗余</a>
         </h2>
 
         <div class="post-meta">
@@ -541,14 +449,388 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-03-14 23:12:27" itemprop="dateCreated datePublished" datetime="2021-03-14T23:12:27+08:00">2021-03-14</time>
+              <time title="创建时间：2022-10-17 23:20:33" itemprop="dateCreated datePublished" datetime="2022-10-17T23:20:33+08:00">2022-10-17</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:17:51" itemprop="dateModified" datetime="2024-03-04T09:17:51+08:00">2024-03-04</time>
+                <time title="修改时间：2024-03-04 09:23:57" itemprop="dateModified" datetime="2024-03-04T09:23:57+08:00">2024-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">分布式系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>DDIA 读书分享会，会逐章进行分享，结合我在工业界分布式存储和数据库的一些经验，补充一些细节。每两周左右分享一次，欢迎加入，Schedule 和所有文字稿在<a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">这里</a>。我们有个对应的分布式&amp;数据库讨论群，每次分享前会在群里通知。如想加入，可以加我的微信号：qtmuniao，简单自我介绍下，并注明：分布式系统群。另外，我的公众号：“木鸟杂记”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注<br>
+本书第一部分讲单机数据系统，第二部分讲多机数据系统。</p>
+</blockquote>
+<p><strong>冗余（Replication）</strong> 是指将同一份数据复制多份，放到通过网络互联的多个机器上去。其好处有：</p>
+<ol>
+<li><strong>降低延迟</strong>：可以在地理上同时接近不同地区的用户。</li>
+<li><strong>提高可用性</strong>：当系统部分故障时仍然能够正常提供服务。</li>
+<li><strong>提高读吞吐</strong>：平滑扩展可用于查询的机器。</li>
+</ol>
+<blockquote>
+<p>本章假设我们的数据系统中所有数据能够存放到一台机器中，则本章只需考虑多机冗余的问题。如果数据超过单机尺度该怎么办？那是下一章要解决的事情。</p>
+</blockquote>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/10/17/ddia-reading-chapter5/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/10/17/ddia-reading-chapter5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2022/10/17/ddia-reading-chapter5/" class="post-title-link" itemprop="url">DDIA Reading Notes (V): Replication</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-17 23:20:33" itemprop="dateCreated datePublished" datetime="2022-10-17T23:20:33+08:00">2022-10-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>The DDIA reading group shares the book chapter by chapter, supplemented with some details based on my experience with distributed storage and databases in industry. We share roughly every two weeks—welcome to join us. The schedule and all transcripts are <a target="_blank" rel="noopener" href="https://ddia.qtmuniao.com/">here</a>. We also have a corresponding distributed systems &amp; database discussion group; notifications are sent there before each session. If you’d like to join, add me on WeChat: qtmuniao, give a brief self-introduction, and note “distributed systems group.” Also, my public account “Muniao Notes” has more articles on distributed systems, storage, and databases—feel free to follow.<br>
+The first part of this book discusses single-machine data systems; the second part discusses multi-machine data systems.</p>
+</blockquote>
+<p><strong>Replication</strong> means keeping multiple copies of the same data on different machines connected via a network. Its benefits are:</p>
+<ol>
+<li><strong>Reduced latency</strong>: can be geographically close to users in different regions at the same time.</li>
+<li><strong>Increased availability</strong>: can continue to provide service when parts of the system fail.</li>
+<li><strong>Increased read throughput</strong>: smoothly scale out the machines available for queries.</li>
+</ol>
+<blockquote>
+<p>This chapter assumes all data in our data system can fit on a single machine, so we only need to consider multi-machine replication. What if data exceeds single-machine scale? That’s what the next chapter addresses.</p>
+</blockquote>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2022/10/17/ddia-reading-chapter5/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/10/12/how-to-write-code-abstract/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/10/12/how-to-write-code-abstract/" class="post-title-link" itemprop="url">好好写代码之素养篇——抽象和讲究</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-12 23:00:07" itemprop="dateCreated datePublished" datetime="2022-10-12T23:00:07+08:00">2022-10-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-03-04 09:22:33" itemprop="dateModified" datetime="2024-03-04T09:22:33+08:00">2024-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">技术</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>知乎上有个问题，如何辨别一个程序员水平的高低？就这几年 Review 代码的体感，忍不住就工程素养这个话题吐两句槽，正好作为好好写代码系列的第二篇。</p>
+</blockquote>
+<h2 id="思维体系">思维体系</h2>
+<p>水平差的程序员往往在“<strong>抽象</strong>”上做的不好。</p>
+<p>什么是抽象能力呢？简言之，就是分门别类、触类旁通的能力。通过大量实践和书籍输入，将所解决过的问题进行正交分解，分解过的<strong>元知识</strong>多具有很好地复用性；再利用这些元知识，进行组合推演，创造性的解决新遇到的问题。即归纳和演绎。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/10/12/how-to-write-code-abstract/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/10/12/how-to-write-code-abstract/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2022/10/12/how-to-write-code-abstract/" class="post-title-link" itemprop="url">Writing Good Code: Craftsmanship — Abstraction and Attention to Detail</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-12 23:00:07" itemprop="dateCreated datePublished" datetime="2022-10-12T23:00:07+08:00">2022-10-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Technology/" itemprop="url" rel="index"><span itemprop="name">Technology</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>There was a question on Zhihu: how can you tell a programmer’s skill level? Based on my experience reviewing code in recent years, I can’t help but rant a bit about the topic of engineering craftsmanship—just in time for the second post in the “Writing Good Code” series.</p>
+</blockquote>
+<h2 id="Mental-Framework">Mental Framework</h2>
+<p>Less skilled programmers often fall short in “<strong>abstraction</strong>”.</p>
+<p>What is abstraction ability? In short, it’s the capacity to categorize and draw analogies. Through extensive practice and reading, problems are broken down orthogonally into <strong>atomic knowledge</strong>, which is highly reusable; then, by combining and reasoning with this atomic knowledge, new problems can be solved creatively. In other words: induction and deduction.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2022/10/12/how-to-write-code-abstract/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/09/24/dynamo-db-flow-control/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/09/24/dynamo-db-flow-control/" class="post-title-link" itemprop="url">DynamoDB 的云原生之路 —— 流控策略的演进</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-09-24 18:31:31" itemprop="dateCreated datePublished" datetime="2022-09-24T18:31:31+08:00">2022-09-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-03-04 09:23:12" itemprop="dateModified" datetime="2024-03-04T09:23:12+08:00">2024-03-04</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -575,12 +857,22 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <blockquote>
-<p>本文整理自OSDI 2020 Virtual Consensus in Delos 论文演讲，探讨了分布式系统中控制面的存储系统，提出了一种基于分层抽象思想的分布式架构。其核心在于提出了一种逻辑协议层，使得物理层可以按需进行实现和移植，有点类似于单机系统中虚拟内存之于物理内存的味道。</p>
-</blockquote>
+          <h2 id="概述：流控为啥重要">概述：流控为啥重要</h2>
+<p>上云的好处在于池化资源，让多租户共享，然后按需分配，从而降低成本。但进行：</p>
+<ol>
+<li><strong>多租户隔离</strong>：用户要求可以使用其买到的流量，并且不会被其他租户影响。</li>
+<li><strong>资源共享</strong>：资源只能逻辑隔开，不能物理隔开，否则无法充分动态分配（超发）。</li>
+</ol>
+<p>是一对相对矛盾的事情，我认为，也是云原生数据库最要解决的问题。不把这个问题解决好，则数据库：</p>
+<ol>
+<li><strong>要么平台不赚钱</strong>：比如资源静态预留，虽然可以让用户满意，总能随时用到卖给他的资源配额，但会存在巨大资源浪费，要么价格贵，要么用户不买单。</li>
+<li><strong>要么用户不满意</strong>：多用户共享物理资源，但非常容易进行互相影响，造成用户不能用到平台声称的配额。</li>
+</ol>
+<p>DynamoDB 从静态分配开始，逐步演化出一套全局和局部组合的准入控制机制，从而实现了物理上资源共享，但又在逻辑上给用户以配额隔离，从而实现了数据库真正的云原生。下面，我依据 <a target="_blank" rel="noopener" href="https://www.usenix.org/system/files/atc22-elhemali.pdf">Amazon DynamoDB: A Scalable, Predictably Performant, and Fully Managed NoSQL Database Service</a> 这篇论文披露的细节，对其流控机制的演进过程做一个梳理，以飨诸君。</p>
+<p>水平所限，谬误之处，欢迎随时指出。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/03/14/facebook-delos/#more" rel="contents">
+              <a class="btn" href="/2022/09/24/dynamo-db-flow-control/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -605,8 +897,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/02/15/cmu15445-introduction/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/09/24/dynamo-db-flow-control/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -620,7 +912,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/02/15/cmu15445-introduction/" class="post-title-link" itemprop="url">Cmu15445 课程介绍</a>
+            <a href="/en/2022/09/24/dynamo-db-flow-control/" class="post-title-link" itemprop="url">DynamoDB's Cloud-Native Journey — the Evolution of Flow Control Strategies</a>
         </h2>
 
         <div class="post-meta">
@@ -630,14 +922,295 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-02-15 22:13:33" itemprop="dateCreated datePublished" datetime="2021-02-15T22:13:33+08:00">2021-02-15</time>
+              <time title="创建时间：2022-09-24 18:31:31" itemprop="dateCreated datePublished" datetime="2022-09-24T18:31:31+08:00">2022-09-24</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:18:21" itemprop="dateModified" datetime="2024-03-04T09:18:21+08:00">2024-03-04</time>
+                <time title="修改时间：2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/" itemprop="url" rel="index"><span itemprop="name">distributed systems</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/paper-notes/" itemprop="url" rel="index"><span itemprop="name">paper notes</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="Overview-Why-Flow-Control-Matters">Overview: Why Flow Control Matters</h2>
+<p>The benefit of moving to the cloud lies in pooling resources, enabling multi-tenant sharing, and allocating on demand, thereby reducing costs. But:</p>
+<ol>
+<li><strong>Multi-tenant isolation</strong>: Users demand that they can use the capacity they’ve purchased without being affected by other tenants.</li>
+<li><strong>Resource sharing</strong>: Resources can only be logically separated, not physically separated; otherwise, dynamic allocation (overcommitment) cannot be fully achieved.</li>
+</ol>
+<p>These two are a pair of contradictory requirements, and I believe they are the most critical problems that cloud-native databases must solve. If this problem is not solved well, the database will:</p>
+<ol>
+<li><strong>Either the platform won’t make money</strong>: With static resource reservation, users may be satisfied because they can always use the resource quota sold to them, but this leads to massive resource waste—either the price is high, or users won’t pay.</li>
+<li><strong>Or users will be dissatisfied</strong>: Multiple tenants share physical resources, but it is very easy for them to affect each other, preventing users from using the quota promised by the platform.</li>
+</ol>
+<p>Starting from static allocation, DynamoDB gradually evolved a combined global and local admission control mechanism, thereby achieving physical resource sharing while logically providing quota isolation to users, realizing true cloud-native databases. Below, based on the details disclosed in the paper <a target="_blank" rel="noopener" href="https://www.usenix.org/system/files/atc22-elhemali.pdf">Amazon DynamoDB: A Scalable, Predictably Performant, and Fully Managed NoSQL Database Service</a>, I summarize the evolution of its flow control mechanism for your reference.</p>
+<p>Due to limited expertise, any errors are welcome to be pointed out at any time.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2022/09/24/dynamo-db-flow-control/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/08/21/rocksdb-file-indexer/" class="post-title-link" itemprop="url">RocksDB 优化小解（一）：Indexing SST</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-21 10:44:43" itemprop="dateCreated datePublished" datetime="2022-08-21T10:44:43+08:00">2022-08-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-03-04 09:22:48" itemprop="dateModified" datetime="2024-03-04T09:22:48+08:00">2024-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/RocksDB/" itemprop="url" rel="index"><span itemprop="name">RocksDB</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>Google LevelDB 是一个 LSM-Tree 的实现典范。但在开源出来后，为了保持轻量、简洁的风格，除了修修 Bug 之外，一直没有做太大的更新迭代。为了让其能够满足工业环境中<strong>多样性的负载</strong>， Facebook（Meta） 在 Fork 了 LevelDB 之后，做了多方面的优化。硬件方面，可以更有效地利用现代硬件，如闪存和快速磁盘、多核 CPU等；软件方面，针对读写路径、Compaction 也做了大量优化，如 SST 索引、索引分片、前缀 Bloom Filter、列族等。</p>
+<p>本系列文章，依据 <a target="_blank" rel="noopener" href="https://rocksdb.org/blog/">RocksDB 系列博客</a>，结合源码和一些使用经验，分享一些有趣的优化点，希望能对大家有所启发。水平所限，不当之处，欢迎留言讨论。</p>
+</blockquote>
+<p>本篇是 RocksDB 优化系列第一篇，为了优化深层查询性能，将不同层级的 SST 通过一定方式索引起来。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/08/21/rocksdb-file-indexer/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/08/21/rocksdb-file-indexer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2022/08/21/rocksdb-file-indexer/" class="post-title-link" itemprop="url">RocksDB Optimization Notes (I)&#58; Indexing SST</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-08-21 10:44:43" itemprop="dateCreated datePublished" datetime="2022-08-21T10:44:43+08:00">2022-08-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/source-reading/" itemprop="url" rel="index"><span itemprop="name">source-reading</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/source-reading/RocksDB/" itemprop="url" rel="index"><span itemprop="name">RocksDB</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>Google LevelDB is a canonical implementation of LSM-Tree. However, after being open-sourced, in order to maintain a lightweight and concise style, besides fixing bugs, it has not seen major updates. To make it capable of meeting <strong>diverse workloads</strong> in industrial environments, Facebook (Meta) forked LevelDB and made optimizations in many aspects. On the hardware side, it can more effectively utilize modern hardware such as flash memory, fast disks, and multi-core CPUs; on the software side, it has made numerous optimizations for read/write paths and Compaction, such as SST indexing, index sharding, prefix Bloom Filter, column families, etc.</p>
+<p>This series of articles, based on the <a target="_blank" rel="noopener" href="https://rocksdb.org/blog/">RocksDB blog series</a>, combined with source code and some practical experience, shares some interesting optimization points, hoping to inspire everyone. Due to limited expertise, any inaccuracies are welcome to be discussed in the comments.</p>
+</blockquote>
+<p>This is the first article in the RocksDB optimization series. To optimize deep lookup performance, SST files at different levels are indexed in a certain way.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2022/08/21/rocksdb-file-indexer/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN,en,default">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2022/07/07/db-isolation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/07/07/db-isolation/" class="post-title-link" itemprop="url">步步为营 剖析事务中最难的——隔离性</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-07-07 23:42:56" itemprop="dateCreated datePublished" datetime="2022-07-07T23:42:56+08:00">2022-07-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-07-31 14:26:06" itemprop="dateModified" datetime="2023-07-31T14:26:06+08:00">2023-07-31</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -647,10 +1220,6 @@
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
                   <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
                 </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%85%AC%E5%BC%80%E8%AF%BE/" itemprop="url" rel="index"><span itemprop="name">公开课</span></a>
-                </span>
             </span>
 
           
@@ -664,25 +1233,13 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="小引">小引</h2>
-<p>大学时，数据库学的不是很深，现在有印象的也就 SQL、ER 图、范式、事务等<strong>使用上</strong>的寥寥概念。对于其<strong>实现上</strong>一直没有过系统性的了解，但既然走上了存储这条路，数据库知识肯定要补一下。先前，知乎上很多地方看到大家推荐 cmu15445 这门课，也早就将课程主页收藏到了文件夹，但一直没得空来看。念念不忘，必有回响，到这个假期，恰逢换工作，才有点大块的时间开个头。</p>
-<h2 id="大纲">大纲</h2>
-<p>简单介绍下 <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/">cmu15445</a> 的<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/syllabus.html">教学大纲</a>，该课以 <a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">Database System Concepts</a> 为辅助教材， 讲述了数据库管理系统（DBMS）设计和实现的方方面面，包括：</p>
-<ol>
-<li>数据模型（关系型，文档型，键值型）</li>
-<li>存储模型（n-ary，decomposition，可以理解为行式、列式）</li>
-<li>查询语言（sql，存储过程 stored procedures）</li>
-<li>存储结构（heaps，基于日志 log-structured）</li>
-<li>索引设计（排序树，哈希表）</li>
-<li>事务处理（ACID，并发控制）</li>
-<li>数据恢复（日志、快照）</li>
-<li>执行引擎（joins，排序，聚集，优化）</li>
-<li>并发架构（多核，分布式）</li>
-</ol>
-<p>可以看出，内容十分翔实，课程使用一个开源的商业数据库作为案例进行讲解，以深入探讨数据库设计时，在上述各个方面进行取舍的过程。本课程十分重视编程实践，设计了一系列前后勾连但又足够简洁的<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/assignments.html">代码实验</a>。</p>
+          <blockquote>
+<p>很久没有发文了，搞了一个月事务相关的资料和分享，今天用这篇文章做个小节。希望能给大家一些启发。</p>
+<p>说起数据库的事务，大家第一反应多是 ACID，但这几个属性的重要性和复杂度并不等同。其中，最难理解的当属<strong>隔离性</strong>（I，Isolation）。造成这种理解困局的一个重要原因是，历史上对几种隔离级别的定义和实现耦合在了一块、不同厂商的的叫法和实现又常常挂羊头卖狗肉。本文试着从锁的角度来梳理下几种常见的隔离级别，用相对<strong>不精确</strong>的叙述给大家建立一个直观感性的认识。</p>
+</blockquote>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/02/15/cmu15445-introduction/#more" rel="contents">
+              <a class="btn" href="/2022/07/07/db-isolation/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -707,8 +1264,8 @@
       
   
   
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/02/10/cmu15445-project1-buffer-pool/">
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/07/07/db-isolation/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/img/logo.jpg">
@@ -722,7 +1279,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/02/10/cmu15445-project1-buffer-pool/" class="post-title-link" itemprop="url">Cmu15445 数据库系统实验一：Buffer Pool Manager</a>
+            <a href="/en/2022/07/07/db-isolation/" class="post-title-link" itemprop="url">Step by Step: Dissecting the Hardest Part of Transactions — Isolation</a>
         </h2>
 
         <div class="post-meta">
@@ -732,14 +1289,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2021-02-10 00:13:33" itemprop="dateCreated datePublished" datetime="2021-02-10T00:13:33+08:00">2021-02-10</time>
+              <time title="创建时间：2022-07-07 23:42:56" itemprop="dateCreated datePublished" datetime="2022-07-07T23:42:56+08:00">2022-07-07</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:18:06" itemprop="dateModified" datetime="2024-03-04T09:18:06+08:00">2024-03-04</time>
+                <time title="修改时间：2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -747,11 +1304,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/" itemprop="url" rel="index"><span itemprop="name">数据库</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E5%85%AC%E5%BC%80%E8%AF%BE/" itemprop="url" rel="index"><span itemprop="name">公开课</span></a>
+                  <a href="/categories/Database/" itemprop="url" rel="index"><span itemprop="name">Database</span></a>
                 </span>
             </span>
 
@@ -767,635 +1320,12 @@
 
       
           <blockquote>
-<p>cmu15445 是一门关于数据库管理系统（DBMS）设计与实现的经典公开课。该课程以 <a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">Database System Concepts</a> 为教材，提供随堂讲义、笔记和视频，精心准备了几个互相勾连的小实验。该课程十分注重系统设计和编程实现，用主讲教授 <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a> 的话说，这是一门可以写在简历上、并且能帮你拿到好 offer 的课程。</p>
-<p>这个假期得空，翻出这门课程，即被其翔实的内容、精当的组织所折服。无奈时间有限，只能以<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/assignments.html">实验</a>为主线，辅以<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/slides/">讲义</a>和<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/notes/">笔记</a>，简单跟一跟。如果再有时间，就去扫下<a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">教材</a>和<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=oeYBdghaIjc&amp;list=PLSE8ODhjZXjbohkNBWQs_otTrBTrjyohi">视频</a>。从实验一开始，每个实验 <a target="_blank" rel="noopener" href="https://www.gradescope.com/">autograder</a> 跑过之后，出一篇笔记，聊以备忘。 <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a>  教授建议不要公开实验代码仓库，因此文章尽量少贴代码，多写思路。</p>
-<p>本篇是实验一，管理文件系统的页在内存中的缓存 —— buffer pool manager。</p>
+<p>It’s been a long time since my last post. After spending a month on transaction-related materials and sharing, I’m using this article to wrap things up today. Hopefully it can provide some inspiration.</p>
+<p>When it comes to database transactions, most people’s first reaction is ACID. However, these properties differ in importance and complexity. Among them, the hardest to understand is <strong>Isolation</strong> (I). One important reason for this confusion is that historically, the definitions and implementations of isolation levels have been tightly coupled, and different vendors’ terminology and implementations often don’t match reality. This article attempts to sort out several common isolation levels from the perspective of locks, using relatively <strong>imprecise</strong> descriptions to build an intuitive and perceptual understanding.</p>
 </blockquote>
-<h2 id="概览">概览</h2>
-<p>实验的目标系统 <a target="_blank" rel="noopener" href="https://github.com/cmu-db/bustub">BusTub</a> 是一个面向磁盘的 DBMS，但磁盘上的数据不支持字节粒度的访问。这就需要一个管理页的中间层，但 <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a>  教授坚持不使用 mmap 将页管理权力让渡给操作系统，因此<a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/project1/">实验一</a> 的目标便在于主动管理磁盘中的页（page）在内存中的缓存，从而，最小化磁盘访问次数（时间上）、最大化相关数据连续（空间上）。</p>
-<p>该实验可以分解为相对独立的两个子任务：</p>
-<ol>
-<li>维护替换策略的： LRU replacement policy</li>
-<li>管理缓冲池的： buffer pool manager</li>
-</ol>
-<p>两个组件都要求线程安全。</p>
-<p>本文首先从基本概念、核心数据流总体分析下实验内容，然后分别对两个子任务进行梳理。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/02/10/cmu15445-project1-buffer-pool/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2021/01/09/go-slice/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/01/09/go-slice/" class="post-title-link" itemprop="url">Golang 笔记（三）：一种理解 Slice 的模型</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-01-09 14:51:46" itemprop="dateCreated datePublished" datetime="2021-01-09T14:51:46+08:00">2021-01-09</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:17:51" itemprop="dateModified" datetime="2024-03-04T09:17:51+08:00">2024-03-04</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Go/" itemprop="url" rel="index"><span itemprop="name">Go</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="概述">概述</h2>
-<p>Golang 中 slice 极似其他语言中数组，但又有诸多不同，因此容易使初学者产生一些误解，并在使用时不易察觉地掉进各种坑中。本篇小文，首先从 Go 语言官方博客出发，铺陈官方给出的 slice 的相关语法；其次以图示的方式给出一种理解 slice 的模型；最后再总结分析一些特殊的使用情况，以期在多个角度对 slice 都有个更清晰侧写。</p>
-<p>如不愿看繁琐叙述过程，可直接跳到最后小结看总结。</p>
-<p><img src="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png" alt="go-slice-view-derive.png"></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/01/09/go-slice/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/12/14/bolt-index-design/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/12/14/bolt-index-design/" class="post-title-link" itemprop="url">Boltdb 源码导读（二）：Boltdb 索引设计</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-12-14 23:23:28" itemprop="dateCreated datePublished" datetime="2020-12-14T23:23:28+08:00">2020-12-14</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:17:52" itemprop="dateModified" datetime="2024-03-04T09:17:52+08:00">2024-03-04</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/boltdb/" itemprop="url" rel="index"><span itemprop="name">boltdb</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p><a target="_blank" rel="noopener" href="https://github.com/boltdb/bolt">boltdb</a> 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于  <a target="_blank" rel="noopener" href="https://twitter.com/hyc_symas">Howard Chu’s</a> <a target="_blank" rel="noopener" href="http://symas.com/mdb/">LMDB 项目</a> ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 <a target="_blank" rel="noopener" href="https://github.com/etcd-io/bbolt">bbolt</a>。</p>
-<p>为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。</p>
-<p>本系列计划分成三篇文章，依次围绕<strong>数据组织</strong>、<strong>索引设计</strong>、<strong>事务实现</strong>等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第一篇， boltdb 数据组织。</p>
-</blockquote>
-<h2 id="概览">概览</h2>
-<p>数据库中常用的索引设计有两种，一个是 B+ 树，一个是 LSM-tree。B+ 树比较经典，比如说传统单机数据库 mysql 就是 B+ 树索引，它对快速读取和范围查询（range query）比较友好。 LSM-tree 是近年来比较流行的索引结构，Bigtable、LevelDB、RocksDB 都有它的影子；<a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/">前面文章</a>也有提到，LSM-tree 使用 WAL 和多级数据组织以牺牲部分读性能，换来强悍的随机写性能。因此，这也是一个经典的取舍问题。</p>
-<p>BoltDB 在逻辑上以桶来组织数据，一个桶可以看做一个命名空间，是一组 KV 对的集合，和对象存储的桶概念类似。每个桶对应一棵 B+ 树，命名空间是可以嵌套的，因此 BoltDB 的 Bucket 间也是允许嵌套的。在实现上来说，子 bucket 的 root node 的 page id 保存在父 bucket 叶子节点上实现嵌套。</p>
-<p>每个 db 文件，是一组树形组织的 B+ 树。我们知道对于 B+ 树来说，分支节点用于查找，叶子节点存数据。</p>
-<ol>
-<li>顶层 B+ 树，比较特殊，称为 root bucket，其所有叶子节点保存的都是子 bucket B+ 树根的 page id 。</li>
-<li>其他 B+ 树，不妨称之为 data bucket，其叶子节点可能是正常用户数据，也可能是子 bucket B+ 树根的 page id。</li>
-</ol>
-<p><img src="https://i.loli.net/2021/01/02/QBwKIpNOHkRqzrE.png" alt="boltdb-buckets-organised.png"></p>
-<p>相比普通 B+ 树，boltdb 的 B+ 树有几点特殊之处：</p>
-<ol start="2">
-<li>节点的分支个数不是一个固定范围，而是依据其所存元素大小之和来限制的，这个上限即为页大小。</li>
-<li>其分支节点（branch node）所存分支的 key，是其所指向分支的最小 key。</li>
-<li>所有叶子节点并没有通过链表首尾相接起来。</li>
-<li>没有保证所有的叶子节点都在同一层。</li>
-</ol>
-<p>在代码组织上，boltdb 索引相关的源文件如下：</p>
-<ol>
-<li><strong>bucket.go</strong>：对 bucket 操作的高层封装。包括kv 的增删改查、子bucket 的增删改查以及 B+ 树拆分和合并。</li>
-<li><strong>node.go</strong>：对 node 所存元素和 node 间关系的相关操作。节点内所存元素的增删、加载和落盘，访问孩子兄弟元素、拆分与合并的详细逻辑。</li>
-<li><strong>cursor.go</strong>：实现了类似迭代器的功能，可以在 B+ 树上的叶子节点上进行随意游走。</li>
-</ol>
-<p>本文主要分三部分，由局部到整体来一步步揭示 BoltDB 是如何进行索引设计的。首先会拆解树的基本单元，其次剖析 bucket 的遍历实现，最后分析树的生长和平衡过程。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/12/14/bolt-index-design/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/11/29/bolt-data-organised/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/11/29/bolt-data-organised/" class="post-title-link" itemprop="url">Boltdb 源码导读（一）：Boltdb 数据组织</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-11-29 11:54:52" itemprop="dateCreated datePublished" datetime="2020-11-29T11:54:52+08:00">2020-11-29</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-04 09:17:38" itemprop="dateModified" datetime="2024-03-04T09:17:38+08:00">2024-03-04</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/boltdb/" itemprop="url" rel="index"><span itemprop="name">boltdb</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p><a target="_blank" rel="noopener" href="https://github.com/boltdb/bolt">boltdb</a> 是市面上为数不多的纯 go 语言开发的、单机 KV 库。boltdb 基于  <a target="_blank" rel="noopener" href="https://twitter.com/hyc_symas">Howard Chu’s</a> <a target="_blank" rel="noopener" href="http://symas.com/mdb/">LMDB 项目</a> ，实现的比较清爽，去掉单元测试和适配代码，核心代码大概四千多行。简单的 API、简约的实现，也是作者的意图所在。由于作者精力所限，原 boltdb 已经封版，不再更新。若想改进，提交新的 pr，建议去 etcd 维护的 fork 版本 <a target="_blank" rel="noopener" href="https://github.com/etcd-io/bbolt">bbolt</a>。</p>
-<p>为了方便，本系列导读文章仍以不再变动的原 repo 为基础。该项目麻雀虽小，五脏俱全，仅仅四千多行代码，就实现了一个基于 B+ 树索引、支持一写多读事务的单机 KV 引擎。代码本身简约朴实、注释得当，如果你是 go 语言爱好者、如果对 KV 库感兴趣，那 boltdb 绝对是不可错过的一个 repo。</p>
-<p>本系列计划分成三篇文章，依次围绕<strong>数据组织</strong>、<strong>索引设计</strong>、<strong>事务实现</strong>等三个主要方面对 boltdb 源码进行剖析。由于三个方面不是完全正交解耦的，因此叙述时会不可避免的产生交织，读不懂时，暂时略过即可，待有全貌，再回来梳理。本文是第一篇， boltdb 数据组织。</p>
-</blockquote>
-<h2 id="引子">引子</h2>
-<p>一个存储引擎最底层的构成，就是处理数据在各种物理介质（比如在磁盘上、在内存里）上的组织。而这些数据组织也体现了该存储引擎在设计上的取舍哲学。</p>
-<p>在文件系统上，boltdb 采用<strong>页</strong>（page）的组织方式，将一切数据都<strong>对齐</strong>到页；在内存中，boltdb 按 B+ 树组织数据，其基本单元是<strong>节点</strong>（node），一个内存中的树节点对应文件系统上一个或者多个<strong>连续的</strong>页。boltdb 就在数据组织上就只有这两种核心抽象，可谓设计简洁。当然，这种简洁必然是有代价的，后面文章会进行详细分析。</p>
-<p>本文首先对节点和页的关系进行总体说明，然后逐一分析四种页的格式及其载入内存后的表示，最后按照 db 的生命周期串一下 db 文件的增长过程以及载入内存的策略。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/11/29/bolt-data-organised/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/11/18/leveldb-data-structures-bloom-filter/" class="post-title-link" itemprop="url">漫谈 LevelDB 数据结构（二）：布隆过滤器（Bloom Filter）</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-11-18 21:32:23" itemprop="dateCreated datePublished" datetime="2020-11-18T21:32:23+08:00">2020-11-18</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-17 09:54:05" itemprop="dateModified" datetime="2024-03-17T09:54:05+08:00">2024-03-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/leveldb/" itemprop="url" rel="index"><span itemprop="name">leveldb</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>早对 <a target="_blank" rel="noopener" href="https://github.com/google/leveldb">LevelDB</a> 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和  Jeff Dean 呢。</p>
-<p>看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路：从架构概览说起，以模块分析做合。读代码的这些天，一直在盘算从哪下笔比较好。在将将读完之时，印象最深的反而是 LevelDB 的各种精妙的数据结构：贴合场景、从头构建、剪裁得当、代码精到。不妨， LevelDB 系列就从这些边边角角的小构件开始吧。</p>
-<p>本系列主要想分享 LevelDB 中用到的三个工程中常用的经典数据结构，分别是用以快速读写 memtable 的 <a href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/"><strong>Skip List</strong></a>、用以快速筛选 sstable 的 <strong>Bloom Filter</strong> 和用以部分缓存 sstable 的 <strong>LRUCache</strong> 。这是第二篇，Bloom Filter。</p>
-</blockquote>
-<h2 id="引子">引子</h2>
-<p>LevelDB 是一个单机的 KV 存储引擎，但没有使用传统的平衡查找树以平衡读写性能，而是使用了 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Log-structured_merge-tree">LSM-tree</a> 结构来组织数据，牺牲部分读性能来换取较高的写吞吐。下面来对照一张图来介绍 LSM-tree 在不同存储介质上的组织方式。</p>
-<p><img src="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png" alt="leveldb.png"></p>
-<p>LevelDB 将数据分为两大部分，分别存放在内存和文件系统中。主要数据模块包括 WAL log，memtable，immutable memtable，sstable。按照数据流向依次如下：</p>
-<ol>
-<li>当 LevelDB 收到一个写入请求 <code>put(k, v)</code> ，会首先将其操作日志追加到日志文件（WAL）中，以备节点意外宕机恢复。</li>
-<li>写完 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Write-ahead_logging">WAL</a> 后，LevelDB 将该条 kv 插入内存中的<a href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/">查找结构</a>：memtable。</li>
-<li>在 memtable 积累到一定程度后，会 rotate 为一个只读 memtable，即 immutable memtable；同时生成一个新的 memtable 以供写入。</li>
-<li>当内存有压力后，会将 immutable memtable 顺序写入文件系统，生成一个 level0 层的 sstable（sorted strings table） 文件。该过程称为一次 minor compaction。</li>
-<li>由于查询操作需要按层次遍历 memtable、immutable 和 sstable。当 sstable 文件生成的越来越多之后，查询性能必然越来越差，因此需要将不同的 sstable 进行归并，称为 major compaction。</li>
-</ol>
-<h3 id="LevelDB-层次组织">LevelDB 层次组织</h3>
-<p>所有在文件系统中的 sstable 文件，被 LevelDB 在逻辑上组织成多个层次（一般是 7层），并且满足以下性质：</p>
-<ol>
-<li>层次越大说明其数据写入越早，即先往上层进行“放”（minor compaction），上层“满”（达到容量限制）之后“溢”（major compaction）到下层进行合并。</li>
-<li>每层文件总大小都有一定限制，并且成指数级增长。比如 level0 层文件总大小上限为10MB，level1 层为100MB，依次类推，最高层（level6层）没有限制。</li>
-<li>由于 level0 每个 sstable 文件都是直接由 memtable 落盘而来， 因此多个 sstable 文件的 key 范围可能会有交叠。而其他层的多个 sstable 文件则通过一些规则保证没有交叠。</li>
-</ol>
-<p>对于 LevelDB 的一次读取操作，需要首先去 memtable、immutable memtable 查找，然后依次去文件系统中各层查找。可以看出，相比写入操作，读取操作实在有点效率低下。我们这种客户端进行一次读请求，进入系统后被变成多次读请求的现象为<strong>读放大</strong>。</p>
-<p>为了减小读放大，LevelDB 采取了几方面措施：</p>
-<ol>
-<li>通过 major compaction 尽量减少 sstable 文件</li>
-<li>使用快速筛选的办法，快速判断 key 是否在某个 sstable 文件中</li>
-</ol>
-<p>而快速判断某个 key 是否在某个 key 集合中，LevelDB 用的正是布隆过滤器。当然，布隆过滤器只能快速判断 key 一定不在某个 sstable 中，从而在层层查找时跳过某些 sstable 。之后会详述原因，此处按下不表。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/11/18/leveldb-data-structures-bloom-filter/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/07/12/go-context/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/12/go-context/" class="post-title-link" itemprop="url">Golang 笔记（二）：Context 源码剖析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-07-12 17:25:16" itemprop="dateCreated datePublished" datetime="2020-07-12T17:25:16+08:00">2020-07-12</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-17 09:54:15" itemprop="dateModified" datetime="2024-03-17T09:54:15+08:00">2024-03-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/Go/" itemprop="url" rel="index"><span itemprop="name">Go</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><img src="https://i.loli.net/2020/07/25/Yjbq6ZSkEHQ3X1u.png" alt="go-context-tree-construction.png"></p>
-<h2 id="概述">概述</h2>
-<p>Context 是 Go 中一个比较独特而常用的概念，用好了往往能事半功倍。但如果不知其然而滥用，则往往变成 “为赋新词强说愁”，轻则影响代码结构，重则埋下许多bug。</p>
-<p>Golang  使用树形派生的方式构造 Context，通过在不同过程 <em>[1]</em> 中传递 deadline 和 cancel 信号，来管理处理某个任务所涉及到的一组 goroutine 的生命周期，防止 goroutine 泄露。并且可以通过附加在 Context 上的 Value 来传递/共享一些跨越整个请求间的数据。</p>
-<p>Context 最常用来追踪 RPC/HTTP 等耗时的、跨进程的 IO 请求的生命周期，从而让外层调用者可以主动地或者自动地取消该请求，进而告诉子过程回收用到的所有 goroutine 和相关资源。</p>
-<p>Context 本质上是一种在 API 间树形嵌套调用时传递信号的机制。本文将从接口、派生、源码分析、使用等几个方面来逐一解析 Context。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/07/12/go-context/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/07/03/leveldb-data-structures-skip-list/" class="post-title-link" itemprop="url">漫谈 LevelDB 数据结构（一）：跳表（Skip List）</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-07-03 23:21:23" itemprop="dateCreated datePublished" datetime="2020-07-03T23:21:23+08:00">2020-07-03</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-03-17 09:54:00" itemprop="dateModified" datetime="2024-03-17T09:54:00+08:00">2024-03-17</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" itemprop="url" rel="index"><span itemprop="name">源码阅读</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/leveldb/" itemprop="url" rel="index"><span itemprop="name">leveldb</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>早对 <a target="_blank" rel="noopener" href="https://github.com/google/leveldb">LevelDB</a> 有所耳闻，这次心血来潮结合一些资料粗略过了遍代码，果然名不虚传。如果你对存储感兴趣、如果你想优雅使用C++、如果你想学习如何架构项目，都推荐来观摩一下。更何况作者是 Sanjay Ghemawat 和  Jeff Dean 呢。</p>
-<p>看过一遍如果不输出点什么，以我的记性，定会很快抛诸脑后。便想写点东西说说 LevelDB 之妙，但又不想走寻常路，从架构概览说起，以模块分析做合。读代码的这些天，一直在盘算从哪下笔比较好。在将将读完之时，印象最深的反而是 LevelDB 的各种精妙的数据结构：贴合场景、从头构建、剪裁得当、代码精到。不妨， LevelDB 系列就从这些边边角角的小构件开始吧。</p>
-<p>本系列主要想分享 LevelDB 中用到的三个工程中常用的经典数据结构，分别是用以快速读写 memtable 的 <strong>Skip List</strong>、用以快速筛选 sstable 的 <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter"><strong>Bloom Filter</strong></a> 和用以部分缓存 sstable 的 <strong>LRUCache</strong> 。这是第一篇，Skip List。</p>
-</blockquote>
-<h2 id="需求">需求</h2>
-<p>LevelDB 是一个单机的 KV 存储引擎。KV 引擎在本质上可认为只提供对数据条目（key，val） <code>Put(key, val), Get(key) val, Delete(key)</code> 操作的三个接口。而在实现上，LevelDB 在收到删除请求时不会真正删除数据，而是为该 Key 写一个特殊标记，以备读取时发现该 Key 不存在，从而将  <code>Delete</code> 转为 <code>Put</code> ，进而将三个接口简化为两个。砍完这一刀后，剩下的就是在 <code>Put</code> 和 <code>Get</code> 间进行性能取舍，LevelDB 的选择是：<strong>牺牲部分 <code>Get</code> 性能，换取强悍 <code>Put</code> 性能，再极力优化 <code>Get</code></strong>。</p>
-<p>我们知道，在存储层次体系（<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Memory_hierarchy">Memory hierarchy</a>）中，内存访问远快于磁盘，因此 LevelDB 为了达到目标做了以下设计：</p>
-<ol>
-<li><em>写入（Put）</em>：让所有写入都发生在<strong>内存</strong>中，然后达到一定尺寸后将其批量刷<strong>磁盘</strong>。</li>
-<li><em>读取（Get）</em>：随着时间推移，数据不断写入，内存中会有一小部分数据，磁盘中有剩余大部分数据。读取时，如果在内存中没命中，就需要去磁盘查找。</li>
-</ol>
-<p>为了保证写入性能，同时优化读取性能，需要内存中的存储结构能够同时支持高效的<strong>插入</strong>和<strong>查找</strong>。</p>
-<p>之前听说 LevelDB 时，最自然的想法，以为该内存结构（memtable）为是<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Self-balancing_binary_search_tree">平衡树</a>，比如<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Red%E2%80%93black_tree">红黑树</a>、<a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/AVL_tree">AVL 树</a>等，可以保证插入和查找的时间复杂度都是 lg(n)，看源码才知道用了跳表。相比平衡树，跳表优势在于，在保证读写性能的同时，大大简化了实现。</p>
-<p>此外，为了将数据定期 dump 到磁盘，还需要该数据结构支持高效的顺序遍历。总结一下 LevelDB  内存数据结构（memtable）需求点：</p>
-<ol>
-<li>高效查找</li>
-<li>高效插入</li>
-<li>高效顺序遍历</li>
-</ol>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/07/03/leveldb-data-structures-skip-list/#more" rel="contents">
+              <a class="btn" href="/en/2022/07/07/db-isolation/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1420,7 +1350,7 @@
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/5/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><a class="extend next" rel="next" href="/page/7/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
+    <a class="extend prev" rel="prev" href="/page/5/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/18/">18</a><a class="extend next" rel="next" href="/page/7/"><i class="fa fa-angle-right" aria-label="下一页"></i></a>
   </nav>
 
 
@@ -1488,19 +1418,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">120</span>
+          <span class="site-state-item-count">216</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">41</span>
+        <span class="site-state-item-count">105</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">198</span>
+        <span class="site-state-item-count">283</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1573,8 +1503,6 @@
 
     <footer class="footer">
       <div class="footer-inner">
-        
-
         
 
 <div class="copyright">

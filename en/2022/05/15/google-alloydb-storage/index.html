@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="At the Google I&#x2F;O 2022 conference, Google Cloud released AlloyDB, a cloud-native database compatible with the PostgreSQL standard (note: “Alloy” means an alloy of metals). It claims to be twice as fas">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Dissecting the Storage Layer of AlloyDB, Google&#39;s Cloud-Native PostgreSQL-Compatible Database">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2022/05/15/google-alloydb-storage/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="At the Google I&#x2F;O 2022 conference, Google Cloud released AlloyDB, a cloud-native database compatible with the PostgreSQL standard (note: “Alloy” means an alloy of metals). It claims to be twice as fas">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://s2.loli.net/2022/05/15/lHFZw8SqjIAGCWh.png">
+<meta property="og:image" content="https://s2.loli.net/2022/05/15/pLtwf1YN4vJDQsl.png">
+<meta property="og:image" content="https://s2.loli.net/2022/05/15/rH3O8fFlT9aLQRD.png">
+<meta property="og:image" content="https://s2.loli.net/2022/05/15/AJ5BpdYHbLQOV64.png">
+<meta property="og:image" content="https://s2.loli.net/2022/05/15/oIkY2CdeWQxSZ7A.png">
+<meta property="article:published_time" content="2022-05-14T17:17:15.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.677Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="storage">
+<meta property="article:tag" content="cloud-native">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2022/05/15/lHFZw8SqjIAGCWh.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2022/05/15/google-alloydb-storage/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="storage,cloud-native">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Dissecting the Storage Layer of AlloyDB, Google's Cloud-Native PostgreSQL-Compatible Database",
+    "description": "At the Google I/O 2022 conference, Google Cloud released AlloyDB, a cloud-native database compatible with the PostgreSQL standard (note: “Alloy” means an alloy of metals). It claims to be twice as fast as Amazon’s competing product (Aurora?), a slogan that probably isn’t enough to convince existing users to migrate, but does hold some appeal for new users. Since the author mainly works on storage, this article will analyze the AlloyDB storage layer architecture based on Google’s blog post introducing it, to see what highlights its design has to offer. Overall Architecture Overall, AlloyDB is divided into a Database layer and a Storage layer. The DB layer is responsible for being compatible with the PostgreSQL protocol, parsing SQL statements, and converting them into read/write requests sent to the storage layer. The storage layer can be further subdivided into three layers: log storage layer: The DB layer converts writes into operation logs, or WAL, which are written to the storage layer. Log storage is responsible for the efficient writing and storage of these log records. LPS layer: Log Processing Service, LPS, is the log processing service layer that consumes WAL from the log storage layer and generates Blocks. Essentially, it is a materialization process. block storage layer: Corresponding to the block layer of a standalone PostgreSQL instance, it serves queries, provides parallelism through sharding, and guarantees cross-zone fault tolerance through replication.",
+    "url": "https://www.qtmuniao.com/en/2022/05/15/google-alloydb-storage/",
+    "datePublished": "2022-05-15T01:17:15+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2022/05/15/google-alloydb-storage/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Dissecting the Storage Layer of AlloyDB, Google's Cloud-Native PostgreSQL-Compatible Database | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2022/05/15/google-alloydb-storage/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2022/05/15/google-alloydb-storage/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/05/15/google-alloydb-storage/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Dissecting the Storage Layer of AlloyDB, Google's Cloud-Native PostgreSQL-Compatible Database
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2022-05-15 01:17:15" itemprop="dateCreated datePublished" datetime="2022-05-15T01:17:15+08:00">2022-05-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/" itemprop="url" rel="index"><span itemprop="name">distributed systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/architecture/" itemprop="url" rel="index"><span itemprop="name">architecture</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>At the <span class="exturl" data-url="aHR0cHM6Ly9pby5nb29nbGUvMjAyMi8=">Google I/O 2022<i class="fa fa-external-link-alt"></i></span> conference, Google Cloud released AlloyDB, a cloud-native database compatible with the PostgreSQL standard (note: “Alloy” means an alloy of metals). It claims to be twice as fast as Amazon’s competing product (Aurora?), a slogan that probably isn’t enough to convince existing users to migrate, but does hold some appeal for new users.</p>
+<p>Since the author mainly works on storage, this article will analyze the AlloyDB storage layer architecture based on Google’s <span class="exturl" data-url="aHR0cHM6Ly9jbG91ZC5nb29nbGUuY29tL2Jsb2cvcHJvZHVjdHMvZGF0YWJhc2VzL2FsbG95ZGItZm9yLXBvc3RncmVzcWwtaW50ZWxsaWdlbnQtc2NhbGFibGUtc3RvcmFnZQ==">blog post<i class="fa fa-external-link-alt"></i></span> introducing it, to see what highlights its design has to offer.</p>
+<blockquote>
+<p><strong>Overall Architecture</strong></p>
+</blockquote>
+<p>Overall, AlloyDB is divided into a <strong>Database layer</strong> and a <strong>Storage layer</strong>. The DB layer is responsible for being compatible with the PostgreSQL protocol, parsing SQL statements, and converting them into read/write requests sent to the storage layer. The storage layer can be further subdivided into three layers:</p>
+<ol>
+<li><strong>log storage layer</strong>: The DB layer converts writes into operation logs, or WAL, which are written to the storage layer. Log storage is responsible for the efficient writing and storage of these log records.</li>
+<li><strong>LPS layer</strong>: Log Processing Service, LPS, is the log processing service layer that consumes WAL from the log storage layer and generates Blocks. Essentially, it is a <strong>materialization</strong> process.</li>
+<li><strong>block storage layer</strong>: Corresponding to the block layer of a standalone PostgreSQL instance, it serves queries, provides parallelism through <strong>sharding</strong>, and guarantees cross-zone fault tolerance through <strong>replication</strong>.</li>
+</ol>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2022/05/15/google-alloydb-storage">https://www.qtmuniao.com/2022/05/15/google-alloydb-storage</a> 转载请注明出处</em></p>
+<p><img data-src="https://s2.loli.net/2022/05/15/lHFZw8SqjIAGCWh.png" alt="database-storage.png"><span class="image-caption">database-storage.png</span></p>
+<p>That is, AlloyDB further splits its storage layer into <strong>two storage layers</strong> and <strong>one compute layer</strong> to break down complexity:</p>
+<ol>
+<li>The log storage layer handles write requests coming from the DB layer. It only supports append-only writes, so it can achieve low latency and high availability, and can use LSN for read/write concurrency control and distributed transactions.</li>
+<li>The block storage layer handles query requests coming from the DB layer. Although not mentioned in the article, one can guess that the blocks it provides only support <strong>write once, then become immutable</strong>, to facilitate caching and version control.</li>
+<li>The LPS layer acts as a data mover between the two sub-storage layers, and is also responsible for block generation and reading. It is stateless and scalable. It can dynamically add or remove instances based on various signals such as load and statistics to track changing workloads.</li>
+</ol>
+<p>The storage layer essentially needs to provide <strong>block read and write services</strong>. AlloyDB splits out the log storage layer to handle writes and the block storage layer to handle reads. Implementing the storage layer based on log service materialization is considered a classic (even old) architecture in the distributed database field, but how to combine it efficiently still tests engineering capabilities.</p>
+<p>Another benefit of being log-based is that the same data can be materialized in different ways to support different workloads, such as on-demand materialization into data formats optimized for TP and AP, that is, supporting HTAP.</p>
+<blockquote>
+<p><strong>Read/Write Flow</strong></p>
+</blockquote>
+<p><strong>Write requests</strong> (such as SQL insert) are initiated by the client to the <strong>primary instance</strong>. After being parsed by the DB layer, they become a set of WAL Records sent to the storage layer. After WAL is <strong>synchronously</strong> written successfully, the transaction commits and returns successfully. Afterwards, LPS asynchronously materializes the logs into Blocks.<br>
+<img data-src="https://s2.loli.net/2022/05/15/pLtwf1YN4vJDQsl.png" alt="write-workflow.png"><span class="image-caption">write-workflow.png</span></p>
+<p>The original article did not elaborate, but how to <strong>segment</strong> and provide <strong>fault tolerance</strong> for logs, how to deploy across multiple regions, and how to manage the log <strong>lifecycle</strong> are also critical design points.</p>
+<p><strong>Read requests</strong> (such as SQL query) are initiated by the client to <strong>any instance</strong>. After being parsed by the DB layer, if the data hits the cache in that DB layer (Buffer Cache), it is returned directly; if the requested data is not sufficiently cached, it can be fetched from a larger, second-level-cache-like Ultra-fast Cache. If it hits there, the storage layer still does not need to be accessed.</p>
+<p>If the required block is still missing from the Ultra-fast Cache, a block read request will be sent to the storage layer with <strong>block id and LSN</strong>:</p>
+<ol>
+<li>The block id is used to retrieve the block.</li>
+<li>The LSN is used to wait for LPS apply progress to ensure a consistent view.</li>
+</ol>
+<p><img data-src="https://s2.loli.net/2022/05/15/rH3O8fFlT9aLQRD.png" alt="read-workflow.png"><span class="image-caption">read-workflow.png</span></p>
+<p>In the storage layer, LPS is responsible for block reads and writes. Each LPS maintains a <strong>Buffer Cache</strong>. This term is quite interesting:</p>
+<ol>
+<li>Buffer is generally used during writes to merge multiple writes together to improve write throughput.</li>
+<li>Cache is generally used during reads to bridge the access speed gap between different media to reduce latency.</li>
+</ol>
+<p>Here, the two are combined into one. When LPS performs log apply, it first writes to its own Buffer Cache. At this time, the Buffer Cache acts as a buffer to batch flush into block storage. Before LPS flushes the Buffer Cache to block storage, if it receives a block read request and the Buffer Cache is hit, it can return directly. At this time, the Buffer Cache acts as a cache.</p>
+<p>Of course, LPS needs to maintain data structures similar to a dirty table for the Buffer Cache to track the lifecycle of each block and when it should be flushed.</p>
+<blockquote>
+<p><strong>Elastic Scaling</strong></p>
+</blockquote>
+<p>To cope with changing workloads, the number of LPS instances is designed to be scalable: that is, adjusting the mapping relationship between LPS and block shards. Before further explaining how to scale, let’s first clarify the concepts and relationships of <strong>block</strong>, <strong>shard</strong>, and <strong>LPS instance</strong>:</p>
+<p><em>A set of blocks is grouped into a shard. A shard is processed by at most one LPS instance, but one LPS instance can process multiple shards simultaneously.</em></p>
+<p>Using a restaurant as an analogy: blocks can be understood as guests, shards as dining tables, and LPS instances as waiters:</p>
+<ol>
+<li>When the load is low, only one waiter is needed to serve all the guests at all tables in the restaurant.</li>
+<li>When the load is high, at most one waiter can be assigned to each table.</li>
+</ol>
+<p>This dynamic adjustment can be fully automated without user awareness or intervention. Also, because LPS has no state (Buffer Cache doesn’t count as state—think about why), it can scale <strong>quickly</strong>.</p>
+<p><img data-src="https://s2.loli.net/2022/05/15/AJ5BpdYHbLQOV64.png" alt="LPS-shard.png"><span class="image-caption">LPS-shard.png</span></p>
+<blockquote>
+<p><strong>Cross-Zone Multi-Active</strong></p>
+</blockquote>
+<p>To tolerate regional failures, AlloyDB places multiple replicas of each block shard in different zones.</p>
+<p><img data-src="https://s2.loli.net/2022/05/15/oIkY2CdeWQxSZ7A.png" alt="zones.png"><span class="image-caption">zones.png</span></p>
+<p>The article mentions two concepts, region and zone. Without verifying, I guess region refers to a <strong>physical region</strong> and zone refers to a <strong>logical zone</strong>. When a zone fails, a new zone is spun up in the same region and data recovery is performed:</p>
+<ol>
+<li>First, use snapshots from other replicas to recover.</li>
+<li>Then replay the WAL after that snapshot.</li>
+</ol>
+<p>Under normal circumstances, each zone can serve independently without too much cross-zone traffic.</p>
+<p>In addition, AlloyDB also supports manual and automatic backups at the logical level (such as for a particular database) to prevent users from accidentally deleting data.</p>
+<blockquote>
+<p><strong>Summary</strong></p>
+</blockquote>
+<p>AlloyDB’s storage layer is implemented based on a log service, divided into two storage layers—log storage and block storage—and one compute layer, LPS. It uses LSN to control concurrency and dynamically scales LPS to cope with workloads.</p>
+<p>What do you think of this design? Feel free to leave a comment and discuss.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/06/meta-object-store-delta/" rel="bookmark">Meta 链式复制的对象存储——Delta</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/04/distributed-database-storage-components/" rel="bookmark">层层剥开数据库存储层</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/05/26/gfs/" rel="bookmark">GFS — the Art of Trade-Offs</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/07/03/leveldb-data-structures-skip-list/" rel="bookmark">Casual Talk on LevelDB Data Structures (Part 1): Skip List</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb Source Code Guide (1): Boltdb Data Organization</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/storage/" rel="tag"># storage</a>
+              <a href="/tags/cloud-native/" rel="tag"># cloud-native</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/05/06/meta-object-store-delta/" rel="prev" title="Meta 链式复制的对象存储——Delta">
+      <i class="fa fa-chevron-left"></i> Meta 链式复制的对象存储——Delta
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/05/15/google-alloydb-storage/" rel="next" title="解析谷歌兼容 PostgreSQL 的云原生数据库——AlloyDB 的存储层">
+      解析谷歌兼容 PostgreSQL 的云原生数据库——AlloyDB 的存储层 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2022/05/15/google-alloydb-storage/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '5840f94f86c0c6480588bc996325b55f',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

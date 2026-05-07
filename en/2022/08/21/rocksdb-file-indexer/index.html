@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Google LevelDB is a canonical implementation of LSM-Tree. However, after being open-sourced, in order to maintain a lightweight and concise style, besides fixing bugs, it has not seen major updates.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocksDB Optimization Notes (I)&amp;#58; Indexing SST">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2022/08/21/rocksdb-file-indexer/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Google LevelDB is a canonical implementation of LSM-Tree. However, after being open-sourced, in order to maintain a lightweight and concise style, besides fixing bugs, it has not seen major updates.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png">
+<meta property="og:image" content="https://s2.loli.net/2022/08/21/XLU7IvQnJDFfOgS.png">
+<meta property="og:image" content="https://s2.loli.net/2022/08/21/d2tDES7jAaofwP5.png">
+<meta property="article:published_time" content="2022-08-21T02:44:43.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.677Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="storage">
+<meta property="article:tag" content="RocksDB">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2022/08/21/rocksdb-file-indexer/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="storage,RocksDB">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "RocksDB Optimization Notes (I)&#58; Indexing SST",
+    "description": "Google LevelDB is a canonical implementation of LSM-Tree. However, after being open-sourced, in order to maintain a lightweight and concise style, besides fixing bugs, it has not seen major updates. To make it capable of meeting diverse workloads in industrial environments, Facebook (Meta) forked LevelDB and made optimizations in many aspects. On the hardware side, it can more effectively utilize modern hardware such as flash memory, fast disks, and multi-core CPUs; on the software side, it has made numerous optimizations for read/write paths and Compaction, such as SST indexing, index sharding, prefix Bloom Filter, column families, etc. This series of articles, based on the RocksDB blog series, combined with source code and some practical experience, shares some interesting optimization points, hoping to inspire everyone. Due to limited expertise, any inaccuracies are welcome to be discussed in the comments. This is the first article in the RocksDB optimization series. To optimize deep lookup performance, SST files at different levels are indexed in a certain way.",
+    "url": "https://www.qtmuniao.com/en/2022/08/21/rocksdb-file-indexer/",
+    "datePublished": "2022-08-21T10:44:43+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2022/08/21/rocksdb-file-indexer/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>RocksDB Optimization Notes (I)&#58; Indexing SST | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2022/08/21/rocksdb-file-indexer/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2022/08/21/rocksdb-file-indexer/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/08/21/rocksdb-file-indexer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RocksDB Optimization Notes (I)&#58; Indexing SST
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2022-08-21 10:44:43" itemprop="dateCreated datePublished" datetime="2022-08-21T10:44:43+08:00">2022-08-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/source-reading/" itemprop="url" rel="index"><span itemprop="name">source-reading</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/source-reading/RocksDB/" itemprop="url" rel="index"><span itemprop="name">RocksDB</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>Google LevelDB is a canonical implementation of LSM-Tree. However, after being open-sourced, in order to maintain a lightweight and concise style, besides fixing bugs, it has not seen major updates. To make it capable of meeting <strong>diverse workloads</strong> in industrial environments, Facebook (Meta) forked LevelDB and made optimizations in many aspects. On the hardware side, it can more effectively utilize modern hardware such as flash memory, fast disks, and multi-core CPUs; on the software side, it has made numerous optimizations for read/write paths and Compaction, such as SST indexing, index sharding, prefix Bloom Filter, column families, etc.</p>
+<p>This series of articles, based on the <span class="exturl" data-url="aHR0cHM6Ly9yb2Nrc2RiLm9yZy9ibG9nLw==">RocksDB blog series<i class="fa fa-external-link-alt"></i></span>, combined with source code and some practical experience, shares some interesting optimization points, hoping to inspire everyone. Due to limited expertise, any inaccuracies are welcome to be discussed in the comments.</p>
+</blockquote>
+<p>This is the first article in the RocksDB optimization series. To optimize deep lookup performance, SST files at different levels are indexed in a certain way.</p>
+<span id="more"></span>
+<p><em>Author: 木鸟杂记 <a href="https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer">https://www.qtmuniao.com/2022/08/21/rocksdb-file-indexer</a> Please indicate the source when reposting</em></p>
+<h2 id="Background">Background</h2>
+<p>First, here is the LevelDB architecture diagram drawn in a <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/">previous article</a>.</p>
+<p><img data-src="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png" alt="leveldb.png"><span class="image-caption">leveldb.png</span></p>
+<p>In LevelDB, a <code>Get()</code> request path passes through:</p>
+<ol>
+<li>a mutable memtable</li>
+<li>a series of immutable memtables</li>
+<li>a series of SST files organized by level</li>
+</ol>
+<p>Among them, SST files in level 0 are directly flushed from immutable memtables, and their key ranges (bounded by <code>FileMetaData.smallest</code> and <code>FileMetaData.largest</code>) mostly overlap with each other. Therefore, in level 0, all SST files must be searched one by one.</p>
+<p>SST files in other levels are produced by <strong>compaction</strong> from upper-level SST files, causing data to continuously settle from upper to lower levels. The compaction process merges multiple SST files together, squeezing out “moisture” (duplicate keys), and then splits them into multiple SST files. Therefore, below level 1, all SST files have non-overlapping and ordered key ranges. This organization allows us to perform binary search within a level (<code>O(log(N))</code> complexity), rather than linear search (<code>O(N)</code> complexity).</p>
+<p>The specific search method is to use the target lookup value x and the array composed of each file’s <code>FileMetaData.largest</code> as the binary search object, continuously narrowing the search range to determine the target SST file. If no SST file containing x’s key range is found, or the corresponding SST file does not contain x, continue searching downward.</p>
+<p>But with large data volumes, the number of files in lower levels is still very large. For high-frequency Get operations, even with binary search, the number of comparisons per level grows linearly. For example, with a <strong>fan-out ratio</strong> of 10, where the number of lower-level SST files is ten times that of the adjacent upper level, level 3 will have nearly 1000 files, requiring about 10 comparisons in the worst case. At first glance it doesn’t seem like much, but at million-level QPS, this is a considerable overhead.</p>
+<h2 id="Optimization">Optimization</h2>
+<h3 id="Analysis">Analysis</h3>
+<p>It can be observed that under LevelDB’s version mechanism, within each version (VersionSet, saved by the Manifest file) the number of SST files is fixed, and their positions are also fixed; thus the relative positions of SST files across different levels are also determined.</p>
+<p>Therefore, when we search at each level, we <strong>don’t actually need to start the binary search from scratch</strong>; some position information already binary-searched at upper levels can be reused. Thus, we can add some inter-level index structures similar to search trees (such as B+ trees) to reduce the binary search range at lower levels. This idea is called <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRnJhY3Rpb25hbF9jYXNjYWRpbmc=">Fractional cascading<i class="fa fa-external-link-alt"></i></span>.</p>
+<p><img data-src="https://s2.loli.net/2022/08/21/XLU7IvQnJDFfOgS.png" alt="indexing-sst.png"><span class="image-caption">indexing-sst.png</span></p>
+<p>For example, as shown in the figure above, level 1 has 2 SST files, and level 2 has 8 SST files. Suppose we want to look up 80. First, we search among all files’ <code>FileMetaData.largest</code> in level 1 and get candidate file 1, but by comparing with its bounds we find it’s less than its lower bound. So we continue to search level 2. If there is no index on SST, we need to binary search all eight candidate files; but if there is an index, as shown above, we only need to binary search the first three files. Thus, the number of comparisons per level can be kept at a constant level N (the fan-out factor, i.e., the <code>max_bytes_for_level_multiplier</code> configuration item in RocksDB), without increasing linearly as the levels deepen (<code>log(N^L) = N*L</code>).</p>
+<h3 id="Implementation">Implementation</h3>
+<p>In RocksDB, the version is determined after each compaction; only compaction changes SST. Therefore, the inter-level SST index can be built when building SST during compaction. When building, each SST file’s upper and lower bounds each correspond to a pointer. So how to determine where each pointer points? Similar to the lookup process, take the key corresponding to the upper or lower bound, search in the array composed of all lower-level SST files’ <code>FileMetaData.largest</code>, and point it to the <strong>right-bound file</strong> corresponding to that value in the lower level. The reason for this choice is that <strong>through this pointer (e.g., the pointer for 100), all files to the right of the pointed file (e.g., file3) in the next level (file4, file5, …) can be cut off</strong>, thereby reducing the search range.</p>
+<p>For example, in the figure above, level 1 file1’s upper and lower bounds are 100 and 200 respectively. For 100, after searching it falls into level 2 file 3, so it points to file 3; for 200, after searching it falls to the left of 210, so it points to file 4.</p>
+<h3 id="Code">Code</h3>
+<p>But in RocksDB’s <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2ZhY2Vib29rL3JvY2tzZGIvYmxvYi8zLjAuZmIuYnJhbmNoL2RiL2ZpbGVfaW5kZXhlci5jYw==">actual code<i class="fa fa-external-link-alt"></i></span> (this feature was introduced in 3.0), for any upper-level file, four indexes are actually recorded. By subdividing the boundary ranges, the search range can be further reduced. The basic idea is to spend twice the time and compute twice the boundaries when building <code>FileIndexer</code>; when searching, the lookup range can be further narrowed. Since SST is built once and queried many times, this tradeoff is worthwhile.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">IndexUnit</span> &#123;</span><br><span class="line">    <span class="built_in">IndexUnit</span>()</span><br><span class="line">      : <span class="built_in">smallest_lb</span>(<span class="number">0</span>), <span class="built_in">largest_lb</span>(<span class="number">0</span>), <span class="built_in">smallest_rb</span>(<span class="number">-1</span>), <span class="built_in">largest_rb</span>(<span class="number">-1</span>) &#123;&#125;</span><br><span class="line">    <span class="comment">// Point to a left most file in a lower level that may contain a key,</span></span><br><span class="line">    <span class="comment">// which compares greater than smallest of a FileMetaData (upper level)</span></span><br><span class="line">    <span class="comment">// The index of the first file in the lower level that is greater than FileMetaData.smallest.</span></span><br><span class="line">    <span class="comment">// Used when target &gt; FileMetaData.smallest.</span></span><br><span class="line">    <span class="type">int32_t</span> smallest_lb;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Point to a left most file in a lower level that may contain a key,</span></span><br><span class="line">    <span class="comment">// which compares greater than largest of a FileMetaData (upper level)</span></span><br><span class="line">    <span class="comment">// The index of the first file in the lower level that is greater than FileMetaData.largest.</span></span><br><span class="line">    <span class="comment">// Used when target &gt; FileMetaData.largest.</span></span><br><span class="line">    <span class="type">int32_t</span> largest_lb;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Point to a right most file in a lower level that may contain a key,</span></span><br><span class="line">    <span class="comment">// which compares smaller than smallest of a FileMetaData (upper level)</span></span><br><span class="line">    <span class="comment">// The index of the last file in the lower level that is smaller than FileMetaData.smallest.</span></span><br><span class="line">    <span class="comment">// Used when target &lt; FileMetaData.smallest.</span></span><br><span class="line">    <span class="type">int32_t</span> smallest_rb;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Point to a right most file in a lower level that may contain a key,</span></span><br><span class="line">    <span class="comment">// which compares smaller than largest of a FileMetaData (upper level)</span></span><br><span class="line">    <span class="comment">// The index of the last file in the lower level that is smaller than FileMetaData.largest.</span></span><br><span class="line">    <span class="comment">// Used when target &lt; FileMetaData.largest.</span></span><br><span class="line">    <span class="type">int32_t</span> largest_rb;</span><br><span class="line">  &#125;;</span><br></pre></td></tr></table></figure>
+<p>The comments above look rather convoluted, but starting from how to <strong>use them</strong> makes them easier to understand. Suppose the value we are looking for is <code>x</code>, and the upper and lower bounds of some upper-level file are <code>[smallest, largest]</code>. Then these bounds divide the key space into five intervals: <code>(-∞, smallest), smallest, (smallest, largest), largest, (largest, +∞)</code>. Considering only the case where the search of this file ends and we need to go to the lower level, we have:</p>
+<ol>
+<li>If x &lt; smallest, we need to look in the rightmost file in the lower level that is smaller than smallest (<code>smallest_rb</code>).</li>
+<li>If x == smallest, i.e., smallest ≤ x ≤ smallest, we need to start looking from the leftmost file in the lower level that is larger than smallest (<code>smallest_lb</code>), and stop at the rightmost file in the lower level that is smaller than smallest (<code>smallest_rb</code>).</li>
+<li>If smallest &lt; x &lt; largest, we need to start looking from the leftmost file in the lower level that is larger than smallest (<code>smallest_lb</code>), and stop at the rightmost file in the lower level that is smaller than largest (<code>largest_rb</code>).</li>
+<li>If x == largest, i.e., largest ≤ x ≤ largest, we need to start looking from the leftmost file in the lower level that is larger than largest (<code>largest_lb</code>), and stop at the rightmost file in the lower level that is smaller than largest (<code>largest_rb</code>).</li>
+<li>If x &gt; largest, we need to start looking from the leftmost file in the lower level that is larger than largest (<code>largest_lb</code>).</li>
+</ol>
+<p>Corresponding code is as follows:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (cmp_smallest &lt; <span class="number">0</span>) &#123; <span class="comment">// target &lt; smallest, use smallest_rb as the right bound</span></span><br><span class="line">  *left_bound = (level &gt; <span class="number">0</span> &amp;&amp; file_index &gt; <span class="number">0</span>)</span><br><span class="line">                    ? index_units[file_index - <span class="number">1</span>].largest_lb</span><br><span class="line">                    : <span class="number">0</span>;</span><br><span class="line">  *right_bound = index.smallest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_smallest == <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.smallest_lb;</span><br><span class="line">  *right_bound = index.smallest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_smallest &gt; <span class="number">0</span> &amp;&amp; cmp_largest &lt; <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.smallest_lb;</span><br><span class="line">  *right_bound = index.largest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_largest == <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.largest_lb;</span><br><span class="line">  *right_bound = index.largest_rb;</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp_largest &gt; <span class="number">0</span>) &#123;</span><br><span class="line">  *left_bound = index.largest_lb;</span><br><span class="line">  *right_bound = level_rb_[level + <span class="number">1</span>];</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  <span class="built_in">assert</span>(<span class="literal">false</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>Note:</strong> When x == smallest or x == largest, for RocksDB’s use case, the upper level has already found it, so there is no need to search lower levels. But the <code>FileIndexer</code>’s application scenario is more generalized; for example, you can use it to find all results equal to a given value in lower levels.</p>
+<p>Below, still using the previous example, let’s explain with a figure:</p>
+<p><img data-src="https://s2.loli.net/2022/08/21/d2tDES7jAaofwP5.png" alt="create-indexing-sst.png"><span class="image-caption">create-indexing-sst.png</span></p>
+<p>It can be seen that when an upper-level file boundary (e.g., 100) falls within a lower-level file (e.g., file 3 [95, 110]), the lb and rb pointers of that boundary point to the same location, degenerating into a single pointer; when the file boundary (e.g., 400) falls in a <strong>gap</strong> between lower-level files (e.g., between file 7 and file 8), lb and rb point to different locations, thus reducing one file to scan compared to a single pointer overall.</p>
+<p>On the other hand, note that when an upper-level file boundary value (e.g., 400) falls in a gap between lower-level files (i.e., that value definitely does not exist in the lower level), we have <code>largest_rb &lt; largest_lb</code>. If the search value is 400, using these pointers directly causes <code>left_bound &gt; right_bound</code>, and the search ends.</p>
+<p>In the specific implementation, RocksDB uses a <strong>two-pointer comparison method</strong>: one pointer iterates the upper level and one pointer iterates the lower level; a single pass can establish one kind of index for all files. To reduce <strong>branch judgments</strong> in the code and make the logic clear, RocksDB splits the construction process into four passes, building the above four pointers respectively, with logic encapsulated in two functions: <code>CalculateLB</code> and <code>CalculateRB</code>.</p>
+<p>Below, using the <code>CalculateLB</code> code as an example, a brief annotated analysis:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Calculate the leftmost (first from left to right) file index in lower_files that is greater than a given value</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">FileIndexer::CalculateLB</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">const</span> std::vector&lt;FileMetaData*&gt;&amp; upper_files, <span class="comment">// upper-level SST files</span></span></span></span><br><span class="line"><span class="params"><span class="function">    <span class="type">const</span> std::vector&lt;FileMetaData*&gt;&amp; lower_files, <span class="comment">// lower-level SST files</span></span></span></span><br><span class="line"><span class="params"><span class="function">    IndexLevel* index_level,</span></span></span><br><span class="line"><span class="params"><span class="function">    std::function&lt;<span class="type">int</span>(<span class="type">const</span> FileMetaData*, <span class="type">const</span> FileMetaData*)&gt; cmp_op,</span></span></span><br><span class="line"><span class="params"><span class="function">    std::function&lt;<span class="type">void</span>(IndexUnit*, <span class="type">int32_t</span>)&gt; set_index)</span> </span>&#123;</span><br><span class="line">  <span class="type">const</span> <span class="type">int32_t</span> upper_size = <span class="built_in">static_cast</span>&lt;<span class="type">int32_t</span>&gt;(upper_files.<span class="built_in">size</span>());</span><br><span class="line">  <span class="type">const</span> <span class="type">int32_t</span> lower_size = <span class="built_in">static_cast</span>&lt;<span class="type">int32_t</span>&gt;(lower_files.<span class="built_in">size</span>());</span><br><span class="line">  <span class="type">int32_t</span> upper_idx = <span class="number">0</span>;</span><br><span class="line">  <span class="type">int32_t</span> lower_idx = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">  IndexUnit* index = index_level-&gt;index_units;</span><br><span class="line">  <span class="keyword">while</span> (upper_idx &lt; upper_size &amp;&amp; lower_idx &lt; lower_size) &#123; <span class="comment">// two-pointer comparison method</span></span><br><span class="line">    <span class="comment">// Always compare with lower_files[lower_idx].largest</span></span><br><span class="line">    <span class="type">int</span> cmp = <span class="built_in">cmp_op</span>(upper_files[upper_idx], lower_files[lower_idx]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (cmp == <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="built_in">set_index</span>(&amp;index[upper_idx], lower_idx);</span><br><span class="line">      ++upper_idx;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cmp &gt; <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="comment">// The largest value of the lower-level file at lower_idx is smaller than the given value, so it does not satisfy the condition</span></span><br><span class="line">      ++lower_idx;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// The largest value of the lower-level file at lower_idx is the first to become larger than the given value, satisfying the condition, set the index</span></span><br><span class="line">      <span class="built_in">set_index</span>(&amp;index[upper_idx], lower_idx);</span><br><span class="line">      ++upper_idx;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (upper_idx &lt; upper_size) &#123;</span><br><span class="line">    <span class="comment">// Lower-level files are exhausted, meaning all remaining upper-level files are larger than all lower-level files</span></span><br><span class="line">    <span class="comment">// So point them all to lower_size, i.e., nonexistent (lower-level file indices are 0~lower_size-1).</span></span><br><span class="line">    <span class="built_in">set_index</span>(&amp;index[upper_idx], lower_size);</span><br><span class="line">    ++upper_idx;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// If upper-level files are exhausted, no extra processing is needed. Because the function&#x27;s purpose is to set indices for upper-level files,</span></span><br><span class="line">  <span class="comment">// if upper-level files are exhausted, it means indices have been set for all upper-level files.</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Four passes of calls respectively assign values to the four fields of each upper-level file’s index item <code>IndexUnit</code>.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">CalculateLB</span>(</span><br><span class="line">    upper_files, lower_files, &amp;index_level,</span><br><span class="line">    [<span class="keyword">this</span>](<span class="type">const</span> FileMetaData* a, <span class="type">const</span> FileMetaData* b) -&gt; <span class="type">int</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> ucmp_-&gt;<span class="built_in">CompareWithoutTimestamp</span>(a-&gt;smallest.<span class="built_in">user_key</span>(),</span><br><span class="line">                                            b-&gt;largest.<span class="built_in">user_key</span>());</span><br><span class="line">    &#125;,</span><br><span class="line">    [](IndexUnit* index, <span class="type">int32_t</span> f_idx) &#123; index-&gt;smallest_lb = f_idx; &#125;);</span><br><span class="line"><span class="built_in">CalculateLB</span>(</span><br><span class="line">    upper_files, lower_files, &amp;index_level,</span><br><span class="line">    [<span class="keyword">this</span>](<span class="type">const</span> FileMetaData* a, <span class="type">const</span> FileMetaData* b) -&gt; <span class="type">int</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> ucmp_-&gt;<span class="built_in">CompareWithoutTimestamp</span>(a-&gt;largest.<span class="built_in">user_key</span>(),</span><br><span class="line">                                            b-&gt;largest.<span class="built_in">user_key</span>());</span><br><span class="line">    &#125;,</span><br><span class="line">    [](IndexUnit* index, <span class="type">int32_t</span> f_idx) &#123; index-&gt;largest_lb = f_idx; &#125;);</span><br><span class="line"><span class="built_in">CalculateRB</span>(</span><br><span class="line">    upper_files, lower_files, &amp;index_level,</span><br><span class="line">    [<span class="keyword">this</span>](<span class="type">const</span> FileMetaData* a, <span class="type">const</span> FileMetaData* b) -&gt; <span class="type">int</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> ucmp_-&gt;<span class="built_in">CompareWithoutTimestamp</span>(a-&gt;smallest.<span class="built_in">user_key</span>(),</span><br><span class="line">                                            b-&gt;smallest.<span class="built_in">user_key</span>());</span><br><span class="line">    &#125;,</span><br><span class="line">    [](IndexUnit* index, <span class="type">int32_t</span> f_idx) &#123; index-&gt;smallest_rb = f_idx; &#125;);</span><br><span class="line"><span class="built_in">CalculateRB</span>(</span><br><span class="line">    upper_files, lower_files, &amp;index_level,</span><br><span class="line">    [<span class="keyword">this</span>](<span class="type">const</span> FileMetaData* a, <span class="type">const</span> FileMetaData* b) -&gt; <span class="type">int</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> ucmp_-&gt;<span class="built_in">CompareWithoutTimestamp</span>(a-&gt;largest.<span class="built_in">user_key</span>(),</span><br><span class="line">                                            b-&gt;smallest.<span class="built_in">user_key</span>());</span><br><span class="line">    &#125;,</span><br><span class="line">    [](IndexUnit* index, <span class="type">int32_t</span> f_idx) &#123; index-&gt;largest_rb = f_idx; &#125;);</span><br></pre></td></tr></table></figure>
+<h2 id="Summary">Summary</h2>
+<p>The method of building an index for SST is relatively intuitive (analogous to a B+ tree) and easy to understand. But corresponding to the code implementation, there are many details and edge cases to handle, and it’s easy to make mistakes. Just like binary search, it can be written in elaborate ways; nothing else, just practice more.</p>
+<h2 id="References">References</h2>
+<ol>
+<li>RocksDB blog, <strong>Indexing SST Files for Better Lookup Performance,</strong> <span class="exturl" data-url="aHR0cDovL3JvY2tzZGIub3JnL2Jsb2cvMjAxNC8wNC8yMS9pbmRleGluZy1zc3QtZmlsZXMtZm9yLWJldHRlci1sb29rdXAtcGVyZm9ybWFuY2UuaHRtbA==">http://rocksdb.org/blog/2014/04/21/indexing-sst-files-for-better-lookup-performance.html<i class="fa fa-external-link-alt"></i></span></li>
+<li>Wikipedia, Fractional cascading, <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRnJhY3Rpb25hbF9jYXNjYWRpbmc=">Fractional cascading<i class="fa fa-external-link-alt"></i></span>, <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRnJhY3Rpb25hbF9jYXNjYWRpbmc=">https://en.wikipedia.org/wiki/Fractional_cascading<i class="fa fa-external-link-alt"></i></span></li>
+<li>RocksDB github FileIndexer: <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2ZhY2Vib29rL3JvY2tzZGIvYmxvYi8zLjAuZmIuYnJhbmNoL2RiL2ZpbGVfaW5kZXhlci5jYw==">https://github.com/facebook/rocksdb/blob/3.0.fb.branch/db/file_indexer.cc<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/06/meta-object-store-delta/" rel="bookmark">Meta 链式复制的对象存储——Delta</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/04/distributed-database-storage-components/" rel="bookmark">层层剥开数据库存储层</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/05/26/gfs/" rel="bookmark">GFS — the Art of Trade-Offs</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/07/03/leveldb-data-structures-skip-list/" rel="bookmark">Casual Talk on LevelDB Data Structures (Part 1): Skip List</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb Source Code Guide (1): Boltdb Data Organization</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/storage/" rel="tag"># storage</a>
+              <a href="/tags/RocksDB/" rel="tag"># RocksDB</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/07/07/db-isolation/" rel="prev" title="步步为营 剖析事务中最难的——隔离性">
+      <i class="fa fa-chevron-left"></i> 步步为营 剖析事务中最难的——隔离性
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/08/21/rocksdb-file-indexer/" rel="next" title="RocksDB 优化小解（一）：Indexing SST">
+      RocksDB 优化小解（一）：Indexing SST <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Background"><span class="nav-number">1.</span> <span class="nav-text">Background</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Optimization"><span class="nav-number">2.</span> <span class="nav-text">Optimization</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Analysis"><span class="nav-number">2.1.</span> <span class="nav-text">Analysis</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Implementation"><span class="nav-number">2.2.</span> <span class="nav-text">Implementation</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Code"><span class="nav-number">2.3.</span> <span class="nav-text">Code</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Summary"><span class="nav-number">3.</span> <span class="nav-text">Summary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">4.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2022/08/21/rocksdb-file-indexer/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '8dd7688bb1df8341fc961b1f7994b66a',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

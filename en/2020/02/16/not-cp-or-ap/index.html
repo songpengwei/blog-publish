@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="This article originated from Lu Pan’s personal blog post: https:&#x2F;&#x2F;blog.the-pans.com&#x2F;cap&#x2F;, a Chinese translation of Martin Kleppmann’s article “Please stop calling databases CP or AP” authorized by Ma">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Please Stop Calling Databases CP or AP">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2020/02/16/not-cp-or-ap/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="This article originated from Lu Pan’s personal blog post: https:&#x2F;&#x2F;blog.the-pans.com&#x2F;cap&#x2F;, a Chinese translation of Martin Kleppmann’s article “Please stop calling databases CP or AP” authorized by Ma">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://martin.kleppmann.com/2015/05/linearizability.png">
+<meta property="og:image" content="https://blog.the-pans.com/content/images/2018/07/cap-availability.png">
+<meta property="og:image" content="https://blog.the-pans.com/content/images/2018/07/isolation-levels.png">
+<meta property="article:published_time" content="2020-02-16T07:00:18.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.674Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="distributed system">
+<meta property="article:tag" content="CAP">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://martin.kleppmann.com/2015/05/linearizability.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2020/02/16/not-cp-or-ap/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="distributed system,CAP">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Please Stop Calling Databases CP or AP",
+    "description": "This article originated from Lu Pan’s personal blog post: https://blog.the-pans.com/cap/, a Chinese translation of Martin Kleppmann’s article “Please stop calling databases CP or AP” authorized by Martin himself. However, many sentences in that translation read rather oddly. I compared it with the English original, and re-translated it sentence by sentence according to my own understanding. This article discusses why we should not abuse the concept of the CAP theorem; it is well-documented and penetrating, well worth reading. Even more commendable is that Martin cites sources for all key viewpoints in the text, and recommends some learning materials at the end—all excellent reading. Below is the main text. In Jeff Hodges’s excellent blog post Notes on Distributed Systems for Young Bloods, he suggests we use the CAP theorem to evaluate systems. Many people have followed this advice, calling their systems “CP” (providing consistency but unavailable during network partitions), “AP” (highly available but inconsistent during network partitions), or simply “CA” (indicating they haven’t read Coda’s article from five years ago). I agree with all of Jeff’s other points, but I cannot endorse his advice on using the CAP theorem. The CAP theorem itself is too simplistic and widely misunderstood to serve effectively when characterizing systems. Therefore, I ask that everyone stop citing the CAP theorem, stop discussing the CAP theorem. Instead, we should use more precise terms to express our trade-offs in system design. (Of course, it’s ironic that while I don’t want others to discuss this topic anymore, I am myself writing an article about it. But at least from now on, when someone asks me why I don’t like discussing the CAP theorem, I can send them the link to this article. Also, sorry if this article comes across as a bit of a rant, but at least these rants come with citations.)",
+    "url": "https://www.qtmuniao.com/en/2020/02/16/not-cp-or-ap/",
+    "datePublished": "2020-02-16T15:00:18+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2020/02/16/not-cp-or-ap/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Please Stop Calling Databases CP or AP | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2020/02/16/not-cp-or-ap/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2020/02/16/not-cp-or-ap/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/02/16/not-cp-or-ap/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Please Stop Calling Databases CP or AP
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-02-16 15:00:18" itemprop="dateCreated datePublished" datetime="2020-02-16T15:00:18+08:00">2020-02-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/Fundamentals/" itemprop="url" rel="index"><span itemprop="name">Fundamentals</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>This article originated from Lu Pan’s personal blog post: <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLnRoZS1wYW5zLmNvbS9jYXAv">https://blog.the-pans.com/cap/<i class="fa fa-external-link-alt"></i></span>, a Chinese translation of Martin Kleppmann’s article “Please stop calling databases CP or AP” authorized by Martin himself. However, many sentences in that translation read rather oddly. I compared it with the <span class="exturl" data-url="aHR0cHM6Ly9tYXJ0aW4ua2xlcHBtYW5uLmNvbS8yMDE1LzA1LzExL3BsZWFzZS1zdG9wLWNhbGxpbmctZGF0YWJhc2VzLWNwLW9yLWFwLmh0bWw=">English original<i class="fa fa-external-link-alt"></i></span>, and re-translated it sentence by sentence according to my own understanding. This article discusses why we should not abuse the concept of the <strong>CAP theorem</strong>; it is well-documented and penetrating, well worth reading. Even more commendable is that Martin cites sources for all key viewpoints in the text, and recommends some learning materials at the end—all excellent reading. Below is the main text.</p>
+</blockquote>
+<p>In Jeff Hodges’s excellent blog post <span class="exturl" data-url="aHR0cHM6Ly93d3cuc29tZXRoaW5nc2ltaWxhci5jb20vMjAxMy8wMS8xNC9ub3Rlcy1vbi1kaXN0cmlidXRlZC1zeXN0ZW1zLWZvci15b3VuZy1ibG9vZHMv">Notes on Distributed Systems for Young Bloods<i class="fa fa-external-link-alt"></i></span>, he suggests we use the <span class="exturl" data-url="aHR0cDovL3d3dy50aGUtcGFwZXItdHJhaWwub3JnL3BhZ2UvY2FwLWZhcS8=">CAP theorem<i class="fa fa-external-link-alt"></i></span> to evaluate systems. Many people have followed this advice, calling their systems “CP” (providing consistency but unavailable during network partitions), “AP” (highly available but inconsistent during network partitions), or simply “CA” (indicating they haven’t read Coda’s <span class="exturl" data-url="aHR0cHM6Ly9jb2RhaGFsZS5jb20veW91LWNhbnQtc2FjcmlmaWNlLXBhcnRpdGlvbi10b2xlcmFuY2Uv">article from five years ago<i class="fa fa-external-link-alt"></i></span>).</p>
+<p>I agree with all of Jeff’s other points, but I cannot endorse his advice on using the CAP theorem. The CAP theorem itself is too simplistic and widely misunderstood to serve effectively when characterizing systems. Therefore, I ask that everyone stop citing the CAP theorem, stop discussing the CAP theorem. Instead, we should use more precise terms to express our trade-offs in system design.</p>
+<p>(Of course, it’s ironic that while I don’t want others to discuss this topic anymore, I am myself writing an article about it. But at least from now on, when someone asks me why I don’t like discussing the CAP theorem, I can send them the link to this article. Also, sorry if this article comes across as a bit of a rant, but at least these rants come with citations.)</p>
+<span id="more"></span>
+<p><em>Author: <a href="https://www.qtmuniao.com/2020/02/16/not-cp-or-ap">Muniao’s Notes</a>, please credit when reposting.</em></p>
+<h2 id="CAP-Uses-Very-Narrow-Definitions">CAP Uses Very Narrow Definitions</h2>
+<p>If you want to cite CAP as a theorem (rather than as a vague marketing gimmick for databases), you must be precise—mathematics demands rigor. The proof only makes sense when you use the same terms as in the <span class="exturl" data-url="aHR0cHM6Ly93ZWJwYWdlcy5jcy5sdWMuZWR1L35wbGQvMzUzL2dpbGJlcnRfbHluY2hfYnJld2VyX3Byb29mLnBkZg==">theorem proof<i class="fa fa-external-link-alt"></i></span>. That proof uses very specific definitions:</p>
+<ul>
+<li><em>Consistency</em> in CAP means <span class="exturl" data-url="aHR0cDovL2NzLmJyb3duLmVkdS9+bXBoL0hlcmxpaHlXOTAvcDQ2My1oZXJsaWh5LnBkZg==">linearizability<i class="fa fa-external-link-alt"></i></span>. This is a very specific (and very strong) form of consistency. It should be noted that although the C in ACID also stands for Consistency, it has nothing to do with the consistency here. I will explain what linearizability means later.</li>
+<li><em>Availability</em> in CAP is defined as “<strong>all</strong> working [database] nodes must return a [non-error] response for every request received.” Having only some nodes able to handle requests is not enough: all working nodes must correctly handle requests. Therefore, many systems claiming to be “highly available” (e.g., the system rarely goes down overall) do not actually meet the definition of availability used here.</li>
+<li><em>Partition Tolerance</em> (a very misleading name) essentially means you are communicating over an <span class="exturl" data-url="aHR0cDovL3d3dy50aGUtcGFwZXItdHJhaWwub3JnL3BhZ2UvY2FwLWZhcS8=">asynchronous network<i class="fa fa-external-link-alt"></i></span> in which messages may be delayed or simply lost. The Internet and data centers both have this <span class="exturl" data-url="aHR0cHM6Ly9hcGh5ci5jb20vcG9zdHMvMjg4LXRoZS1uZXR3b3JrLWlzLXJlbGlhYmxl">property<i class="fa fa-external-link-alt"></i></span>, so we have no choice in this matter.</li>
+</ul>
+<p>Also note that CAP does not just describe old systems; it is a specific model of a system:</p>
+<ul>
+<li>Simply put, the CAP system model is a single register that supports reads and writes. CAP says nothing about transactions across multiple objects—these issues are outside the scope of the theorem unless you can reduce them to a single-register problem.</li>
+<li>The CAP theorem only considers one type of failure: network partitions (e.g., the nodes are still running, but the network between them has problems). This kind of failure <span class="exturl" data-url="aHR0cHM6Ly9hcGh5ci5jb20vcG9zdHMvMjg4LXRoZS1uZXR3b3JrLWlzLXJlbGlhYmxl">will certainly happen<i class="fa fa-external-link-alt"></i></span>, but it is far from the only kind of failure that can occur: nodes can crash entirely or restart, may run out of disk space, may encounter software bugs, etc. When building distributed systems, you need to consider much more complex trade-offs; focusing too much on the CAP theorem can easily lead to neglecting other important issues.</li>
+<li>Furthermore, CAP does not mention latency. People actually <span class="exturl" data-url="aHR0cDovL2RibXNtdXNpbmdzLmJsb2dzcG90LmNvbS8yMDEwLzA0L3Byb2JsZW1zLXdpdGgtY2FwLWFuZC15YWhvb3MtbGl0dGxlLmh0bWw=">care more about latency<i class="fa fa-external-link-alt"></i></span> than availability. In fact, a system that satisfies <em>CAP availability</em>**[1]** can take arbitrarily long to respond to a request and still be considered “available.” It is safe to say that if your system takes two minutes to load a page, your users will certainly not call it “available.”</li>
+</ul>
+<p>If you use properties that match the precise definitions in the CAP theorem proof, then the theorem applies to you. But if your “consistency” and “availability” mean something else, you cannot expect CAP to still apply. Of course, this doesn’t mean you can accomplish the impossible by redefining concepts! I just mean that you cannot rely on the CAP theorem to provide guidance, nor can you use the CAP theorem to justify your arguments.</p>
+<p>If the CAP theorem does not apply to you, that means you must think through the trade-offs yourself. You can use your own concepts to explain consistency and availability in your system, and of course, it would be even better if you could further provide a theorem proof. But please don’t call it the CAP theorem, because that name is already taken (it has its specific meaning and referent).</p>
+<h2 id="Linearizability">Linearizability</h2>
+<p>In case you are not familiar with the property of linearizability**[2]** (i.e., consistency in CAP), let me briefly explain. The <span class="exturl" data-url="aHR0cDovL2NzLmJyb3duLmVkdS9+bXBoL0hlcmxpaHlXOTAvcDQ2My1oZXJsaWh5LnBkZg==">formal definition of linearizability<i class="fa fa-external-link-alt"></i></span> is not very intuitive, but its key idea is quite simple:</p>
+<blockquote>
+<p>If operation B begins after operation A has successfully completed, then for operation B, the <em>entire system</em> must appear to be in a state where operation A has already completed or updated.</p>
+</blockquote>
+<p>To explain more clearly, let’s look at an example of a non-linearizable system. Please see the figure below (a preview from my <span class="exturl" data-url="aHR0cDovL2RhdGFpbnRlbnNpdmUubmV0Lw==">not-yet-published book<i class="fa fa-external-link-alt"></i></span>):</p>
+<p><img data-src="https://martin.kleppmann.com/2015/05/linearizability.png" alt="img"><span class="image-caption">img</span></p>
+<p>This figure shows Alice and Bob in the same room, both following the <span class="exturl" data-url="aHR0cHM6Ly93d3cuYmJjLmNvLnVrL3Nwb3J0LzAvZm9vdGJhbGwvMjgxODE2ODk=">2014 World Cup final result<i class="fa fa-external-link-alt"></i></span> on their phones. Just as the final result was published, Alice refreshed the page and saw the champion, then excitedly told Bob. Bob, in disbelief, refreshed his phone page, but because his request was routed to a slower database replica, his phone showed that the final was still ongoing.</p>
+<p>If Alice and Bob refreshed the page at the same time and got different results, it wouldn’t be too surprising, because we cannot know for sure which request the server processed first. But in this example, Bob clearly knows that he refreshed the page <em>after</em> Alice told him the final result, so he expects that the result he gets cannot be older than Alice’s. But he did get an old result, which violates the property of linearizability.</p>
+<p>Because Bob obtained Alice’s query result through a channel outside the system (Alice told him directly by speaking), we can determine that Bob’s request definitely came after Alice’s request (i.e., the two requests were not concurrent). If Bob had not learned from Alice that the match was over, he would not have known that the result he saw was outdated.</p>
+<p>If you are building a database system and don’t know what additional communication channels your users might have, then if you want to provide linearizable semantics (<em>CAP consistency</em>), you need to make the database appear as if there is only one copy, even though the system may actually have multiple backups in multiple locations.</p>
+<p>This is a very expensive property because it requires a great deal of coordination. The cost is so high that even CPUs on a single machine <span class="exturl" data-url="aHR0cHM6Ly93d3cuY2wuY2FtLmFjLnVrL35wZXMyMC93ZWFrbWVtb3J5L2NhY20ucGRm">do not provide linearizable access to local memory<i class="fa fa-external-link-alt"></i></span>! On modern CPUs, you need to use <span class="exturl" data-url="aHR0cHM6Ly9tZWNoYW5pY2FsLXN5bXBhdGh5LmJsb2dzcG90LmNvbS8yMDExLzA3L21lbW9yeS1iYXJyaWVyc2ZlbmNlcy5odG1s">memory barrier instructions<i class="fa fa-external-link-alt"></i></span> to achieve linearizable memory access, and even detecting whether a system is linearizable is itself quite <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2plcHNlbi1pby9rbm9zc29z">difficult<i class="fa fa-external-link-alt"></i></span>.</p>
+<h2 id="CAP-Availability">CAP Availability</h2>
+<p>Let’s briefly discuss why, in the presence of a network partition, we must give up either availability or consistency.</p>
+<p>For example, your database has one replica in each of two different data centers. Here, the choice of synchronization strategy between replicas doesn’t matter—it could be single-leader (master-slave), multi-leader (multi-master), or quorum**[3]**-based replication (<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLnRoZS1wYW5zLmNvbS9jYXAvd3d3LmFsbHRoaW5nc2Rpc3RyaWJ1dGVkLmNvbS9maWxlcy9hbWF6b24tZHluYW1vLXNvc3AyMDA3LnBkZg==">Dynamo-style<i class="fa fa-external-link-alt"></i></span>). We only require that when data is written to one data center, it is synchronized to the other. Assume clients connect to only one of the data centers, and there exists a network path allowing the two data centers to synchronize data.</p>
+<p>Suppose now this network path is broken—that is, a network partition occurs. What will happen?</p>
+<p><img data-src="https://blog.the-pans.com/content/images/2018/07/cap-availability.png" alt="cap-availability"><span class="image-caption">cap-availability</span></p>
+<p>Obviously, you can only choose one of two options:</p>
+<ol>
+<li>The database still allows the application to perform writes, so both replicas remain individually available. However, because the synchronization link between the two replicas is broken, writes made in one data center will not be reflected in the other, which violates linearizability (in terms of the previous example, the possible scenario is that Alice is connected to DC1 and Bob is connected to DC2).</li>
+<li>If you don’t want to lose linearizability, you must ensure that all reads and writes happen in the same data center, namely the leader. The other data center (which cannot guarantee up-to-dateness because the network sync link is broken) must stop responding to read and write requests until the network recovers and data can be synchronized. Although the non-leader database replica server is running normally, it cannot process requests, so this does not satisfy <em>CAP availability</em>.</li>
+</ol>
+<p>(By the way, this is essentially the entire proof of the CAP theorem—nothing more. The example here uses two data centers, but it also applies to network failures within a single data center; however, I think using two data centers makes the problem easier to understand.)</p>
+<p>Notice that in the second case above, even though the system violates <em>CAP availability</em>, we are still successfully processing requests in one of the data centers. So when a system chooses linearizability (that is, gives up <em>CAP availability</em>), it does not necessarily mean that a network partition will definitely cause an application outage. If the system can temporarily migrate all user traffic to the leader database replica, clients won’t notice any system downtime at all.</p>
+<p>Availability in practical applications and <em>CAP availability</em> are <span class="exturl" data-url="aHR0cDovL2Jsb2cudGhpc2xvbmdydW4uY29tLzIwMTUvMDQvY2FwLWF2YWlsYWJpbGl0eS1oaWdoLWF2YWlsYWJpbGl0eS1hbmRfMTYuaHRtbA==">not entirely equivalent<i class="fa fa-external-link-alt"></i></span>. Your application’s availability is most likely measured by some SLA (for example, 99.9% of well-formed requests must be successfully responded to within one second), but a system can meet the required SLA regardless of whether it satisfies <em>CAP availability</em>.</p>
+<p>In practice, systems spanning multiple data centers usually use asynchronous replication and are therefore not linearizable. But this choice is usually due to excessive wide-area network latency, not just for fault tolerance against data center and network failures.</p>
+<h2 id="Many-Systems-Are-Neither-Linearizable-nor-CAP-Available">Many Systems Are Neither Linearizable nor CAP-Available</h2>
+<p>How do systems operate under the strict definitions of availability and consistency (linearizability) in the CAP theorem?</p>
+<p>For example, using a single leader to manage a multi-replica database is the typical approach for relational database backups. In this configuration, if a network partition occurs between the client and the leader, data cannot be written to the database. Even if the client can still read data from some follower, it cannot write any data, which shows that the multi-replica database in this configuration is not <em>CAP-available</em>. Ironically, this configuration often claims to be “high availability.”</p>
+<p>If this single-leader configuration is not <em>CAP-available</em>, is it a CP system? Don’t jump to conclusions. If you allow applications to read from followers, and data replication is asynchronous (the default for most databases), then when you read data from a follower, you may read data that is slightly behind the leader. In this case, your system’s read operations are not linearizable, that is, they do not satisfy <em>CAP consistency</em>.</p>
+<p>Moreover, databases that support <span class="exturl" data-url="aHR0cDovL3Jlc2VhcmNoLm1pY3Jvc29mdC5jb20vcHVicy82OTU0MS90ci05NS01MS5wZGY=">snapshot isolation<i class="fa fa-external-link-alt"></i></span>/MVCC are deliberately designed to be non-linearizable, otherwise they would reduce the concurrency they can inherently provide. For example, <span class="exturl" data-url="aHR0cHM6Ly9kcmtwLm5ldC9wYXBlcnMvc3NpLXZsZGIxMi5wZGY=">PostgreSQL’s SSI<i class="fa fa-external-link-alt"></i></span> provides serializability rather than linearizability, and <span class="exturl" data-url="aHR0cDovL2RiLmNzLmJlcmtlbGV5LmVkdS9jczI4Ni9wYXBlcnMvc3NpLXRvZHMyMDA1LnBkZg==">Oracle provides neither<i class="fa fa-external-link-alt"></i></span>. A database labeling itself ACID does not mean it necessarily satisfies the CAP theorem’s definition of consistency.</p>
+<p>So these systems satisfy neither <em>CAP consistency</em> nor <em>CAP availability</em>. They are neither CP systems nor AP systems; they only satisfy P, whatever that means. (Yes, the CAP theorem’s “pick two out of three” allows you to pick only one of the three, or even none at all.)</p>
+<p>What about NoSQL? Take MongoDB: (if no split-brain occurs) each shard has only one leader. Based on the discussion above, it does not satisfy <em>CAP availability</em>. Moreover, <span class="exturl" data-url="aHR0cHM6Ly9hcGh5ci5jb20vcG9zdHMvMzIyLWNhbGwtbWUtbWF5YmUtbW9uZ29kYi1zdGFsZS1yZWFkcw==">Kyle recently found<i class="fa fa-external-link-alt"></i></span> that even under the highest consistency configuration, MongoDB still allows non-linearizable reads, so it also does not satisfy CAP consistency.</p>
+<p>As for Dynamo and its derivatives Riak, Cassandra, and Voldemort—systems optimized specifically for high availability and called AP—do they really conform to the AP properties in CAP? The answer depends on your configuration. If you allow read and write requests to hit just one replica (R=W=1), then they do satisfy <em>CAP availability</em>. But if you require quorum reads and writes (R+W&gt;N), and a network partition exists, replicas in the minority partition cannot reach consensus, so quorum reads and writes do not satisfy <em>CAP availability</em> (they are at least occasionally unavailable until enough nodes are added to the minority partition).</p>
+<p>Sometimes people claim that quorum reads and writes can guarantee linearizability, but relying on this condition would be unwise. Because in some <span class="exturl" data-url="aHR0cDovL2Jhc2hvLmNvbS9wb3N0cy90ZWNobmljYWwvcmlha3MtY29uZmlnLWJlaGF2aW9ycy1wYXJ0LTMv">complex situations<i class="fa fa-external-link-alt"></i></span>, when read repair and sloppy quorum occur simultaneously, data that has already been deleted may reappear; or the number of replicas has fallen below the original W value (violating the quorum condition), or the number of replicas has increased above the original N value (also violating the quorum condition)—all of which can lead to non-linearizable accesses.</p>
+<p>These are not failed systems; people have been using them successfully in production. But so far, we cannot strictly classify them as AP or CP, either because it depends on specific configurations and operations, or because the system satisfies neither <em>CAP availability</em> nor <em>CAP consistency</em>.</p>
+<h2 id="Case-Study-ZooKeeper">Case Study: ZooKeeper</h2>
+<p>What about ZooKeeper? It uses a <span class="exturl" data-url="aHR0cDovL2RzLnFjcmkub3JnL3Blb3BsZS9tc2VyYWZpbmkvemFiLnBkZg==">consensus algorithm<i class="fa fa-external-link-alt"></i></span>, so people <span class="exturl" data-url="aHR0cHM6Ly93ZWIuYXJjaGl2ZS5vcmcvd2ViLzIwMTYwNTExMjMwNDIxL2h0dHA6Ly90ZWNoLmtuZXd0b24uY29tL2Jsb2cvMjAxNC8xMi9ldXJla2Etc2hvdWxkbnQtdXNlLXpvb2tlZXBlci1zZXJ2aWNlLWRpc2NvdmVyeS8=">naturally assume it has chosen consistency over availability<i class="fa fa-external-link-alt"></i></span> (i.e., it is a CP system).</p>
+<p>But if you have read ZooKeeper’s <span class="exturl" data-url="aHR0cDovL3pvb2tlZXBlci5hcGFjaGUub3JnL2RvYy9yMy40LjYvem9va2VlcGVyUHJvZ3JhbW1lcnMuaHRtbCNjaF96a0d1YXJhbnRlZXM=">documentation<i class="fa fa-external-link-alt"></i></span>, it clearly states that ZooKeeper does not support linearizable read operations by default. Each client connects to only one server node; when the client reads, even if other nodes have newer data, it can only see the data on the server node it is directly connected to. This allows its read performance to be much higher than collecting a quorum or accessing the leader on every read, but it also shows that ZooKeeper does not satisfy <em>CAP consistency</em> under its default configuration.</p>
+<p>Of course, you can also <span class="exturl" data-url="aHR0cHM6Ly9tYWlsLWFyY2hpdmVzLmFwYWNoZS5vcmcvbW9kX21ib3gvem9va2VlcGVyLXVzZXIvMjAxMzAzLm1ib3gvJTNDQ0FKd0ZDYTBIb2VrYzE0Wnk2aTBMeUxqPWVyYUY4SmltcU1aYWRvaG9LUUpOVE10WVNnQG1haWwuZ21haWwuY29tJTNF">send a sync command before each read operation<i class="fa fa-external-link-alt"></i></span> to make ZooKeeper support linearizable reads. But this is not the default setting, because it sacrifices some performance. People only use the sync command when necessary, not before every read operation.</p>
+<p>What about ZooKeeper’s availability? ZK requires a <span class="exturl" data-url="aHR0cDovL3d3dy50Y3MuaHV0LmZpL1N0dWRpZXMvVC03OS41MDAxL3JlcG9ydHMvMjAxMi1kZVNvdXphTWVkZWlyb3MucGRm">majority of cluster nodes<i class="fa fa-external-link-alt"></i></span> to reach consensus on data; for example, a write operation can only succeed when a majority of nodes agree. If a network partition occurs, one side has the majority of nodes and the other side has only a minority. At this point, the partition with the majority of nodes can continue to serve; but for the minority partition, even though the nodes are alive, it cannot normally process read or write requests. Therefore, when a network partition occurs, ZK’s write operations do not satisfy <em>CAP availability</em> (even though the partition with the majority of nodes can still process writes).</p>
+<p>More interestingly, ZooKeeper 3.4.0 also added a <span class="exturl" data-url="aHR0cDovL3pvb2tlZXBlci5hcGFjaGUub3JnL2RvYy9yMy40LjYvem9va2VlcGVyQWRtaW4uaHRtbCNFeHBlcmltZW50YWwrT3B0aW9ucyUyRkZlYXR1cmVz">read-only mode<i class="fa fa-external-link-alt"></i></span>. In this mode, the minority partition can still process read operations without needing a quorum! This read-only mode satisfies <em>CAP availability</em>. Therefore, ZooKeeper’s default settings satisfy neither <em>CAP consistency</em> (CP) nor <em>CAP availability</em> (AP); the only thing it truly satisfies is partition tolerance (P). But you can call the sync command when needed to make read requests satisfy CP; or in read-only mode, make its read operations (excluding writes) satisfy AP.</p>
+<p>This is quite annoying. If we call ZooKeeper “inconsistent” simply because its default configuration is not linearizable, we would seriously misrepresent ZK’s capabilities. It can actually provide very strong consistency! It supports <span class="exturl" data-url="aHR0cDovL2RzLnFjcmkub3JnL3Blb3BsZS9tc2VyYWZpbmkvemFiLnBkZg==">atomic broadcast<i class="fa fa-external-link-alt"></i></span> (<span class="exturl" data-url="aHR0cDovL2NvdXJzZXMuY3NhaWwubWl0LmVkdS82Ljg1Mi8wOC9wYXBlcnMvQ1Q5Ni1KQUNNLnBkZg==">which can be simply understood as the consensus problem<i class="fa fa-external-link-alt"></i></span>) and provides <span class="exturl" data-url="aHR0cDovL3d3dy1pMi5pbmZvcm1hdGlrLnJ3dGgtYWFjaGVuLmRlL2kyL2ZpbGVhZG1pbi91c2VyX3VwbG9hZC9kb2N1bWVudHMvU2VtaW5hcl9NQ01NMTEvQ2F1c2FsX21lbW9yeV8xOTk2LnBkZg==">causal consistency<i class="fa fa-external-link-alt"></i></span><strong>[4]</strong> for every session—which is <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLnRoZS1wYW5zLmNvbS9jYXAvYXJ4aXYub3JnL3BkZi8xMzAyLjAzMDkucGRm">stronger than<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly93d3cucmVzZWFyY2hnYXRlLm5ldC9wcm9maWxlL0RvdWdsYXNfVGVycnkzL3B1YmxpY2F0aW9uLzM1NjEzMDBfU2Vzc2lvbl9ndWFyYW50ZWVzX2Zvcl93ZWFrbHlfY29uc2lzdGVudF9yZXBsaWNhdGVkX2RhdGEvbGlua3MvMDJlN2U1MmNkYmU2MGE2Y2I0MDAwMDAwLnBkZg==">read your writes, monotonic reads<i class="fa fa-external-link-alt"></i></span> and <span class="exturl" data-url="aHR0cDovL3Jlc2VhcmNoLm1pY3Jvc29mdC5jb20vcHVicy8xNTc0MTEvQ29uc2lzdGVuY3lBbmRCYXNlYmFsbFJlcG9ydC5wZGY=">consistent prefix reads<i class="fa fa-external-link-alt"></i></span> combined. The ZK documentation says it provides <span class="exturl" data-url="aHR0cHM6Ly9sYW1wb3J0LmF6dXJld2Vic2l0ZXMubmV0L3B1YnMvbXVsdGkucGRm">serializable consistency<i class="fa fa-external-link-alt"></i></span>, but this is actually overly modest, because it can provide much stronger consistency guarantees than that.</p>
+<p>From the ZooKeeper example, we can see that even if a system satisfies neither <em>CAP consistency</em> (CP) nor <em>CAP availability</em> during a network partition, and even if its default configuration does not provide linearizability when there is no network partition, it can still be a good system (I guess ZK is PC/EL under <span class="exturl" data-url="aHR0cDovL2RibXNtdXNpbmdzLmJsb2dzcG90LmNvbS8yMDEwLzA0L3Byb2JsZW1zLXdpdGgtY2FwLWFuZC15YWhvb3MtbGl0dGxlLmh0bWw=">Abadi’s PACELC framework<i class="fa fa-external-link-alt"></i></span>, but I don’t find this more enlightening than CAP).</p>
+<h2 id="CP-AP-A-False-Dichotomy">CP/AP: A False Dichotomy</h2>
+<p>The fact that a database cannot be unambiguously classified as CP/AP indicates that CP/AP is fundamentally unsuitable as a label for describing systems.</p>
+<p>Based on the following points, I believe we should stop forcibly categorizing data storage systems as AP or CP:</p>
+<ul>
+<li>Within the same piece of software, you may have <span class="exturl" data-url="aHR0cHM6Ly9ncm91cHMuY3NhaWwubWl0LmVkdS90ZHMvcGFwZXJzL0dpbGJlcnQvQnJld2VyMi5wZGY=">multiple choices of consistency properties<i class="fa fa-external-link-alt"></i></span>.</li>
+<li>Under the strict definitions of the CAP theorem, most systems satisfy neither consistency nor availability. Yet I have never heard anyone call these systems “P”—perhaps it doesn’t sound very good. But such systems are not that bad; they may in fact be very reasonable designs, just not falling into either of the CP/AP categories.</li>
+<li>Although most software cannot be neatly classified into CP or AP, people still forcibly divide them accordingly. This inevitably leads to changing the definitions of “consistency” or “availability” in the CAP theorem to fit the specific scenarios of their applications. Unfortunately, when the definitions of these key concepts change, the CAP theorem no longer holds, and the CP/AP distinction becomes completely meaningless.</li>
+<li>Forcibly classifying a system into one of two categories easily causes people to overlook a great deal of nuance. When designing distributed systems, there are many factors to consider: service latency, model simplicity, operational complexity, etc. It is obviously impossible to compress so many details into a single bit of information. For example, ZooKeeper has an AP-compliant read-only mode, but that mode simultaneously provides global ordering of all write operations—a property much stronger than the guarantees provided by so-called AP systems like Riak or Cassandra. Crudely classifying it as AP is plainly laughable.</li>
+<li>Even CAP’s author Eric Brewer <span class="exturl" data-url="aHR0cDovL2NzNjA5LmNzLnVhLmVkdS9DQVAxMi5wZGY=">admits<i class="fa fa-external-link-alt"></i></span> that the CAP theorem is a misleading and overly simplified model. In 2000, the significance of proposing the CAP theorem was to guide industry discussions on trade-offs in distributed data systems, and the CAP theorem did achieve that effect. But the theorem’s purpose was not to propose a groundbreaking formal conclusion, nor to become a rigorous classification method for data systems. Fifteen years later, we now have many more consistency and fault-tolerance models for reference. CAP has completed its mission; it is time to move on.</li>
+</ul>
+<h2 id="Learn-to-Think-for-Yourself">Learn to Think for Yourself</h2>
+<p>If CP/AP is not suitable for describing and evaluating a system, what should we use? I think there is no single correct answer. Many predecessors have spent considerable effort thinking about these issues and proposed many terms and models to help us understand them. To learn this knowledge, you need to read the relevant literature more deeply.</p>
+<ul>
+<li>Doug Terry’s paper is a great starting point: <span class="exturl" data-url="aHR0cDovL3Jlc2VhcmNoLm1pY3Jvc29mdC5jb20vcHVicy8xNTc0MTEvQ29uc2lzdGVuY3lBbmRCYXNlYmFsbFJlcG9ydC5wZGY=">he explains various forms of eventual consistency using baseball as an example<i class="fa fa-external-link-alt"></i></span>. Even if you are not American and know nothing about baseball, you will find the paper clear and highly readable.</li>
+<li>If you are interested in transaction isolation models (isolation, different from consistency in distributed systems but closely related), my small project <span class="exturl" data-url="aHR0cDovL21hcnRpbi5rbGVwcG1hbm4uY29tLzIwMTQvMTEvMjUvaGVybWl0YWdlLXRlc3RpbmctdGhlLWktaW4tYWNpZC5odG1s">Hermitage<i class="fa fa-external-link-alt"></i></span> is worth a look.</li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9hcnhpdi5vcmcvcGRmLzEzMDIuMDMwOS5wZGY=">Peter Bailis’s paper<i class="fa fa-external-link-alt"></i></span> explores the relationship between consistency, transaction isolation, and availability (this paper describes the hierarchical structure among various forms of consistency—Kyle Kingsbury <span class="exturl" data-url="aHR0cHM6Ly9hcGh5ci5jb20vcG9zdHMvMzIyLWNhbGwtbWUtbWF5YmUtbW9uZ29kYi1zdGFsZS1yZWFkcw==">loves telling people about this<i class="fa fa-external-link-alt"></i></span>). <img data-src="https://blog.the-pans.com/content/images/2018/07/isolation-levels.png" alt="isolation-levels"><span class="image-caption">isolation-levels</span></li>
+<li>Once you have read these, you should be ready to dive into the literature. I have included many paper citations throughout this article; take a look—experts have already solved many of these problems for you.</li>
+<li>As a last resort, if you don’t want to read these original papers one by one, you can take a look at <span class="exturl" data-url="aHR0cDovL2RhdGFpbnRlbnNpdmUubmV0Lw==">my book<i class="fa fa-external-link-alt"></i></span>, which summarizes most of the important ideas in a very accessible way (see, I’ve tried as hard as possible to make this article not look like it’s promoting my book).</li>
+<li>If you want to learn more about the proper way to use ZooKeeper, <span class="exturl" data-url="aHR0cDovL3Nob3Aub3JlaWxseS5jb20vcHJvZHVjdC8wNjM2OTIwMDI4OTAxLmRv">Flavio Junqueira and Benjamin Reed’s book<i class="fa fa-external-link-alt"></i></span> is a good choice.</li>
+</ul>
+<p>No matter which learning path you choose, I hope you remain curious and patient—this is not an easy subject. But all the effort is worthwhile; you will learn how to make reasonable trade-offs and thereby find the architecture best suited to your application. Finally, whatever you do, please stop saying CP and AP, because they are meaningless.</p>
+<h2 id="Translator’s-Notes">Translator’s Notes</h2>
+<p>[1] <strong>CAP Availability</strong>. The author uses the term CAP-Available to specifically refer to the narrow, specialized availability in the CAP theorem; therefore, <em>CAP availability</em> in the text is a noun as a whole, indicated by italics. The same applies to CAP-Consistency; to avoid ambiguity, the author simply uses linearizability instead.</p>
+<p>[2] <strong>Linearizability</strong>. It can be understood from another perspective: a series of events with partial order relationships in the system can be globally topologically sorted, that is, there are no cycles.</p>
+<p>[3] <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvUXVvcnVtXyhkaXN0cmlidXRlZF9jb21wdXRpbmcp">Quorum mechanism<i class="fa fa-external-link-alt"></i></span>. This is a commonly used voting algorithm in distributed systems for data replication and ensuring eventual consistency. Its main mathematical idea comes from the pigeonhole principle. This algorithm can ensure that multiple replicas of the same data object are not read and written by more than two accessors simultaneously. Each system using this algorithm has two key parameters: minimum read votes R and minimum write votes W. Their relationship must satisfy: 1. R + W &gt; N  2. W &gt; N/2, where N is the number of cluster replicas. When understanding it, you can analogize it to a read-write lock: the system cannot have multiple write-write or read-write operations simultaneously, but if R is set smaller, multiple reads can occur at the same time.</p>
+<p>[4] Causal consistency. <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQ2F1c2FsX2NvbnNpc3RlbmN5">Causal consistency<i class="fa fa-external-link-alt"></i></span> is a major memory consistency model that guarantees the order of operations with causal relationships, while making no guarantees about the execution order of events without obvious causal relationships.</p>
+<p>[5] replicate. Can be translated as replica, redundancy, backup, etc.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/02/16/not-cp-or-ap/" rel="bookmark">（译）请不要再称数据库为 CP 和 AP</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/distributed-system/" rel="tag"># distributed system</a>
+              <a href="/tags/CAP/" rel="tag"># CAP</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/02/08/CAP/" rel="prev" title="分布式基础（一）：CAP 的理解">
+      <i class="fa fa-chevron-left"></i> 分布式基础（一）：CAP 的理解
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/02/16/not-cp-or-ap/" rel="next" title="（译）请不要再称数据库为 CP 和 AP">
+      （译）请不要再称数据库为 CP 和 AP <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#CAP-Uses-Very-Narrow-Definitions"><span class="nav-number">1.</span> <span class="nav-text">CAP Uses Very Narrow Definitions</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linearizability"><span class="nav-number">2.</span> <span class="nav-text">Linearizability</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CAP-Availability"><span class="nav-number">3.</span> <span class="nav-text">CAP Availability</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Many-Systems-Are-Neither-Linearizable-nor-CAP-Available"><span class="nav-number">4.</span> <span class="nav-text">Many Systems Are Neither Linearizable nor CAP-Available</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Case-Study-ZooKeeper"><span class="nav-number">5.</span> <span class="nav-text">Case Study: ZooKeeper</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CP-AP-A-False-Dichotomy"><span class="nav-number">6.</span> <span class="nav-text">CP&#x2F;AP: A False Dichotomy</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Learn-to-Think-for-Yourself"><span class="nav-number">7.</span> <span class="nav-text">Learn to Think for Yourself</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Translator%E2%80%99s-Notes"><span class="nav-number">8.</span> <span class="nav-text">Translator’s Notes</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2020/02/16/not-cp-or-ap/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '54f6cf943ec7a690641b05a125f6de9c',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

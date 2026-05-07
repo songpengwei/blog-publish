@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="DDIA Reading Club: I will share chapter by chapter, adding some details based on my experience in distributed storage and databases in industry. Sharing roughly every two weeks—welcome to join! The s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DDIA Reading Notes (Chapter 3): B-Trees and LSM-Trees">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part1/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="DDIA Reading Club: I will share chapter by chapter, adding some details based on my experience in distributed storage and databases in industry. Sharing roughly every two weeks—welcome to join! The s">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/iXVWtdGLxb6RDqB.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/OUVfroWha34L8i7.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/A3dwMLfSs4Imgnj.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/j8tM6IUk1QrJXuw.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/pHgxdn4TPwCoil6.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/yBxIZR8CusbQrPO.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/ZuLcBm6HKd2AQra.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/K4gXhrzf9wySko7.png">
+<meta property="article:published_time" content="2022-04-16T01:37:46.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.676Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="DDIA">
+<meta property="article:tag" content="Reading Notes">
+<meta property="article:tag" content="Designing Data-Intensive Applications">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2022/04/16/iXVWtdGLxb6RDqB.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part1/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="DDIA,Reading Notes,Designing Data-Intensive Applications">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "DDIA Reading Notes (Chapter 3): B-Trees and LSM-Trees",
+    "description": "DDIA Reading Club: I will share chapter by chapter, adding some details based on my experience in distributed storage and databases in industry. Sharing roughly every two weeks—welcome to join! The schedule and all transcripts are here. We have a corresponding distributed systems &amp; databases discussion group, and I will notify in the group before each session. If you’d like to join, add my WeChat: qtmuniao, briefly introduce yourself, and note: distributed systems group. Chapter 2 discussed the upper-level abstractions: data models and query languages. This chapter goes a bit deeper, focusing on how databases handle queries and storage at the low level. There is a logical chain here: Use case → Query type → Storage format.",
+    "url": "https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part1/",
+    "datePublished": "2022-04-16T09:37:46+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part1/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>DDIA Reading Notes (Chapter 3): B-Trees and LSM-Trees | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2022/04/16/ddia-reading-chapter3-part1/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2022/04/16/ddia-reading-chapter3-part1/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DDIA Reading Notes (Chapter 3): B-Trees and LSM-Trees
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2022-04-16 09:37:46" itemprop="dateCreated datePublished" datetime="2022-04-16T09:37:46+08:00">2022-04-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>DDIA Reading Club: I will share chapter by chapter, adding some details based on my experience in distributed storage and databases in industry. Sharing roughly every two weeks—welcome to join! The schedule and all transcripts are <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">here<i class="fa fa-external-link-alt"></i></span>. We have a corresponding distributed systems &amp; databases discussion group, and I will notify in the group before each session. If you’d like to join, add my WeChat: qtmuniao, briefly introduce yourself, and note: distributed systems group.</p>
+</blockquote>
+<p>Chapter 2 discussed the upper-level abstractions: data models and query languages.<br>
+This chapter goes a bit deeper, focusing on how databases handle queries and storage at the low level. There is a <strong>logical chain</strong> here:</p>
+<blockquote>
+<p>Use case → Query type → Storage format.</p>
+</blockquote>
+<span id="more"></span>
+<p><em>Author: 木鸟杂记 <a href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part1">https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part1</a>. Please indicate the source when reposting.</em></p>
+<p>Query types are mainly divided into two categories:</p>
+<table>
+<thead>
+<tr>
+<th>Engine Type</th>
+<th>Request Volume</th>
+<th>Data Volume</th>
+<th>Bottleneck</th>
+<th>Storage Format</th>
+<th>Users</th>
+<th>Example Scenarios</th>
+<th>Example Products</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OLTP</td>
+<td>Relatively frequent, focused on online transactions</td>
+<td>Both total and per-query volumes are relatively small</td>
+<td>Disk Seek</td>
+<td>Mostly row-oriented</td>
+<td>Relatively common, mostly used by general applications</td>
+<td>Bank transactions</td>
+<td>MySQL</td>
+</tr>
+<tr>
+<td>OLAP</td>
+<td>Relatively infrequent, focused on offline analytics</td>
+<td>Both total and per-query volumes are relatively huge</td>
+<td>Disk Bandwidth</td>
+<td>Column-oriented is gaining popularity</td>
+<td>Mostly business users</td>
+<td>Business analytics</td>
+<td>ClickHouse</td>
+</tr>
+</tbody>
+</table>
+<p>Among these, on the OLTP side, commonly used storage engines fall into two schools:</p>
+<table>
+<thead>
+<tr>
+<th>School</th>
+<th>Main Characteristics</th>
+<th>Basic Idea</th>
+<th>Representatives</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Log-structured</td>
+<td>Only appends allowed; all modifications appear as file appends and whole-file additions/deletions</td>
+<td>Turn random writes into sequential writes</td>
+<td>Bitcask, LevelDB, RocksDB, Cassandra, Lucene</td>
+</tr>
+<tr>
+<td>Update-in-place</td>
+<td>Modifies disk data at the granularity of a page</td>
+<td>Page-oriented, search tree</td>
+<td>B-tree family, all mainstream relational databases and some non-relational databases</td>
+</tr>
+</tbody>
+</table>
+<p>In addition, for OLTP, we also explore common indexing methods and a special type of database—the in-memory database.</p>
+<p>For data warehouses, this chapter analyzes their main differences from OLTP. Data warehouses mainly focus on aggregation queries that need to scan very large amounts of data; at this point, indexes are relatively less useful. What needs to be considered are storage costs, bandwidth optimization, etc., which leads to columnar storage.</p>
+<h1>Underlying Data Structures That Drive Databases</h1>
+<p>This section starts from a shell script, to a fairly simple but usable storage engine Bitcask, then leads to LSM-tree—they all belong to the log-structured category. Then it turns to another school of storage engines—the B-tree family, followed by a brief comparison. Finally, it explores an indispensable structure in storage: indexes.</p>
+<p>First, let’s look at the “simplest” database in the world, composed of two Bash functions:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"><span class="function"><span class="title">db_set</span></span> () &#123;</span><br><span class="line">  <span class="built_in">echo</span> <span class="string">&quot;<span class="variable">$1</span>,<span class="variable">$2</span>&quot;</span> &gt;&gt; database</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">db_get</span></span> () &#123;</span><br><span class="line">  grep <span class="string">&quot;^<span class="variable">$1</span>,&quot;</span> database | sed -e <span class="string">&quot;s/^<span class="variable">$1</span>,//&quot;</span> | <span class="built_in">tail</span> -n 1</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>These two functions implement a string-based KV store (only supporting get/set, not delete):</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ db_set 123456 <span class="string">&#x27;&#123;&quot;name&quot;:&quot;London&quot;,&quot;attractions&quot;:[&quot;Big Ben&quot;,&quot;London Eye&quot;]&#125;&#x27;</span> </span><br><span class="line">$ db_set 42 <span class="string">&#x27;&#123;&quot;name&quot;:&quot;San Francisco&quot;,&quot;attractions&quot;:[&quot;Golden Gate Bridge&quot;]&#125;&#x27;</span></span><br><span class="line">$ db_get 42</span><br><span class="line">&#123;<span class="string">&quot;name&quot;</span>:<span class="string">&quot;San Francisco&quot;</span>,<span class="string">&quot;attractions&quot;</span>:[<span class="string">&quot;Golden Gate Bridge&quot;</span>]&#125;</span><br></pre></td></tr></table></figure>
+<p>Let’s analyze why it works, which also reflects the most basic principles of log-structured storage:</p>
+<ol>
+<li>set: append a KV pair to the end of the file.</li>
+<li>get: match all keys, return the value from the last (i.e., latest) KV pair.</li>
+</ol>
+<p>It can be seen: writes are very fast, but reads require a full scan line by line, which is much slower. A typical trade-off of read for write. To speed up reads, we need to build an <strong>index</strong>: an additional data structure that allows lookups based on certain fields.</p>
+<p>Indexes are built from the original data solely to speed up lookups. Therefore, indexes consume some extra space and insertion time (each insertion requires updating the index), i.e., trading space and writes for reads again.</p>
+<p>This is the most common <strong>trade-off</strong> in database storage engine design and selection:</p>
+<ol>
+<li>Appropriate <strong>storage formats</strong> can speed up writes (log-structured) but make reads very slow; they can also speed up reads (search trees, B-trees) but make writes slower.</li>
+<li>To compensate for read performance, indexes can be built. But this sacrifices write performance and consumes extra space.</li>
+</ol>
+<p>Storage formats are generally hard to change, but whether to build indexes or not is usually left to the user’s choice.</p>
+<h2 id="Hash-Indexes">Hash Indexes</h2>
+<p>This section mainly focuses on the most basic KV index.</p>
+<p>Following the example in the previous subsection, all data is sequentially appended to disk. To speed up queries, we build a hash index in memory:</p>
+<ol>
+<li>Key is the query key.</li>
+<li>Value is the starting position and length of the KV entry.</li>
+</ol>
+<p><img data-src="https://s2.loli.net/2022/04/16/iXVWtdGLxb6RDqB.png" alt="ddia-3-1-hash-map-csv.png"><span class="image-caption">ddia-3-1-hash-map-csv.png</span></p>
+<p>It looks very simple, but this is exactly the basic design of <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLnJpYWsuY29tL3JpYWsva3YvMi4yLjMvc2V0dXAvcGxhbm5pbmcvYmFja2VuZC9iaXRjYXNrL2luZGV4Lmh0bWw=">Bitcask<i class="fa fa-external-link-alt"></i></span>. The key is that it works (when the data volume is small, i.e., all keys can fit in memory): it can provide very high read and write performance:</p>
+<ol>
+<li>Write: append to file.</li>
+<li>Read: one memory lookup, one disk seek; if the data is already cached, the seek can also be saved.</li>
+</ol>
+<p>If your key set is small (meaning it can all fit in memory), but each key is updated very frequently, then Bitcask is what you need. For example: frequently updated video view counts, where the key is the video URL and the value is the video view count.</p>
+<blockquote>
+<p>But there is a very important problem: what if a single file keeps growing larger and disk space is insufficient?</p>
+<p>When a file reaches a certain size, create a new file and make the original file read-only. At the same time, to reclaim the space wasted by multiple writes of the same key, read-only files can be compacted, rewriting old files to squeeze out the “water” (overwritten data) for garbage collection.</p>
+</blockquote>
+<p><img data-src="https://s2.loli.net/2022/04/16/OUVfroWha34L8i7.png" alt="ddia-3-3-compaction-sim.png"><span class="image-caption">ddia-3-3-compaction-sim.png</span></p>
+<p>Of course, if we want to make it <strong>industrially usable</strong>, there are still many problems to solve:</p>
+<ol>
+<li><strong>File format</strong>. For <strong>logs</strong>, CSV is not a compact data format and wastes a lot of space. For example, length + record bytes could be used.</li>
+<li><strong>Record deletion</strong>. Previously only put/get were supported, but in practice delete also needs to be supported. But log-structured storage doesn’t support updates, so what to do? The usual approach is to write a special marker (such as a tombstone record) to indicate that the record has been deleted. It will be truly deleted during compaction later.</li>
+<li><strong>Crash recovery</strong>. When the machine restarts, the in-memory hash index will be lost. Of course, a full scan can be done to rebuild it, but a common small optimization is to persist the index entries together with the data file for each segment file, so that only the index entries need to be loaded upon restart.</li>
+<li><strong>Corrupted or partial writes</strong>. The system may crash at any time, which can cause records to be corrupted or partially written. To identify erroneous records, we need to add some checksum fields to recognize and skip such data. To skip partially written data, special characters are also needed to mark the boundaries between records.</li>
+<li><strong>Concurrency control</strong>. Since there is only one active (append) file, writes have only one natural degree of concurrency. But other files are immutable (read and new files are generated during compaction), so reads and compaction can be executed concurrently.</li>
+</ol>
+<p>At first glance, log-based storage structures seem quite wasteful: updates and deletions require appending. But log-structured storage has several advantages that in-place update structures cannot achieve:</p>
+<ol>
+<li><strong>Replacing random writes with sequential writes</strong>. For both disks and SSDs, sequential writes are several orders of magnitude faster than random writes.</li>
+<li><strong>Simpler concurrency control</strong>. Since most files are <strong>immutable</strong>, it is easier to perform concurrent reads and compaction. There is also no need to worry about in-place updates causing old and new data to alternate.</li>
+<li><strong>Less internal fragmentation</strong>. Each compaction completely squeezes out garbage. But in-place updates leave some unusable space in pages.</li>
+</ol>
+<p>Of course, in-memory hash indexes also have their limitations:</p>
+<ol>
+<li><strong>All keys must fit in memory</strong>. Once the data volume of keys exceeds memory size, this solution no longer works. Of course, you can design disk-based hash tables, but that would bring a large number of random writes.</li>
+<li><strong>Does not support range queries</strong>. Since keys are unordered, range queries require a full table scan.</li>
+</ol>
+<p>The LSM-Tree and B+ trees discussed later can both partially avoid the above problems.</p>
+<ul>
+<li>Think about it: how would they avoid these issues?</li>
+</ul>
+<h2 id="SSTables-and-LSM-Trees">SSTables and LSM-Trees</h2>
+<p>This section progresses layer by layer, leading step by step from the SSTables format to the full picture of LSM-Trees.</p>
+<p>For KV data, the BitCask storage structure mentioned earlier is:</p>
+<ol>
+<li>Log segments on external storage.</li>
+<li>A hash table in memory.</li>
+</ol>
+<p>The data on external storage is formed by simple append writes and is not ordered by any field.</p>
+<p>Suppose we add a constraint that these files are ordered by key. We call this format: SSTable (Sorted String Table).</p>
+<p>What are the advantages of this file format?</p>
+<p><strong>Efficient data file merging</strong>. That is, merge sort of ordered files, sequential reads, sequential writes. What if the same key appears in different files?</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/A3dwMLfSs4Imgnj.png" alt="ddia-3-4-merge-sst.png"><span class="image-caption">ddia-3-4-merge-sst.png</span></p>
+<p><strong>No need to keep indexes for all data in memory</strong>. Only the boundaries of each file need to be recorded (represented as intervals: [startKey, endKey], though in practice finer granularity is used). When looking up a key, simply perform a binary search in the files whose intervals contain that key.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/j8tM6IUk1QrJXuw.png" alt="ddia-3-5-sst-index.png"><span class="image-caption">ddia-3-5-sst-index.png</span></p>
+<p><strong>Block compression saves space and reduces I/O</strong>. Adjacent keys share prefixes; since data is fetched in batches each time, a group of keys can be batched together into a block, and only the block’s index is recorded.</p>
+<h3 id="Building-and-Maintaining-SSTables">Building and Maintaining SSTables</h3>
+<p>The SSTables format sounds great, but we should note that data arrives out of order; how do we obtain ordered data files?</p>
+<p>This can be broken down into two small problems:</p>
+<ol>
+<li>How to build.</li>
+<li>How to maintain.</li>
+</ol>
+<p><strong>Building SSTable files</strong>. Sorting out-of-order data into ordered files on external storage (disk or SSD) is quite difficult. But it is much easier in memory. Thus a bold idea is formed:</p>
+<ol>
+<li>Maintain an ordered structure in memory (called <strong>MemTable</strong>). Red-black tree, AVL tree, skip list.</li>
+<li>Once a certain threshold is reached, fully dump it to external storage.</li>
+</ol>
+<p><strong>Maintaining SSTable files</strong>. Why is maintenance needed? First, we must ask: for the above composite structure, how do we perform queries?</p>
+<ol>
+<li>First look up in the MemTable; if it hits, return.</li>
+<li>Then search through SSTables in chronological order from newest to oldest.</li>
+</ol>
+<p>If there are more and more SSTable files, the lookup cost will increase. Therefore, multiple SSTable files need to be merged to reduce the number of files, while performing GC; we call this <strong>compaction</strong> (Compaction).</p>
+<p><strong>Problem with this solution</strong>: if a crash occurs, the in-memory data structure will disappear. The solution is also classic: WAL.</p>
+<h3 id="From-SSTables-to-LSM-Tree">From SSTables to LSM-Tree</h3>
+<p>Organizing the fragments from the previous sections organically gives us the storage structure behind the currently popular storage engines LevelDB and RocksDB: the LSM-Tree:</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/pHgxdn4TPwCoil6.png" alt="ddia-3-leveldb-architecture.png"><span class="image-caption">ddia-3-leveldb-architecture.png</span></p>
+<p>This data structure was proposed by Patrick O’Neil and others in 1996: <span class="exturl" data-url="aHR0cHM6Ly93d3cuY3MudW1iLmVkdS9+cG9uZWlsL2xzbXRyZWUucGRm">The Log-Structured Merge-Tree<i class="fa fa-external-link-alt"></i></span>.</p>
+<p>The indexing engine Lucene used by Elasticsearch and Solr also uses a storage structure similar to LSM-Tree. But its data model is not KV, though similar: word → document list.</p>
+<h3 id="Performance-Optimizations">Performance Optimizations</h3>
+<p>If you want to make an engine usable in practice, a lot of performance optimizations are needed. For LSM-Tree, these include:</p>
+<p><strong>Optimizing SSTable lookups.</strong> Commonly used is the <a href="https://www.qtmuniao.com/2020/11/18/leveldb-data-structures-bloom-filter/"><strong>Bloom Filter</strong></a>. This data structure can use a small amount of memory to create some fingerprints for each SSTable, serving as a preliminary filter.</p>
+<p><strong>Hierarchical organization of SSTables</strong>. To control the order and timing of compaction. Common approaches are size-tiered and leveled compaction. LevelDB is named after supporting the latter. The former is relatively simple and crude, while the latter has better performance and is therefore more common.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/yBxIZR8CusbQrPO.png" alt="ddia-sized-tierd-compact.png"><span class="image-caption">ddia-sized-tierd-compact.png</span></p>
+<p>For RocksDB, there are many more engineering and usage optimizations. Here are a few excerpts from its <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2ZhY2Vib29rL3JvY2tzZGIvd2lraQ==">Wiki<i class="fa fa-external-link-alt"></i></span>:</p>
+<ol>
+<li>Column Family</li>
+<li>Prefix compression and filtering</li>
+<li>Key-value separation, BlobDB</li>
+</ol>
+<p>But no matter how many variants and optimizations there are, the core idea of LSM-Tree—<strong>maintaining a set of reasonably organized, background-merged SSTables</strong>—is simple yet powerful. It allows convenient range traversal and can turn large amounts of random I/O into small amounts of sequential I/O.</p>
+<h2 id="B-Trees">B-Trees</h2>
+<p>Although LSM-Tree was discussed first, it is much newer than B+ trees.</p>
+<p>After B-trees were <span class="exturl" data-url="aHR0cHM6Ly9kbC5hY20ub3JnL2RvaS8xMC4xMTQ1LzE3MzQ2NjMuMTczNDY3MQ==">proposed<i class="fa fa-external-link-alt"></i></span> by R. Bayer and E. McCreight in 1970, they quickly became popular. Now in almost all relational databases, they are the standard implementation of data indexes.</p>
+<p>Like LSM-Tree, it also supports efficient <strong>point lookups</strong> and <strong>range queries</strong>. But it uses a completely different organization.</p>
+<p>Its characteristics are:</p>
+<ol>
+<li>Organized in units of pages (called page on disk, block in memory, usually 4k).</li>
+<li>Pages reference each other logically by page ID, thus forming a tree on disk.</li>
+</ol>
+<p><img data-src="https://s2.loli.net/2022/04/16/ZuLcBm6HKd2AQra.png" alt="ddia-3-6-b-tree-lookup.png"><span class="image-caption">ddia-3-6-b-tree-lookup.png</span></p>
+<p><strong>Lookup</strong>. Starting from the root node, perform binary search, then load a new page into memory, continue binary search, until hitting or reaching a leaf node. Lookup complexity is the height of the tree—O(log n). The factor affecting tree height: branching factor (number of branches, usually hundreds).</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/K4gXhrzf9wySko7.png" alt="ddia-3-7-b-tree-grow-by-split.png"><span class="image-caption">ddia-3-7-b-tree-grow-by-split.png</span></p>
+<p><strong>Insert or update</strong>. Same as the lookup process: locate the page where the original key resides, insert or update, then write the entire page back. If the remaining space in the page is insufficient, split and then write.</p>
+<p><strong>Split or merge</strong>. Cascading splits and merges.</p>
+<ul>
+<li>
+<p>What if a record is larger than a page?</p>
+<p>Tree nodes are logical concepts; page or block is a physical concept. One logical node can correspond to multiple physical pages.</p>
+</li>
+</ul>
+<h3 id="Making-B-Trees-More-Reliable">Making B-Trees More Reliable</h3>
+<p>Unlike LSM-Tree, B-trees modify data files in place.</p>
+<p>When adjusting tree structure, many pages may be modified in cascade. For example, after a leaf node splits, two new leaf nodes and a parent node (updating leaf pointers) need to be written.</p>
+<ol>
+<li>Add a write-ahead log (WAL) to record all modification operations, preventing a messy state caused by interrupted tree structure adjustments during a crash.</li>
+<li>Use latches for concurrency control on the tree structure.</li>
+</ol>
+<h3 id="B-Tree-Optimizations">B-Tree Optimizations</h3>
+<p>B-trees have been around for so long, so there are many optimizations:</p>
+<ol>
+<li>Do not use WAL, but instead use Copy-on-Write technology during writes. This also facilitates concurrency control. Examples: LMDB, BoltDB.</li>
+<li>Compress keys in intermediate nodes, keeping only sufficient routing information. This saves space and increases the branching factor.</li>
+<li>To optimize range queries, some B-tree variants store leaf nodes physically contiguous. But as data is continuously inserted, the cost of maintaining this ordering is very high.</li>
+<li>Add sibling pointers to leaf nodes to avoid backtracking during sequential traversal. This is the approach of B+ trees, but by no means limited to B+ trees.</li>
+<li>A B-tree variant, the fractal tree, borrows some ideas from LSM-trees to optimize seeks.</li>
+</ol>
+<h2 id="Comparing-B-Trees-and-LSM-Trees">Comparing B-Trees and LSM-Trees</h2>
+<table>
+<thead>
+<tr>
+<th>Storage Engine</th>
+<th>B-Tree</th>
+<th>LSM-Tree</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Advantage</td>
+<td>Faster reads</td>
+<td>Faster writes</td>
+<td></td>
+</tr>
+<tr>
+<td>Write amplification</td>
+<td>1. Data and WAL<br/>2. Multiple overwrites of the entire page when changing data</td>
+<td>1. Data and WAL<br/>2. Compaction</td>
+<td>SSDs cannot be erased too much. Therefore, SSD internal firmware also mostly uses log-structured approaches to reduce random small writes.</td>
+</tr>
+<tr>
+<td>Write throughput</td>
+<td>Relatively low:<br/>1. Large amount of random writes.</td>
+<td>Relatively high:<br/>1. Lower write amplification (depends on data and configuration)<br/>2. Sequential writes.<br/>3. More compact.</td>
+<td></td>
+</tr>
+<tr>
+<td>Compression ratio</td>
+<td>1. More internal fragmentation.</td>
+<td>1. More compact, no internal fragmentation.<br/>2. Greater compression potential (shared prefixes).</td>
+<td>But delayed compaction can cause LSM-Tree to accumulate a lot of garbage</td>
+</tr>
+<tr>
+<td>Background traffic</td>
+<td>1. More stable and predictable, not affected by sudden background compaction traffic.</td>
+<td>1. If write throughput is too high and compaction can’t keep up, read amplification worsens.<br/>2. Since total external storage bandwidth is limited, compaction affects read/write throughput.<br/>3. As data grows, compaction’s impact on normal writes increases.</td>
+<td>RocksDB writing too fast can cause write stall, i.e., limiting writes in order to compact data down as soon as possible.</td>
+</tr>
+<tr>
+<td>Storage amplification</td>
+<td>1. Some pages are not fully used</td>
+<td>1. The same key stored multiple times</td>
+<td></td>
+</tr>
+<tr>
+<td>Concurrency control</td>
+<td>1. The same key only exists in one place<br/>2. Tree structure makes range locks easy.</td>
+<td>The same key is stored multiple times; usually controlled using MVCC.</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="Other-Indexing-Structures">Other Indexing Structures</h2>
+<p><strong>Secondary indexes</strong>. That is, the mapping from other non-primary-key attributes to the element (rows in SQL, documents in MongoDB, and vertices and edges in graph databases).</p>
+<h3 id="Clustered-Indexes-and-Non-Clustered-Indexes"><strong>Clustered Indexes and Non-Clustered Indexes</strong></h3>
+<p>For storing data and organizing indexes, we have multiple choices:</p>
+<ol>
+<li>Data itself is stored <strong>unordered</strong> in a file, called a <strong>heap file</strong>; the value in the index points to the corresponding data’s position in the heap file. This avoids data copying when there are multiple indexes.</li>
+<li>Data itself is stored ordered by a certain field, usually the primary key. Then the index based on this field is called a <strong>clustered index</strong>; from another perspective, the index and data are stored together. Then indexes based on other fields are <strong>non-clustered indexes</strong>, which only store references to the data in the index.</li>
+<li>Some columns are embedded in the index for storage, while some column data is stored separately. This is called a <strong>covering index</strong> or <strong>index with included columns</strong>.</li>
+</ol>
+<p>Indexes can speed up query performance, but they need to occupy extra space, sacrifice some update overhead, and need to maintain some consistency.</p>
+<h3 id="Multi-Column-Indexes-Multi-column-indexes"><strong>Multi-Column Indexes</strong> (<strong>Multi-column indexes</strong>).</h3>
+<p>In real life, combined queries on multiple fields are more common. For example, querying merchants within a certain range around a user requires a two-dimensional query on longitude and latitude.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> restaurants <span class="keyword">WHERE</span> latitude <span class="operator">&gt;</span> <span class="number">51.4946</span> <span class="keyword">AND</span> latitude <span class="operator">&lt;</span> <span class="number">51.5079</span></span><br><span class="line">                            <span class="keyword">AND</span> longitude <span class="operator">&gt;</span> <span class="number">-0.1162</span> <span class="keyword">AND</span> longitude <span class="operator">&lt;</span> <span class="number">-0.1004</span>;</span><br></pre></td></tr></table></figure>
+<p>You can:</p>
+<ol>
+<li>Encode two dimensions into one dimension, then store as a normal index.</li>
+<li>Use special data structures, such as R-trees.</li>
+</ol>
+<h3 id="Full-Text-Search-and-Fuzzy-Indexes"><strong>Full-Text Search and Fuzzy Indexes</strong>.</h3>
+<p>The indexes mentioned above only provide exact matching of full fields, not search engine-like functionality. For example, querying by words contained in a string, or querying for misspelled words.</p>
+<p>In engineering, the <span class="exturl" data-url="aHR0cHM6Ly9sdWNlbmUuYXBhY2hlLm9yZy8=">Apace Lucene<i class="fa fa-external-link-alt"></i></span> library and the services built around it, such as <span class="exturl" data-url="aHR0cHM6Ly93d3cuZWxhc3RpYy5jby9jbi8=">Elasticsearch<i class="fa fa-external-link-alt"></i></span>, are commonly used. It also uses a log-structured storage structure similar to LSM-tree, but its index is a finite state automaton, behaving similarly to a Trie.</p>
+<h3 id="In-Memory-Data-Structures">In-Memory Data Structures</h3>
+<p>As memory cost per unit decreases, and even with persistence support (<em>non-volatile memory</em>, NVM, such as Intel’s <span class="exturl" data-url="aHR0cHM6Ly93d3cuaW50ZWwuY24vY29udGVudC93d3cvY24vemgvcHJvZHVjdHMvZGV0YWlscy9tZW1vcnktc3RvcmFnZS9vcHRhbmUtZGMtcGVyc2lzdGVudC1tZW1vcnkuaHRtbA==">Optane<i class="fa fa-external-link-alt"></i></span>), in-memory databases are gradually becoming popular.</p>
+<p>Depending on whether persistence is needed, in-memory data can be roughly divided into two categories:</p>
+<ol>
+<li><strong>No persistence needed</strong>. Such as Memcached, which is only used for caching.</li>
+<li><strong>Persistence needed</strong>. Data is persisted through WAL, periodic snapshots, remote backups, etc. But all reads and writes are processed in memory, so it is still an in-memory database.</li>
+</ol>
+<blockquote>
+<p>VoltDB, MemSQL, and Oracle TimesTen are in-memory databases providing relational models. RAMCloud is a KV database providing persistence guarantees. Redis and Couchbase only provide weak persistence guarantees.</p>
+</blockquote>
+<p>The reason in-memory databases have advantages is not only because they don’t need to read from disk, but more importantly, they don’t need the <strong>extra overhead</strong> of <strong>serializing and encoding</strong> data structures to adapt to disk.</p>
+<p>Of course, in-memory databases also have the following advantages:</p>
+<ol>
+<li><strong>Provide richer data abstractions</strong>. Such as sets and queues, which are data abstractions that only exist in memory.</li>
+<li><strong>Relatively simple implementation</strong>. Because all data is in memory.</li>
+</ol>
+<p>In addition, in-memory databases can also provide storage space larger than physical machine memory through a mechanism similar to operating system swap. But because they have more database-related information, they can make the granularity of swapping in and out finer and performance better.</p>
+<p>Storage engines based on <strong>non-volatile memory</strong> (non-volatile memory, NVM) have also been a hot research topic in recent years.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA Reading Notes (Chapter 1): Reliability, Scalability, Maintainability</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA Reading Notes (Chapter 4): Encoding and Evolution</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA Reading Notes (V): Replication</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="bookmark">DDIA 读书笔记（三）： TP AP 和列存</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DDIA/" rel="tag"># DDIA</a>
+              <a href="/tags/Reading-Notes/" rel="tag"># Reading Notes</a>
+              <a href="/tags/Designing-Data-Intensive-Applications/" rel="tag"># Designing Data-Intensive Applications</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/16/ddia-reading-chapter2/" rel="prev" title="DDIA 读书笔记（二）：数据模型和查询语言">
+      <i class="fa fa-chevron-left"></i> DDIA 读书笔记（二）：数据模型和查询语言
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="next" title="DDIA 读书笔记（三）：B-Tree 和 LSM-Tree">
+      DDIA 读书笔记（三）：B-Tree 和 LSM-Tree <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">Underlying Data Structures That Drive Databases</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Hash-Indexes"><span class="nav-number">1.1.</span> <span class="nav-text">Hash Indexes</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SSTables-and-LSM-Trees"><span class="nav-number">1.2.</span> <span class="nav-text">SSTables and LSM-Trees</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Building-and-Maintaining-SSTables"><span class="nav-number">1.2.1.</span> <span class="nav-text">Building and Maintaining SSTables</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#From-SSTables-to-LSM-Tree"><span class="nav-number">1.2.2.</span> <span class="nav-text">From SSTables to LSM-Tree</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Performance-Optimizations"><span class="nav-number">1.2.3.</span> <span class="nav-text">Performance Optimizations</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#B-Trees"><span class="nav-number">1.3.</span> <span class="nav-text">B-Trees</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Making-B-Trees-More-Reliable"><span class="nav-number">1.3.1.</span> <span class="nav-text">Making B-Trees More Reliable</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#B-Tree-Optimizations"><span class="nav-number">1.3.2.</span> <span class="nav-text">B-Tree Optimizations</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Comparing-B-Trees-and-LSM-Trees"><span class="nav-number">1.4.</span> <span class="nav-text">Comparing B-Trees and LSM-Trees</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Other-Indexing-Structures"><span class="nav-number">1.5.</span> <span class="nav-text">Other Indexing Structures</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Clustered-Indexes-and-Non-Clustered-Indexes"><span class="nav-number">1.5.1.</span> <span class="nav-text">Clustered Indexes and Non-Clustered Indexes</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Multi-Column-Indexes-Multi-column-indexes"><span class="nav-number">1.5.2.</span> <span class="nav-text">Multi-Column Indexes (Multi-column indexes).</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Full-Text-Search-and-Fuzzy-Indexes"><span class="nav-number">1.5.3.</span> <span class="nav-text">Full-Text Search and Fuzzy Indexes.</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#In-Memory-Data-Structures"><span class="nav-number">1.5.4.</span> <span class="nav-text">In-Memory Data Structures</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part1/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '55cff4a7e6338d6bcf00cc5dc6bf6bb3',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

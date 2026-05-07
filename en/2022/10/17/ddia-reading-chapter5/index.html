@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="The DDIA reading group shares the book chapter by chapter, supplemented with some details based on my experience with distributed storage and databases in industry. We share roughly every two weeks—w">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DDIA Reading Notes (V): Replication">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2022/10/17/ddia-reading-chapter5/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="The DDIA reading group shares the book chapter by chapter, supplemented with some details based on my experience with distributed storage and databases in industry. We share roughly every two weeks—w">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig01.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig02.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig03.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig04.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig05.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig06.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig07.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig08.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig09.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig10.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig11.png">
+<meta property="og:image" content="ihttps://ddia.qtmuniao.com/img/ch05-sloppy-quorum.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig12.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig13.png">
+<meta property="og:image" content="https://ddia.qtmuniao.com/img/ch05-fig14.png">
+<meta property="article:published_time" content="2022-10-17T15:20:33.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.677Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="DDIA">
+<meta property="article:tag" content="Reading Notes">
+<meta property="article:tag" content="Designing Data-Intensive Applications">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://ddia.qtmuniao.com/img/ch05-fig01.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2022/10/17/ddia-reading-chapter5/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="DDIA,Reading Notes,Designing Data-Intensive Applications">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "DDIA Reading Notes (V): Replication",
+    "description": "The DDIA reading group shares the book chapter by chapter, supplemented with some details based on my experience with distributed storage and databases in industry. We share roughly every two weeks—welcome to join us. The schedule and all transcripts are here. We also have a corresponding distributed systems &amp; database discussion group; notifications are sent there before each session. If you’d like to join, add me on WeChat: qtmuniao, give a brief self-introduction, and note “distributed systems group.” Also, my public account “Muniao Notes” has more articles on distributed systems, storage, and databases—feel free to follow. The first part of this book discusses single-machine data systems; the second part discusses multi-machine data systems. Replication means keeping multiple copies of the same data on different machines connected via a network. Its benefits are: Reduced latency: can be geographically close to users in different regions at the same time. Increased availability: can continue to provide service when parts of the system fail. Increased read throughput: smoothly scale out the machines available for queries. This chapter assumes all data in our data system can fit on a single machine, so we only need to consider multi-machine replication. What if data exceeds single-machine scale? That’s what the next chapter addresses.",
+    "url": "https://www.qtmuniao.com/en/2022/10/17/ddia-reading-chapter5/",
+    "datePublished": "2022-10-17T23:20:33+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2022/10/17/ddia-reading-chapter5/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>DDIA Reading Notes (V): Replication | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2022/10/17/ddia-reading-chapter5/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2022/10/17/ddia-reading-chapter5/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/10/17/ddia-reading-chapter5/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DDIA Reading Notes (V): Replication
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2022-10-17 23:20:33" itemprop="dateCreated datePublished" datetime="2022-10-17T23:20:33+08:00">2022-10-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>The DDIA reading group shares the book chapter by chapter, supplemented with some details based on my experience with distributed storage and databases in industry. We share roughly every two weeks—welcome to join us. The schedule and all transcripts are <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">here<i class="fa fa-external-link-alt"></i></span>. We also have a corresponding distributed systems &amp; database discussion group; notifications are sent there before each session. If you’d like to join, add me on WeChat: qtmuniao, give a brief self-introduction, and note “distributed systems group.” Also, my public account “Muniao Notes” has more articles on distributed systems, storage, and databases—feel free to follow.<br>
+The first part of this book discusses single-machine data systems; the second part discusses multi-machine data systems.</p>
+</blockquote>
+<p><strong>Replication</strong> means keeping multiple copies of the same data on different machines connected via a network. Its benefits are:</p>
+<ol>
+<li><strong>Reduced latency</strong>: can be geographically close to users in different regions at the same time.</li>
+<li><strong>Increased availability</strong>: can continue to provide service when parts of the system fail.</li>
+<li><strong>Increased read throughput</strong>: smoothly scale out the machines available for queries.</li>
+</ol>
+<blockquote>
+<p>This chapter assumes all data in our data system can fit on a single machine, so we only need to consider multi-machine replication. What if data exceeds single-machine scale? That’s what the next chapter addresses.</p>
+</blockquote>
+<span id="more"></span>
+<p><em>Author: Muniao Notes <a href="https://www.qtmuniao.com/2022/10/17/ddia-reading-chapter5">https://www.qtmuniao.com/2022/10/17/ddia-reading-chapter5</a> please indicate the source when reprinting</em></p>
+<p>If data is <strong>read-only</strong>, replication is easy—just copy it to multiple machines. We can sometimes exploit this property using a divide-and-conquer strategy, splitting data into read-only and read-write parts; the read-only part then becomes much easier to replicate, and we can even use EC (erasure coding) for replication, reducing storage overhead while improving availability.</p>
+<ul>
+<li>
+<p>What does EC sacrifice?</p>
+<p>Storage for computation.</p>
+</li>
+</ul>
+<p>But the difficulty lies in how to maintain multi-machine replication consistently when data is allowed to change. Commonly used replication control algorithms are:</p>
+<ol>
+<li>Single leader</li>
+<li>Multi-leader</li>
+<li>Leaderless</li>
+</ol>
+<p>This involves trade-offs in multiple dimensions:</p>
+<ol>
+<li>Whether to use synchronous or asynchronous replication</li>
+<li>How to handle failed replicas</li>
+</ol>
+<p>Database replication is not a new problem in academia, but in industry most people are newcomers—distributed databases have only been deployed at scale in industry in recent years.</p>
+<h1>Leaders and Followers</h1>
+<p>Each copy of redundantly stored data is called a <strong>replica</strong>. The main problem brought by multiple replicas is: how to ensure all data is synchronized to all replicas?</p>
+<p><strong>Leader-based</strong> synchronization algorithms are the most commonly used solution.</p>
+<ol>
+<li>One of the replicas is called the <strong>leader</strong> (also known as <strong>primary</strong>, <strong>master</strong>). The leader acts as the coordinator for writes; all writes must be sent to the leader.</li>
+<li>The other replicas are called <strong>followers</strong> (also known as <strong>read replicas</strong>, <strong>slaves</strong>, <strong>secondaries</strong>, <strong>hot-standby</strong>). After the leader writes changes locally, it sends them to each follower; the follower applies the changes to its own state machine after receiving them. This process is called the <strong>replication log</strong> or <strong>change stream</strong>.</li>
+<li>For reads, clients can read from both the leader and followers; but for writes, clients must send requests to the leader.</li>
+</ol>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig01.png" alt="leader based replication"><span class="image-caption">leader based replication</span></p>
+<p>Following my habit, I will uniformly use leader and follower below.</p>
+<p>Many <strong>data systems</strong> use this pattern:</p>
+<ol>
+<li><strong>Relational databases</strong>: PostgreSQL (9.0+), MySQL, Oracle Data Guard, and SQL Server AlwaysOn</li>
+<li><strong>Non-relational databases</strong>: MongoDB, RethinkDB, and Espresso</li>
+<li><strong>Message queues</strong>: Kafka and RabbitMQ</li>
+</ol>
+<h2 id="Synchronous-and-Asynchronous-Replication">Synchronous and Asynchronous Replication</h2>
+<p>The key difference between <strong>synchronous</strong> and <strong>asynchronous</strong> replication is: when is the request returned to the client?</p>
+<ol>
+<li>If it waits for a replica to finish writing, that replica is synchronously replicated.</li>
+<li>If it does not wait for a replica to finish writing, that replica is asynchronously replicated.</li>
+</ol>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig02.png" alt="leader based sync and async"><span class="image-caption">leader based sync and async</span></p>
+<p>The comparison between the two is as follows:</p>
+<ol>
+<li>Synchronous replication sacrifices <strong>response latency</strong> and <strong>partial availability</strong> (writes cannot complete when some replicas have issues) in exchange for consistency across all replicas (though this cannot be strictly guaranteed).</li>
+<li>Asynchronous relaxes <strong>consistency</strong> in exchange for lower write latency and higher availability.</li>
+</ol>
+<p>In practice, the choice depends on requirements for consistency and availability. For all followers, there are several options:</p>
+<ol>
+<li><strong>Fully synchronous</strong>: all followers are written synchronously. If there are too many replicas, performance may suffer; of course, parallelization and pipelining can help.</li>
+<li><strong>Semi-synchronous</strong> (<strong>semi-synchronous</strong>): some replicas are synchronous, others are asynchronous.</li>
+<li><strong>Fully asynchronous</strong>: all followers are written asynchronously. If the network environment is good, this configuration can be used.</li>
+</ol>
+<blockquote>
+<p>Asynchronous replication can cause serious problems such as lost replicas. In order to balance consistency and performance, academia has been continuously researching new replication methods, such as <strong>chain replication</strong>.</p>
+<p>Multi-replica consistency and consensus have many connections, which will be discussed in later chapters of this book.</p>
+</blockquote>
+<h2 id="Adding-New-Replicas">Adding New Replicas</h2>
+<p>In many cases, we need to add new replicas to an existing system.</p>
+<p>If the original replica is read-only, a simple copy suffices. But if it is a writable replica, the problem becomes much more complicated. Therefore, a relatively simple solution is: prohibit writes, then copy. This is useful in some cases, such as when there is no write traffic at night and copying can definitely finish overnight.</p>
+<p>If downtime is not acceptable, you can:</p>
+<ol>
+<li>The leader takes a <strong>consistent</strong> snapshot locally. What does consistent mean?</li>
+<li>Copy the snapshot to the follower node.</li>
+<li>Pull the operation log after the snapshot from the leader and apply it to the follower. How do we know the correspondence between the snapshot and subsequent logs? Sequence numbers.</li>
+<li>When the follower catches up with the leader, it can follow the leader normally.</li>
+</ol>
+<p>This process is generally automated, such as in Raft; or it can be manual, such as writing some scripts.</p>
+<h2 id="Handling-Failures">Handling Failures</h2>
+<p>Any node in the system may fail, either planned or unplanned. How do we deal with these failures and maintain overall system availability?</p>
+<h3 id="Follower-failure-catch-up-recovery"><strong>Follower failure: catch-up recovery</strong></h3>
+<p>Similar to adding a new follower. If it is far behind, it can directly pull a snapshot + logs from the leader; if it is only slightly behind, it can pull only the missing logs.</p>
+<h3 id="Leader-failure-failover"><strong>Leader failure: failover</strong></h3>
+<p>This is relatively troublesome. First, a new leader must be elected, then all clients must be notified of the leader change. Specifically, it includes the following steps:</p>
+<ol>
+<li><strong>Confirm leader failure</strong>. Prevent false positives caused by network jitter. Usually heartbeat-based liveness probes are used, with a reasonable timeout threshold; if the node’s heartbeat is not received after exceeding the threshold, the node is considered failed.</li>
+<li><strong>Choose a new leader</strong>. The new leader can be produced through <strong>election</strong> (a consensus problem) or <strong>designation</strong> (an external control program). When choosing a leader, ensure the candidate’s data is as fresh as possible to minimize data loss.</li>
+<li><strong>Let the system perceive the new leader</strong>. Other participants in the system include followers, clients, and the old leader. The first two are straightforward; for the old leader, when it recovers, some means must be used to let it know it has lost leadership, to avoid <strong>split brain</strong>.</li>
+</ol>
+<p>Leader switching encounters many problems:</p>
+<ol>
+<li><strong>Data conflict between old and new leaders</strong>. The new leader may not have synchronized all logs before taking over; after the old leader recovers, it may find data conflicts with the new leader.</li>
+<li><strong>Conflicts with related external systems</strong>. That is, the new leader conflicts with external systems that use the replica’s data. The book gives the example of GitHub’s MySQL database conflicting with the Redis cache system.</li>
+<li><strong>Role conflict between old and new leaders</strong>. That is, both the old and new leaders think they are the leader, called <strong>split brain</strong>. If both can accept writes and there is no conflict resolution mechanism, data will be lost or corrupted. Some systems will shut down one of the replicas after detecting split brain, but poor design may shut down both leaders.</li>
+<li><strong>Timeout threshold selection</strong>. If the timeout threshold is too small, in an unstable network environment (or when the leader is heavily loaded), it may cause frequent leader switching; if it is too large, failover cannot be performed in time, and recovery time increases, causing prolonged service unavailability.</li>
+</ol>
+<p>All the above problems may have different solutions depending on requirements, environment, and time. Therefore, in the early stages of system deployment, many operations teams prefer to perform switching manually; after accumulating some experience, they gradually automate it.</p>
+<p>Node failures; unreliable networks; trade-offs between consistency, durability, availability, and latency; these are all fundamental problems faced when designing distributed systems. Making artistic trade-offs on these issues according to actual circumstances is the beauty of distributed systems.</p>
+<h2 id="Replication-Logs">Replication Logs</h2>
+<p>In databases, how is leader-based multi-replica implemented? There are multiple methods at different levels, including:</p>
+<ol>
+<li><strong>Statement-level replication</strong></li>
+<li><strong>Write-ahead log replication</strong></li>
+<li><strong>Logical log replication</strong></li>
+<li><strong>Trigger-based replication</strong></li>
+</ol>
+<p>For a <strong>system</strong>, what does multi-replica synchronization synchronize? <strong>Incremental changes</strong>.</p>
+<p>Specifically, for a <strong>data system</strong> composed of a database, it usually consists of an <strong>application layer</strong> outside the database, a <strong>query layer</strong> inside the database, and a <strong>storage layer</strong>. <strong>Changes</strong> are expressed at the query layer as statements; at the storage layer as storage-engine-related write-ahead logs and storage-engine-independent logical logs; after changes are completed, they are expressed at the application layer as trigger logic.</p>
+<h3 id="Statement-Based-Replication">Statement-Based Replication</h3>
+<p>The leader records all update statements: <code>INSERT</code>, <code>UPDATE</code>, or <code>DELETE</code>, and sends them to the followers. The leader here acts similarly to a <strong>pseudo-client</strong> for the other followers.</p>
+<p>But this method has some problems:</p>
+<ol>
+<li>Statements with <strong>nondeterministic</strong> functions may cause different changes on different replicas, such as <code>NOW()</code>, <code>RAND()</code>.</li>
+<li><strong>Using auto-increment columns or depending on existing data</strong>. Then statements from different users must be executed in exactly the same order; when there are concurrent transactions, different execution orders may lead to replica inconsistency.</li>
+<li>Statements with <strong>side effects</strong> (triggers, stored procedures, UDFs) may produce different side effects on different replicas due to different contexts, unless the side effects are deterministic outputs.</li>
+</ol>
+<p>Of course, there are solutions:</p>
+<ol>
+<li>Identify all statements that produce nondeterministic results.</li>
+<li>For these statements, synchronize values rather than statements.</li>
+</ol>
+<p>But there are too many corner cases; step 1 requires considering too many situations.</p>
+<h3 id="Shipping-the-Write-Ahead-Log-WAL">Shipping the Write-Ahead Log (WAL)</h3>
+<p>We find that mainstream storage engines have a <strong>write-ahead log</strong> (WAL, for crash recovery):</p>
+<ol>
+<li>For the log-structured camp (LSM-Tree, such as LevelDB), each modification is first written to a log file to prevent data loss in the MemTable.</li>
+<li>For the in-place update camp (B+ Tree), each modification is first written to the WAL for crash recovery.</li>
+</ol>
+<p>All user-level changes ultimately land in the storage engine as state, and the storage engine usually maintains a structure that is:</p>
+<ol>
+<li>Append-only</li>
+<li>Replayable</li>
+</ol>
+<p>This structure is naturally suitable for backup synchronization. Essentially, this is because the disk read/write characteristics are similar to the network: <strong>disks are more efficient with sequential writes, and networks only support streaming writes</strong>. Specifically, when the leader writes to the WAL, it simultaneously sends the corresponding log over the network to all followers.</p>
+<p>The book mentions a database version upgrade problem:</p>
+<ol>
+<li>If the old version code is allowed to send logs to the new version code (backward compatibility should naturally be achieved), this is forward compatibility. In this case, during upgrades, you can first upgrade the followers, then switch and upgrade the leader.</li>
+<li>Otherwise, the only option is a downtime upgrade.</li>
+</ol>
+<h3 id="Logical-Log-Replication-Row-Based">Logical Log Replication (Row-Based)</h3>
+<p>To decouple from the specific storage engine physical format, a different log format can be used for data synchronization: <strong>logical log</strong>.</p>
+<p>For relational databases, the row is a suitable granularity:</p>
+<ol>
+<li><strong>For inserted rows</strong>: the log needs to contain all column values.</li>
+<li><strong>For deleted rows</strong>: the log needs to contain the identifier of the row to be deleted, which can be the primary key or any other information that can uniquely identify the row.</li>
+<li><strong>For updated rows</strong>: the log needs to contain the identifier of the row to be updated, and all column values (or at least the column values to be updated).</li>
+</ol>
+<p>For multi-row modifications, such as transactions, a transaction commit record can be added after the modifications. MySQL’s binlog works this way.</p>
+<p>The <strong>benefits</strong> of using logical logs are:</p>
+<ol>
+<li>Convenient compatibility between old and new version code, enabling better rolling upgrades.</li>
+<li>Allows different replicas to use different storage engines.</li>
+<li>Allows exporting changes for various <strong>transformations</strong>, such as exporting to a data warehouse for offline analysis, building indexes, adding caches, etc.</li>
+</ol>
+<p>I previously analyzed an interesting <span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC80NTg2ODMxNjQ=">article<i class="fa fa-external-link-alt"></i></span> on unifying various data systems based on logs.</p>
+<h3 id="Trigger-Based-Replication">Trigger-Based Replication</h3>
+<p>The methods described above all perform multi-replica synchronization <strong>inside the database</strong>.</p>
+<p>But in some cases, user decisions may be needed on how to replicate data:</p>
+<ol>
+<li>Filter the data to be replicated, replicating only a subset.</li>
+<li>Replicate data from one type of database to another.</li>
+</ol>
+<p>Some databases such as Oracle provide tools. For others, <strong>triggers and stored procedures</strong> can be used—that is, hooking user code into the database for execution.</p>
+<p>Trigger-based replication has poorer performance and is more error-prone; but it gives users more flexibility.</p>
+<h1>Replication Lag Problems</h1>
+<p>As mentioned above, the benefits of using multiple replicas are:</p>
+<ol>
+<li><strong>Availability</strong>: tolerate partial node failures</li>
+<li><strong>Scalability</strong>: add read replicas to handle more read requests</li>
+<li><strong>Low latency</strong>: let users choose a nearby replica to access</li>
+</ol>
+<p>For read-heavy, write-light scenarios, one might imagine that read traffic can be spread out by aggressively adding read replicas. But there is an <strong>implicit</strong> condition: synchronization among multiple replicas must be <strong>asynchronous</strong>; otherwise, as read replicas increase, some replicas are prone to failure, which would block writes.</p>
+<p>But if replication is asynchronous, inconsistency is introduced: some replicas lag behind the leader.</p>
+<p>If there are no more writes, after some time, the multiple replicas will eventually reach consistency: <strong>eventual consistency</strong>.</p>
+<p>In practice, networks are usually fast, so <strong>replication lag</strong> is not long, meaning this <em>eventually</em> is <strong>usually</strong> not long, such as millisecond level, at most second level. However, for distributed systems, no one dares to guarantee that, due to network partitions, high machine load, and other hardware and software issues, in extreme cases this <em>eventually</em> can be very long.</p>
+<blockquote>
+<p>In short, <strong>eventually</strong> is a very imprecise qualifier.</p>
+</blockquote>
+<p>For such eventually consistent systems, in engineering, one must consider the consistency problems caused by replication lag.</p>
+<h2 id="Read-After-Write">Read-After-Write</h2>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig03.png" alt="read after write"><span class="image-caption">read after write</span></p>
+<p>The problem in the above figure is that, in an <strong>asynchronously replicated</strong> distributed database, the same client writes to the <strong>leader</strong> and returns; shortly after, it reads a lagging <strong>follower</strong>, and finds: it cannot read what it just wrote!</p>
+<p>To avoid such counter-intuitive occurrences, we introduce a new consistency: <strong>read-after-write consistency</strong>, or <strong>read-your-writes consistency</strong>.</p>
+<p>If the database provides this consistency guarantee, for a <strong>single client</strong>, it is certain to be able to read the changes it wrote. That is, this consistency is a form of causal consistency from the perspective of a <strong>single client</strong>.</p>
+<p>So how to provide this guarantee, or implement this consistency? Several solutions are listed:</p>
+<ol>
+<li><strong>Classify by content</strong>. For the set of content that the client may modify, <strong>read only from the leader</strong>. For example, for personal profiles on a social network, read your own profile from the leader; but when reading others’ profiles, you can read from followers.</li>
+<li><strong>Classify by time</strong>. If each client can access almost all data, then option 1 degenerates into all data having to be read from the leader, which is clearly unacceptable. In this case, you can discuss by time: data that has been recently modified is read from the leader; other data is read from followers. How to choose the <strong>time threshold</strong> (e.g., one minute) for distinguishing recent? You can monitor the maximum lag of followers over a period of time and set it based on this empirical value.</li>
+<li><strong>Use timestamps</strong>. The client records the timestamp of its last modification; when reading from a follower, it uses this timestamp to check whether the follower has already synchronized the content before that timestamp. You can find a follower that has synchronized among all replicas; or block and wait for a follower to synchronize to that timestamp before reading. Timestamps can be logical timestamps or physical timestamps (in which case multi-machine clock synchronization is very important).</li>
+</ol>
+<p>There will be some actual complex cases:</p>
+<ol>
+<li><strong>Data is distributed across multiple physical data centers</strong>. All requests that need to be sent to the leader must first be routed to the data center where the leader is located.</li>
+<li><strong>A logical user has multiple physical clients</strong>. For example, a user accesses via computer and mobile phone simultaneously; in this case, device IDs cannot be used, and user IDs must be used to guarantee read-your-writes consistency from the user’s perspective. But different devices have different physical timestamps, and different devices may be routed to different data centers when accessing.</li>
+</ol>
+<h2 id="Monotonic-Reads">Monotonic Reads</h2>
+<p>Another problem that asynchronous replication may bring: for a client, the system may experience <strong>moving backward in time</strong>.</p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig04.png" alt="monotonic reads"><span class="image-caption">monotonic reads</span></p>
+<p>Thus, we introduce another consistency guarantee: <strong>monotonic reads</strong>.</p>
+<ul>
+<li>
+<p>What is the difference between read-your-writes consistency and monotonic reads?</p>
+<p>Read-after-write guarantees the write-then-read order; monotonic reads guarantee the order between <strong>multiple reads</strong>.</p>
+</li>
+</ul>
+<p>How to implement monotonic reads?</p>
+<ol>
+<li>Read data from only one replica.</li>
+<li>The timestamp mechanism mentioned above.</li>
+</ol>
+<h2 id="Consistent-Prefix-Reads">Consistent Prefix Reads</h2>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig05.png" alt="lower partition"><span class="image-caption">lower partition</span></p>
+<p>A third problem brought by asynchronous replication: sometimes causality is violated.</p>
+<p>The essence is: if the database consists of multiple partitions, and the event order across partitions cannot be guaranteed. In this case, if two causally related events land in different partitions, <strong>the effect may appear before the cause</strong>.</p>
+<p>To prevent this problem, we introduce another consistency: <strong>consistent prefix reads</strong>. A strange name.</p>
+<p>Methods to implement this consistency guarantee:</p>
+<ol>
+<li>Do not partition.</li>
+<li>Route all causally related events to a single partition.</li>
+</ol>
+<p>But tracking causality is a difficult problem.</p>
+<h2 id="The-Ultimate-Solution-to-Replication-Lag">The Ultimate Solution to Replication Lag</h2>
+<p>Transactions!</p>
+<p>The consistency problems brought by multi-replica asynchronous replication can all be solved by <strong>transactions</strong>. Single-machine transactions have existed for a long time, but as databases move into the distributed era, many NoSQL systems initially abandoned transactions.</p>
+<ul>
+<li>Why?
+<ol>
+<li>Easier to implement. 2. Better performance. 3. Better availability.</li>
+</ol>
+</li>
+</ul>
+<p>Thus, complexity was shifted to the application layer.</p>
+<p>This was a compromise when database systems first stepped into the distributed era (<strong>multi-replica, multi-partition</strong>); after enough experience has been accumulated, transactions will inevitably be brought back.</p>
+<p>Thus, more and more distributed databases have begun to support transactions in recent years, known as <strong>distributed transactions</strong>.</p>
+<h1>Multi-Leader Model</h1>
+<p><strong>The biggest problem with the single-leader model</strong>: all writes must go through it; if for any reason the client cannot connect to the leader, it cannot write to the database.</p>
+<p>So the natural thought arises: can multi-leader work?</p>
+<p><strong>Multi-leader replication</strong>: there are multiple leaders that can accept writes; each leader, after receiving a write, forwards it to all other replicas. That is, a system with multiple <strong>write points</strong>.</p>
+<h2 id="Multi-Leader-Application-Scenarios">Multi-Leader Application Scenarios</h2>
+<p>In a single data center, the multi-leader model is not very meaningful: the complexity outweighs the benefits. Overall, due to consistency and other issues, multi-leader model application scenarios are relatively few, but there are some scenarios where it fits well:</p>
+<ol>
+<li>Databases span multiple data centers</li>
+<li>Clients that need to work offline</li>
+<li>Collaborative editing</li>
+</ol>
+<h3 id="Multiple-Data-Centers">Multiple Data Centers</h3>
+<p>Suppose a database’s replicas span multiple data centers; if the single-leader model is used, write latency will be high. Can each data center have its own leader?</p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig06.png" alt="multi-leader across multiple data centers"><span class="image-caption">multi-leader across multiple data centers</span></p>
+<p>Comparison of single-leader and multi-leader in multi-data-center scenarios:</p>
+<table>
+<thead>
+<tr>
+<th>Comparison Item</th>
+<th>Single-Leader Model</th>
+<th>Multi-Leader Model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Performance</td>
+<td>All writes must be routed to one data center</td>
+<td>Writes can be local</td>
+</tr>
+<tr>
+<td>Availability</td>
+<td>If the data center housing the leader fails, a leader switch is needed</td>
+<td>Each data center can operate independently</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>Cross-data-center writes are more sensitive to network jitter</td>
+<td>Asynchronous replication between data centers is more tolerant of public network failures</td>
+</tr>
+</tbody>
+</table>
+<p>But the multi-leader model has serious defects in consistency: if two data centers modify the same data simultaneously, write conflicts must be resolved reasonably. In addition, for databases, multi-leader makes it difficult to guarantee consistency of auto-increment primary keys, triggers, and integrity constraints. Therefore, in engineering practice, multi-leader is used relatively infrequently.</p>
+<h3 id="Offline-Clients">Offline Clients</h3>
+<p>Multiple device clients of an application that allows continued writing while offline, such as a calendar app. If you add events on your computer and phone while offline, then when the devices are online, they need to synchronize data with each other.</p>
+<p>Multiple replicas that continue to work after going offline are essentially a multi-leader model: each leader can independently write data, and then resolve conflicts after network connectivity is restored.</p>
+<p>But how to support normal offline operation and graceful conflict resolution after going online is a difficult problem.</p>
+<p>One feature of Apache CouchDB is its support for the multi-leader model.</p>
+<h3 id="Collaborative-Editing">Collaborative Editing</h3>
+<p>Online collaboration applications like Google Docs are becoming increasingly popular.</p>
+<p>Such applications allow multiple people to simultaneously edit documents or spreadsheets; the underlying principles are very similar to the offline clients discussed in the previous section.</p>
+<p>To achieve collaboration and resolve conflicts, you can:</p>
+<ol>
+<li><strong>Pessimistic approach</strong>. Lock to avoid conflicts, but the granularity needs to be as small as possible, otherwise multiple people cannot simultaneously edit the same document.</li>
+<li><strong>Optimistic approach</strong>. Allow each user to write blindly, and if there are conflicts, let the user resolve them.</li>
+</ol>
+<p>Git is also a similar protocol.</p>
+<h2 id="Handling-Write-Conflicts">Handling Write Conflicts</h2>
+<p>The biggest problem with the multi-leader model is: how to resolve conflicts.</p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig07.png" alt="write conflict"><span class="image-caption">write conflict</span></p>
+<p>Consider modifying the title of a wiki page:</p>
+<ol>
+<li>User 1 changes the page title from A to B</li>
+<li>User 2 changes the page title from A to C</li>
+</ol>
+<p>Both operations succeed locally, and then during <strong>asynchronous synchronization</strong>, a conflict occurs.</p>
+<h3 id="Conflict-Detection">Conflict Detection</h3>
+<p>Conflicts can be detected in <strong>synchronous</strong> or <strong>asynchronous</strong> ways.</p>
+<p>For the <strong>single-leader model</strong>, when a conflict is detected, because there is only one leader, conflicts can be detected synchronously and thus resolved:</p>
+<ol>
+<li>Let the second write block until the first write completes.</li>
+<li>Let the second write fail and retry.</li>
+</ol>
+<p>But for the <strong>multi-leader model</strong>, two writes may succeed immediately on different leaders. Then during asynchronous synchronization, the conflict is discovered, but it is too late (there is no simple way to decide how to resolve the conflict).</p>
+<p>Although you can use a synchronous approach to write to all replicas before returning the request to the client among multiple leaders. But this loses the main advantage of the multi-leader model: <strong>allowing multiple leaders to independently accept writes</strong>. At this point, it degenerates into the single-leader model.</p>
+<h3 id="Conflict-Avoidance">Conflict Avoidance</h3>
+<p><strong>The best way to resolve conflicts is to avoid them in design</strong>.</p>
+<p>Since the multi-leader model has great complexity in resolving conflicts after they occur, conflict-avoiding designs are often used.</p>
+<p>Suppose your dataset can be divided into multiple partitions, with the leader for different partitions placed in different data centers; then from the perspective of any single partition, it becomes a single-leader model.</p>
+<p>For example: for an application serving global users, each user is fixedly routed to a nearby data center. Then, each user’s information has a unique leader.</p>
+<p>But if:</p>
+<ol>
+<li>A user moves from one location to another</li>
+<li>A data center is damaged, causing routing changes</li>
+</ol>
+<p>These pose challenges to this design.</p>
+<h3 id="Conflict-Convergence">Conflict Convergence</h3>
+<p>In the single-leader model, all events are relatively easy to <strong>order</strong>, so we can always use the later write to overwrite the earlier write.</p>
+<p>But in the multi-leader model, many conflicts cannot be ordered: <strong>from the perspective of each leader, the event order is inconsistent</strong>, and neither is more authoritative, so it is impossible to make all replicas eventually <strong>converge</strong>.</p>
+<p>At this point, we need some rules to make them converge:</p>
+<ol>
+<li><strong>Give each write a sequence number, and the later one wins</strong>. Essentially, this uses an external system to order all events. But this may cause data loss. For example, for an account with 10 yuan, client A subtracts 8, client B subtracts 3; either succeeding individually would be problematic.</li>
+<li><strong>Give each replica a sequence number; replicas with higher sequence numbers have higher priority</strong>. This also causes data loss on lower-sequence-number replicas.</li>
+<li><strong>Provide an automatic way to merge conflicts</strong>. For example, if the result is a string, it can be sorted and joined with a separator; in the previous wiki conflict, the merged title would be “B/C”.</li>
+<li><strong>Use a program to customize a conflict resolution strategy that preserves all conflicting value information</strong>. This customization can also be handed over to the user.</li>
+</ol>
+<h3 id="Custom-Resolution">Custom Resolution</h3>
+<p>Since only the user knows the information about the data itself, a better approach is to leave how to resolve conflicts to the user. That is, allow users to write callback code providing conflict resolution logic. This callback can be executed:</p>
+<ol>
+<li><strong>At write time</strong>. When a conflict is discovered during writing, call the callback code, resolve the conflict, and then write. This code usually runs in the background and cannot block, so it cannot synchronously notify the user at call time. But logging is still possible.</li>
+<li><strong>At read time</strong>. When a write conflict occurs, all conflicts are preserved (e.g., using multi-versioning). Next time it is read, the system returns all data versions to the user for interactive or automatic conflict resolution, and writes the result back to the system.</li>
+</ol>
+<p>The above conflict resolution is limited to the level of a single record, row, or document.</p>
+<p>TODO (automatic conflict resolution)</p>
+<h3 id="Defining-Conflicts">Defining Conflicts</h3>
+<p>Some conflicts are obvious: concurrent writes to the same key.</p>
+<p>Some conflicts are more subtle. Consider a meeting room reservation system. Reserving the same meeting room does not necessarily cause a conflict; only when the reserved time periods overlap is there a conflict.</p>
+<h2 id="Multi-Leader-Replication-Topologies">Multi-Leader Replication Topologies</h2>
+<p><strong>Replication topology</strong> describes the propagation path of data writes from one node to another.</p>
+<p>When there are only two leaders, the topology is determined, as shown in Figure 5-7. Leader1 and Leader2 must both send data to each other. But as the number of replicas increases, there are multiple choices for the data replication topology, as shown below:</p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig08.png" alt="multi-leader topologies"><span class="image-caption">multi-leader topologies</span></p>
+<p>The above figure shows common replication topologies when there are ≥ 4 leaders:</p>
+<ol>
+<li><strong>Circular topology</strong>. Fewer communication hops, but when forwarding, information about predecessor nodes in the topology must be carried. If one node fails, the replication chain may be interrupted.</li>
+<li><strong>Star topology</strong>. The central node is responsible for receiving and forwarding data. If the central node fails, the entire topology is paralyzed.</li>
+<li><strong>All-to-all topology</strong>. Every leader sends data to all remaining leaders. Higher communication link redundancy, better fault tolerance.</li>
+</ol>
+<p>For circular and star topologies, to prevent broadcast storms, each node needs to be tagged with a unique identifier (ID); when receiving data originating from itself sent by others, it must promptly discard it and stop propagation.</p>
+<p>All-to-all topology also has its own problems: <strong>especially when all replication links have inconsistent speeds</strong>. Consider the following example:</p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig09.png" alt="writes wrong order"><span class="image-caption">writes wrong order</span></p>
+<p>Two statements with causal dependencies (insert first, then update), when replicated to Leader 2, due to different speeds, cause it to receive data that violates causal consistency.</p>
+<p>To globally order these write events, using each leader’s physical clock alone is insufficient, because physical clocks:</p>
+<ol>
+<li>May not be sufficiently synchronized</li>
+<li>May regress during synchronization</li>
+</ol>
+<p>A strategy called <strong>version vectors</strong> can be used to order events across multiple replicas and solve causal consistency problems. The next section will discuss this in detail.</p>
+<p>Final advice: if you are going to use a multi-leader-based system, you must be aware of the problems mentioned above, do more testing, and ensure that the guarantees it provides match your usage scenario.</p>
+<h1>Leaderless Model</h1>
+<p>In leader-based models, the leader determines the write order; followers do not directly interact with clients for writes, but simply replay the write order of their corresponding leader (or you can understand the leader as acting as a client for the followers).</p>
+<p>The leaderless model, on the other hand, allows any replica to accept writes.</p>
+<p>In the relational database era, the leaderless model was almost forgotten. Starting from Amazon’s Dynamo paper, the leaderless model has shone brightly again; Riak, Cassandra, and Voldemort were all inspired by it, and can be collectively called the <strong>Dynamo-style</strong> systems.</p>
+<blockquote>
+<p>Curiously, Amazon’s database product DynamoDB is not the same thing as Dynamo.</p>
+</blockquote>
+<p>Generally, in the leaderless model, writes can be:</p>
+<ol>
+<li>Written directly to replicas by the client.</li>
+<li>Received by a <strong>coordinator</strong>, which forwards them to multiple replicas. But unlike a leader, the coordinator is not responsible for ordering.</li>
+</ol>
+<h2 id="Writing-When-Nodes-Have-Failed">Writing When Nodes Have Failed</h2>
+<p>In leader-based models, when a replica fails, failover is needed.</p>
+<p>But in the leaderless model, you can simply ignore it.</p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig10.png" alt="quorum write"><span class="image-caption">quorum write</span></p>
+<p>Quorum write, quorum read, and read repair.</p>
+<p>Since writes simply ignore failed replicas; reads must do more: <strong>read multiple replicas simultaneously, and pick the latest version</strong>.</p>
+<h3 id="Read-Repair-and-Anti-Entropy">Read Repair and Anti-Entropy</h3>
+<p>Leaderless models also need to maintain consistency among multiple replicas. After some nodes crash and restart, how do they make up for missed data?</p>
+<p>Dynamo-style storage usually has two mechanisms:</p>
+<ol>
+<li><strong>Read repair</strong>, essentially a piggybacked repair—when reading, if old data is found, it is repaired on the fly.</li>
+<li><strong>Anti-entropy process</strong>, essentially a catch-all repair. Read repair cannot cover all stale data, so some background processes are needed to continuously scan, find stale data, and update it. <span class="exturl" data-url="aHR0cHM6Ly93d3cuaW5mbHV4ZGF0YS5jb20vYmxvZy9ldmVudHVhbC1jb25zaXN0ZW5jeS1hbnRpLWVudHJvcHkv">This blog post<i class="fa fa-external-link-alt"></i></span> has an expanded description of this term.</li>
+</ol>
+<h3 id="Quorum-Reads-and-Writes">Quorum Reads and Writes</h3>
+<p>If the total number of replicas is n, writing to w replicas is considered a successful write, and at least r nodes must be read when querying. As long as w + r &gt; n, we can read the latest data (<strong>pigeonhole principle</strong>). The values of r and w are then called <strong>quorum reads and writes</strong>—that is, this constraint is the minimum (quorum) number of votes required to ensure data validity.</p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig11.png" alt="w+r&gt;n"><span class="image-caption">w+r&gt;n</span></p>
+<p>In Dynamo-style storage, n, r, and w are usually configurable:</p>
+<ol>
+<li>The larger n, the higher the redundancy and reliability.</li>
+<li>r and w are often both chosen to exceed half, such as <code>(n+1)/2</code>.</li>
+<li>When w = n, you can set r = 1. This sacrifices write performance for read performance.</li>
+</ol>
+<p>Considering the tolerance to node failures of a system satisfying w + r &gt; n:</p>
+<ol>
+<li>If w &lt; n, writes can still proceed normally when some nodes are unavailable.</li>
+<li>If r &lt; n, reads can still proceed normally when some nodes are unavailable.</li>
+</ol>
+<p>Specializing:</p>
+<ol>
+<li>If n = 3, r = w = 2, the system can tolerate at most one node down.</li>
+<li>If n = 5, r = w = 3, the system can tolerate at most two nodes down.</li>
+</ol>
+<p>Usually, we send reads or writes in parallel to all n replicas, but we can return as soon as we have quorum results.</p>
+<p>If, for some reason, the number of available nodes is less than r or w, the read or write will fail.</p>
+<h2 id="Limitations-of-Quorum-Consistency">Limitations of Quorum Consistency</h2>
+<p>When w + r &gt; n, there will always be at least one node (the intersection of the read and write subsets) that holds the latest data, so we always expect to be able to read the latest.</p>
+<p>When w + r ≤ n, it is very likely to read stale data.</p>
+<p>But even when w + r &gt; n, there are some corner cases that can cause the client to fail to read the latest data:</p>
+<ol>
+<li>When using a sloppy quorum (the set of n machines can change), w and r may not overlap.</li>
+<li>For concurrent writes, if conflicts are handled improperly. For example, using a last-write-wins strategy based on local timestamps may cause data loss due to clock skew.</li>
+<li>For concurrent reads and writes, if the write succeeds on only some nodes before being read, it is uncertain whether the new or old value should be returned.</li>
+<li>If the number of written nodes &lt; w causing the write to fail, but the data is not rolled back, the client will still read old data when reading.</li>
+<li>Although the number of successful nodes during writing &gt; w, some replicas crashed due to failures in between, causing the number of successful replicas &lt; w, which may cause problems when reading.</li>
+<li>Even if everything works normally, there may be some timing-related corner cases.</li>
+</ol>
+<p>Therefore, although quorum reads and writes seem to guarantee returning the latest value, in engineering practice, there are many details to handle.</p>
+<p>If the database does not comply with the consistency guarantees introduced in the replication lag section above, the anomalies mentioned earlier may still occur.</p>
+<h3 id="Consistency-Monitoring">Consistency Monitoring</h3>
+<p>Monitoring replica data staleness allows you to understand the health of replicas; when they lag too far behind, you can investigate the cause in time.</p>
+<p>In leader-based multi-replica models, since each replica replicates in the same order, it is convenient to give the lag progress of each replica.</p>
+<p>But for leaderless models, since there is no fixed write order, the lag progress of replicas becomes difficult to define. If the system only uses the read repair strategy, there is no limit to how far a replica can lag. Data with very low read frequency may have very old versions.</p>
+<p>Eventual consistency is a very vague guarantee, but being able to quantify “eventually” through monitoring (e.g., to a threshold) is also great.</p>
+<h2 id="Sloppy-Quorum-and-Hinted-Handoff">Sloppy Quorum and Hinted Handoff</h2>
+<p>A normal quorum can tolerate some replica node failures. But in large clusters (total node count &gt; n), the initially chosen n machines may, for various reasons (crashes, network issues), fail to reach the quorum read or write count. At this point, there are two choices:</p>
+<ol>
+<li>Directly return errors for all reads and writes that cannot reach r or w quorum.</li>
+<li>Still accept writes, and temporarily hand the new writes to some normal nodes.</li>
+</ol>
+<p>The latter is considered a <strong>sloppy quorum</strong>: reads and writes still require w and r successful responses, but the set of nodes involved can change.</p>
+<p><img data-src="ihttps://ddia.qtmuniao.com/img/ch05-sloppy-quorum.png" alt="sloppy quorum"><span class="image-caption">sloppy quorum</span></p>
+<p>Once the problem is resolved, the data will be moved back to the nodes where it should be (D → B) based on hints; we call this <strong>hinted handoff</strong>. This handoff process is completed by the anti-entropy background process.</p>
+<p>This is a typical practice of sacrificing some consistency for higher availability. In common Dynamo implementations, sloppy quorum is optional. In Riak, they are enabled by default; in Cassandra and Voldemort, they are disabled by default.</p>
+<h3 id="Multi-Data-Center">Multi-Data-Center</h3>
+<p>The leaderless model is also applicable to multi-data-center deployments.</p>
+<p>To simultaneously accommodate <strong>multi-data-center</strong> and <strong>low write latency</strong>, there are different multi-data-center strategies based on the leaderless model:</p>
+<ol>
+<li>Cassandra and Voldemort configure n across all data centers, but when writing, they only wait for replicas in the local data center to complete before returning.</li>
+<li>Riak limits n within a single data center, so all client-to-storage-node communication can be limited to a single data center, while data replication is performed asynchronously in the background.</li>
+</ol>
+<h2 id="Detecting-Concurrent-Writes">Detecting Concurrent Writes</h2>
+<p>Since Dynamo allows multiple clients to concurrently write the same key, even using strict quorum reads and writes, conflicts will arise: <strong>for two writes to the same key within a short time interval (concurrently), the order received on different replicas may be inconsistent</strong>.</p>
+<p>In addition, conflicts may also arise during read repair and hinted handoff.</p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig12.png" alt="dynamo style datastore"><span class="image-caption">dynamo style datastore</span></p>
+<p>As shown in the figure above, if each node does not check the order but simply accepts the write request and stores it locally, permanent inconsistency may occur between different replicas: in the figure above, the value of replica X on Node1 and Node3 is A, while the value of replica X on Node2 is B.</p>
+<p>To make all replicas eventually consistent, there needs to be a means to resolve concurrent conflicts.</p>
+<h3 id="Last-Write-Wins">Last-Write-Wins</h3>
+<p>The last-write-wins (LWW) strategy determines a globally unique order by some means, and then lets the later modification overwrite the earlier one.</p>
+<p>For example, attach a global timestamp to all writes; if there is a conflict for a key, keep the data with the largest timestamp and discard earlier writes.</p>
+<p>LWW has a problem: multiple concurrently writing clients may all think they succeeded, but in the end only one value is retained, and the others are silently discarded in the background. That is, upon immediately re-reading, they will find it is not the data they wrote.</p>
+<p>The only safe way to use LWW is: the key is written once and then becomes read-only. For example, Cassandra recommends using a UUID as the primary key, so each write operation will have a unique key.</p>
+<h3 id="Happens-Before-and-Concurrency-Relationships">Happens-Before and Concurrency Relationships</h3>
+<p>Consider the two previous figures:</p>
+<ol>
+<li>In Figure 5-9, since client B’s update depends on client A’s insert, they have a causal relationship.</li>
+<li>In Figure 5-12, set X = A and set X = B are concurrent, because neither is aware of the other’s existence, and there is no causal relationship.</li>
+</ol>
+<p>For any two writes A and B in the system, there are only three possible relationships:</p>
+<ol>
+<li>A happens before B</li>
+<li>B happens before A</li>
+<li>A and B are concurrent</li>
+</ol>
+<p>From another perspective (set operations),</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A 和 B 并发 &lt; === &gt; A 不 happens-before B  &amp;&amp; B 不 happens-before A</span><br></pre></td></tr></table></figure>
+<p>If two operations can be ordered, last write wins; if two operations are concurrent, conflict resolution is needed.</p>
+<blockquote>
+<p>Concurrency, Time, and Relativity</p>
+</blockquote>
+<blockquote>
+<p>Lamport clock related papers have detailed derivations of related conceptual relationships. To define concurrency, the absolute chronological order of events is not important; as long as two events are unaware of each other’s existence, the two operations are called “concurrent.” From the perspective of special relativity, as long as the time difference between two events is less than the time it takes light to travel between them, the two events cannot affect each other. Generalizing to computer networks, as long as due to network issues, within the time difference of the events, the two cannot become aware of each other, they are said to be concurrent.</p>
+</blockquote>
+<h3 id="Determining-the-Happens-Before-Relationship">Determining the Happens-Before Relationship</h3>
+<p>We can use some algorithm to determine whether any two events in the system have a happens-before relationship or are concurrent. Looking at an example of two clients concurrently adding items to a shopping cart:</p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig13.png" alt="causal dependencies"><span class="image-caption">causal dependencies</span></p>
+<p>Note:</p>
+<ol>
+<li>No active reads; only active writes, reading the current database state through the return value of the write.</li>
+<li>The client’s next write <strong>depends on</strong> (causal relationship) the return value obtained after its own previous write.</li>
+<li>For concurrency, the database does not overwrite but preserves multiple <strong>concurrent values</strong> (one per client).</li>
+</ol>
+<p>The data flow in the above figure is shown below. Arrows represent happens-before relationships. In this example, the client can never fully know the server data, because there is always another client performing concurrent operations. But old version values will be overwritten, and writes will not be lost.</p>
+<p><img data-src="https://ddia.qtmuniao.com/img/ch05-fig14.png" alt="graph causal dependencies"><span class="image-caption">graph causal dependencies</span></p>
+<p>To summarize, the algorithm is as follows:</p>
+<ol>
+<li>The server assigns a version number V to each key; each time the key is written, V is incremented by 1, and the version number is saved together with the written value.</li>
+<li>When a client reads the key, the server returns all values that have not been overwritten and the latest version number.</li>
+<li>When the client performs the next write, it must <strong>include</strong> the version number Vx previously read (indicating which version the new write is based on), and merge all values read together.</li>
+<li>When the server receives a write with a specific version number Vx, it can use its value to overwrite all values with V ≤ Vx.</li>
+</ol>
+<p>If a new write comes that is not based on any version number, this write will not overwrite anything.</p>
+<h3 id="Merging-Concurrent-Values">Merging Concurrent Values</h3>
+<p>This algorithm can guarantee that no data is silently discarded. But clients need to merge previous values when writing later to clean up multiple values. If simply using LWW based on timestamps, some data will be lost again.</p>
+<p>Therefore, strategies need to be chosen based on actual circumstances to resolve conflicts and merge data.</p>
+<ol>
+<li>For the shopping cart example above where only items are added, a “union” can be used to merge conflicting data.</li>
+<li>If there are also delete operations in the shopping cart, a simple union will not suffice; but deletion can be turned into an addition (writing a tombstone marker).</li>
+</ol>
+<h3 id="Version-Vectors">Version Vectors</h3>
+<p>The above example has only a single replica. When extending this algorithm to the leaderless multi-replica model, using a single version value is obviously insufficient; at this point, a version number needs to be introduced for each key on each replica. For the same key, versions from different replicas form a <strong>version vector</strong>.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">    key1 </span><br><span class="line">A   Va</span><br><span class="line">B   Vb</span><br><span class="line">C   Vc</span><br><span class="line"></span><br><span class="line">key1: [Va, Vb, Vc]</span><br><span class="line"></span><br><span class="line">[Va-x, Vb-y, Vc-z] &lt;= [Va-x1, Vb-y1, Vc-z1]  &lt;==&gt; </span><br><span class="line">x &lt;= x1 &amp;&amp; y &lt;= y1 &amp;&amp; z &lt;= z1</span><br></pre></td></tr></table></figure>
+<p>Each replica increments the version number of the corresponding key when it encounters a write, while tracking the version numbers seen from other replicas; by comparing version numbers, it decides which values to overwrite and which to preserve.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA Reading Notes (Chapter 1): Reliability, Scalability, Maintainability</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA Reading Notes (Chapter 3): B-Trees and LSM-Trees</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter4/" rel="bookmark">DDIA Reading Notes (Chapter 4): Encoding and Evolution</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">DDIA 读书笔记（三）：B-Tree 和 LSM-Tree</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="bookmark">DDIA 读书笔记（三）： TP AP 和列存</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DDIA/" rel="tag"># DDIA</a>
+              <a href="/tags/Reading-Notes/" rel="tag"># Reading Notes</a>
+              <a href="/tags/Designing-Data-Intensive-Applications/" rel="tag"># Designing Data-Intensive Applications</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/10/12/how-to-write-code-abstract/" rel="prev" title="好好写代码之素养篇——抽象和讲究">
+      <i class="fa fa-chevron-left"></i> 好好写代码之素养篇——抽象和讲究
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/10/17/ddia-reading-chapter5/" rel="next" title="DDIA 读书笔记（五）：冗余">
+      DDIA 读书笔记（五）：冗余 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">Leaders and Followers</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Synchronous-and-Asynchronous-Replication"><span class="nav-number">1.1.</span> <span class="nav-text">Synchronous and Asynchronous Replication</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Adding-New-Replicas"><span class="nav-number">1.2.</span> <span class="nav-text">Adding New Replicas</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Handling-Failures"><span class="nav-number">1.3.</span> <span class="nav-text">Handling Failures</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Follower-failure-catch-up-recovery"><span class="nav-number">1.3.1.</span> <span class="nav-text">Follower failure: catch-up recovery</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Leader-failure-failover"><span class="nav-number">1.3.2.</span> <span class="nav-text">Leader failure: failover</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Replication-Logs"><span class="nav-number">1.4.</span> <span class="nav-text">Replication Logs</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Statement-Based-Replication"><span class="nav-number">1.4.1.</span> <span class="nav-text">Statement-Based Replication</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Shipping-the-Write-Ahead-Log-WAL"><span class="nav-number">1.4.2.</span> <span class="nav-text">Shipping the Write-Ahead Log (WAL)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Logical-Log-Replication-Row-Based"><span class="nav-number">1.4.3.</span> <span class="nav-text">Logical Log Replication (Row-Based)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Trigger-Based-Replication"><span class="nav-number">1.4.4.</span> <span class="nav-text">Trigger-Based Replication</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">Replication Lag Problems</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Read-After-Write"><span class="nav-number">2.1.</span> <span class="nav-text">Read-After-Write</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Monotonic-Reads"><span class="nav-number">2.2.</span> <span class="nav-text">Monotonic Reads</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Consistent-Prefix-Reads"><span class="nav-number">2.3.</span> <span class="nav-text">Consistent Prefix Reads</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#The-Ultimate-Solution-to-Replication-Lag"><span class="nav-number">2.4.</span> <span class="nav-text">The Ultimate Solution to Replication Lag</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">3.</span> <span class="nav-text">Multi-Leader Model</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Multi-Leader-Application-Scenarios"><span class="nav-number">3.1.</span> <span class="nav-text">Multi-Leader Application Scenarios</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Multiple-Data-Centers"><span class="nav-number">3.1.1.</span> <span class="nav-text">Multiple Data Centers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Offline-Clients"><span class="nav-number">3.1.2.</span> <span class="nav-text">Offline Clients</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Collaborative-Editing"><span class="nav-number">3.1.3.</span> <span class="nav-text">Collaborative Editing</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Handling-Write-Conflicts"><span class="nav-number">3.2.</span> <span class="nav-text">Handling Write Conflicts</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Conflict-Detection"><span class="nav-number">3.2.1.</span> <span class="nav-text">Conflict Detection</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Conflict-Avoidance"><span class="nav-number">3.2.2.</span> <span class="nav-text">Conflict Avoidance</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Conflict-Convergence"><span class="nav-number">3.2.3.</span> <span class="nav-text">Conflict Convergence</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Custom-Resolution"><span class="nav-number">3.2.4.</span> <span class="nav-text">Custom Resolution</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Defining-Conflicts"><span class="nav-number">3.2.5.</span> <span class="nav-text">Defining Conflicts</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Multi-Leader-Replication-Topologies"><span class="nav-number">3.3.</span> <span class="nav-text">Multi-Leader Replication Topologies</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">4.</span> <span class="nav-text">Leaderless Model</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Writing-When-Nodes-Have-Failed"><span class="nav-number">4.1.</span> <span class="nav-text">Writing When Nodes Have Failed</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Read-Repair-and-Anti-Entropy"><span class="nav-number">4.1.1.</span> <span class="nav-text">Read Repair and Anti-Entropy</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Quorum-Reads-and-Writes"><span class="nav-number">4.1.2.</span> <span class="nav-text">Quorum Reads and Writes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Limitations-of-Quorum-Consistency"><span class="nav-number">4.2.</span> <span class="nav-text">Limitations of Quorum Consistency</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Consistency-Monitoring"><span class="nav-number">4.2.1.</span> <span class="nav-text">Consistency Monitoring</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sloppy-Quorum-and-Hinted-Handoff"><span class="nav-number">4.3.</span> <span class="nav-text">Sloppy Quorum and Hinted Handoff</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Multi-Data-Center"><span class="nav-number">4.3.1.</span> <span class="nav-text">Multi-Data-Center</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Detecting-Concurrent-Writes"><span class="nav-number">4.4.</span> <span class="nav-text">Detecting Concurrent Writes</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Last-Write-Wins"><span class="nav-number">4.4.1.</span> <span class="nav-text">Last-Write-Wins</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Happens-Before-and-Concurrency-Relationships"><span class="nav-number">4.4.2.</span> <span class="nav-text">Happens-Before and Concurrency Relationships</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Determining-the-Happens-Before-Relationship"><span class="nav-number">4.4.3.</span> <span class="nav-text">Determining the Happens-Before Relationship</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Merging-Concurrent-Values"><span class="nav-number">4.4.4.</span> <span class="nav-text">Merging Concurrent Values</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Version-Vectors"><span class="nav-number">4.4.5.</span> <span class="nav-text">Version Vectors</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2022/10/17/ddia-reading-chapter5/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'd89751728fcf16268762834e366b76e9',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

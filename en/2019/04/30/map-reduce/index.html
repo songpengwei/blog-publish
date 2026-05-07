@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Introduction MapReduce is a concept proposed in a paper published by Google in 2004 (Google internally wrote the first version in 2003). Although fifteen years have passed, looking back at the backgr">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MapReduce —— Time-Tested and Ever New">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2019/04/30/map-reduce/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Introduction MapReduce is a concept proposed in a paper published by Google in 2004 (Google internally wrote the first version in 2003). Although fifteen years have passed, looking back at the backgr">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/nKVyYJ7QtaLfIMx.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/nKVyYJ7QtaLfIMx.png">
+<meta property="article:published_time" content="2019-04-30T01:33:12.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.673Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="distributed system">
+<meta property="article:tag" content="MapReduce">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/nKVyYJ7QtaLfIMx.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2019/04/30/map-reduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="distributed system,MapReduce">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "MapReduce —— Time-Tested and Ever New",
+    "description": "Introduction MapReduce is a concept proposed in a paper published by Google in 2004 (Google internally wrote the first version in 2003). Although fifteen years have passed, looking back at the background, principles, and implementation of this ancestor-level concept of the big data era still yields many intuitive insights into distributed systems — as the saying goes, one can learn new things by reviewing the old. In Google’s context, MapReduce is both a programming model and a distributed system implementation supporting that model. Its proposal allowed developers without a distributed systems background to easily harness large-scale clusters to process massive amounts of data with high throughput. Its problem-solving approach is well worth learning from: identify the pain points of the requirements (e.g., how to maintain, update, and rank massive indexes), perform high-level abstraction of key processing workflows (shard via Map, reduce on demand), and carry out efficient system implementation (tailored to fit). Among these, finding a suitable computational abstraction is the hardest part, requiring both an intuitive understanding of requirements and extremely high computer science literacy. Of course, and perhaps closer to reality, this abstraction is the tip of the iceberg above the water, evolved through constant trial and error based on requirements.",
+    "url": "https://www.qtmuniao.com/en/2019/04/30/map-reduce/",
+    "datePublished": "2019-04-30T09:33:12+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2019/04/30/map-reduce/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>MapReduce —— Time-Tested and Ever New | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2019/04/30/map-reduce/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2019/04/30/map-reduce/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2019/04/30/map-reduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MapReduce —— Time-Tested and Ever New
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-04-30 09:33:12" itemprop="dateCreated datePublished" datetime="2019-04-30T09:33:12+08:00">2019-04-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-system/" itemprop="url" rel="index"><span itemprop="name">distributed system</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-system/paper-reading/" itemprop="url" rel="index"><span itemprop="name">paper reading</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img data-src="https://i.loli.net/2020/02/09/nKVyYJ7QtaLfIMx.png" alt="MR执行流"><span class="image-caption">MR执行流</span></p>
+<h2 id="Introduction">Introduction</h2>
+<p>MapReduce is a concept proposed in a paper published by Google in 2004 (Google internally wrote the first version in 2003). Although fifteen years have passed, looking back at the background, principles, and implementation of this ancestor-level concept of the big data era still yields many intuitive insights into distributed systems — as the saying goes, one can learn new things by reviewing the old.</p>
+<p>In Google’s context, MapReduce is both a programming model and a distributed system implementation supporting that model. Its proposal allowed developers without a distributed systems background to easily harness large-scale clusters to process massive amounts of data with high throughput. Its problem-solving approach is well worth learning from: identify the pain points of the requirements (e.g., how to maintain, update, and rank massive indexes), perform high-level abstraction of key processing workflows (shard via Map, reduce on demand), and carry out efficient system implementation (tailored to fit). Among these, finding a suitable computational abstraction is the hardest part, requiring both an intuitive understanding of requirements and extremely high computer science literacy. Of course, and perhaps closer to reality, this abstraction is the tip of the iceberg above the water, evolved through constant trial and error based on requirements.</p>
+<span id="more"></span>
+<p><em>Author: QtMuniao <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, please credit when reposting</em></p>
+<h2 id="Motivation">Motivation</h2>
+<p>At that time, as the largest gateway to the Internet, Google maintained the entire web index of the world and was the first to hit the ceiling of data volume. That is, even for very simple business logic — such as generating inverted indexes from crawl data, organizing the graph-like web page collection in different ways, calculating the number of crawled web pages per host, or high-frequency query terms for a given date — the scale of global Internet data made it exceptionally complex.</p>
+<p>These complexities included: input data scattered across a great many hosts, computations too resource-intensive for a single machine to complete, and output data needing to be reorganized across hosts. As a result, it was necessary to repeatedly construct dedicated systems for each requirement and spend a lot of code on distributing data and code, scheduling and parallelizing tasks, handling machine failures, and dealing with communication failures.</p>
+<h2 id="Abstraction">Abstraction</h2>
+<p>The abstraction of map and reduce was inspired by the functional programming language Lisp. Why were these two concepts chosen? It stems from the Googlers’ high-level refinement of their business: first, the input can be split into logical <em>records</em>; then for each <em>record</em>, perform a <em><strong>mapping</strong></em> (<em>map</em>) operation to generate intermediate results composed of key-value pairs (why split into keys and values? To pave the way for the final step, allowing users to organize and reduce the intermediate results in any specified way — by <em>key</em>); finally, perform a <em>reduction</em> (<em>reduce</em>, including sorting, statistics, extracting extrema, etc.) on the subset of intermediate results with the same key.</p>
+<p>Another characteristic of the functional model is the constraint on the implementation of the map operation, which stipulates that users should provide a side-effect-free map operation (related concepts include <em>pure functions</em>, <em>determinism</em>, <em>idempotency</em>, etc.; of course, their concepts are not identical, which will be discussed in detail later). Such restrictions have two benefits: it enables massive parallel execution, and it allows masking machine failures by retrying elsewhere.</p>
+<p>Specifically, for implementation, both <em>map</em> and <em>reduce</em> are user-defined functions. The <em>map</em> function accepts a Record; however, for flexibility, it is generally also organized as a key-value pair, and then produces List[key, value]. The <em>reduce</em> function accepts a key and all intermediate results List[value] corresponding to that key. That is:</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">map</span> (k1,v1)             -→ <span class="built_in">list</span>(k2,v2)</span><br><span class="line">reduce (k2,<span class="built_in">list</span>(v2))    -→ <span class="built_in">list</span>(v2)</span><br></pre></td></tr></table></figure>
+<p>Take the <em>Word Count</em> example program (counting words in a bunch of documents), proposed by Google’s paper and later becoming the <em>hello world</em> of the big data processing world. The implementations of <em>map</em> and <em>reduce</em> look like this:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">map</span>(String key, String value):</span><br><span class="line">    <span class="comment">// key: document name</span></span><br><span class="line">    <span class="comment">// value: document contents</span></span><br><span class="line">    <span class="keyword">for</span> each word w in value:</span><br><span class="line">      <span class="built_in">EmitIntermediate</span>(w, <span class="string">&quot;1&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">reduce</span>(String key, Iterator values):</span><br><span class="line">    <span class="comment">// key: a word</span></span><br><span class="line">    <span class="comment">// values: a list of counts</span></span><br><span class="line">    <span class="type">int</span> result = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> each v in values:</span><br><span class="line">      result += <span class="built_in">ParseInt</span>(v);</span><br><span class="line">    <span class="built_in">Emit</span>(<span class="built_in">AsString</span>(result));</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Here are two interesting points:</p>
+<ol>
+<li><strong>Intermediate variables need network transmission, which inevitably involves serialization.</strong> The initial version of MapReduce chose to leave all interpretation to the <em><strong>runtime</strong></em> user code — it simply passed strings. That is, users were required to convert any output intermediate result objects into strings in map, and then after receiving Iterator[string] in the reduce function, parse it into the desired format themselves. Of course, in later imitation frameworks such as Hadoop, the serialization and deserialization parts were extracted and could be customized by users to meet functional or performance requirements. I didn’t verify this, but presumably Google later optimized this as well. This is a very natural <strong>system evolution</strong> approach: the initial design should be as simple and crude as possible to quickly implement a usable prototype; after accumulating usage experience, certain inconvenient modules can be extended.</li>
+<li><strong>The value collection received by reduce is organized as an Iterator.</strong> Those who have used Python should be familiar with iterators. It is a very simple interface, including <em>next</em> and <em>stop</em> semantics. Combined with a <em>for loop</em>, it forms a very powerful abstraction. Whether the underlying layer is a List in memory, file contents, or a network IO stream, as long as the runtime knows how to get the next record and when to stop, it can be utilized by a for loop for sequential processing. One advantage of the iterator abstraction is that it does not need to load all content to be iterated into memory at once; it can perform incremental <em><strong>lazy loading</strong></em> of data. The MapReduce framework’s implementation here also leverages this characteristic.</li>
+</ol>
+<h2 id="Implementation-Overview">Implementation Overview</h2>
+<p>Once the abstraction is defined, the implementation can naturally vary — this is the meaning of <strong>separation of interface and implementation</strong>. The former abstraction is an idea that Google has already provided; the latter implementation can be completely tailored according to one’s own production environment. In its paper, Google presented a classic internal version, and Hadoop also provides a general-purpose version; of course, we can also implement a custom-fitted version according to our own business requirements and scenario constraints.</p>
+<p>The system environment that Google faced when <strong>publishing the paper</strong> for implementing MapReduce looked like this:</p>
+<ol>
+<li>Single machine with dual-core x86 architecture, 2~4GB memory, Linux system</li>
+<li>Commodity network hardware, 100 Mbps or Gigabit Ethernet</li>
+<li>Clusters containing hundreds or thousands of machines, so machine failures were the norm</li>
+<li>Cheap IDE interface hard drives, but they had GFS to provide fault tolerance</li>
+<li>Multi-tenant support, so job-level abstraction and resource constraints were needed</li>
+</ol>
+<h3 id="Workflow-Overview">Workflow Overview</h3>
+<p>After the user specifies the split size, the input is divided into <em>M</em> pieces and distributed across different machines (due to the presence of GFS, the input block may already be on that machine). On each machine, the user-defined <em>map</em> runs in parallel. The intermediate results output by <em>map</em> are also specified by the user to be divided into <em>R</em> pieces by <strong>key value range</strong>. For each intermediate result, its destination is determined by <em>node label = hash(key) mod R</em>. Below is a workflow overview diagram:</p>
+<p><img data-src="https://i.loli.net/2020/02/09/nKVyYJ7QtaLfIMx.png" alt="MR执行流"><span class="image-caption">MR执行流</span></p>
+<ol>
+<li>First, the input is divided into M pieces, usually 16~64M each; the user controls this granularity as needed. Then these splits are distributed across different machines (if coordinated with a distributed file system like GFS, they may already be distributed), and the user’s code is forked on each machine. <strong>User code distribution</strong> is an interesting topic; different languages may have different implementations. For example, Google’s C++ might transmit dynamic link libraries; for Hadoop’s Java, it might transmit jar packages (of course, all dependencies must also be transmitted); for PySpark’s Python, it might use the magical cloudpickle. In short, different languages require different transmission mechanisms, such as dynamic languages versus static languages. In addition, global variables and external dependencies also need to be considered. Although Google glossed over this, the situations faced by different languages may vary greatly.</li>
+<li>The Master’s copy of the program is different — it is responsible for assigning work. It selects idle workers to arrange the M map tasks and R reduce tasks. One consideration here is whether the worker starts a separate process for each user code execution, or inserts it into a system loop to execute.</li>
+<li>The worker executing the map task reads the assigned input split, parses out the key-value stream, and feeds it to the user-defined map function. The temporary results produced by map are first cached in memory. Although the paper does not elaborate, it is foreseeable that how to split and how to parse the key-value stream may differ for different users focusing on the same input, so there must be a need for customized parsing. This part (FileSplit and RecordReader) would likely also be opened up for user customization later as the business grows; in fact, this is exactly what Hadoop did.</li>
+<li>The cached intermediate results are periodically flushed to disk locally on the machine running the Map Task (this is also a locality optimization, but it has consequences — once that machine fails, fault tolerance becomes slightly more troublesome, which will be discussed later), and divided into R blocks according to the user-specified Partition function. Then these location information is sent to the Master node. The Master is responsible for notifying the corresponding Reduce Workers to pull the corresponding data.</li>
+<li>After receiving the location information of these intermediate results, the Reduce Worker pulls the data of the corresponding Partition via RPC. For a certain Reduce Worker, after <strong>all data</strong> is pulled, it is sorted by key. In this way, all data with the same key is grouped together. The combination of steps 4 and 5 is called <em><strong>shuffle</strong></em>, involving external sorting, multi-machine data transmission, and other <strong>extremely time-consuming</strong> operations. When the data volume is small, any implementation is fine. But when the data volume reaches a certain scale, this can easily become a performance bottleneck, so there are also some optimization methods. Details on shuffle will be expanded later; for now, we will leave it aside.</li>
+<li>After the intermediate data is sorted, the Reduce Worker scans it, passing each key and its corresponding value set, i.e., &lt;k2, list(v2)&gt;, to the user-customized reduce function, and then appends the generated results to the final output file. For Google, this is generally the parallel-append-capable file system GFS, whose advantage is that multiple processes can write results simultaneously.</li>
+<li>When all reduce tasks are completed, the master wakes up the user process — that is, from the user code’s perspective, the MapReduce task is blocking.</li>
+</ol>
+<p>Generally, users do not need to merge the final R partitions, but instead use them directly as input for the next MapReduce task. Spark RDD’s partition conceptually encapsulates this feature, and keeps each MapReduce step’s output in memory without writing to disk, to reduce the latency of continuous MapReduce tasks.</p>
+<h3 id="Locality">Locality</h3>
+<p>A commonly used principle in computer science is the <em><strong>locality principle</strong></em> (locality of reference, specifically spatial locality here), which states that <em>when a program executes sequentially and accesses a block of data, it is highly likely to access the block of data adjacent to it (in physical location) next</em>. It is a simple assertion, yet it is the foundation for all caches to function; computer storage thus forms a hierarchical system from slow to fast, from cheap to expensive, and from large to small (hard disk -&gt; memory -&gt; cache -&gt; registers). In a distributed environment, this hierarchy must be covered by at least one more layer — network IO.</p>
+<p>In the MapReduce system, we also fully utilize the locality of input data. Only this time, <em>instead of loading the data over, we schedule the program over</em> (<em><strong>Moving Computation is Cheaper than Moving Data</strong></em>). If the input resides on GFS, it manifests as a series of logical blocks, each of which may have several (usually three) physical replicas. For each logical block of input, we can run the Map Task on a machine where one of its physical replicas resides (if it fails, switch to another replica), thereby minimizing network data transmission, reducing latency, and saving bandwidth.</p>
+<h3 id="Master-Data-Structures">Master Data Structures</h3>
+<p>Google’s MapReduce implementation has a <em>Job</em>-level encapsulation. Each Job contains a series of <em>Tasks</em>, namely Map Tasks and Reduce Tasks. To maintain metadata information about a running Job, it is necessary to save the status of all executing Tasks, their machine IDs, etc. Moreover, the Master in fact acts as a “<em>pipeline</em>” from Map Task output to Reduce Task input. When each Map Task ends, it notifies the Master of the location information of its output intermediate results; the Master then forwards it to the corresponding Reduce Task, which goes to the corresponding location to pull data of the corresponding size. Note that because the end times of Map Tasks are not uniform, this <em><strong>notify -&gt; forward -&gt; pull</strong></em> process is incremental. It is not difficult to infer that the sorting of intermediate data on the reduce side should be a continuously merging process, rather than waiting for all data to be in place before doing a global sort.</p>
+<p>In distributed systems, a rather taboo problem is the single point of failure, because one hair moves the whole body. The Master is such a single point. Of course, the average failure rate of a single machine is not high, but once it fails, the entire cluster becomes unavailable. At the same time, having a Leader node greatly simplifies the design of distributed systems; therefore, systems adopting a single Master are actually the mainstream. That makes it necessary to develop other means to strengthen the Master’s fault tolerance, such as logging + snapshot, master-slave backup, reconstructing state from worker heartbeats each time, or using other systems that implement distributed consensus protocols to save metadata, etc.</p>
+<h3 id="Fault-Tolerance">Fault Tolerance</h3>
+<p>There are two roles in the cluster: Master and Worker.</p>
+<p>Workers are numerous, so the probability of machine failure is relatively high. In distributed systems, the most common way for the Master to obtain information about Workers is through <strong>heartbeats</strong> — the master can ping the worker, or vice versa, or both. After discovering that a worker is unreachable via heartbeat (possibly because the worker died, or because of network problems, etc.), the Master marks that Worker as <strong>failed</strong>.</p>
+<p>The tasks (Tasks) previously scheduled on the failed Worker obviously fall into two types: Map Task and Reduce Task. <strong>For Map Tasks</strong> (<em>all Tasks mentioned below definitely belong to an unfinished Job</em>), regardless of success or failure, we must retry, because once that Worker becomes unreachable, the intermediate results stored on it cannot be obtained by the Reduce Task. Of course, we can record more states in the Master to reduce the probability of retrying already completed Map Tasks. For example, record whether the output of a certain Map Task has already been pulled by the Reduce Task, to decide whether to retry a normally completed Map Task, but this will undoubtedly increase system complexity. <em>Engineering often makes certain assumptions about the environment to simplify certain implementations.</em> We assume that the worker failure rate is not that high, or that the cost of retrying all Map Tasks is tolerable, so we can simplify the implementation a bit to keep the system simple and reduce possible bugs. For <strong>Reduce Tasks</strong>, unfinished ones undoubtedly need to be retried; completed ones, since their output results are assumed to be written to a global distributed file system (i.e., not affected by certain machines failing), will not be retried.</p>
+<p>The specific retry method can mark the status of the Task to be retried as idle, telling the scheduler that this Task can be rescheduled. Of course, it can also be implemented as moving from one (working/completed) queue to another (ready) queue; essentially they are the same, both reasonably implementing a <strong>state machine</strong> for a Task.</p>
+<p>As for Master fault recovery, it was briefly mentioned in the previous section. If in practice the Master indeed rarely dies, and the occasional death causing all running tasks to fail is acceptable, then it can be crudely implemented so that if the Master dies, it simply notifies the user code of all running tasks that the task failed (e.g., returning a non-zero value), and then the user code decides whether to discard the task or retry after the cluster restarts:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MapReduceResult result;</span><br><span class="line"><span class="keyword">if</span> (!<span class="built_in">MapReduce</span>(spec, &amp;result)) <span class="built_in">abort</span>();</span><br></pre></td></tr></table></figure>
+<p>If the business has requirements for downtime, or widespread task failure is unacceptable, then the Master’s fault tolerance needs to be enhanced. Commonly used methods were mentioned in the previous section; here they are expanded:</p>
+<ol>
+<li><strong>snapshot + log</strong>: Periodically take snapshots of the Master’s in-memory data structures and synchronize them to persistent storage. This can be written to external storage, synchronized to other nodes, one copy or multiple copies. But doing only snapshots makes the interval difficult to choose: too long and too much state is lost during recovery; too short and it increases system load. Therefore, a commonly used auxiliary method is logging, i.e., recording every operation that changes the system state. This way, a longer snapshot interval can be chosen, and during recovery, first load the snapshot, then overlay the logs after the snapshot point.</li>
+<li><strong>Master-slave backup</strong>. For example, Hadoop’s original secondary namenode: two machines belonging to different fault domains both act as Masters, except one is used to respond to requests and the other is used to synchronize state in real time. When a machine fails, traffic is immediately switched to the other machine. As for its synchronization mechanism, that is another point to consider.</li>
+<li><strong>External state storage</strong>. If the amount of metadata is not large, a cluster implementing distributed consensus protocols such as Zookeeper or etcd can be used to store it. Since these clusters themselves have fault tolerance capabilities, they can be considered to avoid single points of failure.</li>
+<li><strong>Heartbeat recovery</strong>: After restarting a Master, use the information reported by all Workers to reconstruct the Master’s data structures.</li>
+</ol>
+<p>It is also worth mentioning that <strong>fault tolerance also requires cooperation from user-side code</strong>. Because the framework retries unsuccessful map/reduce user code. This requires that the map/reduce logic provided by users conforms to <strong>Determinism</strong>: that is, the function’s output depends only on the input, and not on any other hidden inputs or states. Of course, this implies <strong>Idempotency</strong>: the effect of multiple executions is the same as one execution; but idempotency does not imply determinism. Suppose there is a function that causes some state change the first time it executes (e.g., some resource-releasing dispose function), and subsequently finds that the state has already changed and no longer changes that state; then it conforms to idempotency. But because it contains implicit state input, it is not deterministic.</p>
+<p>If the map/reduce functions are deterministic, the framework can retry them with confidence. Under certain conditions, idempotency is also acceptable, for example, if the place where the hidden state is saved is very reliable. For example, if we rely on a file lock to determine whether a function has been executed once or multiple times, and if the file system on which the file lock depends is very stable and provides distributed consistency, then it is perfectly fine. If we use an nfs file as a lock to implement so-called idempotency, it is questionable.</p>
+<p>If the map/reduce functions are deterministic, the framework ensures idempotence through the atomicity of their output commits. That is, even if retried multiple times, it is the same as executing only once. Specifically, for Map Tasks, R temporary files are generated and their locations are sent to the Master at the end; when the Master receives location information for the same split multiple times, if the source of the previous result is still available or has already been consumed, it ignores all subsequent requests for that split. For Reduce Tasks, the generated results are also first written as temporary files, and then rely on the underlying file system’s atomic rename operation (<strong>atomic rename</strong> is also a classic operation for multi-process competition, because the file generation process is long and not easy to make atomic, but <strong>checking whether a file with a certain name exists and renaming it</strong> is easy to make atomic). When processing is complete, it is renamed to the target file name. If a file with the target file name is already found, the rename operation is abandoned, thereby ensuring that the Reduce Task has only one successful output final file.</p>
+<h3 id="Task-Granularity">Task Granularity</h3>
+<p>A MapReduce Job generates M+R Tasks. The specific values of M and R can be configured by humans before running. Different system implementations may have different optimal ratios for best system performance; but business requirements must also be taken into account, such as input size, number of output files, etc.</p>
+<h3 id="Backup-Tasks">Backup Tasks</h3>
+<p>In actual business, due to certain host reasons, the <strong>long-tail effect</strong> often occurs, where a few Map/Reduce Tasks are always extremely slow and drag on to the end, even taking several times longer than other tasks. There are many reasons for these hosts falling behind: for example, a machine’s hard disk is aging and its read/write speed has slowed down by tens of times; or the scheduler has problems, causing some machines to be too heavily loaded with a lot of CPU, memory, disk, and network bandwidth contention; or software bugs causing some hosts to slow down, etc.</p>
+<p>As long as it is determined that these problems only occur on a <strong>few</strong> hosts, the solution is simple. When the <strong>task is nearing its end</strong> (e.g., when the proportion of remaining tasks is less than a threshold), for each task still running, an extra copy is scheduled to another host respectively. Then it is highly likely that these tasks will be completed earlier. The processing logic for running the same task multiple times is consistent with the multiple runs caused by fault tolerance retries and can be reused.</p>
+<p>In addition, we can fine-tune this threshold (including how to determine the end of a task, and how many backup tasks to launch) through actual business verification, to strike a balance between the cost of additional resources and the reduction in total task time.</p>
+<h2 id="Other-Details">Other Details</h2>
+<p><strong>In addition to the two most basic primitives Mapper and Reducer, the system also provides some other extensions that later became standard: Partitioner, Combiner, and Reader/Writer.</strong></p>
+<h3 id="Partitioner">Partitioner</h3>
+<p>By default, the intermediate results output by Map are partitioned using an application-independent partitioning algorithm similar to <em>hash(key) mod R</em>. But sometimes users need to route certain keys to the same Reduce Task; for example, the intermediate result key is a URL, and the user wants to aggregate and process by website host. At this time, it is necessary to expose this routing function of the system to the user to meet customized needs.</p>
+<h3 id="Combiner">Combiner</h3>
+<p>If the reduce operation performed on all intermediate results in this Job satisfies the <strong>associative law</strong>, then specifying a Combiner can greatly improve efficiency. Take Word Count as an example: numerical addition undoubtedly satisfies the associative law. That is, the frequency of the same word, whether summed after the Map Task output (on the Map Worker) or summed in the Reduce Task (on the Reduce Worker), yields consistent results. In this way, because some intermediate result pairs are combined, the amount of data transmitted between Map Task and Reduce Task is much smaller, thereby improving the efficiency of the entire Job.</p>
+<p>It can also be seen that the combine function is generally the same as the reduce function, because they essentially perform the same operation on the value set, except that the execution location and combination order are different. The purpose is to reduce the amount of intermediate result transmission and accelerate the task execution process.</p>
+<h3 id="Reader-Writer">Reader/Writer</h3>
+<p>If the ability to customize input and output is not exposed to users, then the system can obviously only handle a limited number of default agreed formats. Therefore, the <em>reader</em> and <em>writer</em> interfaces are essentially <strong>Adaptors</strong> between the system and the complex reality of business. They allow users to specify the <em>source and destination</em> of data, <em>understand input content as needed</em>, and <em>freely customize output formats</em>.</p>
+<p>With these two Adaptors, the system can adapt to more businesses. Generally, the system will provide some common Reader and Writer implementations built-in, including reading text files line by line, reading key-value pairs from files, reading databases, etc. Then users can implement these two interfaces for more specific customization. <em>Systems often provide APIs through common scaffolding + further customization capabilities</em>, and the following Counter is the same.</p>
+<h3 id="Side-Effects">Side Effects</h3>
+<p>Some user-implemented map/reduce functions have side effects, such as outputting some files during task execution, writing some database entries, etc. Generally, the atomicity and idempotency of these side effects need to be handled by users themselves. Because if the output medium is not included in the MapReduce system, the system has no way to guarantee the idempotency and atomicity of these outputs. However, some systems do exactly that, providing some type/medium of state or data storage, incorporating it into the system, and providing some fault tolerance and idempotency properties. It seems MillWheel has similar practices. But this greatly increases the complexity of the system.</p>
+<h3 id="Skipping-Bad-Records">Skipping Bad Records</h3>
+<p>If user code has bugs or some input is problematic, it will cause Map or Reduce tasks to crash at runtime. Of course, these bugs or inputs should be fixed if possible, but in some cases due to third-party libraries or input reasons, they cannot be repaired. And for certain types of tasks, such as training data set cleaning or large-scale statistical tasks, losing a few is tolerable. In response to this situation, the system provides a mode in which the execution of these Record records is skipped.</p>
+<p>In terms of specific implementation, it is also relatively simple. Each input Record can be given a <strong>unique ID</strong> (unique within a single task is enough); if a Record crashes during processing, its ID is reported to the Master. If the Master receives failure information for a Record more than once, it skips it. Going a step further, error types and information can also be recorded and compared to determine whether this is a deterministic error, and then decide whether to skip it.</p>
+<h3 id="Local-Execution">Local Execution</h3>
+<p>As we all know, distributed systems are very difficult to trace and debug, because a Job may be executed simultaneously on thousands of machines. Therefore, the system provides the ability to run Jobs locally. It can be used to test the correctness of code against small data set inputs. Since it runs on a single machine, <strong>it is relatively easy to trace breakpoints through debugging tools</strong>.</p>
+<p>Implementing a local mock system is generally relatively simple. Because there is no need to consider a series of distributed system issues such as network state communication, code multi-node distribution, and multi-machine scheduling. But it can greatly facilitate code debugging, performance testing, and small data set testing.</p>
+<h3 id="Status-Information">Status Information</h3>
+<p>For distributed Jobs, an <strong>information visualization interface</strong> (integrating an HTTP service into the system to pull system information in real time for display) is sometimes crucial; it is the key to system usability. If system users cannot easily monitor the running progress, execution speed, resource usage, output location, error information, and other task metadata in real time, they cannot have an intuitive grasp of the task execution status. This is especially true when the person writing the MapReduce program and the person running these programs are not the same person, who will rely more on the real-time presentation of this status.</p>
+<p>Therefore, <strong>for distributed systems, a large part of their usability lies in a good presentation of system information</strong>. Users need to use this to predict task completion time, resource tightness, etc., to make corresponding decisions.</p>
+<p>In addition, cluster machine status information also needs to be tracked, because machine load information, failure information, network conditions, etc., have varying degrees of impact on user task execution. Providing this machine status information helps with error diagnosis of user code and even system code.</p>
+<h3 id="Global-Counters">Global Counters</h3>
+<p>The system provides a counting service to count the occurrence frequency of certain events. For example, the user wants to count the total number of all-uppercase words processed in the Word Count example:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Counter* uppercase;</span><br><span class="line">uppercase = <span class="built_in">GetCounter</span>(<span class="string">&quot;uppercase&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">map</span>(String name, String contents):</span><br><span class="line">  <span class="keyword">for</span> each word w in contents:</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">IsCapitalized</span>(w)):</span><br><span class="line">      uppercase-&gt;<span class="built_in">Increment</span>();</span><br><span class="line">    <span class="built_in">EmitIntermediate</span>(w, <span class="string">&quot;1&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>From the code, we can roughly guess the implementation: when defining it, you need to assign an Id to the Counter. Then in Map/Reduce code, you can obtain the Counter by this Id and perform counting. The counting information on each worker machine is aggregated to the Master, then summed by the Counter’s ID, and finally returned to the user. At the same time, the aforementioned status information page will also visualize these counters (for example, by drawing line charts). One point to note is deduplicating counts for tasks that are retried multiple times (due to <em>machine failure</em> or <em>avoiding long tails</em>); deduplication can be done by Map/Reduce ID, i.e., we assume that retry tasks for the same input share a Task ID (in fact, to meet retry requirements and task management needs, <strong>distributed systems will definitely assign unique numbers to all tasks</strong>). For the count within a Counter for the same Task ID, the Master only keeps the first <strong>successful</strong> one. But if the count needs to be displayed on the page in real time, appropriate information retention may be needed, and operations such as count rollback when the Task is retried.</p>
+<p><strong>The system automatically maintains some counters</strong>, such as the number of all processed key-value pairs and the number of all generated key-value pairs. Global counting is very useful for certain applications. For example, some applications require that the number of input key-value pairs and output key-value pairs be the same; without global counting, there is no way to verify this. Or to count some global proportions of data, etc.</p>
+<h2 id="Shuffle-Operation">Shuffle Operation</h2>
+<p>Since Spark became famous, shuffle, a semantic in MapReduce, has received a lot of research and practice. This is a time-consuming multi-machine transmission operation, and the efficiency of its implementation is crucial to system performance, so a separate section is devoted to it.</p>
+<p>In MapReduce, it refers to the process from Map Task split output to Reduce Task on-demand pull. Still taking Word Count as an example, you want to count the total frequency of a certain word in all documents, but these words are distributed in the outputs of different Map Tasks on different machines. Only by gathering all frequencies of the same word onto the same machine can they be summed. <strong>This operation of breaking and reorganizing the correspondence between machines and data subsets by key, we tentatively call shuffle.</strong></p>
+<p>In Spark, this semantics is basically inherited and generalized. A common example is join, i.e., routing records with the same key in two Tables to the same machine, so that parallel joins can be performed on all machines by key sharding, thereby greatly improving efficiency. Higher-order operations like join make the underlying Partition unable to continue running locally without contacting other Partitions. Therefore, shuffle is also a watershed for dividing Stages in Spark.</p>
+<p>For MapReduce systems, the shuffle strategy used is similar to sort-based shuffle in Spark. Map first writes intermediate results to memory, then periodically flushes to disk, performing merge sort when flushing. Then the Reducer side pulls on demand, and after pulling data from multiple Mappers, performs merge sort again, and then passes it to the Reduce function. The advantage of this is that it can process large-scale data, <strong>because external sorting can be done, and iterative lazy loading is also possible</strong>. For Hadoop’s implementation, the entire process including shuffle is divided into several distinct stages: map(), spill, merge, shuffle, sort, reduce(), etc.</p>
+<h2 id="Other-Points">Other Points</h2>
+<p><strong>Some drawbacks</strong>: From the MapReduce system design, it can be seen that it is a high-throughput but also high-latency batch processing system. And it does not support iteration. This is also the motivation for the popularity of subsequent systems like Spark and Flink.</p>
+<p><strong>File system</strong>: MapReduce can only exert greater advantages when combined with a large file system like GFS that supports chunking and multi-process concurrent writing, optimizing input and output performance. In addition, such distributed file systems also mask underlying node failures.</p>
+<p><strong>Organization form</strong>: MapReduce is a system that needs to be deployed on a cluster, but it is also a library — a library that allows user code to interact with the distributed cluster without worrying too much about issues in the distributed environment. Each task requires writing a task description (<em>MapReduceSpecification</em>), and then submitting it to the system — this is a common means of task submission used by libraries.</p>
+<p><strong>Code distribution</strong>: Google’s specific MapReduce implementation is unknown. There are two possible ways to guess: one is to fork the MapReduce library code + user code as a whole on different machines, and then execute different branches according to different roles. The other is to start the services on each machine first, and then when executing tasks, only serialize the user-defined functions and transmit them to different machines.</p>
+<h2 id="Glossary">Glossary</h2>
+<p><strong>Intermediate result</strong>: The intermediate result produced by the map function, organized in key-value pairs.</p>
+<p><strong>Map Task</strong>: This should refer to the worker process executing the map function on a Worker machine.</p>
+<p><strong>Map Worker</strong>: The Worker machine on which the Map Task runs. All Workers should have no role labels; they can execute both Map Tasks and Reduce Tasks to fully utilize machine performance.</p>
+<h2 id="References">References</h2>
+<p>[1] Jeffrey Dean and Sanjay Ghemawat， <span class="exturl" data-url="aHR0cHM6Ly9zdGF0aWMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL21lZGlhL3Jlc2VhcmNoLmdvb2dsZS5jb20vemgtQ04vL2FyY2hpdmUvbWFwcmVkdWNlLW9zZGkwNC5wZGY=">MapReduce: Simplified Data Processing on Large Clusters<i class="fa fa-external-link-alt"></i></span></p>
+<p>[2] Alexey Grishchenko， <span class="exturl" data-url="aHR0cHM6Ly8weDBmZmYuY29tL3NwYXJrLWFyY2hpdGVjdHVyZS1zaHVmZmxlLw==">Spark Architecture: Shuffle<i class="fa fa-external-link-alt"></i></span></p>
+<p>[3] <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL0plcnJ5TGVhZA==">JerryLead<i class="fa fa-external-link-alt"></i></span>， <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL0plcnJ5TGVhZC9TcGFya0ludGVybmFscy9ibG9iL21hc3Rlci9tYXJrZG93bi80LXNodWZmbGVEZXRhaWxzLm1k">Spark internals<i class="fa fa-external-link-alt"></i></span></p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/02/24/hadoop-map-reduce/" rel="bookmark">Hadoop源码阅读之MapReduce（一）：基本概念和接口</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/04/30/map-reduce/" rel="bookmark">MapReduce —— 历久而弥新</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/distributed-system/" rel="tag"># distributed system</a>
+              <a href="/tags/MapReduce/" rel="tag"># MapReduce</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/04/06/ray/" rel="prev" title="继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray">
+      <i class="fa fa-chevron-left"></i> 继Spark之后，UC Berkeley 推出新一代AI计算引擎——Ray
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/04/30/map-reduce/" rel="next" title="MapReduce —— 历久而弥新">
+      MapReduce —— 历久而弥新 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Motivation"><span class="nav-number">2.</span> <span class="nav-text">Motivation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Abstraction"><span class="nav-number">3.</span> <span class="nav-text">Abstraction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Implementation-Overview"><span class="nav-number">4.</span> <span class="nav-text">Implementation Overview</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Workflow-Overview"><span class="nav-number">4.1.</span> <span class="nav-text">Workflow Overview</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Locality"><span class="nav-number">4.2.</span> <span class="nav-text">Locality</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Master-Data-Structures"><span class="nav-number">4.3.</span> <span class="nav-text">Master Data Structures</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Fault-Tolerance"><span class="nav-number">4.4.</span> <span class="nav-text">Fault Tolerance</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Task-Granularity"><span class="nav-number">4.5.</span> <span class="nav-text">Task Granularity</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Backup-Tasks"><span class="nav-number">4.6.</span> <span class="nav-text">Backup Tasks</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Other-Details"><span class="nav-number">5.</span> <span class="nav-text">Other Details</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Partitioner"><span class="nav-number">5.1.</span> <span class="nav-text">Partitioner</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Combiner"><span class="nav-number">5.2.</span> <span class="nav-text">Combiner</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Reader-Writer"><span class="nav-number">5.3.</span> <span class="nav-text">Reader&#x2F;Writer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Side-Effects"><span class="nav-number">5.4.</span> <span class="nav-text">Side Effects</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Skipping-Bad-Records"><span class="nav-number">5.5.</span> <span class="nav-text">Skipping Bad Records</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Local-Execution"><span class="nav-number">5.6.</span> <span class="nav-text">Local Execution</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Status-Information"><span class="nav-number">5.7.</span> <span class="nav-text">Status Information</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Global-Counters"><span class="nav-number">5.8.</span> <span class="nav-text">Global Counters</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Shuffle-Operation"><span class="nav-number">6.</span> <span class="nav-text">Shuffle Operation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Other-Points"><span class="nav-number">7.</span> <span class="nav-text">Other Points</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Glossary"><span class="nav-number">8.</span> <span class="nav-text">Glossary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">9.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2019/04/30/map-reduce/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'bd552c7bcef9868cd53fe9c1886c7ce0',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

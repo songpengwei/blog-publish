@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Introduction In 2018, I worked on some 6.824 labs; my old notes are here. Unfortunately, I got stuck at Part 2C and could never pass the tests, so I put it aside. But in the days that followed, I ofte">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MIT 6.824 2020 Raft Implementation Notes">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2020/01/18/raft-implement-points/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Introduction In 2018, I worked on some 6.824 labs; my old notes are here. Unfortunately, I got stuck at Part 2C and could never pass the tests, so I put it aside. But in the days that followed, I ofte">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/mfESApyVoB1cPRe.png">
+<meta property="article:published_time" content="2020-01-18T14:02:26.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.674Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="distributed system">
+<meta property="article:tag" content="Raft">
+<meta property="article:tag" content="distributed systems">
+<meta property="article:tag" content="implementation">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/mfESApyVoB1cPRe.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2020/01/18/raft-implement-points/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="distributed system,Raft,distributed systems,implementation">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "MIT 6.824 2020 Raft Implementation Notes",
+    "description": "Introduction In 2018, I worked on some 6.824 labs; my old notes are here. Unfortunately, I got stuck at Part 2C and could never pass the tests, so I put it aside. But in the days that followed, I often thought about this legendary course with a tinge of sadness. Putting it off until today, I can finally come back to fulfill that wish. This time, there were three reasons I could pass all the tests: first, having done it once before, many of the principles were still fresh in my mind; second, over the past year or so I had gained a lot of hands-on experience with distributed systems at work; and third, my Go skills had improved somewhat. But during the process, I still encountered a great many vexing details. To make it easier to review them later, I’ve organized these details and recorded them here. If they happen to be of the slightest help to others working on this course, that would be another happy occasion. 6.824 and Raft 6.824 is an excellent open course on distributed systems. While doing the labs, I was constantly amazed by its exquisite design and the thoroughness of its materials. That the masters at MIT would share such an essential course with the world truly reflects the character of a great university and its scholars, and is a great fortune for us computer scientists. Raft is a consensus protocol designed for understandability. Distributed consensus is a very, very classic problem in the distributed field, and also one of the hardest parts of distributed systems. Intuitively speaking, it’s like laying the foundation for a skyscraper on quicksand. Unreliable networks and failure-prone hosts create state changes so complex that they are truly beyond the ability of ordinary people to simulate in their heads. I am rather dull, and can only achieve some understanding through intuitive grasp plus accumulation of details. Returning to Raft, with Paxos as a predecessor in the same field, how did Raft still manage to stand out? I think it comes down to two key points: Easy to understand. Paxos is notoriously difficult to understand, and therefore hard to bring into common use. Raft reduces the dimensionality of algorithmic complexity by decoupling it into multiple modules, greatly lowering the difficulty of understanding for ordinary people. In addition, Raft has many elegant designs that avoid introducing complexity as much as possible, further reducing the mental burden. Easy to implement. Being easy to understand objectively leads to ease of implementation, but that doesn’t automatically mean you can produce an excellent system from it. If understanding remains at the intuitive level, implementation becomes a castle in the air. The brilliance of the Raft paper is that it has both an intuitive grasp and a detailed organization—it is almost a system design document, and a detailed one at that. To do well on this lab, you need to consult a large amount of material. I’ve summarized what the lab mentioned and what I found at the end of this article. Of course, there is also the English barrier. Although I eventually passed all the test cases, there are still many points I didn’t implement well and many things I don’t fully understand. Note: Later, in 2023, I did it again, and finally figured out most of the points.",
+    "url": "https://www.qtmuniao.com/en/2020/01/18/raft-implement-points/",
+    "datePublished": "2020-01-18T22:02:26+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2020/01/18/raft-implement-points/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>MIT 6.824 2020 Raft Implementation Notes | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2020/01/18/raft-implement-points/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2020/01/18/raft-implement-points/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/01/18/raft-implement-points/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MIT 6.824 2020 Raft Implementation Notes
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-01-18 22:02:26" itemprop="dateCreated datePublished" datetime="2020-01-18T22:02:26+08:00">2020-01-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/" itemprop="url" rel="index"><span itemprop="name">distributed systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/Raft/" itemprop="url" rel="index"><span itemprop="name">Raft</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Introduction">Introduction</h2>
+<p>In 2018, I worked on some 6.824 labs; my old notes are <a href="https://www.qtmuniao.com/categories/courses/">here</a>. Unfortunately, I got stuck at Part 2C and could never pass the tests, so I put it aside. But in the days that followed, I often thought about this legendary course with a tinge of sadness. Putting it off until today, I can finally come back to fulfill that wish.</p>
+<p>This time, there were three reasons I could pass all the tests: first, having done it once before, many of the principles were still fresh in my mind; second, over the past year or so I had gained a lot of hands-on experience with distributed systems at work; and third, my Go skills had improved somewhat. But during the process, I still encountered a great many vexing details. To make it easier to review them later, I’ve organized these details and recorded them here. If they happen to be of the slightest help to others working on this course, that would be another happy occasion.</p>
+<h2 id="6-824-and-Raft">6.824 and Raft</h2>
+<p><span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQv">6.824<i class="fa fa-external-link-alt"></i></span> is an excellent open course on distributed systems. While doing the labs, I was constantly amazed by its exquisite design and the thoroughness of its materials. That the masters at MIT would share such an essential course with the world truly reflects the character of a great university and its scholars, and is a great fortune for us computer scientists.</p>
+<p>Raft is a consensus protocol designed for understandability. Distributed consensus is a very, very classic problem in the distributed field, and also one of the hardest parts of distributed systems. Intuitively speaking, it’s like laying the foundation for a skyscraper on quicksand. Unreliable networks and failure-prone hosts create state changes so complex that they are truly beyond the ability of ordinary people to simulate in their heads. I am rather dull, and can only achieve some understanding through intuitive grasp plus accumulation of details. Returning to Raft, with Paxos as a predecessor in the same field, how did Raft still manage to stand out? I think it comes down to two key points:</p>
+<ol>
+<li><strong>Easy to understand</strong>. Paxos is notoriously difficult to understand, and therefore hard to bring into common use. Raft reduces the dimensionality of algorithmic complexity by decoupling it into multiple modules, greatly lowering the difficulty of understanding for ordinary people. In addition, Raft has many elegant designs that avoid introducing complexity as much as possible, further reducing the mental burden.</li>
+<li><strong>Easy to implement</strong>. Being easy to understand objectively leads to ease of implementation, but that doesn’t automatically mean you can produce an excellent system from it. If understanding remains at the intuitive level, implementation becomes a castle in the air. The brilliance of the Raft paper is that it has both an intuitive grasp and a detailed organization—it is almost a system design document, and a detailed one at that.</li>
+</ol>
+<p>To do well on this <span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbGFicy9sYWItUmFmdC5odG1s">lab<i class="fa fa-external-link-alt"></i></span>, you need to consult a large amount of material. I’ve summarized what the lab mentioned and what I found at the end of this article. Of course, there is also the English barrier. Although I eventually passed all the test cases, there are still many points I didn’t implement well and many things I don’t fully understand.</p>
+<p>Note: Later, in 2023, I <span class="exturl" data-url="aHR0cHM6Ly9hdjZodWYyZTFrLmZlaXNodS5jbi9kb2N4L0pDc3NkbGdGNG9SQURjeHhMcW5jUHBSQ241Yg==">did it again<i class="fa fa-external-link-alt"></i></span>, and finally figured out most of the points.</p>
+<span id="more"></span>
+<p><em>Author: 木鸟杂记 <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, please indicate the source when reposting</em></p>
+<h2 id="Overall-Structure">Overall Structure</h2>
+<p>This lab (2020 version) is divided into three parts: Part 2A: leader election, Part 2B: log replication, and lab2C: state persistence.</p>
+<p>I didn’t use too many channels in my implementation; state changes were all done through blocking locks. I noticed that some implementations online control all state changes with channels, which might be more efficient asynchronously but slightly less readable. My implementation basically follows the paper’s description. In terms of code organization, it can be summarized as <strong>three states</strong> and <strong>three loops</strong>.</p>
+<h3 id="Three-States"><strong>Three States</strong></h3>
+<p><em>Follower</em>, <em>Candidate</em>, and <em>Leader</em>. Accordingly, I defined three functions: <em>becomeFollower</em>, <em>becomeCandidate</em>, and <em>becomeLeader</em>, which encapsulate some of the internal state transitions of a Raft peer.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> becomeCandidate() &#123;</span><br><span class="line">  rf.role = CANDIDATE</span><br><span class="line">  rf.currentTerm++</span><br><span class="line">  rf.votedFor = rf.me</span><br><span class="line">  rf.persist()</span><br><span class="line">  DPrintf(<span class="string">&quot;%s change to candidate&quot;</span>, rf)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> becomeFollower(term <span class="type">int</span>) &#123;</span><br><span class="line">  rf.role = FOLLOWER</span><br><span class="line">  rf.currentTerm = term</span><br><span class="line">  <span class="keyword">if</span> rf.currentTerm &gt; term &#123;</span><br><span class="line">    rf.votedFor = <span class="number">-1</span></span><br><span class="line">  &#125;</span><br><span class="line">  rf.persist()</span><br><span class="line">  rf.electionTimer.Reset(getRandElectTimeout())</span><br><span class="line">  DPrintf(<span class="string">&quot;%s change to follower with term %d&quot;</span>, rf, term)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> becomeLeader() &#123;</span><br><span class="line">  rf.role = LEADER</span><br><span class="line">  rf.leaderID = rf.me</span><br><span class="line">  rf.persist()</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; rf.PeersNum; i++ &#123;</span><br><span class="line">    rf.matchIndex[i] = <span class="number">0</span></span><br><span class="line">    rf.nextIndex[i] = <span class="built_in">len</span>(rf.log)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  rf.pingTimer.Reset(heartbeatInterval)</span><br><span class="line">  <span class="keyword">go</span> rf.pingLoop()</span><br><span class="line">  DPrintf(<span class="string">&quot;%s change to leader&quot;</span>, rf)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Three-Loops"><strong>Three Loops</strong></h3>
+<p>Three goroutines: <em>electionLoop</em>, <em>pingLoop</em>, and <em>applyLoop</em>. The first two loops are both driven by timers. <em>electionLoop</em> only executes election logic when the peer is not the Leader, while <em>pingLoop</em> is started each time a peer is elected Leader and exits promptly when it loses its Leader status. That is, for the same peer, these two loops are mutually exclusive.</p>
+<p><strong>electionLoop</strong> is the loop where a Follower becomes a Candidate after a timeout and initiates an election. It is a background resident goroutine, but skips the loop body when it detects that it is the Leader (skips the election), since no one would voluntarily initiate an election to overthrow themselves.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> electionLoop() &#123;</span><br><span class="line">  <span class="keyword">for</span> &#123;</span><br><span class="line">    &lt;-rf.electionTimer.C</span><br><span class="line">    rf.electionTimer.Reset(getRandElectTimeout())</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> rf.role == LEADER &#123;</span><br><span class="line">      <span class="keyword">continue</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    rf.mu.Lock()</span><br><span class="line">    rf.becomeCandidate()</span><br><span class="line">    <span class="comment">// request vote from each Peer except itself</span></span><br><span class="line">    rf.mu.Unlock()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>pingLoop</strong> is the loop where a Candidate, after being elected Leader, sends heartbeats and completes log synchronization in the process. This loop is started as a goroutine in the becomeLeader function; once it detects that it is no longer the Leader, it exits immediately, since all peers are highly self-aware—if everyone were dishonest, consensus would never be reached.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> pingLoop() &#123;</span><br><span class="line">  <span class="keyword">for</span> &#123;</span><br><span class="line">    rf.mu.Lock()</span><br><span class="line">    <span class="keyword">if</span> rf.role != LEADER &#123;</span><br><span class="line">      rf.mu.Unlock()</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// append entries to each Peer except itself</span></span><br><span class="line">    rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">    &lt;-rf.pingTimer.C</span><br><span class="line">    rf.pingTimer.Reset(heartbeatInterval)</span><br><span class="line">    DPrintf(<span class="string">&quot;%v start next ping round&quot;</span>, rf)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>applyLoop</strong> is the simplest: it continuously applies committed logs to the state machine, also a background resident goroutine. The elegance of this design lies in decoupling. That is, instead of applying immediately after each commit, a separate goroutine performs the application uniformly, to avoid committing the same index multiple times (since a commit can happen once a majority of peers respond, and subsequent responses from other peers may cause multiple commits), which would in turn lead to multiple applies.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> applyLoop() &#123;</span><br><span class="line">  <span class="keyword">for</span> &#123;</span><br><span class="line">    time.Sleep(<span class="number">10</span> * time.Millisecond)</span><br><span class="line">    rf.mu.Lock()</span><br><span class="line">    <span class="keyword">for</span> rf.lastApplied &lt; rf.commitIndex &#123;</span><br><span class="line">      rf.lastApplied++</span><br><span class="line">      rf.apply( rf.lastApplied，rf.log[rf.lastApplied]) <span class="comment">// put to applyChan in the function</span></span><br><span class="line">    &#125;</span><br><span class="line">    rf.mu.Unlock()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h3 id="Locking-Principles">Locking Principles</h3>
+<p>I followed the rather coarse-grained approach recommended in the <span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbGFicy9SYWZ0LWxvY2tpbmcudHh0">lab materials<i class="fa fa-external-link-alt"></i></span>, mostly at the function level. I only release the lock before long-running operations (network I/O): that is, before each RPC (<em>sendRequestVote</em> and <em>sendAppendEntries</em>). Therefore, the efficiency won’t be very high, but it is easy to implement and understand. At the same time, to ensure that each send process is atomic (not interrupted), I used a channel for synchronization to guarantee that before sending an RPC to the next peer, the previous RPC has finished preparing its Args; of course, you could also move the process of preparing Args outside the goroutine.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> pingLoop() &#123;</span><br><span class="line">  <span class="keyword">for</span> &#123;</span><br><span class="line">    rf.mu.Lock()</span><br><span class="line">    <span class="keyword">if</span> rf.role != LEADER &#123;</span><br><span class="line">      rf.mu.Unlock()</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    prepareFinish := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">bool</span>)</span><br><span class="line">    <span class="keyword">for</span> PeerID := <span class="keyword">range</span> rf.Peers &#123;</span><br><span class="line">      <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(id <span class="type">int</span>, pf <span class="keyword">chan</span> <span class="type">bool</span>)</span></span> &#123;</span><br><span class="line">        <span class="comment">// prepare the append entries arguments</span></span><br><span class="line">        pf &lt;- <span class="literal">true</span></span><br><span class="line">        </span><br><span class="line">        <span class="comment">// [send rpc] -&gt; [wait] -&gt;[handle the reply]</span></span><br><span class="line">      &#125;(PeerID, prepareFinish)</span><br><span class="line"></span><br><span class="line">      &lt;-prepareFinish</span><br><span class="line">    &#125;</span><br><span class="line">    rf.mu.Unlock()</span><br><span class="line"></span><br><span class="line">    &lt;-rf.pingTimer.C</span><br><span class="line">    rf.pingTimer.Reset(heartbeatInterval)</span><br><span class="line">    DPrintf(<span class="string">&quot;%v start next ping round&quot;</span>, rf)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Logging">Logging</h3>
+<p>I implemented the <code>String()</code> function for the main structs to conveniently return the current peer’s key states, as well as the parameters and return values before and after RPCs, making it easy to trace and debug. Taking the Raft struct as an example:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> String() <span class="type">string</span> &#123;</span><br><span class="line">  <span class="keyword">return</span> fmt.Sprintf(<span class="string">&quot;[%s:%d;Term:%d;VotedFor:%d;logLen:%v;Commit:%v;Apply:%v]&quot;</span>,</span><br><span class="line">    rf.role, rf.me, rf.currentTerm, rf.votedFor, <span class="built_in">len</span>(rf.log), rf.commitIndex, rf.lastApplied)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Leader-Election-Part-2A-leader-election">Leader Election (Part 2A: leader election)</h2>
+<p>Any peer (or server) in Raft is in one of three states: Follower, Candidate, or Leader. The state transition diagram is as follows:</p>
+<p><img data-src="https://i.loli.net/2020/02/09/mfESApyVoB1cPRe.png" alt="raft-server-state.png"><span class="image-caption">raft-server-state.png</span></p>
+<p>All peers start as Followers. After a random timeout, they successively become Candidates. Candidate is an intermediate transitional state designed for campaigning to become Leader. All terms begin with a Candidate (i.e., term+1 when becoming a Candidate); if elected, the term lasts until the Leader’s term ends.</p>
+<p>There is an ironclad rule in Raft: regardless of its current state, whenever a peer discovers that its term lags behind another’s, it immediately updates its term and becomes a Follower. The term is the de facto logical clock; all voting actions (Candidate and Voter[1]) and log synchronization actions (Leader and Follower) require both parties involved to be in the same term.</p>
+<p>Raft uses a <strong>strong</strong> Leader: only the Leader can synchronize logs to Followers, not the reverse. Moreover, the Leader’s own log can only be appended by the Client and cannot be altered or deleted. Since the Leader holds great power, the election must have stringent requirements to guarantee that the elected Candidate’s log is more up-to-date than that of a majority of peers. Therefore, during the election phase, the Candidate’s log must be compared one by one with that of every other peer. According to the description in the paper:</p>
+<blockquote>
+<p>Raft determines which of two logs is more up-to-date by comparing the index and term of the last entries in the logs. If the logs have last entries with different terms, then the log with the later term is more up-to-date. If the logs end with the same term, then whichever log is longer is more up-to-date.</p>
+</blockquote>
+<p>We only need to consider the index and term of the last log entry of the two logs:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">notLessUpToDate</span><span class="params">(currTerm, currIndex <span class="type">int</span>, dstTerm, dstIndex <span class="type">int</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">  <span class="keyword">if</span> currTerm != dstTerm &#123;</span><br><span class="line">    <span class="keyword">return</span> currTerm &gt; dstTerm</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> currIndex &gt;= dstIndex</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The detailed description of the implementation can be found in Figure 2 of the paper. This description should be treated as a programming language rather than natural language, because it is extremely precise. Pay special attention to not omitting the trigger conditions for state transitions. I won’t repeat it here, but will only list some points that I found potentially confusing during implementation:</p>
+<ol>
+<li>
+<p>All fields in the <code>RequestVoteArgs</code> struct must be capitalized, as required by the test program.</p>
+</li>
+<li>
+<p>The request and reply structs for <code>AppendEntries</code>, as well as the implementation for sending RPCs, need to be modeled after <code>RequestVote</code>.</p>
+</li>
+<li>
+<p><code>logEntry</code> also needs to be defined by yourself; my implementation only contains two fields: Term and Command.</p>
+</li>
+<li>
+<p>A peer can vote at most once per term. This can be guaranteed by checking whether <code>rf.votedFor</code> is null [5] before casting a vote. But it also means that a peer must be able to vote at least once per term, which requires timely updating <code>votedFor</code> when the term changes. There are two cases: first, when a Follower/Candidate times out and becomes a Candidate, the term increases by 1; at this point, vote for yourself first (<code>rf.votedFor = rf.me</code>), then initiate the election. Second, when receiving an RPC from another peer (including Request and Reply), if you find that the other peer’s term is higher and you become a Follower, you also need to promptly clear your previous vote (<code>rf.votedFor = -1</code>) so that you can continue to vote in this new term. However, when a Candidate in the same term falls back to a Follower, remember not to reset <code>rf.votedFor</code>.</p>
+</li>
+<li>
+<p>When implementing AppendEntries, a peer should promptly become a Follower as long as its own term is not higher than that of the Leader initiating the heartbeat. This includes the following situations: a. If the peer’s term is smaller, it needs to catch up its term and then become a Follower; b. If it was originally a Candidate with the same term, it should stop the election and become a Follower; c. If it was already a Follower with the same term, just reset the electionTimer.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> args.Term &lt; rf.currentTerm &#123;</span><br><span class="line">  DPrintf(<span class="string">&quot;%v reject append entry rpc from %v for (term)&quot;</span>, rf, args)</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">rf.becomeFollower(args.Term) <span class="comment">// become follower with term args.Term and reset timer</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>Regarding the reset of <code>electionTimer</code>: each time a peer becomes a Follower, the timer can be reset. In addition, for Followers/Candidates, there are two other situations that require a reset: one is when receiving an AppendEntries RPC; the other is when granting a vote to a Candidate. This inference comes from this sentence under Followers in Figure 2:</p>
+<blockquote>
+<p>If election timeout elapses without receiving AppendEntries RPC from current leader or granting vote to candidate: convert to candidate</p>
+</blockquote>
+</li>
+<li>
+<p>Every time an RPC reply is received, (Candidate and Leader) must check whether the current state is consistent with that before sending the RPC. If it is inconsistent, the goroutine should exit promptly: “Not in that position, don’t do that work.” The combination of term + role can uniquely determine a peer’s state.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in pingLoop()</span></span><br><span class="line"><span class="keyword">if</span> rf.role != LEADER || rf.currentTerm != args.Term &#123;</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// in electionLoop()</span></span><br><span class="line"><span class="keyword">if</span> rf.role != CANDIDATE || rf.currentTerm != args.Term &#123;</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>While working on it, I also thought of an extreme scenario and worked through it. Suppose a certain Peer A becomes network-partitioned from the other peers, and thus keeps timing out, electing, timing out, electing, thereby continuously updating its term to a very large value T. At some point, A restores communication with the other peers and initiates an election, asking every peer for a vote. Then all the remaining peers, including the Leader, discover the larger term T and immediately become Followers. However, thanks to the up-to-date guarantee, A still cannot become Leader. So the only consequence of this scenario is that A abruptly drags everyone into a higher term, and helps someone else (possibly electing a peer other than A or the original Leader). Of course, in practice, prevVote is usually used to prevent a Leader from being constantly interrupted by a peer that has been partitioned for a long time.</p>
+<h2 id="Log-Replication-Part-2B-log-replication">Log Replication (Part 2B: log replication)</h2>
+<p>From the time the Leader receives a client request to the time it applies the contained command to the state machine, the process roughly consists of the following steps:</p>
+<ol>
+<li>Receive the client request, which contains a command parameter (<code>Start(command interface&#123;&#125;)</code>).</li>
+<li>The Leader appends this request to its local log (<code>rf.log = append(rf.log, &amp;logEntry&#123;rf.currentTerm, command&#125;)</code>).</li>
+<li>Notify all Followers in parallel to write this log via heartbeat (AppendEntries RPC).</li>
+<li>After a majority of Followers have successfully written it, commit the log.</li>
+<li>Broadcast the LeaderCommit to all Followers via the next heartbeat.</li>
+<li>Each Follower applies it independently.</li>
+</ol>
+<p>Heartbeats are periodic, and <strong>log synchronization</strong> is accomplished during these periodic heartbeats. If the RPC parameters do not carry log entries, it is a simple heartbeat; if the RPC parameters do carry log entries, it means the Leader is telling that Follower that it thinks these logs need to be synchronized.</p>
+<p>So how does the Leader know which logs each Follower needs to synchronize?</p>
+<p>Trial and error.</p>
+<p>By probing for a match point, the Leader’s logs after the match point are the part that needs to be synchronized to the Follower. Probing for a match point means that the Leader will start from its own log entries and ask backwards, one by one: do you have this log entry? As soon as it finds a log entry that the Follower has stored, that is a match point, and the logs before it must be the same [2]. To implement this logic, the Raft paper mainly uses these variables: matchIndex[], nextIndex[], prevLogIndex, and prevLogTerm.</p>
+<h3 id="matchIndex-and-nextIndex">matchIndex and nextIndex</h3>
+<p>These two arrays are only useful for the Leader. <code>matchIndex[]</code> tracks the log entries that the Leader has matched with each Follower, and <code>nextIndex[]</code> stores the next log entry to send to each Follower.</p>
+<p>When a Candidate is elected Leader, it initializes all <code>matchIndex</code> to 0 [3], indicating that it currently doesn’t know the progress of each peer; at the same time, it initializes all <code>nextIndex</code> to <code>len(rf.log)</code>, indicating that probing will start from before it, i.e., from the last log entry.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> becomeLeader() &#123;</span><br><span class="line">  ...</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; rf.peersNum; i++ &#123;</span><br><span class="line">    rf.matchIndex[i] = <span class="number">0</span></span><br><span class="line">    rf.nextIndex[i] = <span class="built_in">len</span>(rf.log)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// in function pingLoop: construct AppendEntriesArgs</span></span><br><span class="line">prevLogIndex := rf.nextIndex[id] - <span class="number">1</span></span><br><span class="line">args := &amp;AppendEntriesArgs&#123;</span><br><span class="line">  Term:         rf.currentTerm,</span><br><span class="line">  LeaderID:     rf.me,</span><br><span class="line">  PrevLogIndex: prevLogIndex,</span><br><span class="line">  PrevLogTerm:  rf.log[prevLogIndex].Term,</span><br><span class="line">  Entries:      rf.log[rf.nextIndex[id]:], <span class="comment">// start from next to the end</span></span><br><span class="line">  LeaderCommit: rf.commitIndex,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>There is an implicit situation here: during the first probe, <code>args.Entries</code> is empty, corresponding to the initial empty heartbeat mentioned in Figure 2 of the paper:</p>
+<blockquote>
+<p>Upon election: send initial empty AppendEntries RPCs (heartbeat) to each server; repeat during idle periods to prevent election timeouts (§5.2)</p>
+</blockquote>
+<p>Later, as the probing continues backwards, more and more log entries will be carried in the heartbeats, which may cause performance issues in actual engineering.</p>
+<h3 id="prevLogIndex-and-prevLogTerm">prevLogIndex and prevLogTerm</h3>
+<p>Each heartbeat carries probing information: <code>prevLogIndex</code> and <code>prevLogTerm</code>. When a Follower receives this RPC, it checks whether it has this log entry. If not, then its <code>prevLogIndex</code> and subsequent logs must not match and can be deleted. If it does, then the log entries carried in the RPC parameters are useful: append them after the match point, and update the commit information according to the Leader’s request.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> args.PrevLogIndex &gt;= <span class="built_in">len</span>(rf.log) || rf.log[args.PrevLogIndex].Term != args.PrevLogTerm &#123;</span><br><span class="line">  <span class="keyword">if</span> args.PrevLogIndex &lt; <span class="built_in">len</span>(rf.log) &#123; </span><br><span class="line">    rf.log = rf.log[<span class="number">0</span>:args.PrevLogIndex] <span class="comment">// delete the log in prevLogIndex and after it</span></span><br><span class="line">    rf.persist()</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">rf.log = <span class="built_in">append</span>(rf.log[<span class="number">0</span>:args.PrevLogIndex+<span class="number">1</span>], args.Entries...)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> args.LeaderCommit &gt; rf.commitIndex &#123;</span><br><span class="line">  prevIndex := rf.commitIndex</span><br><span class="line">  rf.commitIndex = minInt(args.LeaderCommit, <span class="built_in">len</span>(rf.log)<span class="number">-1</span>)</span><br><span class="line">&#125;</span><br><span class="line">reply.Success = <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<h3 id="Leader-Handling-Replies">Leader Handling Replies</h3>
+<p>When the Leader receives a reply from a Follower, if it finds a match, it updates matchIndex and nextIndex; otherwise, it continues to probe the previous entry. Of course, to speed up matching, we adopt a large-step forward strategy, skipping an entire term rather than a single index each time [4]. Without this optimization, one test won’t pass.<br>
+Of course, even this might not be enough; you may also need to add some fields to the Follower’s reply to hint the Leader to jump forward quickly.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> reply.Success &#123;</span><br><span class="line">  rf.matchIndex[id] = args.PrevLogIndex + <span class="built_in">len</span>(args.Entries) <span class="comment">// do not depend on len(rf.log)</span></span><br><span class="line">  rf.nextIndex[id] = rf.matchIndex[id] + <span class="number">1</span></span><br><span class="line"></span><br><span class="line">  majorityIndex := getMajoritySameIndex(rf.matchIndex)</span><br><span class="line">  <span class="keyword">if</span> rf.log[majorityIndex].Term == rf.currentTerm &amp;&amp; majorityIndex &gt; rf.commitIndex &#123;</span><br><span class="line">    rf.commitIndex = majorityIndex</span><br><span class="line">    DPrintf(<span class="string">&quot;%v advance commit index to %v&quot;</span>, rf, rf.commitIndex)</span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  prevIndex := args.PrevLogIndex</span><br><span class="line">  <span class="keyword">for</span> prevIndex &gt; <span class="number">0</span> &amp;&amp; rf.log[prevIndex].Term == args.PrevLogTerm &#123;</span><br><span class="line">    prevIndex--</span><br><span class="line">  &#125;</span><br><span class="line">  rf.nextIndex[id] = prevIndex + <span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Some-Points">Some Points</h3>
+<p>As usual, here are some issues or bugs I encountered during implementation:</p>
+<ol>
+<li>
+<p>How to determine which logs can be committed, i.e., how to get the match point of a majority of peers from the matchIndex array (<code>getMajoritySameIndex</code>)? My implementation is rather crude: make a copy, sort it in descending order, and take the value at <code>len/2</code>.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">getMajoritySameIndex</span><span class="params">(matchIndex []<span class="type">int</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">  tmp := <span class="built_in">make</span>([]<span class="type">int</span>, <span class="built_in">len</span>(matchIndex))</span><br><span class="line">  <span class="built_in">copy</span>(tmp, matchIndex)</span><br><span class="line"></span><br><span class="line">  sort.Sort(sort.Reverse(sort.IntSlice(tmp)))</span><br><span class="line"></span><br><span class="line">  idx := <span class="built_in">len</span>(tmp) / <span class="number">2</span></span><br><span class="line">  <span class="keyword">return</span> tmp[idx]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>Don’t forget to assign the <code>applyCh</code> parameter passed to the <code>Make</code> function to <code>rf.applyCh</code>.</p>
+</li>
+<li>
+<p>When a Leader/Candidate/Follower receives a RequestVote RPC with a larger term, it needs to immediately convert to a Follower and reset the electionTimer.</p>
+</li>
+<li>
+<p>When a Leader receives an AppendEntries reply, it needs to check the term first, and then check whether its state has changed. That is, the order of the following two if statements cannot be swapped. Otherwise, for some reason, this peer’s state might have changed (i.e., it is no longer the Leader or its term has changed), and it would return directly. But it is possible that its term after the change is still smaller than reply.Term, thus failing to promptly become a Follower.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> reply.Term &gt; rf.currentTerm &#123;</span><br><span class="line">  rf.becomeFollower(reply.Term)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> rf.role != LEADER || rf.currentTerm != args.Term &#123;</span><br><span class="line">  DPrintf(<span class="string">&quot;%v is not leader or changes from previous term: %v&quot;</span>, rf, args.Term)</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>Does a Leader need to roll back its <code>commitIndex</code> after losing leadership? And does a Candidate need to set <code>commitIndex = 0</code> when it becomes Leader? The answer to both is no, because according to the <strong>Leader Completeness</strong> property in the paper, all committed logs will definitely appear in the logs of subsequent Leaders.</p>
+</li>
+<li>
+<p>When updating <code>rf.matchIndex</code> and <code>rf.nextIndex</code> upon receiving an AppendEntries reply, be careful not to rely on <code>len(rf.log)</code>, because it may have been changed, for example, by a new log entry appended due to a client request. It is better to use the values from the fields in the parameters at the time the RPC request was sent: <code>args.PrevIndex + len(arg.Entnries)</code>, as noted in the code above.</p>
+</li>
+<li>
+<p>I couldn’t pass the TestRPCBytes2B test case at first. Later, I found out that my heartbeat interval was too small; it turned out to be a unit mistake, writing microseconds instead of milliseconds. This caused too many AppendEntries packets to be sent to the same Follower (the test program can tolerate slightly sending one or two extra packets).</p>
+</li>
+<li>
+<p>For the random seed, <code>rand.Seed(time.Now().UnixNano())</code> is better.</p>
+</li>
+<li>
+<p>When sending AppendEntries RPC, when peerID is the Leader itself, remember to update nextIndex and matchIndex as well:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> peerID == rf.me &#123;</span><br><span class="line">  rf.nextIndex[peerID] = <span class="built_in">len</span>(rf.log)</span><br><span class="line">  rf.matchIndex[peerID] = <span class="built_in">len</span>(rf.log) - <span class="number">1</span></span><br><span class="line">  <span class="keyword">continue</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="State-Persistence-Part-2C-state-persist">State Persistence (Part 2C: state persist)</h2>
+<p>In terms of implementation alone, 2C is relatively simple: just implement the serialization (<code>rf.persist()</code>) and deserialization (<code>rf.readPersist()</code>) functions to save or load the states that need to be persisted. And call <code>rf.persist()</code> promptly whenever these states change.</p>
+<p>But it is easy to fail the tests. When I did it two years ago, I was stuck here for a long time. Because the test cases in this part are more complex, they can easily expose points that were not well implemented in the first two parts.</p>
+<h3 id="Serialization-and-Deserialization">Serialization and Deserialization</h3>
+<p>The states that need to be persisted are clearly stated in Figure 2 of the paper. The usage of labgob is also very detailed in the comments. The main thing to note is that the <code>rf.log</code> slice doesn’t need special treatment; just handle it like an ordinary variable. Taking serialization as an example:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(rf *Raft)</span></span> persist() &#123;</span><br><span class="line">  w := <span class="built_in">new</span>(bytes.Buffer)</span><br><span class="line">  e := labgob.NewEncoder(w)</span><br><span class="line">  </span><br><span class="line">  err := e.Encode(rf.currentTerm)</span><br><span class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    DPrintf(<span class="string">&quot;%v encode currentTerm error: %v&quot;</span>, rf, err)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  err = e.Encode(rf.votedFor)</span><br><span class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    DPrintf(<span class="string">&quot;%v encode votedFor error: %v&quot;</span>, rf, err)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  err = e.Encode(rf.log)</span><br><span class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    DPrintf(<span class="string">&quot;%v encode log error: %v&quot;</span>, rf, err)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  data := w.Bytes()</span><br><span class="line">  rf.persister.SaveRaftState(data)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="State-Changes">State Changes</h3>
+<p>There are four main places in the code where state changes occur:</p>
+<ol>
+<li>When initiating an election and updating term and votedFor.</li>
+<li>When calling Start to append a log and <code>rf.log</code> changes.</li>
+<li>When the RequestVote and AppendEntries RPC handlers change related states.</li>
+<li>When a Candidate/Leader updates its own state upon receiving an RPC reply.</li>
+</ol>
+<p>But the test case TestFigure8Unreliable2C just wouldn’t pass. After some Googling, I found that <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NwcmluZ2ZpZWxka2luZy9taXQtNi44MjQtZ29sYWJzLTIwMTgvaXNzdWVzLzE=">others<i class="fa fa-external-link-alt"></i></span> had this problem too. Making the pingInterval smaller and widening the gap between it and electionTimeout solved it. In the end, I changed the parameters to the following values, and the test case passed.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> (</span><br><span class="line">  electionTimeoutMin = <span class="number">150</span></span><br><span class="line">  electionTimeoutMax = <span class="number">300</span></span><br><span class="line">  heartbeatInterval  = <span class="number">50</span> * time.Millisecond</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p>But I initially set the heartbeat interval relatively large because I saw this sentence in the materials:</p>
+<blockquote>
+<p>The paper’s Section 5.2 mentions election timeouts in the range of 150 to 300 milliseconds. Such a range only makes sense if the leader sends heartbeats considerably more often than once per 150 milliseconds. Because the tester limits you to <strong>10 heartbeats per second</strong>, you will have to use an election timeout larger than the paper’s 150 to 300 milliseconds, but not too large, because then you may fail to elect a leader within five seconds.</p>
+</blockquote>
+<p>But when I changed it to <code>heartbeatInterval  = 50 * time.Millisecond</code>, the tester also let it pass. I’m still somewhat puzzled by this.</p>
+<h2 id="References">References</h2>
+<ol>
+<li>
+<p>Raft paper: <span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvcGFwZXJzL3JhZnQtZXh0ZW5kZWQucGRm">https://pdos.csail.mit.edu/6.824/papers/raft-extended.pdf<i class="fa fa-external-link-alt"></i></span></p>
+</li>
+<li>
+<p>Lab2 Raft course materials page: <span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbGFicy9sYWItcmFmdC5odG1s">https://pdos.csail.mit.edu/6.824/labs/lab-raft.html<i class="fa fa-external-link-alt"></i></span></p>
+</li>
+<li>
+<p>TA’s summary of past experiences: <span class="exturl" data-url="aHR0cHM6Ly90aGVzcXVhcmVwbGFuZXQuY29tL2Jsb2cvc3R1ZGVudHMtZ3VpZGUtdG8tcmFmdC8=">https://thesquareplanet.com/blog/students-guide-to-raft/<i class="fa fa-external-link-alt"></i></span>. By the way, this TA’s blog is also quite good.</p>
+</li>
+<li>
+<p>TA Q&amp;A: <span class="exturl" data-url="aHR0cHM6Ly90aGVzcXVhcmVwbGFuZXQuY29tL2Jsb2cvcmFmdC1xYS8=">https://thesquareplanet.com/blog/raft-qa/<i class="fa fa-external-link-alt"></i></span></p>
+</li>
+<li>
+<p>Raft locking advice: <span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbGFicy9yYWZ0LWxvY2tpbmcudHh0">https://pdos.csail.mit.edu/6.824/labs/raft-locking.txt<i class="fa fa-external-link-alt"></i></span></p>
+</li>
+<li>
+<p>Raft implementation structure advice: <span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbGFicy9yYWZ0LXN0cnVjdHVyZS50eHQ=">https://pdos.csail.mit.edu/6.824/labs/raft-structure.txt<i class="fa fa-external-link-alt"></i></span></p>
+</li>
+<li>
+<p>Raft homepage, which has a visualization animation that can help you intuitively feel how Raft works, and it has some interactivity. There are also more Raft-related materials you can refer to: <span class="exturl" data-url="aHR0cHM6Ly9yYWZ0LmdpdGh1Yi5pby8=">https://raft.github.io/<i class="fa fa-external-link-alt"></i></span></p>
+</li>
+<li>
+<p>An online classmate’s implementation: <span class="exturl" data-url="aHR0cHM6Ly93aWVzZW4uZ2l0aHViLmlvL3Bvc3QvbWl0LTYuODI0LWxhYjItcmFmdC1jb25zZW5zdXMtYWxnb3JpdGhtLWltcGxlbWVudGF0aW9uLw==">https://wiesen.github.io/post/mit-6.824-lab2-raft-consensus-algorithm-implementation/<i class="fa fa-external-link-alt"></i></span></p>
+</li>
+</ol>
+<h2 id="Notes">Notes</h2>
+<p>[0] Each server in Raft is uniformly referred to as a Peer in this article.</p>
+<p>[1] A voter may be a Follower or a Candidate.</p>
+<p>[2] Refer to the Log Matching property in Figure 3 of the paper.</p>
+<p>[3] 0 actually represents nil, because <code>rf.log[0]</code> is a meaningless empty log entry that serves as a <strong>sentinel</strong>, reducing some checks, similar to a dummy head node in a linked list.</p>
+<p>[4] The <span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvcGFwZXJzL3JhZnQtZXh0ZW5kZWQucGRm">Raft paper<i class="fa fa-external-link-alt"></i></span> mentions this strategy in the footnote on pages 7–8.</p>
+<p>[5] In my implementation, votedFor is of type int, and I use -1 to represent null.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/01/18/raft-implement-points/" rel="bookmark">MIT 6.824 2020 Raft 实现细节备忘</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Debugging and Running Hadoop-0.1.0 Code</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/distributed-system/" rel="tag"># distributed system</a>
+              <a href="/tags/Raft/" rel="tag"># Raft</a>
+              <a href="/tags/distributed-systems/" rel="tag"># distributed systems</a>
+              <a href="/tags/implementation/" rel="tag"># implementation</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/01/06/go-value-pointer-method/" rel="prev" title="Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）">
+      <i class="fa fa-chevron-left"></i> Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/01/18/raft-implement-points/" rel="next" title="MIT 6.824 2020 Raft 实现细节备忘">
+      MIT 6.824 2020 Raft 实现细节备忘 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-824-and-Raft"><span class="nav-number">2.</span> <span class="nav-text">6.824 and Raft</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Overall-Structure"><span class="nav-number">3.</span> <span class="nav-text">Overall Structure</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Three-States"><span class="nav-number">3.1.</span> <span class="nav-text">Three States</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Three-Loops"><span class="nav-number">3.2.</span> <span class="nav-text">Three Loops</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Locking-Principles"><span class="nav-number">3.3.</span> <span class="nav-text">Locking Principles</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Logging"><span class="nav-number">3.4.</span> <span class="nav-text">Logging</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Leader-Election-Part-2A-leader-election"><span class="nav-number">4.</span> <span class="nav-text">Leader Election (Part 2A: leader election)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Log-Replication-Part-2B-log-replication"><span class="nav-number">5.</span> <span class="nav-text">Log Replication (Part 2B: log replication)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#matchIndex-and-nextIndex"><span class="nav-number">5.1.</span> <span class="nav-text">matchIndex and nextIndex</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#prevLogIndex-and-prevLogTerm"><span class="nav-number">5.2.</span> <span class="nav-text">prevLogIndex and prevLogTerm</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Leader-Handling-Replies"><span class="nav-number">5.3.</span> <span class="nav-text">Leader Handling Replies</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Some-Points"><span class="nav-number">5.4.</span> <span class="nav-text">Some Points</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#State-Persistence-Part-2C-state-persist"><span class="nav-number">6.</span> <span class="nav-text">State Persistence (Part 2C: state persist)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Serialization-and-Deserialization"><span class="nav-number">6.1.</span> <span class="nav-text">Serialization and Deserialization</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#State-Changes"><span class="nav-number">6.2.</span> <span class="nav-text">State Changes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">7.</span> <span class="nav-text">References</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Notes"><span class="nav-number">8.</span> <span class="nav-text">Notes</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2020/01/18/raft-implement-points/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '675fd00974119831c7a44cb8ffcff004',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="I had heard of LevelDB a while ago, but this time, on a whim, I went through the code with some reference materials, and it really lives up to its reputation. Whether you are interested in storage, w">
+<meta property="og:type" content="article">
+<meta property="og:title" content="A Casual Discussion on LevelDB Data Structures (III): LRU Cache (LRUCache)">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2021/05/09/levedb-data-structures-lru-cache/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="I had heard of LevelDB a while ago, but this time, on a whim, I went through the code with some reference materials, and it really lives up to its reputation. Whether you are interested in storage, w">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2021/05/09/cCweIyiS3oaKOMD.png">
+<meta property="og:image" content="https://i.loli.net/2021/05/09/iUc8ywmJATEH7pl.png">
+<meta property="og:image" content="https://i.loli.net/2021/05/09/Dgba6dWsNerO28F.png">
+<meta property="og:image" content="https://i.loli.net/2021/05/09/TrNCxo3evBZIuSA.png">
+<meta property="article:published_time" content="2021-05-09T15:15:48.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.675Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="leveldb">
+<meta property="article:tag" content="LRU">
+<meta property="article:tag" content="Storage">
+<meta property="article:tag" content="LRU Cache">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/05/09/cCweIyiS3oaKOMD.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2021/05/09/levedb-data-structures-lru-cache/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="leveldb,LRU,Storage,LRU Cache">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "A Casual Discussion on LevelDB Data Structures (III): LRU Cache (LRUCache)",
+    "description": "I had heard of LevelDB a while ago, but this time, on a whim, I went through the code with some reference materials, and it really lives up to its reputation. Whether you are interested in storage, want to use C++ elegantly, or want to learn how to architect a project, I highly recommend taking a look. Not to mention that the authors are Sanjay Ghemawat and Jeff Dean. If I don’t write something after reading through it once, given my memory, I’ll surely forget it soon. So I wanted to write something about the wonders of LevelDB, but I didn’t want to take the usual approach: starting with an architectural overview and ending with module analysis. While reading the code, I kept thinking about where to start writing. When I was just finishing up, what impressed me most were actually all the exquisite data structures in LevelDB: tailored to the scenario, built from scratch, appropriately trimmed, and precisely coded. Why not start the LevelDB series with these little corner pieces? This series mainly wants to share three classic data structures commonly used in engineering in LevelDB: the Skip List used for fast read/write to the memtable, the Bloom Filter used for fast filtering of sstables, and the LRUCache used for partially caching sstables. This is the third article, on LRUCache. Introduction LRU is a data structure commonly seen in engineering, often used in caching scenarios. In recent years, LRU has also become a hot interview question, first because it is widely used in engineering, second because the code volume is relatively small, and third because the data structures involved are very typical. There is a corresponding problem on LeetCode: lru-cache. Compared to real-world scenarios, the problem has been simplified: essentially, it requires maintaining a time-ordered key-value collection, where both keys and values are integers. The classic solution is to use a hash table (unordered_map) and a doubly linked list; the hash table solves the indexing problem, and the doubly linked list maintains the access order. Here is a solution I wrote at the time, which is characterized by using two helper functions and being able to return the node itself to support chaining, thereby simplifying the code. Returning to the LevelDB source code, as an industrial-grade product, what optimizations and changes have been made to its LRUCache? Let’s break down the LRUCache used in LevelDB together and see what the differences are. This article first clarifies how LRUCache is used, then gives an overview of the implementation ideas of LRUCache, and finally details the implementation of the relevant data structures.",
+    "url": "https://www.qtmuniao.com/en/2021/05/09/levedb-data-structures-lru-cache/",
+    "datePublished": "2021-05-09T23:15:48+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2021/05/09/levedb-data-structures-lru-cache/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>A Casual Discussion on LevelDB Data Structures (III): LRU Cache (LRUCache) | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2021/05/09/levedb-data-structures-lru-cache/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2021/05/09/levedb-data-structures-lru-cache/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/05/09/levedb-data-structures-lru-cache/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          A Casual Discussion on LevelDB Data Structures (III): LRU Cache (LRUCache)
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-05-09 23:15:48" itemprop="dateCreated datePublished" datetime="2021-05-09T23:15:48+08:00">2021-05-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Source-Code-Reading/" itemprop="url" rel="index"><span itemprop="name">Source Code Reading</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Source-Code-Reading/leveldb/" itemprop="url" rel="index"><span itemprop="name">leveldb</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>I had heard of LevelDB a while ago, but this time, on a whim, I went through the code with some reference materials, and it really lives up to its reputation. Whether you are interested in storage, want to use C++ elegantly, or want to learn how to architect a project, I highly recommend taking a look. Not to mention that the authors are Sanjay Ghemawat and Jeff Dean.<br>
+If I don’t write something after reading through it once, given my memory, I’ll surely forget it soon. So I wanted to write something about the wonders of LevelDB, but I didn’t want to take the usual approach: starting with an architectural overview and ending with module analysis. While reading the code, I kept thinking about where to start writing. When I was just finishing up, what impressed me most were actually all the exquisite data structures in LevelDB: tailored to the scenario, built from scratch, appropriately trimmed, and precisely coded. Why not start the LevelDB series with these little corner pieces?<br>
+This series mainly wants to share three classic data structures commonly used in engineering in LevelDB: the Skip List used for fast read/write to the memtable, the Bloom Filter used for fast filtering of sstables, and the LRUCache used for partially caching sstables. This is the third article, on LRUCache.</p>
+</blockquote>
+<h2 id="Introduction">Introduction</h2>
+<p>LRU is a data structure commonly seen in engineering, often used in caching scenarios. In recent years, LRU has also become a hot interview question, first because it is widely used in engineering, second because the code volume is relatively small, and third because the data structures involved are very typical. There is a corresponding problem on LeetCode: <span class="exturl" data-url="aHR0cHM6Ly9sZWV0Y29kZS5jb20vcHJvYmxlbXMvbHJ1LWNhY2hlLw==">lru-cache<i class="fa fa-external-link-alt"></i></span>. Compared to real-world scenarios, the problem has been simplified: essentially, it requires maintaining a time-ordered key-value collection, where both keys and values are integers. The classic solution is to use a hash table (unordered_map) and a doubly linked list; the hash table solves the indexing problem, and the doubly linked list maintains the access order. Here is a <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL3NvbmdwZW5nd2VpL0FsZ29yaXRobXMvYmxvYi9tYXN0ZXIvZW5naW5lZXJpbmcvbHJ1LWNhY2hlLmNj">solution<i class="fa fa-external-link-alt"></i></span> I wrote at the time, which is characterized by using two helper functions and being able to return the node itself to support chaining, thereby simplifying the code.</p>
+<p>Returning to the LevelDB source code, as an industrial-grade product, what optimizations and changes have been made to its LRUCache? Let’s break down the LRUCache used in LevelDB together and see what the differences are.</p>
+<p>This article first clarifies how LRUCache is used, then gives an overview of the implementation ideas of LRUCache, and finally details the implementation of the relevant data structures.</p>
+<span id="more"></span>
+<p><em>Author: Muniao’s Miscellany <a href="https://www.qtmuniao.com/2021/05/09/levedb-data-structures-lru-cache/">https://www.qtmuniao.com/2021/05/09/levedb-data-structures-lru-cache/</a>, please indicate the source when reposting</em></p>
+<h2 id="Cache-Usage">Cache Usage</h2>
+<p>Before analyzing the implementation of LRUCache, let’s first understand how LRUCache is used to clarify the problems it needs to solve. Based on this, we can understand why it is implemented this way, and even further, discuss whether there is a better implementation.</p>
+<p>First, let’s look at the exported interface <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2dvb2dsZS9sZXZlbGRiL2Jsb2IvbWFzdGVyL2luY2x1ZGUvbGV2ZWxkYi9jYWNoZS5o">Cache<i class="fa fa-external-link-alt"></i></span> in LevelDB:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Insert a key-value pair (key, value) into the cache,</span></span><br><span class="line"><span class="comment">// and subtract the charge (capacity consumed by this pair) from the total cache capacity.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// Returns a handle pointing to this key-value pair. After the caller is done with the handle,</span></span><br><span class="line"><span class="comment">// they need to call this-&gt;Release(handle) to release it.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// When the key-value pair is no longer in use, it will be freed by the passed deleter parameter.</span></span><br><span class="line"><span class="function"><span class="keyword">virtual</span> Handle* <span class="title">Insert</span><span class="params">(<span class="type">const</span> Slice&amp; key, <span class="type">void</span>* value, <span class="type">size_t</span> charge,</span></span></span><br><span class="line"><span class="params"><span class="function">                       <span class="type">void</span> (*deleter)(<span class="type">const</span> Slice&amp; key, <span class="type">void</span>* value))</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// If the cache does not contain the corresponding key, returns nullptr.</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// Otherwise, returns a handle pointing to the corresponding key-value pair. After the caller is done with the handle,</span></span><br><span class="line"><span class="comment">// remember to call this-&gt;Release(handle) to release it.</span></span><br><span class="line"><span class="function"><span class="keyword">virtual</span> Handle* <span class="title">Lookup</span><span class="params">(<span class="type">const</span> Slice&amp; key)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Release the handle returned by Insert/Lookup.</span></span><br><span class="line"><span class="comment">// Requirement: this handle must not have been released before, i.e., it cannot be released multiple times.</span></span><br><span class="line"><span class="comment">// Requirement: the handle must be returned by the same instance.</span></span><br><span class="line"><span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">Release</span><span class="params">(Handle* handle)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Get the value in the handle, of type void* (representing any user-defined type).</span></span><br><span class="line"><span class="comment">// Requirement: this handle has not been released.</span></span><br><span class="line"><span class="comment">// Requirement: the handle must have been returned by the same instance.</span></span><br><span class="line"><span class="function"><span class="keyword">virtual</span> <span class="type">void</span>* <span class="title">Value</span><span class="params">(Handle* handle)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// If the cache contains the entry pointed to by the given key, delete it.</span></span><br><span class="line"><span class="comment">// Note that the space occupied by the entry is only truly freed when all handles holding the entry are released.</span></span><br><span class="line"><span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">Erase</span><span class="params">(<span class="type">const</span> Slice&amp; key)</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Return an auto-incrementing numeric id. When a cache instance is shared by multiple clients,</span></span><br><span class="line"><span class="comment">// to avoid key conflicts between multiple clients, each client may want to get a unique</span></span><br><span class="line"><span class="comment">// id and use it as a prefix for their keys. Similar to giving each client a separate namespace.</span></span><br><span class="line"><span class="function"><span class="keyword">virtual</span> <span class="type">uint64_t</span> <span class="title">NewId</span><span class="params">()</span> </span>= <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Evict all unused data entries.</span></span><br><span class="line"><span class="comment">// Memory-constrained applications may want to use this interface to periodically free memory.</span></span><br><span class="line"><span class="comment">// The default implementation of Prune in the base class is empty, but it is strongly recommended that all subclasses implement it themselves.</span></span><br><span class="line"><span class="comment">// A default implementation may be added in future versions.</span></span><br><span class="line"><span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">Prune</span><span class="params">()</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Return an estimate of the total charge of all data entries currently in the cache.</span></span><br><span class="line"><span class="function"><span class="keyword">virtual</span> <span class="type">size_t</span> <span class="title">TotalCharge</span><span class="params">()</span> <span class="type">const</span> </span>= <span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+<p>Based on the above interface, the cache-related requirements for LevelDB can be summarized as:</p>
+<ol>
+<li>Multi-threaded support</li>
+<li>Performance requirements</li>
+<li>Data entry lifecycle management</li>
+</ol>
+<p>Using a state machine to represent the lifecycle of an Entry in the Cache is as follows:</p>
+<p><img data-src="https://i.loli.net/2021/05/09/cCweIyiS3oaKOMD.png" alt="leveldb-entry-lifecycle.png"><span class="image-caption">leveldb-entry-lifecycle.png</span></p>
+<p>It can be seen that this state machine is somewhat more complex than the one in LeetCode. First, multi-threaded references have been added, and second, it is necessary to distinguish between referenced (inuse) and idle states.</p>
+<p>Multiple threads can insert and reference the same entry through <code>Insert</code> and <code>Lookup</code>, so the cache needs to maintain the reference count for each entry. Only entries with a reference count of 0 will enter an evictable (idle) state. All evictable entries are sorted by LRU order, and when usage exceeds capacity, the least recently used entry will be evicted based on this order.</p>
+<p>In addition, inter-thread synchronization and mutual exclusion are required to ensure that the Cache is thread-safe. The simplest method is to use a single lock for the entire Cache, but this would cause serious contention among multiple threads, leading to performance issues.</p>
+<p>Next, let’s see how LevelDB’s LRUCache solves these problems.</p>
+<h2 id="Overview">Overview</h2>
+<p>Overall, LevelDB’s LRUCache also uses the implementation idea of a hash table and a doubly linked list, but with some differences:</p>
+<ol>
+<li>A minimal custom hash table using an array + linked list to handle collisions, facilitating control over allocation and resizing.</li>
+<li>Multi-threaded support. To improve concurrency, sharding is introduced; to distinguish whether it is referenced by a client, two doubly linked lists are introduced.</li>
+</ol>
+<p>The entire code is quite concise, and the ideas are relatively straightforward.</p>
+<h3 id="Custom-Hash-Table">Custom Hash Table</h3>
+<p>In LevelDB, the hash table keeps the number of buckets as a power of two, thereby using bitwise operations to quickly compute the bucket position from the key’s hash value. The method to get the bucket handle from the key’s hash value is as follows:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LRUHandle** ptr = &amp;list_[hash &amp; (length_ - <span class="number">1</span>)];</span><br></pre></td></tr></table></figure>
+<p>During each adjustment, the number of buckets is doubled when expanding and halved when shrinking, and all data entries need to be rehashed.</p>
+<h3 id="Two-Linked-Lists">Two Linked Lists</h3>
+<p>LevelDB uses two doubly linked lists to store data. <strong>All data in the cache</strong> is either in one linked list or the other, but cannot exist in both at the same time. These two linked lists are:</p>
+<ol>
+<li><strong>in-use list</strong>. All data entries (a kv item) currently being used by clients are stored in this list. This list is unordered, because when capacity is insufficient, entries in this list definitely cannot be evicted, so there is no need to maintain an eviction order.</li>
+<li><strong>lru list</strong>. All entries no longer used by clients are placed in the lru list. This list is ordered by most recent usage time. When capacity is insufficient, the least recently used entry in this list will be evicted.</li>
+</ol>
+<p>It is also worth mentioning that the linked list nodes used in the hash table to handle collisions and the nodes in the doubly linked list use the same data structure (<code>LRUHandle</code>), but different pointer fields in <code>LRUHandle</code> are used when chaining them together.</p>
+<h2 id="Data-Structures">Data Structures</h2>
+<p>The LRUCache implementation mainly involves four data structures: <code>LRUHandle</code>, <code>HandleTable</code>, <code>LRUCache</code>, and <code>ShardedLRUCache</code>. The organization of the first three is as follows:</p>
+<p><img data-src="https://i.loli.net/2021/05/09/iUc8ywmJATEH7pl.png" alt="lru-cache-architecture.png"><span class="image-caption">lru-cache-architecture.png</span></p>
+<p><code>ShardedLRUCache</code> consists of a set of <code>LRUCache</code>s, each <code>LRUCache</code> acting as a shard and also a locking granularity. They all implement the <code>Cache</code> interface. The schematic below only shows 4 shards; in the code there are 16.</p>
+<p><img data-src="https://i.loli.net/2021/05/09/Dgba6dWsNerO28F.png" alt="shared-lru-cache.png"><span class="image-caption">shared-lru-cache.png</span></p>
+<h3 id="LRUHandle-—-The-Basic-Data-Unit">LRUHandle — The Basic Data Unit</h3>
+<p><code>LRUHandle</code> is the basic building block of the doubly linked list and the hash table, and it is also the basic unit for caching and operating data entries. Its structure is as follows:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">LRUHandle</span> &#123;</span><br><span class="line">  <span class="type">void</span>* value;</span><br><span class="line">  <span class="built_in">void</span> (*deleter)(<span class="type">const</span> Slice&amp;, <span class="type">void</span>* value); <span class="comment">// User callback to free key, value space</span></span><br><span class="line">  LRUHandle* next_hash;  <span class="comment">// Used for linked list collision handling in the hashtable</span></span><br><span class="line">  LRUHandle* next;       <span class="comment">// Used to maintain LRU order in the doubly linked list</span></span><br><span class="line">  LRUHandle* prev;</span><br><span class="line">  <span class="type">size_t</span> charge;     <span class="comment">// TODO(opt): Only allow uint32_t?</span></span><br><span class="line">  <span class="type">size_t</span> key_length;</span><br><span class="line">  <span class="type">bool</span> in_cache;     <span class="comment">// Whether this handle is in the cache table</span></span><br><span class="line">  <span class="type">uint32_t</span> refs;     <span class="comment">// The number of references to this handle</span></span><br><span class="line">  <span class="type">uint32_t</span> hash;     <span class="comment">// Hash value of the key, used to determine the shard and for fast comparison</span></span><br><span class="line">  <span class="type">char</span> key_data[<span class="number">1</span>];  <span class="comment">// Start of the key</span></span><br><span class="line"></span><br><span class="line">  <span class="function">Slice <span class="title">key</span><span class="params">()</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">    <span class="comment">// next_ is only equal to this if the LRU handle is the list head of an</span></span><br><span class="line">    <span class="comment">// empty list. List heads never have meaningful keys.</span></span><br><span class="line">    <span class="built_in">assert</span>(next != <span class="keyword">this</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">Slice</span>(key_data, key_length);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>Pay special attention: the meaning of <code>refs</code> in <code>LRUHandle</code> is different from the ref in the state machine diagram in the previous subsection. In the LevelDB implementation, the Cache’s own reference is also counted as a reference. Therefore, during <code>Insert</code>, <code>refs</code> is set to 2: one for the client reference and one for the <code>LRUCache</code> reference. <code>refs==1 &amp;&amp; in_cache</code> means that the data entry is only referenced by <code>LRUCache</code>.</p>
+<p>This design may look a bit awkward at first, but after thinking about it, it feels quite natural and fitting.</p>
+<h3 id="HandleTable-—-Hash-Table-Index">HandleTable — Hash Table Index</h3>
+<p>Bitwise operations are used to route keys, and linked lists are used to handle collisions; the implementation is fairly straightforward. The nodes in the linked list are unordered, so every lookup requires a full linked list traversal.</p>
+<p>Among the functions, <code>FindPointer</code> is worth mentioning. This lookup helper function uses a double pointer, which is quite concise when adding or deleting nodes, though it may be a bit hard to understand at first. In a typical implementation, when adding or deleting nodes, we need to find their predecessor node. However, in fact, add and delete operations only use the <code>next_hash</code> pointer of the predecessor node:</p>
+<ol>
+<li>Deletion: modifies the <code>next_hash</code> pointer.</li>
+<li>Insertion: first reads <code>next_hash</code> to find the next link in the chain, attaches it after the node to be inserted, and then modifies the predecessor node’s <code>next_hash</code> pointer.</li>
+</ol>
+<p>Since the essence only involves reading and writing the <code>next_hash</code> pointer of the predecessor node, returning a pointer to the predecessor node’s <code>next_hash</code> pointer is a more concise approach:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">LRUHandle** <span class="title">FindPointer</span><span class="params">(<span class="type">const</span> Slice&amp; key, <span class="type">uint32_t</span> hash)</span> </span>&#123;</span><br><span class="line">  LRUHandle** ptr = &amp;list_[hash &amp; (length_ - <span class="number">1</span>)];</span><br><span class="line">  <span class="keyword">while</span> (*ptr != <span class="literal">nullptr</span> &amp;&amp; ((*ptr)-&gt;hash != hash || key != (*ptr)-&gt;<span class="built_in">key</span>())) &#123;</span><br><span class="line">    ptr = &amp;(*ptr)-&gt;next_hash;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> ptr;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>This function first uses the hash value to locate a bucket via bitwise operation. Then it iterates through the nodes in that bucket one by one:</p>
+<ol>
+<li>If the node’s hash or key matches, it returns the double pointer to that node (<strong>the pointer to the predecessor node’s next_hash pointer</strong>).</li>
+<li>Otherwise, it returns the double pointer of the last node in that linked list (boundary case: for an empty linked list, the last node is the bucket head).</li>
+</ol>
+<p>Since what is returned is the address of the predecessor node’s <code>next_hash</code>, during deletion, you only need to change this next_hash to the successor node’s address of the node to be deleted, and then return the node to be deleted.</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">LRUHandle* <span class="title">Remove</span><span class="params">(<span class="type">const</span> Slice&amp; key, <span class="type">uint32_t</span> hash)</span> </span>&#123;</span><br><span class="line">  LRUHandle** ptr = <span class="built_in">FindPointer</span>(key, hash);</span><br><span class="line">  LRUHandle* result = *ptr;</span><br><span class="line">  <span class="keyword">if</span> (result != <span class="literal">nullptr</span>) &#123;</span><br><span class="line">    *ptr = result-&gt;next_hash;</span><br><span class="line">    --elems_;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>During insertion, the <code>FindPointer</code> function is also used to find the <code>next_hash</code> pointer of the tail node in the linked list of the bucket to be inserted into. For the boundary condition of an empty bucket, it will find the empty head node of the bucket. Then it needs to determine whether this is a new insertion or a replacement. If it is a replacement, the replaced old node is returned. Below is a schematic diagram of inserting a new node:</p>
+<p><img data-src="https://i.loli.net/2021/05/09/TrNCxo3evBZIuSA.png" alt="leveldb-table-insert.png"><span class="image-caption">leveldb-table-insert.png</span></p>
+<p>If it is a newly inserted node, the total number of nodes will increase. If the total number of nodes becomes greater than a certain threshold, in order to maintain the performance of the hash table, a <code>resize</code> is needed to increase the number of buckets, while rehashing all nodes. The threshold chosen by LevelDB is <code>length_</code> — the number of buckets.</p>
+<p>The <code>resize</code> operation is quite heavy, because all nodes need to be rehashed, and to ensure thread safety, a lock is required, which will make the hash table unavailable for a period of time. Of course, sharding has already reduced the number of nodes in a single shard, but if the sharding is uneven, it can still be quite heavy. <span class="exturl" data-url="aHR0cHM6Ly9sZXZlbGRiLWhhbmRib29rLnJlYWR0aGVkb2NzLmlvL3poL2xhdGVzdC9jYWNoZS5odG1sI2R5bmFtaWMtc2l6ZWQtbm9uYmxvY2tpbmctaGFzaC10YWJsZQ==">Here<i class="fa fa-external-link-alt"></i></span> a progressive migration method is mentioned: Dynamic-sized NonBlocking Hash table, which can amortize the migration time, somewhat similar to the evolution of Go GC.</p>
+<h2 id="LRUCache-—-Hash-Table-Index-Doubly-Circular-Linked-List">LRUCache — Hash Table Index + Doubly Circular Linked List</h2>
+<p>After removing the functions included in the exported interface <code>Cache</code>, the <code>LRUCache</code> class is simplified as follows:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">LRUCache</span> &#123;</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="built_in">LRUCache</span>();</span><br><span class="line">  ~<span class="built_in">LRUCache</span>();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Separating the setting of this parameter from the constructor allows the caller to flexibly adjust it when using.</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">SetCapacity</span><span class="params">(<span class="type">size_t</span> capacity)</span> </span>&#123; capacity_ = capacity; &#125;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">// Helper function: remove link e from the doubly linked list</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">LRU_Remove</span><span class="params">(LRUHandle* e)</span></span>;</span><br><span class="line">  <span class="comment">// Helper function: append link e to the head of the list</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">LRU_Append</span><span class="params">(LRUHandle* list, LRUHandle* e)</span></span>;</span><br><span class="line">  <span class="comment">// Helper function: increase the reference count of link e</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">Ref</span><span class="params">(LRUHandle* e)</span></span>;</span><br><span class="line">  <span class="comment">// Helper function: decrease the reference count of link e</span></span><br><span class="line">  <span class="function"><span class="type">void</span> <span class="title">Unref</span><span class="params">(LRUHandle* e)</span></span>;</span><br><span class="line">  <span class="comment">// Helper function: delete a single link e from the cache</span></span><br><span class="line">  <span class="function"><span class="type">bool</span> <span class="title">FinishErase</span><span class="params">(LRUHandle* e)</span> <span class="title">EXCLUSIVE_LOCKS_REQUIRED</span><span class="params">(mutex_)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// This value must be initialized before using LRUCache</span></span><br><span class="line">  <span class="type">size_t</span> capacity_;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// mutex_ is used to ensure thread safety for the fields that follow</span></span><br><span class="line">  <span class="keyword">mutable</span> port::Mutex mutex_;</span><br><span class="line">  <span class="function"><span class="type">size_t</span> usage_ <span class="title">GUARDED_BY</span><span class="params">(mutex_)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Empty list head of the lru doubly linked list</span></span><br><span class="line">  <span class="comment">// lru.prev points to the newest entry, lru.next points to the oldest entry</span></span><br><span class="line">  <span class="comment">// All entries in this list satisfy refs==1 and in_cache==true</span></span><br><span class="line">  <span class="comment">// Indicating that all entries are only referenced by the cache, with no client using them</span></span><br><span class="line">  <span class="function">LRUHandle lru_ <span class="title">GUARDED_BY</span><span class="params">(mutex_)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Empty list head of the in-use doubly linked list</span></span><br><span class="line">  <span class="comment">// Stores all entries still referenced by clients</span></span><br><span class="line">  <span class="comment">// Since they are referenced by clients while also being referenced by the cache,</span></span><br><span class="line">  <span class="comment">// they must have refs &gt;= 2 and in_cache==true.</span></span><br><span class="line">  <span class="function">LRUHandle in_use_ <span class="title">GUARDED_BY</span><span class="params">(mutex_)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Hash table index for all entries</span></span><br><span class="line">  <span class="function">HandleTable table_ <span class="title">GUARDED_BY</span><span class="params">(mutex_)</span></span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>It can be seen that this implementation has the following characteristics:</p>
+<ol>
+<li>Two doubly linked lists are used to divide the entire cache into two disjoint sets: the <code>in-use</code> list of entries referenced by clients, and the <code>lru_</code> list of entries not referenced by any client.</li>
+<li>Each doubly linked list uses an empty head pointer to facilitate handling boundary cases. And the <code>prev</code> pointer of the list head points to the newest entry, while the <code>next</code> pointer points to the oldest entry, thereby forming a doubly circular linked list.</li>
+<li><code>usage_</code> is used to represent the current usage of the cache, and <code>capacity_</code> represents the total capacity of the cache.</li>
+<li>Several basic operations are abstracted: <code>LRU_Remove</code>, <code>LRU_Append</code>, <code>Ref</code>, <code>Unref</code> as helper functions for reuse.</li>
+<li>Each <code>LRUCache</code> is guarded by a lock <code>mutex_</code>.</li>
+</ol>
+<p>With an understanding of all fields, as well as the previous state machine, the implementation of each function should be relatively easy to understand. Below, instead of listing all function implementations one by one, only the relatively complex <code>Insert</code> is annotated and explained:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Cache::Handle* <span class="title">LRUCache::Insert</span><span class="params">(<span class="type">const</span> Slice&amp; key, <span class="type">uint32_t</span> hash, <span class="type">void</span>* value,</span></span></span><br><span class="line"><span class="params"><span class="function">                                <span class="type">size_t</span> charge,</span></span></span><br><span class="line"><span class="params"><span class="function">                                <span class="type">void</span> (*deleter)(<span class="type">const</span> Slice&amp; key,</span></span></span><br><span class="line"><span class="params"><span class="function">                                                <span class="type">void</span>* value))</span> </span>&#123;</span><br><span class="line">  <span class="function">MutexLock <span class="title">l</span><span class="params">(&amp;mutex_)</span></span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Build the data entry handle</span></span><br><span class="line">  LRUHandle* e =</span><br><span class="line">      <span class="built_in">reinterpret_cast</span>&lt;LRUHandle*&gt;(<span class="built_in">malloc</span>(<span class="built_in">sizeof</span>(LRUHandle) - <span class="number">1</span> + key.<span class="built_in">size</span>()));</span><br><span class="line">  e-&gt;value = value;</span><br><span class="line">  e-&gt;deleter = deleter;</span><br><span class="line">  e-&gt;charge = charge;</span><br><span class="line">  e-&gt;key_length = key.<span class="built_in">size</span>();</span><br><span class="line">  e-&gt;hash = hash;</span><br><span class="line">  e-&gt;in_cache = <span class="literal">false</span>;</span><br><span class="line">  e-&gt;refs = <span class="number">1</span>;  <span class="comment">// Client reference</span></span><br><span class="line">  std::<span class="built_in">memcpy</span>(e-&gt;key_data, key.<span class="built_in">data</span>(), key.<span class="built_in">size</span>());</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (capacity_ &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    e-&gt;refs++;  <span class="comment">// Cache itself reference</span></span><br><span class="line">    e-&gt;in_cache = <span class="literal">true</span>;</span><br><span class="line">    <span class="built_in">LRU_Append</span>(&amp;in_use_, e);</span><br><span class="line">    usage_ += charge;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">FinishErase</span>(table_.<span class="built_in">Insert</span>(e)); <span class="comment">// If it is a replacement, delete the old data</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;  <span class="comment">// capacity_==0 means cache is disabled, no caching is performed</span></span><br><span class="line">    <span class="comment">// next will be assert-tested in the key() function, so initialize it</span></span><br><span class="line">    e-&gt;next = <span class="literal">nullptr</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// When data entries exceed capacity, evict data entries not referenced by clients from memory according to LRU strategy</span></span><br><span class="line">  <span class="keyword">while</span> (usage_ &gt; capacity_ &amp;&amp; lru_.next != &amp;lru_) &#123;</span><br><span class="line">    LRUHandle* old = lru_.next;</span><br><span class="line">    <span class="built_in">assert</span>(old-&gt;refs == <span class="number">1</span>);</span><br><span class="line">    <span class="type">bool</span> erased = <span class="built_in">FinishErase</span>(table_.<span class="built_in">Remove</span>(old-&gt;<span class="built_in">key</span>(), old-&gt;hash));</span><br><span class="line">    <span class="keyword">if</span> (!erased) &#123;  <span class="comment">// to avoid unused variable when compiled NDEBUG</span></span><br><span class="line">      <span class="built_in">assert</span>(erased);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="built_in">reinterpret_cast</span>&lt;Cache::Handle*&gt;(e);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="ShardedLRUCache-—-Sharded-LRUCache">ShardedLRUCache — Sharded LRUCache</h2>
+<p>The purpose of introducing <code>ShardedLRUCache</code> is to reduce lock granularity and improve read/write parallelism. The strategy is quite concise — using the first <code>kNumShardBits = 4</code> bits of the key hash value as the shard routing, which can support <code>kNumShards = 1 &lt;&lt; kNumShardBits</code> 16 shards. The function to calculate the shard index from the key’s hash value is as follows:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">static</span> <span class="type">uint32_t</span> <span class="title">Shard</span><span class="params">(<span class="type">uint32_t</span> hash)</span> </span>&#123; <span class="keyword">return</span> hash &gt;&gt; (<span class="number">32</span> - kNumShardBits); &#125;</span><br></pre></td></tr></table></figure>
+<p>Since both <code>LRUCache</code> and <code>ShardedLRUCache</code> implement the Cache interface, <code>ShardedLRUCache</code> only needs to route all Cache interface operations to the corresponding Shard. Overall, <code>ShardedLRUCache</code> doesn’t have much logic and is more like a Wrapper, so I won’t go into detail here.</p>
+<h2 id="References">References</h2>
+<ol>
+<li>LevelDB cache code: <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2dvb2dsZS9sZXZlbGRiL2Jsb2IvbWFzdGVyL3V0aWwvY2FjaGUuY2M=">https://github.com/google/leveldb/blob/master/util/cache.cc<i class="fa fa-external-link-alt"></i></span></li>
+<li>LevelDB handbook cache system: <span class="exturl" data-url="aHR0cHM6Ly9sZXZlbGRiLWhhbmRib29rLnJlYWR0aGVkb2NzLmlvL3poL2xhdGVzdC9jYWNoZS5odG1sI2R5bmFtaWMtc2l6ZWQtbm9uYmxvY2tpbmctaGFzaC10YWJsZQ==">https://leveldb-handbook.readthedocs.io/zh/latest/cache.html#dynamic-sized-nonblocking-hash-table<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/05/09/levedb-data-structures-lru-cache/" rel="bookmark">漫谈 LevelDB 数据结构（三）：LRU 缓存（ LRUCache）</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/07/03/leveldb-data-structures-skip-list/" rel="bookmark">漫谈 LevelDB 数据结构（一）：跳表（Skip List）</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/11/18/leveldb-data-structures-bloom-filter/" rel="bookmark">漫谈 LevelDB 数据结构（二）：布隆过滤器（Bloom Filter）</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/07/03/leveldb-data-structures-skip-list/" rel="bookmark">Casual Talk on LevelDB Data Structures (Part 1): Skip List</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/03/19/wisckey/" rel="bookmark">WiscKey: LSM-Tree Optimizations for SSD Storage</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/06/13/dynamo/" rel="bookmark">Amazon's Distributed Key-Value Store for Small Objects — Dynamo</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/leveldb/" rel="tag"># leveldb</a>
+              <a href="/tags/LRU/" rel="tag"># LRU</a>
+              <a href="/tags/Storage/" rel="tag"># Storage</a>
+              <a href="/tags/LRU-Cache/" rel="tag"># LRU Cache</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/05/08/adjust-scene-photo/" rel="prev" title="程序员五一晒图小贴士">
+      <i class="fa fa-chevron-left"></i> 程序员五一晒图小贴士
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/05/09/levedb-data-structures-lru-cache/" rel="next" title="漫谈 LevelDB 数据结构（三）：LRU 缓存（ LRUCache）">
+      漫谈 LevelDB 数据结构（三）：LRU 缓存（ LRUCache） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cache-Usage"><span class="nav-number">2.</span> <span class="nav-text">Cache Usage</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">3.</span> <span class="nav-text">Overview</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Custom-Hash-Table"><span class="nav-number">3.1.</span> <span class="nav-text">Custom Hash Table</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Two-Linked-Lists"><span class="nav-number">3.2.</span> <span class="nav-text">Two Linked Lists</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Data-Structures"><span class="nav-number">4.</span> <span class="nav-text">Data Structures</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#LRUHandle-%E2%80%94-The-Basic-Data-Unit"><span class="nav-number">4.1.</span> <span class="nav-text">LRUHandle — The Basic Data Unit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HandleTable-%E2%80%94-Hash-Table-Index"><span class="nav-number">4.2.</span> <span class="nav-text">HandleTable — Hash Table Index</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LRUCache-%E2%80%94-Hash-Table-Index-Doubly-Circular-Linked-List"><span class="nav-number">5.</span> <span class="nav-text">LRUCache — Hash Table Index + Doubly Circular Linked List</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ShardedLRUCache-%E2%80%94-Sharded-LRUCache"><span class="nav-number">6.</span> <span class="nav-text">ShardedLRUCache — Sharded LRUCache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">7.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2021/05/09/levedb-data-structures-lru-cache/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '4eab95acc2ffe525c67bc7b69d347c7f',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

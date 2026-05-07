@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Overview Kafka (the paper was published in June 2011 [1]) is a system that combines the best of log processing and message queuing. With low latency, extremely high capacity, and throughput, it can be">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kafka —— Bridging the Gap Between Log Processing and Message Queuing">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2019/12/22/kafka/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Overview Kafka (the paper was published in June 2011 [1]) is a system that combines the best of log processing and message queuing. With low latency, extremely high capacity, and throughput, it can be">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/6dbS1ypqo79Pigm.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/ZdGU4QYE9Iaz7OW.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/KIBHRzNQStClj6m.jpg">
+<meta property="article:published_time" content="2019-12-21T17:07:10.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.673Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="Kafka">
+<meta property="article:tag" content="Distributed Systems">
+<meta property="article:tag" content="Log Processing">
+<meta property="article:tag" content="Message Queue">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/6dbS1ypqo79Pigm.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2019/12/22/kafka/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="Kafka,Distributed Systems,Log Processing,Message Queue">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Kafka —— Bridging the Gap Between Log Processing and Message Queuing",
+    "description": "Overview Kafka (the paper was published in June 2011 [1]) is a system that combines the best of log processing and message queuing. With low latency, extremely high capacity, and throughput, it can be applied to both online services and offline business. To balance performance and scalability, Kafka made some design choices that seem counter-intuitive but are very practical in practice. Here is a routine summary of its design characteristics: Storage-oriented message queue: This means that, in near real-time scenarios, it can increase the storage capacity of traditional message queues by several orders of magnitude. The implementation makes full use of sequential disk writes and the OS’s own cache; furthermore, to improve disk access and transmission efficiency, it employs techniques such as file segmentation, segment-level indexes, zero-copy, and batch fetching. Flexible production and consumption patterns: Overall, it is a topic-based publish-subscribe architecture that supports both mutually exclusive consumption within a consumer group and duplicate consumption across different consumer groups. This involves two core design choices of message queues: pull-based consumption and client-side storage of consumption progress. Pull-based consumption may cause empty polling and slight latency, but the benefit is flexibility; client-side storage of consumption progress allows brokers to be stateless, enabling flexible scaling and fault tolerance. To simplify the implementation, each partition is consumed by at most one consumer at a time. Zookeeper for metadata storage: Using the distributed consistency component Zookeeper to store system metadata in a registry format, including broker and consumer liveness, consumer-to-partition mapping, consumption progress for each partition, etc. Zookeeper, as a highly available component that organizes KV pairs in a prefix-tree form and supports publish-subscribe, can meet Kafka’s collaborative needs for consumption coordination and progress persistence. Partition-level multi-replica design: This was not yet implemented in the paper; it was likely added later during the open-source evolution of the system. This feature enables fault tolerance for brokers. Simple yet powerful consumer API: Kafka clients generally provide two layers of API abstraction. One is a high-level simple read/write interface that does not require attention to partition and offset information; the other is a low-level interface that allows flexible control over partition assignment and consumption progress. The paper only mentions the former to demonstrate its simplicity.",
+    "url": "https://www.qtmuniao.com/en/2019/12/22/kafka/",
+    "datePublished": "2019-12-22T01:07:10+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2019/12/22/kafka/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Kafka —— Bridging the Gap Between Log Processing and Message Queuing | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2019/12/22/kafka/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2019/12/22/kafka/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2019/12/22/kafka/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Kafka —— Bridging the Gap Between Log Processing and Message Queuing
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-12-22 01:07:10" itemprop="dateCreated datePublished" datetime="2019-12-22T01:07:10+08:00">2019-12-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Overview">Overview</h2>
+<p>Kafka (the paper was published in June 2011 <strong>[1]</strong>) is a system that combines the best of log processing and message queuing. With low latency, extremely high capacity, and throughput, it can be applied to both online services and offline business. To balance performance and scalability, Kafka made some design choices that seem counter-intuitive but are very practical in practice. Here is a routine summary of its design characteristics:</p>
+<ol>
+<li>
+<p><strong>Storage-oriented message queue</strong>: This means that, in near real-time scenarios, it can increase the storage capacity of traditional message queues by several orders of magnitude. The implementation makes full use of sequential disk writes and the OS’s own cache; furthermore, to improve disk access and transmission efficiency, it employs techniques such as file segmentation, segment-level indexes, zero-copy, and batch fetching.</p>
+</li>
+<li>
+<p><strong>Flexible production and consumption patterns</strong>: Overall, it is a topic-based publish-subscribe architecture that supports both <strong>mutually exclusive consumption within a consumer group</strong> and <strong>duplicate consumption across different consumer groups</strong>. This involves two core design choices of message queues: <em>pull</em>-based consumption and client-side storage of consumption progress. Pull-based consumption may cause empty polling and slight latency, but the benefit is flexibility; client-side storage of consumption progress allows brokers to be stateless, enabling flexible scaling and fault tolerance. To simplify the implementation, each partition is consumed by at most one consumer at a time.</p>
+</li>
+<li>
+<p><strong>Zookeeper for metadata storage</strong>: Using the distributed consistency component Zookeeper to store system metadata in a registry format, including broker and consumer liveness, consumer-to-partition mapping, consumption progress for each partition, etc. Zookeeper, as a highly available component that organizes KV pairs in a prefix-tree form and supports publish-subscribe, can meet Kafka’s collaborative needs for consumption coordination and progress persistence.</p>
+</li>
+<li>
+<p><strong>Partition-level multi-replica design</strong>: This was not yet implemented in the paper; it was likely added later during the open-source evolution of the system. This feature enables fault tolerance for brokers.</p>
+</li>
+<li>
+<p><strong>Simple yet powerful consumer API</strong>: Kafka clients generally provide two layers of API abstraction. One is a high-level <em>simple read/write</em> interface that does not require attention to <strong>partition</strong> and <strong>offset</strong> information; the other is a low-level interface that allows flexible control over partition assignment and consumption progress. The paper only mentions the former to demonstrate its simplicity.</p>
+</li>
+</ol>
+<span id="more"></span>
+<p><em>Author: Woodpecker’s Notes <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, please indicate the source when reposting</em></p>
+<h2 id="Introduction">Introduction</h2>
+<p>Any internet company generates a large amount of “log” data, which mainly includes:</p>
+<ol>
+<li><strong>User behavior events</strong>. Such as login, browsing, clicking, liking, sharing, commenting, etc. on social networking sites.</li>
+<li><strong>System operations data</strong>. Such as the call stack of a service, call latency, error reports, and some machine runtime metrics: CPU, network, or disk usage.</li>
+</ol>
+<p>For a long time, this data was only used for backend analysis or system bottleneck diagnosis. But a current trend is that this data is increasingly being used for <strong>online</strong> business, including:</p>
+<ol>
+<li>Search relevance analysis</li>
+<li>Data-driven recommendations</li>
+<li>Precise ad targeting</li>
+<li>Service blacklist filtering</li>
+<li>User homepage feed streams</li>
+</ol>
+<p>And so on, too many to list. This behavioral data is usually several orders of magnitude larger than the user metadata itself, so the demand for real-time analysis poses new challenges to data systems. For example, search, recommendation, and advertising all require fine-grained click-through rate data, which requires not only counting all user click events but also counting data for pages that were <em>not</em> clicked.</p>
+<p>Some early systems directly scraped system logs from the online environment to perform analysis for similar requirements. However, recently many companies have built specialized systems for this. For example, Facebook’s Scribe, Yahoo’s Data Highway, and Cloudera’s Flume. The goal of these systems is to collect log data and import it into data warehouses like Hadoop for offline processing. However, at LinkedIn, in addition to <strong>offline analysis</strong> requirements, we also have many of the aforementioned <strong>real-time processing</strong> requirements with latency of no more than a few seconds.</p>
+<p>We built a brand-new messaging system for log processing, named <strong>Kafka</strong>. Kafka accommodates both <strong>log aggregation</strong> requirements and <strong>message queuing</strong> requirements. On the one hand, Kafka is a distributed system that supports smooth scaling and high throughput; on the other hand, Kafka provides an API similar to message queues and allows applications to consume log messages in real time. At the time the paper was published, Kafka had been online at LinkedIn for more than six months, satisfying both major aspects of our needs with a single system, thereby greatly simplifying our infrastructure.</p>
+<p>Next, the paper will revisit the traditional forms of messaging systems and logging aggregators in Section 2. In Section 3, we first introduce the basic architecture of Kafka, and then discuss its fundamental design principles. Then in Section 4, we will look at Kafka’s deployment and performance metrics at LinkedIn.</p>
+<h2 id="Related-Systems">Related Systems</h2>
+<p>Traditional enterprise messaging systems (such as ActiveMQ, IBM WebSphere MQ, Oracle Enterprise Messaging Service, TIBCO Enterprise Message Service) have existed for a long time, mainly serving as <strong>message bus</strong> and <strong>asynchronous decoupling</strong>. However, they cannot seamlessly adapt to log processing requirements for the following reasons:</p>
+<ul>
+<li><strong>Different semantic focus</strong></li>
+</ul>
+<p>Traditional message queues focus on providing flexible message delivery guarantees, such as transactions across multiple queues, ACK confirmation of message delivery, strict message ordering, etc. These features are not in such high demand in log processing systems, but they greatly increase API complexity and system implementation difficulty.</p>
+<ul>
+<li><strong>Poor support for high throughput</strong></li>
+</ul>
+<p>Most traditional message queues do not take high throughput as their primary design goal. For example, JMS does not even have a batch interface, so every message sent uses a new TCP connection, which obviously cannot meet the high throughput requirements of our logging system.</p>
+<ul>
+<li><strong>No support for distributed storage</strong></li>
+</ul>
+<p>These traditional messaging systems are usually not easy to partition (shard) to store on multiple machines. Therefore, when data volume is large, they cannot support smooth capacity expansion.</p>
+<ul>
+<li><strong>Designed for real-time rather than accumulation</strong></li>
+</ul>
+<p>Another characteristic of these messaging systems is the assumption that consumption is <strong>near-immediate</strong>, so the volume of un-consumed messages is always small. Once messages accumulate, the performance of these small message systems drops significantly. Therefore, they struggle to support offline consumption and large-batch consumption tasks. In short, the design philosophy of traditional messaging systems is not oriented toward <strong>storage</strong>.</p>
+<p>In recent years, some dedicated log aggregation systems have also emerged.</p>
+<p>Such as Facebook’s Scribe. System-generated logs are written to remote Scribe machines via sockets; each Scribe machine periodically dumps the collected logs to HDFS or NFS clusters.</p>
+<p>Another example is Yahoo, whose Data Highway also follows a similar data flow pattern. A group of machines aggregates logs collected from clients into files by the minute, and then writes them to HDFS.</p>
+<p>Another example is Cloudera, which built a relatively novel log aggregation system: Flume. Flume provides extended semantics of <em>pipes</em> and <em>sinks</em>, allowing users to flexibly consume log streams. In addition, the system introduces more distributed features.</p>
+<p>However, most of these systems are designed for offline consumption and expose too many unnecessary implementation details (i.e., they are not well abstracted and not flexible enough; for example, Yahoo even exposes things like <em>minutes file</em>). Furthermore, these systems basically adopt a “push” (<em>push</em>) model, where the broker pushes messages to consumers.</p>
+<p>At LinkedIn, research found that the “pull” (pull) model is more suitable for our business scenarios. In this model, each consumer can decide its own consumption speed according to its <em>preference</em>, without worrying about being overwhelmed by fast consumers or dragged down by slow consumers <strong>[2]</strong>. The “pull” model also makes it easy to implement consumption rewind (rewind), which we will discuss in detail later.</p>
+<p>Recently, Yahoo Research developed a distributed system called HedWig that supports publish/subscribe; it is easy to scale, highly available, and supports message persistence. However, the system functions more as a log storage system.</p>
+<h2 id="Kafka-Architecture-and-Design-Principles">Kafka Architecture and Design Principles</h2>
+<h3 id="Concepts">Concepts</h3>
+<p>Due to the many limitations of the above systems, we developed a message-based log aggregation system — Kafka. First, let us introduce some Kafka concepts. A <strong>topic</strong> (<em>topic</em>) defines the type of a certain <strong>message</strong> (message) stream; a <strong>producer</strong> (<em>producer</em>) publishes messages to a topic, and these published messages are temporarily stored on a set of servers called <strong>brokers</strong> (<em>broker</em>). A <strong>consumer</strong> (<em>consumer</em>) can subscribe to one or more topics from the brokers and consume them in a pull-based manner.</p>
+<h3 id="API-Design">API Design</h3>
+<p>A messaging system should be simple. To express this simplicity, we designed Kafka’s interface (API) to be very minimal. To avoid dry descriptions of these APIs, we use two very simple examples to show what Kafka’s APIs look like.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Sample producer code:</span></span><br><span class="line">producer = <span class="keyword">new</span> <span class="title class_">Producer</span>(…);</span><br><span class="line">message = <span class="keyword">new</span> <span class="title class_">Message</span>(“test message str”.getBytes());</span><br><span class="line">set = <span class="keyword">new</span> <span class="title class_">MessageSet</span>(message);</span><br><span class="line">producer.send(“topic1”, set);</span><br></pre></td></tr></table></figure>
+<p>As shown in the code, the format of a message is very simple: just a byte array. Users can serialize data according to their preferences (i.e., encoding an object instance into a byte array). To improve efficiency, a set of messages can be sent at once.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Sample consumer code:</span></span><br><span class="line">streams[] = Consumer.createMessageStreams(“topic1”, <span class="number">1</span>)</span><br><span class="line"><span class="keyword">for</span> (message : streams[<span class="number">0</span>]) &#123;</span><br><span class="line">    bytes = message.payload();</span><br><span class="line">    <span class="comment">// do something with the bytes</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Consumers subscribe to a topic by creating one or more streams; messages published to the corresponding topic will gradually enter these streams created by the consumer. The API is that simple. As for how Kafka implements it, we’ll keep you in suspense and discuss it later. At the language level, we abstract each message stream as an Iterator; the consumer uses this iterator to retrieve the payload of each message for processing. Unlike ordinary iterators, our iterator never stops; when no new messages arrive, the iterator will block forever. We support two consumption modes: a group of consumers can perform <strong>mutually exclusive</strong> consumption of a topic, or each consumer can perform <strong>independent</strong> consumption of the same topic.</p>
+<h3 id="Architecture-Diagram">Architecture Diagram</h3>
+<p>The Kafka architecture diagram is as follows:</p>
+<p><img data-src="https://i.loli.net/2020/02/09/6dbS1ypqo79Pigm.png" alt="kafka-architecture.png"><span class="image-caption">kafka-architecture.png</span></p>
+<p>Kafka is a distributed system, so a Kafka cluster contains multiple broker machines. To balance the load, each topic is divided into multiple partitions, and each broker machine holds one or more partitions. Multiple producers and consumers can produce and consume messages simultaneously. In Section 3.1, we will introduce the layout of a single partition on a broker and discuss some design tradeoffs and choices to make a single partition efficiently consumable. In Section 3.2, we will describe how producers and consumers interact with multiple brokers in a distributed environment. Finally, in Section 3.3, we will discuss Kafka’s data delivery guarantees.</p>
+<h3 id="Efficiency-of-a-Single-Partition">Efficiency of a Single Partition</h3>
+<p>We made a series of design decisions to ensure system efficiency.</p>
+<p><strong>Minimalist storage design</strong>. Each partition of a topic is logically a segment of a log. Physically, to prevent partition files from becoming too large, we further divide them into data segments. Data is always written to the newest segment; after reaching a set capacity (e.g., 1 GB), a new segment file is created to continue writing. Furthermore, to improve write performance, we cache log records in memory and only flush data to external storage when the number of logs reaches a set value or the cached data size reaches a set value. To ensure reliability, data is only exposed to consumers after being flushed to external storage.</p>
+<p>Unlike traditional messaging systems, Kafka does not use an <strong>explicit</strong> message ID for each stored message; instead, messages are located solely by their offset within the partition. This saves us the extra overhead of building an index for random lookups. It is worth noting that our offsets are not continuous; rather, they are byte offsets similar to TCP’s SEQ — to calculate the offset of the next message, we need to add the length of the current message to its offset. Below, ID and offset may be used interchangeably, but they refer to the same thing.</p>
+<p>Each consumer always consumes data from each partition <strong>sequentially</strong>. If a consumer <strong>acknowledges</strong> (acks) an offset, it means all messages before that offset have been consumed. In terms of implementation, the consumer-side library code sends a series of requests to the broker to pull data into the consumer’s buffer for the application code to consume <strong>[3]</strong>. Each pull request contains a starting offset and an acceptable byte size. Each broker maintains in memory a mapping from segment-start offsets to the physical addresses of segments (likely organized using a search tree, as range lookups are needed). When a read request arrives, the broker locates the corresponding segment based on the <strong>requested offset</strong>, reads the specified amount of data based on the <strong>requested size</strong>, and returns it to the consumer. After receiving the messages, the consumer calculates the offset of the next message to issue the next pull request. The layout of logs on disk and indexes in memory in Kafka is shown in the figure below (the data in each box represents the offset of a certain message):</p>
+<p><img data-src="https://i.loli.net/2020/02/09/ZdGU4QYE9Iaz7OW.jpg" alt="kafka-log.jpg"><span class="image-caption">kafka-log.jpg</span></p>
+<p><strong>Efficient transmission optimization</strong>. Since network transmission overhead can be high, we carefully designed the data exchange flow between Kafka and the outside world. As mentioned earlier, for <strong>producers</strong>, our API allows sending a batch of messages at once. For consumers, although the API appears to consume messages one by one, the underlying layer also fetches in batches, such as pulling hundreds of KB at a time.</p>
+<p>Another unconventional design decision is that we do not perform <strong>explicit</strong> message caching at the Kafka system level. That is, we only utilize the file system-level page cache to accelerate disk reads and writes. This has two benefits:</p>
+<ol>
+<li>Avoid multiple caching of messages</li>
+<li>Cache is not lost after a broker process restart</li>
+</ol>
+<p>Because we do not cache at the Kafka level, garbage collection strategies at the memory level can be kept very simple. Therefore, it simplifies the difficulty of implementing the system using programming languages with their own VM.</p>
+<p>In the scenarios Kafka targets, producers and consumers both access segment files sequentially, and consumers usually only slightly lag behind producers. The OS’s default heuristic caching strategies such as write-through and read-ahead naturally fit this scenario. We found that both producer and consumer read/write rates scale linearly with data size, up to several TB (the paper does not discuss beyond that).</p>
+<p>Furthermore, we optimized the remote data access process for consumers. Because Kafka is a system that supports multiple subscriptions, a single message may be consumed by different consumers multiple times, so optimizing remote data access can greatly improve system performance. Traditionally, sending a piece of data from a local file to a socket usually involves the following steps:</p>
+<ol>
+<li>Read data from external storage into the OS page cache.</li>
+<li>Copy data from the page cache to the application buffer.</li>
+<li>Copy data from the application buffer to the kernel buffer.</li>
+<li>Copy data from the kernel buffer to the socket.</li>
+</ol>
+<p>These steps involve four data copies and two system calls, which can be said to be very redundant and wasteful. In Linux and some other operating systems, there is a sendfile (zero copy) API that can directly transfer data from a file to a socket. Using this API, we can eliminate the two data copies and one system call introduced in steps (2) and (3), thereby allowing Kafka to efficiently transfer data from the broker’s segment files to consumers.</p>
+<p><strong>Stateless Broker</strong>. Unlike other message queues, in Kafka, the broker is not responsible for saving each consumer’s consumption progress. That is, each consumer needs to save its own consumption offset and other information itself, so that the broker’s design can be relatively simplified without maintaining too much state. However, because the broker does not know the consumption progress of all subscribers, it is difficult to decide when to delete a message. Kafka uses a seemingly tricky strategy — saving messages according to a time window. For example, only keeping the most recent seven days of data. Of course, each topic can be configured with different policies. This simple strategy is sufficient in most cases; even offline consumers usually consume daily, hourly, or near real-time, and seven days is enough. The fact that Kafka does not significantly degrade performance as data volume increases is the key guarantee that allows Kafka to use such a simple strategy.</p>
+<p>Another important benefit brought by this large-storage-plus-pull design is that consumers can actively choose to rewind and re-consume. This requirement seems to violate the usual definition of a message queue, but it is very necessary in many cases. Here are two casual examples:</p>
+<ol>
+<li>When a consumer process crashes due to an error, it can selectively re-consume data from before and after the crash upon recovery. This is very important for scenarios such as ETL data import into Hadoop and other data warehouses.</li>
+<li>Consumers periodically flush the fetched data to persistent storage (such as in an inverted index system). If a consumer goes down, the portion of data that has already been fetched from the messaging system but not yet persisted will be lost. But for Kafka, consumers only need to remember the offset flushed to; after the next restart, they can pull from that offset onward. However, for traditional message queues without large caches, this data may be lost forever, or some complex error backup and recovery strategy must be implemented on the consumer side.</li>
+</ol>
+<h3 id="Distributed-Coordination">Distributed Coordination</h3>
+<p>Now let us discuss the behavior of multiple producers and consumers in a distributed environment. For producers, when sending data, they can randomly send to a broker hosting a partition; or, based on a Key and a routing function acting on the Key, they can send to a specific partition broker. For consumers, the behavior is slightly more complex and will be explained in detail next.</p>
+<p>Kafka has a concept called <em>consumer groups</em>. A consumer group contains multiple consumers, and these consumers will <strong>mutually exclusively</strong> consume a set of topics; that is, for a single message, it will only be consumed by one consumer in the same group. Different consumer groups consume independently; each consumer group maintains its own consumption progress and does not need to coordinate with others. Each consumer within a consumer group can belong to different processes or even different machines. Our goal is to distribute messages evenly to each consumer without introducing too much extra overhead.</p>
+<p>The first decision is to make each <strong>partition the smallest unit of parallelism</strong>. That is, each partition is consumed by at most one consumer; if we allowed multiple consumers to consume the same partition, it would inevitably introduce coordination mechanisms such as locks and require recording some state to track each consumer’s consumption status, which would increase implementation difficulty. In our design, coordination is only needed when the number of consumers changes and traffic needs to be rebalanced. To make each consumer’s traffic more balanced, it is recommended to make the number of partitions much larger than the number of consumers, which is easy to achieve by simply configuring more partitions for the topic.</p>
+<p>The second decision is to <strong>not introduce a central master node</strong>, and instead let all consumers coordinate in a decentralized manner. If a central node were used, we would also have to worry about its fault tolerance, introducing unnecessary complexity. To allow consumers to coordinate better, we introduced a highly available consistency service — Zookeeper. Zookeeper’s API is very similar to a file system, organizing KV pairs in a prefix-tree form (<em>K is a path, with ‘/’ delimiting levels, and V can be any serializable value</em>). This API supports creating a path, setting a value for a path, reading a path’s value, deleting a path, and listing all child node values under a path. In addition, Zookeeper has the following characteristics:</p>
+<ol>
+<li>Clients can register a callback function on a path to listen for changes to that path’s value or its child nodes.</li>
+<li>Paths can be created as ephemeral, meaning that when all clients of that path disappear, the path and its value are automatically removed.</li>
+<li>Zookeeper uses a consensus protocol to replicate its data across multiple machines, making the service highly reliable and highly available.</li>
+</ol>
+<p>Kafka uses Zookeeper for the following purposes:</p>
+<ol>
+<li>Monitor the addition and removal of brokers and consumers.</li>
+<li>Initiate rebalancing tasks when brokers or consumers are added or removed.</li>
+<li>Maintain inter-consumer relationship states and track the consumption offset for each partition.</li>
+</ol>
+<p>Specifically, when a broker or consumer starts up, it stores metadata in a registry in Zookeeper.</p>
+<ol>
+<li>The broker registry includes the broker’s hostname and port number, as well as the topics and partitions stored on it.</li>
+<li>The consumer registry includes the consumer group it belongs to and the topics it subscribes to.</li>
+</ol>
+<p>Each consumer group has an associated ownership registry and offset registry in Zookeeper.</p>
+<ol>
+<li>We refer to a consumer consuming a partition as owning it; the ownership registry records the mapping between consumers and the partitions they own. The path name identifies a partition, and the recorded value is the owner of that partition.</li>
+<li>The offset registry records the consumption progress (i.e., offset) of each partition for all topics subscribed to by that consumer group.</li>
+</ol>
+<p>The broker registry, consumer registry, and ownership registry in Zookeeper are <strong>ephemeral</strong>, while the offset registry is <strong>persistent</strong>. When a broker dies, all its partitions are automatically removed from the broker registry. When a consumer dies, its entry in the consumer registry is removed, and the partition ownership entries in the ownership registry are also removed. Each consumer monitors the broker registry and the consumer registry; when there is a broker change or a member change in the consumer group, it receives a notification.</p>
+<p>When a consumer joins or a member changes in the consumer group, that consumer initiates a rebalancing process to decide which set of partitions it should consume. The pseudocode is as follows:</p>
+<figure class="highlight pascal"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">Algorithm <span class="number">1</span>: rebalance process <span class="keyword">for</span> consumer Ci <span class="keyword">in</span> group G</span><br><span class="line"><span class="keyword">For</span> each topic T that Ci subscribes <span class="keyword">to</span> <span class="comment">&#123;</span></span><br><span class="line"><span class="comment">    remove partitions owned by Ci from the ownership registry</span></span><br><span class="line"><span class="comment">    read the broker and the consumer registries from Zookeeper</span></span><br><span class="line"><span class="comment">    compute PT = partitions available in all brokers under topic T</span></span><br><span class="line"><span class="comment">    compute CT = all consumers in G that subscribe to topic T</span></span><br><span class="line"><span class="comment">    sort PT and CT</span></span><br><span class="line"><span class="comment">    let j be the index position of Ci in CT and let N = |PT|/|CT|</span></span><br><span class="line"><span class="comment">    assign partitions from j*N to (j+1)*N - 1 in PT to consumer Ci</span></span><br><span class="line"><span class="comment">    for each assigned partition p &#123;</span></span><br><span class="line"><span class="comment">        set the owner of p to Ci in the ownership registry</span></span><br><span class="line"><span class="comment">        let Op = the offset of partition p stored in the offset registry</span></span><br><span class="line"><span class="comment">        invoke a thread to pull data in partition p from offset Op</span></span><br><span class="line"><span class="comment">    &#125;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The algorithm is as above. Simply put, the consumer retrieves all topics from Zookeeper. For each topic, it gets the partition set Pt and the consumer set Ct of the consumer group it belongs to. Then it tries to divide the partition set into |Ct| equal parts as evenly as possible, and the consumer picks one of these parts according to a deterministic algorithm, such as sorting Ct and Pt in a specific way. After that, each consumer starts a thread for each of its own partitions to pull data, beginning consumption from the offset stored in the offset registry. As data in the partition is continuously consumed, the consumer constantly updates the offset in the registry.</p>
+<p>When a consumer or broker changes, all consumers in the same consumer group receive a notification; due to network reasons, the time at which each consumer receives the notification may differ. When a consumer that receives the notification first runs the above algorithm to fetch data from new partitions, it may find that the partition is still owned by another consumer. For this situation, we adopt a very simple strategy: the consumer releases the partitions it owns, waits a short while, and then retries. In actual operation, the rebalancing program usually stabilizes after a few retries.</p>
+<p>When a new consumer group is created, there is no offset record in the registry. At this time, using the API provided by the broker, the consumer group can choose to consume from the <em>smallest offset</em> or the <em>largest offset</em> for each partition (depending on the consumer group’s configuration).</p>
+<h3 id="Delivery-Guarantees">Delivery Guarantees</h3>
+<p>In principle, Kafka only provides “at-least-once” (at-least-once) <strong>[4]</strong> delivery semantics. Exactly-once delivery semantics can be guaranteed by two-phase commit, but this is not necessary in our application scenarios. In fact, most of the time, in a general data center with good network conditions, most messages are consumed exactly once by the consumer group; only when a consumer process exits abnormally without performing normal cleanup (for example, not updating the last consumed offset to Zookeeper) will the new consumer, upon startup, re-consume the portion of data whose offset was not committed. If the application cannot tolerate this situation, it must add message deduplication logic in the application logic — for example, using a dictionary to store the IDs of recently consumed data for deduplication. This ID can be the offset of the message in Kafka, or a user-defined key that has a one-to-one correspondence with the message. This method performs better than using two-phase commit at the Kafka level to guarantee exactly-once semantics.</p>
+<p>Kafka guarantees that messages from the same partition are ordered, i.e., in offset size order, but ordering between different partitions is not guaranteed. To avoid data errors, Kafka saves a CRC checksum in each message. When a broker encounters IO issues, during recovery, it can delete messages with inconsistent CRC checksums. Since the CRC is stored in the message, both the production and consumption stages can check the CRC to avoid errors caused by network transmission.</p>
+<p>When a broker goes down, all messages on it become unavailable. Furthermore, if the broker’s storage system is completely destroyed, the un-consumed messages on it will be lost forever. In the future, we plan to provide built-in multi-machine redundant backup to tolerate occasional failures of individual broker nodes (of course, this was already implemented by 2019).</p>
+<h2 id="Kafka-Usage-at-LinkedIn">Kafka Usage at LinkedIn</h2>
+<p>In this section, we briefly explain how Kafka is used at LinkedIn. The figure below is a simplified deployment diagram:</p>
+<p><img data-src="https://i.loli.net/2020/02/09/KIBHRzNQStClj6m.jpg" alt="kafka-deployment.jpg"><span class="image-caption">kafka-deployment.jpg</span></p>
+<p>We deployed a Kafka cluster serving user business in each data center; front-end business sends various log data in batches to the Kafka cluster. We use hardware (load balancers) to distribute traffic as evenly as possible to each broker. To reduce network overhead, we deploy online consumer services and Kafka in the same physical cluster.</p>
+<p>We also deployed a Kafka cluster responsible for offline data analysis in another data center close to Hadoop clusters and other data warehouse infrastructure. On the one hand, this Kafka cluster has a built-in set of consumer processes that periodically pull data from the online Kafka cluster and write it into the local cluster. On the other hand, the cluster runs data loading jobs that periodically pull data from the Kafka cluster, process it, and load it into the Hadoop cluster and data warehouse for aggregation and analysis. We also use this cluster for prototype modeling and some ad-hoc query analysis work. Without special tuning, the end-to-end average latency is about 10 seconds, which is sufficient for our needs.</p>
+<p>Currently, our Kafka clusters generate hundreds of millions of log messages per day, with a total volume of around hundreds of gigabytes. Once we fully migrate existing systems to Kafka, it is foreseeable that the data volume in Kafka will see more significant growth and will need to adapt to more data types. When operators take brokers offline due to hardware or software reasons, the rebalancing process can automatically rebalance consumption across multiple brokers.</p>
+<p>We also have an audit system to check whether there is any data loss in the entire pipeline. Specifically, for each message, a timestamp and producer hostname tag are attached at production time; metadata about data production, i.e., the number of messages produced within a specific time window, is periodically submitted to another topic used for monitoring. Thus, consumers can use the additional information in each message to count the number of messages received for a topic within a specific time window and compare it with monitoring messages read from the monitoring topic to determine whether consumption is correct.</p>
+<p>We customized a Kafka input format for Hadoop <strong>[5]</strong>, allowing MapReduce jobs to use Kafka as a data source. MapReduce tasks read raw data from Kafka, classify and aggregate it, and compress it appropriately for efficient processing in the future. MapReduce tasks require idempotent consumption of Kafka; the statelessness of Kafka brokers and the feature of letting the consumer side <strong>[6]</strong> store offsets allow us to continue consuming from the last consumption point when a Map task fails and restarts, thereby ensuring no duplication or omission of message consumption. When the task completes, both the data and the offsets are stored on HDFS.</p>
+<p>We use Avro as the serialization framework <strong>[7]</strong>; it is efficient and supports type inference. For each message, we send the schema identifier corresponding to the message data type and the serialized bytes together as the Kafka message payload. This pattern allows us to flexibly use multiple message types for the same message topic. When consumers receive a message, they obtain the corresponding Avro actual encoding type based on the schema identifier to decode the actual data into a specific object instance. This conversion process is simple because for each object type, only one lookup is needed.</p>
+<h2 id="Translator’s-Notes">Translator’s Notes</h2>
+<p><strong>[1]</strong> Kafka’s paper was published in 2011, so many of the current situations mentioned in the text were relative to that time; by now (end of 2019), the messaging queue landscape is certainly different again.</p>
+<p><strong>[2]</strong> The push model has this problem: if two consumers (say A is fast, B is slow) differ too much in consumption speed, the broker inevitably has to maintain the messages that A has finished consuming but B has not yet consumed. Since traditional message queues do not have very large caches (because they are usually stored in memory), they will quickly reach the upper limit; either the system will explode, or the fast consumer must be throttled. The problem with pull is that to ensure real-time performance, constant polling is required; the push-pull tradeoff is also a classic problem.</p>
+<p><strong>[3]</strong> This design is clearly inspired by TCP; it can be said that it implements <strong>ordering</strong>, <strong>acknowledgment</strong>, and <strong>sliding window buffer</strong> designs at the application layer.</p>
+<p><strong>[4]</strong> Generally speaking, during data delivery, due to unexpected system crashes, network jitter, and other issues, some data entries may be lost. If we do not intervene, the semantics provided are at-most-once. If we retry lost data entries, multiple deliveries may occur, because the sender cannot determine whether the receiver had a network problem <strong>after receiving the data</strong> or before receiving it. Blind retry may cause the same data to be processed multiple times; in this case, what we provide is at-least-once delivery semantics. If we want to forcibly implement exactly-once delivery semantics, it is possible, such as using two-phase commit and other consistency methods to guarantee the atomicity of data consumption and offset updates, thereby providing exactly-once consumption semantics. However, this can still go wrong and makes the system more complex and time-consuming. So generally, if you are not sensitive to losing a small amount of data, at-most-once is enough; if you are sensitive, you can use at-least-once and deduplicate at the application layer.</p>
+<p><strong>[5]</strong> Input format, or input format, is an interface in Hadoop MapReduce for adapting to different data sources, equivalent to a conversion layer.</p>
+<p><strong>[6]</strong> This can rely on Zookeeper, or rely on Hadoop to persist offsets; combined with the context, it seems the latter is meant here.</p>
+<p><strong>[7]</strong> This serialization method was likely a user-side choice rather than a feature provided by the Kafka framework at the time.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/12/22/kafka/" rel="bookmark">Kafka —— 弥合日志系统和消息队列的鸿沟</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/08/10/ray-source-reading-2/" rel="bookmark">Ray Source Code Reading (Part 2): Resource Abstraction and Scheduling Policies</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/02/08/CAP/" rel="bookmark">Distributed Systems Fundamentals (Part 1): Understanding CAP</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/03/19/wisckey/" rel="bookmark">WiscKey: LSM-Tree Optimizations for SSD Storage</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/04/01/6-824-video-notes-4-vm-ft/" rel="bookmark">MIT 6.824 2020 Video Notes 4：VM-FT</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/06/13/dynamo/" rel="bookmark">Amazon's Distributed Key-Value Store for Small Objects — Dynamo</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Kafka/" rel="tag"># Kafka</a>
+              <a href="/tags/Distributed-Systems/" rel="tag"># Distributed Systems</a>
+              <a href="/tags/Log-Processing/" rel="tag"># Log Processing</a>
+              <a href="/tags/Message-Queue/" rel="tag"># Message Queue</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/12/07/bazel-build-golang/" rel="prev" title="Bazel 构建 Golang 项目">
+      <i class="fa fa-chevron-left"></i> Bazel 构建 Golang 项目
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/12/22/kafka/" rel="next" title="Kafka —— 弥合日志系统和消息队列的鸿沟">
+      Kafka —— 弥合日志系统和消息队列的鸿沟 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">2.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Related-Systems"><span class="nav-number">3.</span> <span class="nav-text">Related Systems</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kafka-Architecture-and-Design-Principles"><span class="nav-number">4.</span> <span class="nav-text">Kafka Architecture and Design Principles</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Concepts"><span class="nav-number">4.1.</span> <span class="nav-text">Concepts</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#API-Design"><span class="nav-number">4.2.</span> <span class="nav-text">API Design</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Architecture-Diagram"><span class="nav-number">4.3.</span> <span class="nav-text">Architecture Diagram</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Efficiency-of-a-Single-Partition"><span class="nav-number">4.4.</span> <span class="nav-text">Efficiency of a Single Partition</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Distributed-Coordination"><span class="nav-number">4.5.</span> <span class="nav-text">Distributed Coordination</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Delivery-Guarantees"><span class="nav-number">4.6.</span> <span class="nav-text">Delivery Guarantees</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kafka-Usage-at-LinkedIn"><span class="nav-number">5.</span> <span class="nav-text">Kafka Usage at LinkedIn</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Translator%E2%80%99s-Notes"><span class="nav-number">6.</span> <span class="nav-text">Translator’s Notes</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2019/12/22/kafka/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'bc0917b4ba43d68f43f300671907d29d',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

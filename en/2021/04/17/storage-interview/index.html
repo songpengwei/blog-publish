@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="I changed jobs a while ago for some reasons and interviewed for several distributed storage-related positions. I noticed there are relatively few experience-sharing posts on this topic, so I decided t">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Distributed Storage Interview Experience">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2021/04/17/storage-interview/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="I changed jobs a while ago for some reasons and interviewed for several distributed storage-related positions. I noticed there are relatively few experience-sharing posts on this topic, so I decided t">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2021-04-17T07:53:25.000Z">
+<meta property="article:modified_time" content="2026-05-07T02:48:27.675Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="storage">
+<meta property="article:tag" content="distributed storage">
+<meta property="article:tag" content="distributed systems">
+<meta property="article:tag" content="interview experience">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2021/04/17/storage-interview/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="storage,distributed storage,distributed systems,interview experience">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Distributed Storage Interview Experience",
+    "description": "I changed jobs a while ago for some reasons and interviewed for several distributed storage-related positions. I noticed there are relatively few experience-sharing posts on this topic, so I decided to share mine. Due to company privacy policies, I won’t list questions by company; instead, I’ll briefly summarize the general directions and contents of the interviews. Given my limited experience and expertise, please feel free to point out any mistakes in the comments. Related Positions Distributed storage positions cover a wide range, and can generally be categorized by direction as follows: Distributed File Storage Object Storage Distributed KV or Cache Distributed Database (NewSQL) Table Storage Block Storage Their positioning and directions also differ slightly: Distributed File Storage. Supports POSIX semantics or trimmed POSIX. It can serve as a storage base for disaggregated storage and compute, or be used directly by applications, such as deep learning training and intermediate storage for big data processing. Common products include Pangu File System, Polarfs, JuiceFS, etc. Object Storage. Generally stores unstructured data such as images and videos, usually compatible with Amazon’s S3 API. Common products include Amazon S3, Alibaba Cloud OSS, and Tencent Cloud COS. Distributed KV or Cache. Usually compatible with the Redis interface, or a more simplified KV interface. Generally seeks speed, based on memory or SSD, or even new hardware like persistent memory. Used for low-latency business caching or as the base for disaggregated storage and compute systems. Products include ByteDance’s ABase, Alibaba Cloud’s Tair, and PingCAP’s TiKV. Distributed Database (or NewSQL). Usually provides a SQL interface and unlimited horizontal scalability. Common products include PingCAP’s TiDB, Alibaba Cloud’s PolarDB, and Tencent Cloud’s TDSQL. Table Storage. The classic interface can refer to column-oriented HBase, which is widely used in the big data field. Products include HBase and ByteDance’s ByteTable. Block Storage. Provides a block device interface, generally used for the system disk of cloud hosts. Products include SmartX’s hyper-converged solution.",
+    "url": "https://www.qtmuniao.com/en/2021/04/17/storage-interview/",
+    "datePublished": "2021-04-17T15:53:25+08:00",
+    "dateModified": "2026-05-07T10:48:27+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2021/04/17/storage-interview/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Distributed Storage Interview Experience | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2021/04/17/storage-interview/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2021/04/17/storage-interview/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/04/17/storage-interview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Distributed Storage Interview Experience
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-04-17 15:53:25" itemprop="dateCreated datePublished" datetime="2021-04-17T15:53:25+08:00">2021-04-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>I changed jobs a while ago for some reasons and interviewed for several distributed storage-related positions. I noticed there are relatively few experience-sharing posts on this topic, so I decided to share mine. Due to company privacy policies, I won’t list questions by company; instead, I’ll briefly summarize the general directions and contents of the interviews. Given my limited experience and expertise, please feel free to point out any mistakes in the comments.</p>
+<h2 id="Related-Positions">Related Positions</h2>
+<p>Distributed storage positions cover a wide range, and can generally be categorized by direction as follows:</p>
+<ol>
+<li>Distributed File Storage</li>
+<li>Object Storage</li>
+<li>Distributed KV or Cache</li>
+<li>Distributed Database (NewSQL)</li>
+<li>Table Storage</li>
+<li>Block Storage</li>
+</ol>
+<p>Their positioning and directions also differ slightly:</p>
+<p><strong>Distributed File Storage</strong>. Supports POSIX semantics or trimmed POSIX. It can serve as a storage base for disaggregated storage and compute, or be used directly by applications, such as deep learning training and intermediate storage for big data processing. Common products include Pangu File System, Polarfs, JuiceFS, etc.</p>
+<p><strong>Object Storage</strong>. Generally stores unstructured data such as images and videos, usually compatible with Amazon’s S3 API. Common products include Amazon S3, Alibaba Cloud OSS, and Tencent Cloud COS.</p>
+<p><strong>Distributed KV or Cache</strong>. Usually compatible with the Redis interface, or a more simplified KV interface. Generally seeks speed, based on memory or SSD, or even new hardware like persistent memory. Used for low-latency business caching or as the base for disaggregated storage and compute systems. Products include ByteDance’s ABase, Alibaba Cloud’s Tair, and PingCAP’s TiKV.</p>
+<p><strong>Distributed Database (or NewSQL)</strong>. Usually provides a SQL interface and unlimited horizontal scalability. Common products include PingCAP’s TiDB, Alibaba Cloud’s PolarDB, and Tencent Cloud’s TDSQL.</p>
+<p><strong>Table Storage</strong>. The classic interface can refer to column-oriented HBase, which is widely used in the big data field. Products include HBase and ByteDance’s ByteTable.</p>
+<p><strong>Block Storage</strong>. Provides a block device interface, generally used for the system disk of cloud hosts. Products include SmartX’s hyper-converged solution.</p>
+<span id="more"></span>
+<p><em>Author: Muniao’s Notes <a href="https://www.qtmuniao.com/2021/04/17/storage-interview/">https://www.qtmuniao.com/2021/04/17/storage-interview/</a> , please indicate the source when reprinting</em></p>
+<h2 id="Interview-Content">Interview Content</h2>
+<p>Distributed storage interviews are generally divided into several parts:</p>
+<ol>
+<li>Project Experience</li>
+<li>Fundamentals</li>
+<li>Algorithms and Coding</li>
+<li>Domain Knowledge</li>
+<li>System Design</li>
+<li>Programming Languages</li>
+</ol>
+<p><strong>Project Experience</strong>. If your project experience is a good match, the requirements in other areas will be relatively lower, but the project itself will be examined in great detail. Each interviewer may approach the project discussion from a different angle, but there is always some assessment purpose. By purpose, they can be roughly divided into the following types:</p>
+<ol>
+<li><strong>Communication Skills</strong>. This is the most intangible criterion, but generally the most important, because interviewers consciously or unconsciously have an implicit standard: <strong>whether I would be willing to work with this candidate in the future</strong>. The project experience asked about at this point may not even be related to the position. When facing this type of assessment, be especially careful not to dive straight into implementation details. A cognitively sound answer should briefly describe your workflow when you first take on a new project (note that it must be brief, because no one likes long-winded, pointless rambling, and time is limited—this is where abstraction and summarization skills are tested): What is the project background and requirements? What open-source solutions are available on the market? How did we make technical choices? Which module was I responsible for? etc. In terms of attitude, be <strong>neither arrogant nor obsequious</strong>—don’t show arrogance like “how do you not know this,” and don’t show flattery like “you’re my boss.” Clearly state what you know, and openly admit what you don’t.</li>
+<li><strong>Matching Experience</strong>. If your experience is a good match for the position, the interviewer may ask you to quickly introduce the project overview and then dive into some details. This is also why you shouldn’t spend too long on the project introduction—otherwise, the interviewer may want to focus on key questions but feel awkward interrupting you. The assessment here is generally related to the design approach and performance optimization of a particular module. For this type of question, simply follow the interviewer’s lead and do a brief review.</li>
+<li><strong>Leading to Other Topics</strong>. Some interviewers ask about projects just to lead into certain fundamental computer science knowledge that the project might involve, in order to assess your curiosity, depth of knowledge, and other abilities. After all, knowledge related to a project is generally understood in depth. If you say “I just used it and don’t know anything else,” it will be somewhat detrimental to your score.</li>
+</ol>
+<p><strong>Fundamentals</strong>. Since distributed systems interact quite a bit with low-level components, to optimize performance to the extreme requires a lot of knowledge about operating systems and computer networks. The most commonly tested areas include the Linux I/O stack, file systems, process scheduling, and TCP protocol details.</p>
+<p><strong>Algorithms and Coding</strong>. Although both take the form of solving problems, the focus of algorithm and coding assessments differs. Algorithm questions emphasize common algorithmic thinking; the problems may be relatively novel, typically focusing on binary search, greedy algorithms, divide and conquer, search, and even dynamic programming. Coding questions emphasize programming proficiency and code style; the problems may be relatively old, but the implementation can be quite tedious, typically focusing on linked lists, binary trees, and graphs. LRU and reversing a linked list in groups of k are high-frequency questions.</p>
+<p><strong>Domain Knowledge</strong>. Mainly classical concepts in distributed systems and storage. The most frequently tested topic is consensus protocols, such as Raft. Entry-level questions might ask you to introduce the general concepts and basic flow; more advanced questions might cover how to perform linearizable reads, how to handle the thundering herd problem, election log requirements, election details, etc. Other topics include classic projects and papers, such as certain design details of GFS, or compaction details of LSM-trees.</p>
+<p><strong>System Design</strong>. Since I’ve been working for several years, there will be some basic system design questions. The most commonly tested points are load balancing, failure tolerance, and message queues. For example, design a highly available, low-latency distributed KV system; design a delayed-trigger event management system; design a thread-safe LRU, etc.</p>
+<p><strong>Programming Languages</strong>. The storage field still uses C++ quite a lot, so you might be tested on some C++ knowledge. Why do I say “might”? Because I mainly used Go before, so most interviewers didn’t test me much on this. But if they do, the most common Go topics are its runtime, including the Goroutine M:N scheduling model and details of the tri-color garbage collector. I’ve only written small things in C++ and haven’t worked on large projects, so I don’t know many of its features—I won’t speak out of turn here.</p>
+<h2 id="Interview-Process">Interview Process</h2>
+<p>Interviews usually consist of 2–4 technical rounds followed by one HR round. Technical rounds are generally divided into a basic technical round and a senior behavior round.</p>
+<p>The basic technical rounds are usually the first two or three. The interviewers are generally your future colleagues and junior leaders; the main assessment content is as described in the previous section. An interview is a two-way selection process, and these interviewers directly determine your future work happiness, so you should also assess them: whether their personality is compatible with yours, and whether they can help you grow technically.</p>
+<p>The senior round is usually the last technical round; it may be a department manager for the position you’re interviewing for, or a leader from another team conducting a cross-interview. This round usually doesn’t ask technical details, and the assessment style is relatively formulaic. Basically, they ask what problem impressed you the most, how you solved it, what your strengths are, and what your weaknesses are. It mainly assesses the candidate’s communication skills, intelligence, behavior, etc. However, generally speaking, this step won’t be a deal-breaker.</p>
+<p>The HR round is also quite formulaic, generally consisting of three standard moves:</p>
+<ol>
+<li><strong>Expected Salary</strong>: Current salary structure, whether you have other offers, expected total compensation. Expected salary is a perennial problem—I don’t know what to say either.</li>
+<li><strong>Reason for Leaving</strong>: How is the company doing now, why are you leaving, and what are your expectations for the new company. Don’t disparage your previous employer; just state some objective facts.</li>
+<li><strong>Personality Assessment</strong>: Talk about the most impressive problem you encountered at work, how you solved it, and what needs improvement. Sometimes they just directly ask if you’re introverted or extroverted, your hobbies, weaknesses, etc. Be neither arrogant nor obsequious, and don’t dig a hole for yourself.</li>
+</ol>
+<p>Note that during the HR round, you can inquire about the work pace of the position to see if it meets your expectations—third-party information sources would be even better. In addition, you can ask the HR to add the previous technical interviewers on WeChat to get detailed information about future work content.</p>
+<h2 id="Question-Summary">Question Summary</h2>
+<p>Consider this an appendix, summarizing detailed questions by category.</p>
+<p><strong>Domain Knowledge</strong></p>
+<ol>
+<li>How does GFS ensure high availability of data? How are retries handled when errors occur?</li>
+<li>How does Raft implement reads from followers?</li>
+<li>After a majority of nodes in Raft have committed a certain log entry, can a node that does not contain that log entry become the leader?</li>
+<li>In LevelDB, if many compactions have occurred and the underlying file system has become fragmented, can WAL still maintain efficient sequential write performance?</li>
+<li>In the Raft paper, when a peer starts up it is a follower; can it be a candidate?</li>
+<li>How does Raft avoid the thundering herd problem?</li>
+</ol>
+<p><strong>Fundamentals</strong></p>
+<ol>
+<li>Brief description of the TCP three-way handshake</li>
+<li>What is the meaning and initial value of the TCP sequence number? Is it random?</li>
+<li>What are the primitives in socket programming?</li>
+<li>What state in the state machine corresponds to TCP listen?</li>
+<li>What does 100% disk load mean?</li>
+<li>What does excessively high CPU load indicate?</li>
+<li>When the file system’s open function is executed, what happens from the upper layers down to the lower layers behind the scenes?</li>
+<li>What are the benefits of virtual memory design?</li>
+<li>Does mmap shared memory break process isolation?</li>
+</ol>
+<p><strong>System Design</strong></p>
+<ol>
+<li>Design a distributed KV storage that supports user metadata and user follow relationships.</li>
+<li>Design a thread-safe LRU.</li>
+</ol>
+<p><strong>Coding and Algorithms</strong></p>
+<ol>
+<li>RandomSet: design a set that supports a random interface, where random returns a value with equal probability in O(1) complexity.</li>
+<li>LRU</li>
+<li>Quick sort on a linked list</li>
+<li>Reverse a linked list in groups of k</li>
+<li>Linked list shuffle: Node0-&gt;Node1-&gt;…-&gt;Node(n-1), shuffle into: Node0-&gt;Node(n-1)-&gt;Node1…</li>
+<li>In Python, determine if two dicts are equal? Dynamic language, same type, same value, may contain cycles.</li>
+<li>Implement a read-write lock using mutexes</li>
+<li>Five-finger piano playing. Given an unordered sequence of natural numbers representing piano key positions, a single hand can cover at most five consecutive positions at a time; find the minimum number of hand movements required to play all positions in the sequence.</li>
+<li>A stick of length m is cut into n segments; how many ways are there to cut it? (m and n are both positive integers)</li>
+</ol>
+<p><strong>Project-Related</strong></p>
+<ol>
+<li>How do you identify the bottleneck of system latency?</li>
+<li>How do you reduce the impact of GC on main traffic?</li>
+<li>How is the leader selected among multiple replicas?</li>
+<li>How is consistency and reliability guaranteed when writing to multiple replicas?</li>
+</ol>
+<p><strong>Programming Languages</strong></p>
+<ol>
+<li>Go: What is the overhead of defer, and how can it be optimized?</li>
+<li>Go: In what form does the runtime exist? As a library or a binary?</li>
+<li>Go: Why are goroutines more lightweight?</li>
+<li>Go: How are channels implemented?</li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/06/meta-object-store-delta/" rel="bookmark">Meta 链式复制的对象存储——Delta</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/04/distributed-database-storage-components/" rel="bookmark">层层剥开数据库存储层</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/05/26/gfs/" rel="bookmark">GFS — the Art of Trade-Offs</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/07/03/leveldb-data-structures-skip-list/" rel="bookmark">Casual Talk on LevelDB Data Structures (Part 1): Skip List</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb Source Code Guide (1): Boltdb Data Organization</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/storage/" rel="tag"># storage</a>
+              <a href="/tags/distributed-storage/" rel="tag"># distributed storage</a>
+              <a href="/tags/distributed-systems/" rel="tag"># distributed systems</a>
+              <a href="/tags/interview-experience/" rel="tag"># interview experience</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/04/02/bolt-transaction/" rel="prev" title="Boltdb 源码导读（三）：Boltdb 事务实现">
+      <i class="fa fa-chevron-left"></i> Boltdb 源码导读（三）：Boltdb 事务实现
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/04/17/storage-interview/" rel="next" title="分布式存储面试经验">
+      分布式存储面试经验 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Related-Positions"><span class="nav-number">1.</span> <span class="nav-text">Related Positions</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Interview-Content"><span class="nav-number">2.</span> <span class="nav-text">Interview Content</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Interview-Process"><span class="nav-number">3.</span> <span class="nav-text">Interview Process</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Question-Summary"><span class="nav-number">4.</span> <span class="nav-text">Question Summary</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2021/04/17/storage-interview/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'af2fc4aa5e3d22ca5da6fe57ab8baad1',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
