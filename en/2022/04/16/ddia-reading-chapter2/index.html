@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="DDIA Reading Group: We will share chapter by chapter, combining my experience in distributed storage and databases in the industry with additional details. Sharing roughly every two weeks — welcome t">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DDIA Reading Notes (Chapter 2): Data Models and Query Languages">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter2/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="DDIA Reading Group: We will share chapter by chapter, combining my experience in distributed storage and databases in the industry with additional details. Sharing roughly every two weeks — welcome t">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/lATY7U56IJO42FD.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/rN967AnmIicgl25.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/DCafiUozLMQ4WBw.png">
+<meta property="og:image" content="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter2/Chapter%202%20%2046cf1/Untitled%202.png">
+<meta property="og:image" content="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter2/Chapter%202%20%2046cf1/Untitled%203.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/5ptXoWNUVswrxyq.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/ahqP9G7c42JsNEi.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/NEP7kwqvdFp3zsK.png">
+<meta property="article:published_time" content="2022-04-16T01:18:34.000Z">
+<meta property="article:modified_time" content="2026-05-07T15:44:06.372Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="DDIA">
+<meta property="article:tag" content="Reading Notes">
+<meta property="article:tag" content="Designing Data-Intensive Applications">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2022/04/16/lATY7U56IJO42FD.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="DDIA,Reading Notes,Designing Data-Intensive Applications">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "DDIA Reading Notes (Chapter 2): Data Models and Query Languages",
+    "description": "DDIA Reading Group: We will share chapter by chapter, combining my experience in distributed storage and databases in the industry with additional details. Sharing roughly every two weeks — welcome to join! The schedule and all transcripts are here. We have a corresponding distributed systems &amp; database discussion group; notifications go out before each session. If you’d like to join, add me on WeChat: qtmuniao, briefly introduce yourself, and mention “Distributed Systems Group.” Overview This section revolves around two main concepts. How to analyze a data model: Basic considerations: the fundamental elements of data, and the relationships between elements (one-to-many, many-to-many). Compare several common models: the (most popular) relational model, the (tree-like) document model, and the (highly flexible) graph model. Schema patterns: strong schema (write-time constraints); weak schema (read-time parsing). How to evaluate query languages: How they relate to and match the data model. Declarative vs. imperative.",
+    "url": "https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter2/",
+    "datePublished": "2022-04-16T09:18:34+08:00",
+    "dateModified": "2026-05-07T23:44:06+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter2/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>DDIA Reading Notes (Chapter 2): Data Models and Query Languages | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2022/04/16/ddia-reading-chapter2/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2022/04/16/ddia-reading-chapter2/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DDIA Reading Notes (Chapter 2): Data Models and Query Languages
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2022-04-16 09:18:34" itemprop="dateCreated datePublished" datetime="2022-04-16T09:18:34+08:00">2022-04-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>DDIA Reading Group: We will share chapter by chapter, combining my experience in distributed storage and databases in the industry with additional details. Sharing roughly every two weeks — welcome to join! The schedule and all transcripts are <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">here<i class="fa fa-external-link-alt"></i></span>. We have a corresponding distributed systems &amp; database discussion group; notifications go out before each session. If you’d like to join, add me on WeChat: qtmuniao, briefly introduce yourself, and mention “Distributed Systems Group.”</p>
+</blockquote>
+<h2 id="Overview">Overview</h2>
+<p>This section revolves around two main concepts.</p>
+<p>How to analyze a <strong>data model</strong>:</p>
+<ol>
+<li>Basic considerations: the fundamental elements of data, and the relationships between elements (one-to-many, many-to-many).</li>
+<li>Compare several common models: the (most popular) relational model, the (tree-like) document model, and the (highly flexible) graph model.</li>
+<li>Schema patterns: strong schema (write-time constraints); weak schema (read-time parsing).</li>
+</ol>
+<p>How to evaluate <strong>query languages</strong>:</p>
+<ol>
+<li>How they relate to and match the data model.</li>
+<li>Declarative vs. imperative.</li>
+</ol>
+<span id="more"></span>
+<p><em>Author: Muniao’s Notes <a href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter2">https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter2</a> Please cite the source when reposting</em></p>
+<h3 id="Data-Model">Data Model</h3>
+<blockquote>
+<p>A <strong>data model</strong> is an <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQWJzdHJhY3RfbW9kZWw=">abstract model<i class="fa fa-external-link-alt"></i></span> that organizes elements of <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRGF0YQ==">data<i class="fa fa-external-link-alt"></i></span> and standardizes how they relate to one another and to the properties of real-world entities.<br>
+—<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRGF0YV9tb2RlbA==">https://en.wikipedia.org/wiki/Data_model<i class="fa fa-external-link-alt"></i></span></p>
+</blockquote>
+<p><strong>Data model</strong>: how to organize data, how to standardize relationships, and how to connect with reality.</p>
+<p>It determines both the way we build software (<strong>implementation</strong>) and the perspective from which we view problems (<strong>cognition</strong>).</p>
+<p>The author opens by using different abstraction levels of computers to give an overall sense of <strong>generalized</strong> data models.</p>
+<p>Most applications are built by progressively layering different data models.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/lATY7U56IJO42FD.png" alt="ddia2-layered-data-models.png"><span class="image-caption">ddia2-layered-data-models.png</span></p>
+<p>The core question at each layer: how to model this layer using the interface of the layer below?</p>
+<ol>
+<li>As an <strong>application developer</strong>, you abstract real-world problems into a set of objects, <strong>data structures</strong>, and APIs operating on them.</li>
+<li>As a <strong>database administrator (DBA)</strong>, to persist the above data structures, you need to express them using a general <strong>data model</strong>, such as XML/JSON in document databases, tables in relational databases, or graphs in graph databases.</li>
+<li>As a <strong>database system developer</strong>, you need to organize the above data models into <strong>bytes</strong> in memory, on disk, or over the network, and provide various methods to manipulate data collections.</li>
+<li>As a <strong>hardware engineer</strong>, you need to represent the byte stream as diode potentials (memory), magnetic poles in a field (disk), or light signals in optical fiber (network).</li>
+</ol>
+<blockquote>
+<p>At each layer, by exposing a concise <strong>data model</strong>, we <strong>isolate</strong> and <strong>decompose</strong> the <strong>complexity</strong> of the real world.</p>
+</blockquote>
+<p>This also illustrates that a good data model needs two characteristics:</p>
+<ol>
+<li>Concise and intuitive.</li>
+<li>Composable.</li>
+</ol>
+<p>Chapter 2 first explores the relational model, the document model, and their comparison; then relevant query languages; and finally the graph model.</p>
+<h2 id="Relational-Model-vs-Document-Model">Relational Model vs. Document Model</h2>
+<h3 id="Relational-Model">Relational Model</h3>
+<p>The relational model is undoubtedly the most popular database model today.</p>
+<p>The relational model was first proposed by <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRS5fRi5fQ29kZA==">Edgar Codd<i class="fa fa-external-link-alt"></i></span> in 1969, and explained using “<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQ29kZCUyN3NfMTJfcnVsZXM=">Codd’s 12 rules<i class="fa fa-external-link-alt"></i></span>”. However, commercially available databases have basically failed to fully comply with them, so the term “relational model” later came to refer to this general class of databases. Its characteristics are:</p>
+<ol>
+<li>Presents data to users as <strong>relations</strong> (e.g., two-dimensional tables containing rows and columns).</li>
+<li>Provides <strong>relational operators</strong> to manipulate data sets.</li>
+</ol>
+<p><strong>Common Classifications</strong></p>
+<ol>
+<li>Transactional (TP): banking transactions, train tickets.</li>
+<li>Analytical (AP): data reports, monitoring dashboards.</li>
+<li>Hybrid (HTAP):</li>
+</ol>
+<p>Many years after the birth of the relational model, although challengers emerged from time to time (such as the <strong>network model</strong> and <strong>hierarchical model</strong> of the 1970s and 1980s), no fundamentally new model capable of shaking its position ever appeared.</p>
+<p>Until the last decade, with the proliferation of mobile internet, the explosive growth of data, and increasingly refined processing requirements, a blossoming of data models has been spurred.</p>
+<h3 id="The-Birth-of-NoSQL">The Birth of NoSQL</h3>
+<p>NoSQL (originally meaning Non-SQL, later reinterpreted as Not only SQL) is a general term for database management systems that differ from traditional relational databases. According to the <span class="exturl" data-url="aHR0cHM6Ly9kYi1lbmdpbmVzLmNvbS9lbi9yYW5raW5n">DB-Engines ranking<i class="fa fa-external-link-alt"></i></span>, the most popular NoSQL databases today are MongoDB, Redis, ElasticSearch, and Cassandra.</p>
+<p>The driving factors include:</p>
+<ol>
+<li>Handling larger datasets: greater scalability, higher throughput.</li>
+<li>The rise of open source and free software: challenging the standards previously controlled by vendors.</li>
+<li>Specialized query operations: things relational databases struggle to support, such as multi-hop analysis in graphs.</li>
+<li>Stronger expressive power: the relational model is too rigid and restrictive.</li>
+</ol>
+<h3 id="The-Object-Relational-Mismatch">The Object-Relational Mismatch</h3>
+<p>The core conflict lies in the <strong>nesting</strong> of object-oriented design versus the <strong>flatness</strong> of the relational model (a term I made up).</p>
+<p>Of course, ORM frameworks can help us handle these matters, but it’s still somewhat inconvenient.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/rN967AnmIicgl25.png" alt="ddia2-bill-resume.png"><span class="image-caption">ddia2-bill-resume.png</span></p>
+<p>From another perspective, the relational model makes it difficult to intuitively represent <strong>one-to-many</strong> relationships. For example, on a resume, one person may have multiple education experiences and multiple work experiences.</p>
+<p><strong>Document model</strong>: leverages the natural nesting of JSON and XML.</p>
+<p><strong>Relational model</strong>: using the SQL model, positions and education must be split into separate tables, then linked via foreign keys in the user table.</p>
+<p>In the resume example, the document model has several additional advantages:</p>
+<ol>
+<li><strong>Schema flexibility</strong>: fields can be dynamically added or removed, such as work experience.</li>
+<li><strong>Better locality</strong>: when all attributes of a person are accessed together, they are also stored together.</li>
+<li><strong>Structure conveys semantics</strong>: the implicit one-to-many tree-like relationship between a resume and contact info, education, career info, etc., can be explicitly expressed by JSON’s tree structure.</li>
+</ol>
+<h3 id="Many-to-One-and-Many-to-Many">Many-to-One and Many-to-Many</h3>
+<p>This is an angle for comparing various data models.</p>
+<p>When storing a region, why not store the plain string “Greater Seattle Area” directly, but instead store it as region_id → region name, with everywhere else referencing region_id?</p>
+<ol>
+<li><strong>Unified style</strong>: all places using the same concept have identical spelling and formatting.</li>
+<li><strong>Avoid ambiguity</strong>: there may be regions with the same name.</li>
+<li><strong>Ease of modification</strong>: if a region is renamed, we don’t need to modify every place that references it.</li>
+<li><strong>Localization support</strong>: if translating into other languages, only the name table needs translation.</li>
+<li><strong>Better search</strong>: lists can be associated with regions for hierarchical organization.</li>
+</ol>
+<p>A similar concept: program to abstractions, not to details.</p>
+<p>Regarding the choice between IDs and text, the author makes a point: IDs are <strong>meaningless</strong> to humans, and being meaningless means they won’t change as the real world changes in the future.</p>
+<p>This needs to be considered when designing relational database tables, i.e., how to control <strong>duplication</strong>. Several <strong>normal forms</strong> exist to eliminate redundancy.</p>
+<p>Document databases excel at handling one-to-many tree-like relationships but struggle with many-to-many graph-like relationships. If they don’t support Joins, the complexity of handling many-to-many relationships shifts from the database side to the application side.</p>
+<p>For example, multiple users may have worked at the same organization. If we want to find people who attended the same school and worked at the same organization, and the database doesn’t support Joins, the application side would need to perform nested loops to Join.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/DCafiUozLMQ4WBw.png" alt="ddia2-mul-to-mul.png"><span class="image-caption">ddia2-mul-to-mul.png</span></p>
+<p>Document vs. Relational</p>
+<ol>
+<li>For one-to-many relationships, document databases place nested data inside the parent node, rather than splitting it out into a separate table.</li>
+<li>For many-to-one and many-to-many relationships, essentially both use foreign keys (document references) for indexing. Queries require joins or dynamic following.</li>
+</ol>
+<h3 id="Is-the-Document-Model-Repeating-History">Is the Document Model Repeating History?</h3>
+<h3 id="Hierarchical-Model">Hierarchical Model</h3>
+<p>In the 1970s, IBM’s Information Management System (IMS).</p>
+<blockquote>
+<p>A <strong>hierarchical database model</strong> is a <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvRGF0YV9tb2RlbA==">data model<i class="fa fa-external-link-alt"></i></span> in which the data are organized into a <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvVHJlZV9kYXRhX3N0cnVjdHVyZQ==">tree<i class="fa fa-external-link-alt"></i></span>-like structure. The data are stored as <strong>records</strong> which are connected to one another through <strong>links.</strong> A record is a collection of fields, with each field containing only one value. The <strong>type</strong> of a record defines which fields the record contains.  — wikipedia</p>
+</blockquote>
+<p>Key points:</p>
+<ol>
+<li>Tree-like organization; each child node is allowed only one parent node.</li>
+<li>Nodes store data; nodes have types.</li>
+<li>Nodes are connected using pointer-like links.</li>
+</ol>
+<p>As can be seen, it is very similar to the document model, and therefore also struggles to solve many-to-many relationships and does not support Joins.</p>
+<p>To address the limitations of the hierarchical model, various solutions were proposed, the most prominent being:</p>
+<ol>
+<li>The relational model.</li>
+<li>The network model.</li>
+</ol>
+<h3 id="Network-Model">Network Model</h3>
+<p>The network model is an extension of the hierarchical model: it allows a node to have multiple parent nodes. It was standardized by the Committee on Data Systems Languages (CODASYL), and is therefore also known as the CODASYL model.</p>
+<p>Many-to-one and many-to-many can both be represented by paths. The only way to access a record is by traversing the chain of elements and links, which is called an <strong>access path</strong>. The difficulty is akin to navigating in n-dimensional space.</p>
+<p>Memory was limited, so traversal paths had to be strictly controlled. And because the database’s topological structure had to be known in advance, this meant writing large amounts of application-specific code for different applications.</p>
+<h3 id="Relational-Model-2">Relational Model</h3>
+<p>In the relational model, data is organized into <strong>tuples</strong>, which are then collected into <strong>relations</strong>; in SQL these correspond to <strong>rows</strong> and <strong>tables</strong>.</p>
+<ul>
+<li>
+<p>Ever wonder why it’s called the <strong>relational model</strong> when it looks more like a table model?</p>
+<p>A table is just one implementation.</p>
+<p>The term “relation” comes from set theory, referring to a subset of the Cartesian product of several sets.</p>
+<p>R ⊆ (D1×D2×D3 ··· ×Dn)</p>
+<p>(Relation is denoted by R, attributes by Ai, and the domain of attributes by Di.)</p>
+</li>
+</ul>
+<p>Its main purpose and contribution is to provide a <strong>declarative</strong> way to describe data and construct queries.</p>
+<p>That is, compared to the network model, the relational model decouples query statements from execution paths, with a <strong>query optimizer</strong> automatically deciding execution order and which indexes to use — decoupling logic from implementation.</p>
+<p>For example: if you want to query your dataset in a new way, you only need to create an index on the new field. Then at query time, you don’t need to change your application code; the query optimizer will dynamically choose the available indexes.</p>
+<h3 id="Document-vs-Relational">Document vs. Relational</h3>
+<p>Choose the data model based on data characteristics.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Document</th>
+<th>Relational</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Corresponding relationships</td>
+<td>Data has natural one-to-many, tree-like nesting relationships, such as resumes.</td>
+<td>Through foreign keys + Joins, can handle many-to-one and many-to-many relationships.</td>
+</tr>
+<tr>
+<td>Code simplification</td>
+<td>If data has a document structure, the document model is naturally suitable; using the relational model makes modeling tedious and access complex. But nesting shouldn’t be too deep, because access paths can only be manually specified or range-scanned.</td>
+<td>Primary keys, indexes, conditional filtering.</td>
+</tr>
+<tr>
+<td>Join support</td>
+<td>Poor Join support.</td>
+<td>Reasonable support, but Join implementation has many difficulties.</td>
+</tr>
+<tr>
+<td>Schema flexibility</td>
+<td>Weak schema, supports dynamically adding fields.</td>
+<td>Strong schema; modifying the schema is costly.</td>
+</tr>
+<tr>
+<td>Access locality</td>
+<td>1. Accessing an entire document at once is efficient. <br/>2. Accessing only part of a document is poor.</td>
+<td>Scattered across multiple tables.</td>
+</tr>
+</tbody>
+</table>
+<p>For highly interconnected datasets, using the document model feels awkward, using the relational model is acceptable, and using the graph model is the most natural.</p>
+<h3 id="Schema-Flexibility-in-Document-Models">Schema Flexibility in Document Models</h3>
+<p>Saying document databases are schemaless is not quite accurate; a more fitting description is <strong>schema-on-read</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Data Model</th>
+<th></th>
+<th>Programming Language</th>
+<th></th>
+<th>Performance &amp; Space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>schema-on-read</td>
+<td>No validation on write; dynamic parsing on read.</td>
+<td>Weakly typed</td>
+<td>Dynamic, parsed at runtime</td>
+<td>Dynamic parsing on read, poorer performance. Types cannot be determined at write time; space utilization is poor due to lack of alignment.</td>
+</tr>
+<tr>
+<td>schema-on-write</td>
+<td>Validated on write; data aligned to schema.</td>
+<td>Strongly typed</td>
+<td>Static, determined at compile time</td>
+<td>Better performance and space usage.</td>
+</tr>
+</tbody>
+</table>
+<p>Characteristics of document database use cases:</p>
+<ol>
+<li>There are many types of data, but it’s not appropriate to put each in a separate table.</li>
+<li>Data types and structures are determined externally; you have no control over data changes.</li>
+</ol>
+<h3 id="Data-Locality-at-Query-Time">Data Locality at Query Time</h3>
+<p>If you need all contents of a document at the same time, storing the document sequentially will be more efficient.</p>
+<p>But if you only need to access certain fields, the document still needs to be fully loaded.</p>
+<p>However, exploiting this locality is not limited to document databases. Different databases will adjust physical data distribution for different scenarios to adapt to the locality of common access patterns.</p>
+<ul>
+<li>For example, in Spanner, tables can be declared as embedded into parent tables — common association inlining.</li>
+<li>HBase and Cassandra use column families to cluster data — analytical.</li>
+<li>In graph databases, vertices and their outgoing edges are stored on the same machine — graph traversal.</li>
+</ul>
+<h3 id="Convergence-of-Relational-and-Document-Models">Convergence of Relational and Document Models</h3>
+<ul>
+<li>
+<p>MySQL and PostgreSQL have started supporting JSON.</p>
+<p>Native JSON support can be understood as: MySQL understands the JSON format. Like a Date format, a field can be treated as JSON, a sub-field can be modified, and indexes can be built on sub-fields.</p>
+</li>
+<li>
+<p>RethinkDB supports relational-link Joins in queries.</p>
+</li>
+</ul>
+<p>Codd: <strong>nonsimple domains</strong>, where values in a record can be not only simple types (numbers, strings) but also a nested relation (table). This is much like SQL’s support for XML and JSON.</p>
+<h2 id="Data-Query-Languages">Data Query Languages</h2>
+<p>Retrieve all shark-like animals from the animals table.</p>
+<figure class="highlight jsx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">getSharks</span>(<span class="params"></span>) &#123; <span class="keyword">var</span> sharks = [];</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; animals.<span class="property">length</span>; i++) &#123; </span><br><span class="line">    <span class="keyword">if</span> (animals[i].<span class="property">family</span> === <span class="string">&quot;Sharks&quot;</span>) &#123;</span><br><span class="line">      sharks.<span class="title function_">push</span>(animals[i]);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> sharks; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span> <span class="keyword">FROM</span> animals <span class="keyword">WHERE</span> family <span class="operator">=</span> <span class="string">&#x27;Sharks&#x27;</span>;</span><br></pre></td></tr></table></figure>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Declarative Language</th>
+<th>Imperative Language</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Concept</td>
+<td>Describes control logic rather than execution flow.</td>
+<td>Describes the execution process of commands, using a series of statements to continuously change state.</td>
+</tr>
+<tr>
+<td>Examples</td>
+<td>SQL, CSS, XSL</td>
+<td>IMS, CODASYL, general-purpose languages like C, C++, JS</td>
+</tr>
+<tr>
+<td>Abstraction level</td>
+<td>High</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Coupling degree</td>
+<td>Decoupled from implementation. <br/>Query engine performance can be continuously optimized.</td>
+<td>Deeply coupled with implementation.</td>
+</tr>
+<tr>
+<td>Parsing &amp; Execution</td>
+<td>Lexical analysis → Syntax analysis → Semantic analysis <br/>Generate execution plan → Execution plan optimization</td>
+<td>Lexical analysis → Syntax analysis → Semantic analysis <br/>Intermediate code generation → Code optimization → Target code generation</td>
+</tr>
+<tr>
+<td>Multi-core parallelism</td>
+<td>Declarative has more multi-core potential, giving more runtime optimization space.</td>
+<td>Imperative specifies code execution order, leaving less room for compile-time optimization.</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Q: What are the advantages of imperative languages relative to declarative languages?
+<ol>
+<li>When the target becomes complex, declarative languages lack expressive power.</li>
+<li>Languages implementing the imperative paradigm are often not as strictly separated from declarative ones; through reasonable abstraction and programming paradigms (functional), code can balance expressiveness and clarity.</li>
+</ol>
+</li>
+</ul>
+<h3 id="Beyond-Databases-Declarative-in-the-Web">Beyond Databases: Declarative in the Web</h3>
+<p><strong>Requirement</strong>: selected page background turns blue.</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">ul</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">li</span> <span class="attr">class</span>=<span class="string">&quot;selected&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">p</span>&gt;</span>Sharks<span class="tag">&lt;/<span class="name">p</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">ul</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">li</span>&gt;</span>Great White Shark<span class="tag">&lt;/<span class="name">li</span>&gt;</span> </span><br><span class="line">      <span class="tag">&lt;<span class="name">li</span>&gt;</span>Tiger Shark<span class="tag">&lt;/<span class="name">li</span>&gt;</span> </span><br><span class="line">      <span class="tag">&lt;<span class="name">li</span>&gt;</span>Hammerhead Shark<span class="tag">&lt;/<span class="name">li</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">ul</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">li</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">li</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">p</span>&gt;</span>Whales<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">ul</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">li</span>&gt;</span>Blue Whale<span class="tag">&lt;/<span class="name">li</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">li</span>&gt;</span>Humpback Whale<span class="tag">&lt;/<span class="name">li</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">li</span>&gt;</span>Fin Whale<span class="tag">&lt;/<span class="name">li</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">ul</span>&gt;</span> </span><br><span class="line">  <span class="tag">&lt;/<span class="name">li</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">ul</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>If using CSS, you only need (CSS selector):</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="selector-tag">li</span><span class="selector-class">.selected</span> &gt; <span class="selector-tag">p</span> &#123; </span><br><span class="line">  <span class="attribute">background-color</span>: blue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>If using XSL, you only need (XPath selector):</p>
+<figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;xsl:template match=<span class="string">&quot;li[@class=&#x27;selected&#x27;]/p&quot;</span>&gt; </span><br><span class="line">  &lt;fo:block background-color=<span class="string">&quot;blue&quot;</span>&gt;</span><br><span class="line">    &lt;xsl:apply-templates/&gt;</span><br><span class="line">  &lt;/fo:block&gt;</span><br><span class="line">&lt;/xsl:template&gt;</span><br></pre></td></tr></table></figure>
+<p>But if using JavaScript (without the above selector libraries):</p>
+<figure class="highlight jsx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> liElements = <span class="variable language_">document</span>.<span class="title function_">getElementsByTagName</span>(<span class="string">&quot;li&quot;</span>); </span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; liElements.<span class="property">length</span>; i++) &#123;</span><br><span class="line">  <span class="keyword">if</span> (liElements[i].<span class="property">className</span> === <span class="string">&quot;selected&quot;</span>) &#123; </span><br><span class="line">    <span class="keyword">var</span> children = liElements[i].<span class="property">childNodes</span>; </span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt; children.<span class="property">length</span>; j++) &#123;</span><br><span class="line">      <span class="keyword">var</span> child = children[j];</span><br><span class="line">      <span class="keyword">if</span> (child.<span class="property">nodeType</span> === <span class="title class_">Node</span>.<span class="property">ELEMENT_NODE</span> &amp;&amp; child.<span class="property">tagName</span> === <span class="string">&quot;P&quot;</span>) &#123;</span><br><span class="line">        child.<span class="title function_">setAttribute</span>(<span class="string">&quot;style&quot;</span>, <span class="string">&quot;background-color: blue&quot;</span>);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; </span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="MapReduce-Queries">MapReduce Queries</h3>
+<p><strong>Google’s MapReduce Model</strong></p>
+<ol>
+<li>Borrowed from functional programming.</li>
+<li>A fairly simple programming model, or atomic abstraction, that is somewhat insufficient today.</li>
+<li>But in the barbaric era before big data processing tools were abundant (before 2003), the framework proposed by Google was quite pioneering.</li>
+</ol>
+<p><img data-src="Chapter%202%20%2046cf1/Untitled%202.png" alt="Untitled"><span class="image-caption">Untitled</span></p>
+<p><strong>MongoDB’s MapReduce Model</strong></p>
+<p>MongoDB’s MapReduce is a hybrid data model between:</p>
+<ol>
+<li><strong>Declarative</strong>: users don’t need to explicitly define dataset traversal, shuffle processes, etc.</li>
+<li><strong>Imperative</strong>: users still need to define the execution process for individual records.</li>
+</ol>
+<p><strong>Requirement</strong>: count the number of shark observations per month.</p>
+<p><strong>Query Statements</strong>:</p>
+<p><strong>PostgreSQL</strong></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> date_trunc(<span class="string">&#x27;month&#x27;</span>, observation_timestamp) <span class="keyword">AS</span> observation_month, </span><br><span class="line">  <span class="built_in">sum</span>(num_animals) <span class="keyword">AS</span> total_animals</span><br><span class="line"><span class="keyword">FROM</span> observations</span><br><span class="line"><span class="keyword">WHERE</span> family <span class="operator">=</span> <span class="string">&#x27;Sharks&#x27;</span> <span class="keyword">GROUP</span> <span class="keyword">BY</span> observation_month;</span><br></pre></td></tr></table></figure>
+<p><strong>MongoDB</strong></p>
+<figure class="highlight jsx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">db.<span class="property">observations</span>.<span class="title function_">mapReduce</span>(</span><br><span class="line">  <span class="keyword">function</span> <span class="title function_">map</span>(<span class="params"></span>) &#123; <span class="comment">// 2. Execute map on all matching docs</span></span><br><span class="line">    <span class="keyword">var</span> year = <span class="variable language_">this</span>.<span class="property">observationTimestamp</span>.<span class="title function_">getFullYear</span>();</span><br><span class="line">    <span class="keyword">var</span> month = <span class="variable language_">this</span>.<span class="property">observationTimestamp</span>.<span class="title function_">getMonth</span>() + <span class="number">1</span>; </span><br><span class="line">    <span class="title function_">emit</span>(year + <span class="string">&quot;-&quot;</span> + month, <span class="variable language_">this</span>.<span class="property">numAnimals</span>); <span class="comment">// 3. Output a kv pair</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="keyword">function</span> <span class="title function_">reduce</span>(<span class="params">key, values</span>) &#123; <span class="comment">// 4. Aggregate by key</span></span><br><span class="line">    <span class="keyword">return</span> <span class="title class_">Array</span>.<span class="title function_">sum</span>(values);    <span class="comment">// 5. Sum values with the same key</span></span><br><span class="line">  &#125;,</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="attr">query</span>: &#123; <span class="attr">family</span>: <span class="string">&quot;Sharks&quot;</span> &#125;, <span class="comment">// 1. Filter</span></span><br><span class="line">    <span class="attr">out</span>: <span class="string">&quot;monthlySharkReport&quot;</span>    <span class="comment">// 6. Reduce result set</span></span><br><span class="line">  &#125; </span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+<p>When executed, the above statement goes through: filter → traverse and execute map → aggregate output by key (shuffle) → reduce aggregated data → output result set.</p>
+<p>Some characteristics of MapReduce:</p>
+<ol>
+<li><strong>Requires Map and Reduce to be pure functions</strong>. That is, no side effects; executing any number of times, anywhere, in any order, for the same input, always produces the same output. Therefore, it’s easy to schedule concurrently.</li>
+<li><strong>A very low-level but powerfully expressive programming model</strong>. Higher-level query languages like SQL can be built on top of it, such as Hive.</li>
+</ol>
+<p>But note:</p>
+<ol>
+<li>Not all distributed SQL implementations are based on MapReduce.</li>
+<li>MapReduce is not the only one that allows embedding general-purpose language (e.g., JS) modules.</li>
+<li>MapReduce has a certain <strong>learning cost</strong>; you need to be familiar with its execution logic to make the two functions work closely together.</li>
+</ol>
+<p>MongoDB 2.2+ evolved version, <em>aggregation pipeline:</em></p>
+<figure class="highlight jsx"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">db.<span class="property">observations</span>.<span class="title function_">aggregate</span>([</span><br><span class="line">  &#123; <span class="attr">$match</span>: &#123; <span class="attr">family</span>: <span class="string">&quot;Sharks&quot;</span> &#125; &#125;,</span><br><span class="line">  &#123; <span class="attr">$group</span>: &#123;</span><br><span class="line">    <span class="attr">_id</span>: &#123;</span><br><span class="line">      <span class="attr">year</span>:  &#123; <span class="attr">$year</span>:  <span class="string">&quot;$observationTimestamp&quot;</span> &#125;,</span><br><span class="line">      <span class="attr">month</span>: &#123; <span class="attr">$month</span>: <span class="string">&quot;$observationTimestamp&quot;</span> &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="attr">totalAnimals</span>: &#123; <span class="attr">$sum</span>: <span class="string">&quot;$numAnimals&quot;</span> &#125; &#125;&#125;</span><br><span class="line">]);</span><br></pre></td></tr></table></figure>
+<h2 id="Graph-Like-Data-Models">Graph-Like Data Models</h2>
+<ul>
+<li>
+<p>When is the document model suitable?</p>
+<p>When your dataset contains a large number of <strong>one-to-many</strong> relationships.</p>
+</li>
+<li>
+<p>When is the graph model suitable?</p>
+<p>When your dataset contains a large number of <strong>many-to-many</strong> relationships.</p>
+</li>
+</ul>
+<h3 id="Basic-Concepts">Basic Concepts</h3>
+<p>The basic concepts of graph data models generally include three things: <strong>vertices</strong>, <strong>edges</strong>, and <strong>properties</strong> attached to both.</p>
+<p>Common scenarios that can be modeled with graphs:</p>
+<table>
+<thead>
+<tr>
+<th>Example</th>
+<th>Modeling</th>
+<th>Application</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Social graph</td>
+<td>People are vertices, follow relationships are edges.</td>
+<td>Six degrees of separation, feed recommendation.</td>
+</tr>
+<tr>
+<td>Web</td>
+<td>Web pages are vertices, links are edges.</td>
+<td>PageRank</td>
+</tr>
+<tr>
+<td>Road network</td>
+<td>Transportation hubs are vertices, railways/highways are edges.</td>
+<td>Route planning, shortest-path navigation.</td>
+</tr>
+<tr>
+<td>Money laundering</td>
+<td>Accounts are vertices, transfer relationships are edges.</td>
+<td>Detecting cycles.</td>
+</tr>
+<tr>
+<td>Knowledge graph</td>
+<td>Concepts are vertices, associations are edges.</td>
+<td>Heuristic Q&amp;A.</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p>Homogeneous and heterogeneous data</p>
+<p>Vertices in a graph can all be of the same type, but they can also be of different types — and the latter is even more powerful.</p>
+</li>
+</ul>
+<p>This section will use the following figure as an example. It represents a married couple: Lucy from Idaho, USA, and Alain from France. They are married and live in London.</p>
+<p><img data-src="Chapter%202%20%2046cf1/Untitled%203.png" alt="Untitled"><span class="image-caption">Untitled</span></p>
+<p>There are multiple ways to model a graph:</p>
+<ol>
+<li>Property graph: more mainstream, e.g., Neo4j, Titan, InfiniteGraph.</li>
+<li>Triple-store: e.g., Datomic, AllegroGraph.</li>
+</ol>
+<h3 id="Property-Graph-PG-Property-Graphs">Property Graph (PG, Property Graphs)</h3>
+<table>
+<thead>
+<tr>
+<th>Vertices (vertices, nodes, entities)</th>
+<th>Edges (edges, relations, arcs)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Globally unique ID</td>
+<td>Globally unique ID</td>
+</tr>
+<tr>
+<td>Set of outgoing edges</td>
+<td>Start vertex</td>
+</tr>
+<tr>
+<td>Set of incoming edges</td>
+<td>End vertex</td>
+</tr>
+<tr>
+<td>Property set (represented as kv pairs)</td>
+<td>Property set (represented as kv pairs)</td>
+</tr>
+<tr>
+<td>Type indicating vertex type?</td>
+<td>Label indicating edge type</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p>Q: One puzzling point — why does the book’s definition of PG vertices not include Type?</p>
+<p>If the data is heterogeneous, there should be one; is it perhaps marking different types through different properties?</p>
+</li>
+</ul>
+<p>If it doesn’t feel intuitive, we can use familiar SQL semantics to construct a graph model, as shown below. (Facebook’s TAO paper uses MySQL as its single-machine storage engine.)</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span> Vertex <span class="keyword">table</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> vertices (</span><br><span class="line">  vertex_id <span class="type">integer</span> PRIMARYKEY, properties json</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="operator">/</span><span class="operator">/</span> Edge <span class="keyword">table</span></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> edges (</span><br><span class="line">  edge_id <span class="type">integer</span> <span class="keyword">PRIMARY</span> KEY,</span><br><span class="line">  tail_vertex <span class="type">integer</span> <span class="keyword">REFERENCES</span> vertices (vertex_id), </span><br><span class="line">  head_vertex <span class="type">integer</span> <span class="keyword">REFERENCES</span> vertices (vertex_id),</span><br><span class="line">  label text,</span><br><span class="line">  properties json</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"><span class="operator">/</span><span class="operator">/</span> Reverse index <span class="keyword">on</span> vertices, used during graph traversal. Given a vertex, find <span class="keyword">all</span> its incoming <span class="keyword">and</span> outgoing edges.</span><br><span class="line"><span class="keyword">CREATE</span> INDEX edges_tails <span class="keyword">ON</span> edges (tail_vertex);</span><br><span class="line"><span class="keyword">CREATE</span> INDEX edges_heads <span class="keyword">ON</span> edges (head_vertex);</span><br></pre></td></tr></table></figure>
+<p>Graphs are a very flexible modeling approach:</p>
+<ol>
+<li>Edges can be inserted between any two vertices without any schema restrictions.</li>
+<li>For any vertex, its incoming and outgoing edges can be found efficiently (think: how to be efficient?), enabling graph traversal.</li>
+<li>Multiple <strong>labels</strong> are used to mark different types of edges (relationships).</li>
+</ol>
+<p>Compared to relational data, <strong>heterogeneous types of data and relationships can be stored in the same graph, giving graphs tremendous expressive power!</strong></p>
+<p>This expressive power includes, according to the example in the figure:</p>
+<ol>
+<li>For the same concept, different structures can be used. Such as administrative divisions in different countries.</li>
+<li>For the same concept, different granularities can be used. Such as Lucy’s current residence and birthplace.</li>
+<li>Can evolve very naturally.</li>
+</ol>
+<p>Accommodating heterogeneous data in a single graph, <strong>graph traversal</strong> can easily accomplish operations that would require <strong>multiple Joins</strong> in a relational database.</p>
+<h3 id="Cypher-Query-Language">Cypher Query Language</h3>
+<p>Cypher is a query language created by Neo4j.</p>
+<p>The names Cypher and Neo likely both come from <em>The Matrix</em>. Think Oracle.</p>
+<p>A major characteristic of Cypher is its readability, especially when expressing path patterns.</p>
+<p>Combining with the previous figure, here is an example of a Cypher insert statement:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span></span><br><span class="line">  (NAmerica:Location &#123;name:<span class="string">&#x27;North America&#x27;</span>, type:<span class="string">&#x27;continent&#x27;</span>&#125;),</span><br><span class="line">  (USA:Location      &#123;name:<span class="string">&#x27;United States&#x27;</span>, type:<span class="string">&#x27;country&#x27;</span>  &#125;),</span><br><span class="line">  (Idaho:Location    &#123;name:<span class="string">&#x27;Idaho&#x27;</span>,         type:<span class="string">&#x27;state&#x27;</span>    &#125;),</span><br><span class="line">  (Lucy:Person       &#123;name:<span class="string">&#x27;Lucy&#x27;</span> &#125;),</span><br><span class="line">  (Idaho) <span class="operator">-</span>[:<span class="keyword">WITHIN</span>]<span class="operator">-</span><span class="operator">&gt;</span>  (USA)  <span class="operator">-</span>[:<span class="keyword">WITHIN</span>]<span class="operator">-</span><span class="operator">&gt;</span> (NAmerica),</span><br><span class="line">  (Lucy)  <span class="operator">-</span>[:BORN_IN]<span class="operator">-</span><span class="operator">&gt;</span> (Idaho)</span><br></pre></td></tr></table></figure>
+<p>If we want to perform a query like this: find the names of all people who emigrated from the United States to Europe.</p>
+<p>Translated into graph language: given the conditions, BORN_IN points to a location in the United States, and LIVES_IN points to a location in Europe; find all vertices satisfying the above conditions and return their name properties.</p>
+<p>In Cypher, this can be expressed as:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">MATCH</span></span><br><span class="line">  (person) <span class="operator">-</span>[:BORN_IN]<span class="operator">-</span><span class="operator">&gt;</span>  () <span class="operator">-</span>[:<span class="keyword">WITHIN</span><span class="operator">*</span><span class="number">0.</span>.]<span class="operator">-</span><span class="operator">&gt;</span> (us:Location &#123;name:<span class="string">&#x27;United States&#x27;</span>&#125;),</span><br><span class="line">  (person) <span class="operator">-</span>[:LIVES_IN]<span class="operator">-</span><span class="operator">&gt;</span> () <span class="operator">-</span>[:<span class="keyword">WITHIN</span><span class="operator">*</span><span class="number">0.</span>.]<span class="operator">-</span><span class="operator">&gt;</span> (eu:Location &#123;name:<span class="string">&#x27;Europe&#x27;</span>&#125;)</span><br><span class="line"><span class="keyword">RETURN</span> person.name</span><br></pre></td></tr></table></figure>
+<p>Notice:</p>
+<ol>
+<li>Vertices <code>()</code>, edges <code>-[]→</code>, labels/types <code>:</code>, properties <code>&#123;&#125;</code>.</li>
+<li>Name binding or variables: <code>person</code></li>
+<li>Zero-to-many wildcard: <code>*0...</code></li>
+</ol>
+<p>As is characteristic of declarative query languages, you only need to describe the problem without worrying about the execution process. But unlike SQL, which is based on relational algebra, Cypher is more like regular expressions.</p>
+<p>Implementation details such as BFS, DFS, or pruning don’t need to be concerned with.</p>
+<h3 id="Using-SQL-for-Graph-Queries">Using SQL for Graph Queries</h3>
+<p>We saw earlier that SQL can be used to store vertices and edges to represent a graph.</p>
+<p>Can SQL be used for graph queries?</p>
+<p>Oracle’s <span class="exturl" data-url="aHR0cHM6Ly9kb2NzLm9yYWNsZS5jb20vZW4vZGF0YWJhc2Uvb3JhY2xlL3Byb3BlcnR5LWdyYXBoLzIwLjQvc3BnZGcvcHJvcGVydHktZ3JhcGgtcXVlcnktbGFuZ3VhZ2UtcGdxbC5odG1s">PGQL<i class="fa fa-external-link-alt"></i></span>:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> PROPERTY GRAPH bank_transfers</span><br><span class="line">     VERTEX TABLES (persons KEY(account_number))</span><br><span class="line">     EDGE TABLES(</span><br><span class="line">                  transactions KEY (from_acct, to_acct, <span class="type">date</span>, amount)</span><br><span class="line">                  SOURCE KEY (from_account) <span class="keyword">REFERENCES</span> persons</span><br><span class="line">                  DESTINATION KEY (to_account) <span class="keyword">REFERENCES</span> persons</span><br><span class="line">                  PROPERTIES (<span class="type">date</span>, amount)</span><br><span class="line">       )</span><br></pre></td></tr></table></figure>
+<p>One difficulty is how to express graph patterns, such as <strong>multi-hop queries</strong>, which in SQL corresponds to joins of uncertain number:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">() <span class="operator">-</span>[:<span class="keyword">WITHIN</span><span class="operator">*</span><span class="number">0.</span>.]<span class="operator">-</span><span class="operator">&gt;</span> ()</span><br></pre></td></tr></table></figure>
+<p>This can be satisfied using recursive common table expressions in SQL:1999 (supported by PostgreSQL, IBM DB2, Oracle, and SQL Server). However, it is quite verbose and clumsy.</p>
+<h3 id="Triple-Stores-and-SPARQL">Triple-Stores and SPARQL</h3>
+<p><strong>Triple-Stores</strong> can be understood as triple storage, i.e., storing graphs as triples.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/5ptXoWNUVswrxyq.png" alt="ddia2-triple-store.png"><span class="image-caption">ddia2-triple-store.png</span></p>
+<p>Their meanings are as follows:</p>
+<table>
+<thead>
+<tr>
+<th>Subject</th>
+<th>Corresponds to a vertex in the graph.</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Object</td>
+<td>1. An atomic value, such as a string or number.<br/>2. Another Subject.</td>
+</tr>
+<tr>
+<td>Predicate</td>
+<td>1. If Object is atomic, then &lt;Predicate, Object&gt; corresponds to a kv pair attached to the vertex.<br/>2. If Object is another Subject, then Predicate corresponds to an edge in the graph.</td>
+</tr>
+</tbody>
+</table>
+<p>Using the same example above, expressed in Turtle triples (a <strong>Triple-Stores</strong> syntax):</p>
+<figure class="highlight scheme"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">@prefix : &lt;urn:example:&gt;.</span><br><span class="line">_:lucy     a       :Person.</span><br><span class="line">_:lucy     :name   <span class="string">&quot;Lucy&quot;</span>.</span><br><span class="line">_:lucy     :bornIn _:idaho.</span><br><span class="line">_:idaho    a       :Location.</span><br><span class="line">_:idaho    :name   <span class="string">&quot;Idaho&quot;</span>.</span><br><span class="line">_:idaho    :type   <span class="string">&quot;state&quot;</span>.</span><br><span class="line">_:idaho    :within _:usa.</span><br><span class="line">_:usa      a       :Location</span><br><span class="line">_:usa      :name   <span class="string">&quot;United States&quot;</span></span><br><span class="line">_:usa      :type   <span class="string">&quot;country&quot;</span>.</span><br><span class="line">_:usa      :within _:namerica.</span><br><span class="line">_:namerica a       :Location.</span><br><span class="line">_:namerica :name   <span class="string">&quot;North America&quot;</span>.</span><br><span class="line">_:namerica :type   <span class="string">&quot;continent&quot;</span>.</span><br></pre></td></tr></table></figure>
+<p>A more compact notation:</p>
+<figure class="highlight scheme"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">@prefix : &lt;urn:example:&gt;.</span><br><span class="line">_:lucy     a: Person<span class="comment">;   :name &quot;Lucy&quot;;          :bornIn _:idaho</span></span><br><span class="line">_:idaho    a: Location<span class="comment">; :name &quot;Idaho&quot;;         :type &quot;state&quot;;     :within _:usa.</span></span><br><span class="line">_:usa      a: Location<span class="comment">; :name &quot;United States&quot;; :type &quot;country&quot;;   :within _:namerica.</span></span><br><span class="line">_:namerica a :Location<span class="comment">; :name &quot;North America&quot;; :type &quot;continent&quot;.</span></span><br></pre></td></tr></table></figure>
+<h3 id="The-Semantic-Web">The Semantic Web</h3>
+<p>Proposed by Tim Berners-Lee, father of the World Wide Web, in 1998; the predecessor of knowledge graphs. Its purpose is to structure resources on the network so that computers can <strong>understand</strong> data on the web. That is, not as text, binary streams, etc., but through some standard of structured, interconnected data.</p>
+<p><strong>Semantics</strong>: provide a unified way to describe and <strong>structure</strong> all resources (machine-readable).</p>
+<p><strong>Web</strong>: connect all resources.</p>
+<p>Below is the <strong>Semantic Web Stack</strong>:</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/ahqP9G7c42JsNEi.png" alt="ddia2-rdf.png"><span class="image-caption">ddia2-rdf.png</span></p>
+<p>Among them, <strong>RDF</strong> (<em>Resource Description Framework</em>) provides a standard for structuring data on the web. Any resource published to the web (text, images, video, web pages) can be understood by computers in a unified form. That is, resource consumers don’t need to deeply learn to extract the semantics of resources; instead, resource providers actively provide their resource semantics through RDF.</p>
+<p>It feels somewhat idealistic, but the Internet and open-source communities have developed precisely through this idealism and spirit of sharing!</p>
+<p>Although the Semantic Web did not take off, its <strong>intermediate data exchange</strong> format RDF, and the SPO triples (Subject-Predicate-Object) it defines, constitute a very useful data model — the <strong>Triple-Stores</strong> mentioned above.</p>
+<h3 id="RDF-Data-Model">RDF Data Model</h3>
+<p>The Turtle language (SPO triples) mentioned above is a simple and readable way to describe RDF data. RDF can also be represented based on XML, but it is much more redundant and harder to read (nesting is too deep):</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">rdf:RDF</span> <span class="attr">xmlns</span>=<span class="string">&quot;urn:example:&quot;</span></span></span><br><span class="line"><span class="tag">  <span class="attr">xmlns:rdf</span>=<span class="string">&quot;http://www.w3.org/1999/02/22-rdf-syntax-ns#&quot;</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Location</span> <span class="attr">rdf:nodeID</span>=<span class="string">&quot;idaho&quot;</span>&gt;</span> </span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>Idaho<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">type</span>&gt;</span>state<span class="tag">&lt;/<span class="name">type</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">within</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">Location</span> <span class="attr">rdf:nodeID</span>=<span class="string">&quot;usa&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">name</span>&gt;</span>United States<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">type</span>&gt;</span>country<span class="tag">&lt;/<span class="name">type</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">within</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;<span class="name">Location</span> <span class="attr">rdf:nodeID</span>=<span class="string">&quot;namerica&quot;</span>&gt;</span> </span><br><span class="line">            <span class="tag">&lt;<span class="name">name</span>&gt;</span>North America<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">type</span>&gt;</span>continent<span class="tag">&lt;/<span class="name">type</span>&gt;</span></span><br><span class="line">          <span class="tag">&lt;/<span class="name">Location</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">within</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">Location</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">within</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Location</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Person</span> <span class="attr">rdf:nodeID</span>=<span class="string">&quot;lucy&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">name</span>&gt;</span>Lucy<span class="tag">&lt;/<span class="name">name</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">bornIn</span> <span class="attr">rdf:nodeID</span>=<span class="string">&quot;idaho&quot;</span>/&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Person</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">rdf:RDF</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>To standardize and remove ambiguity, some points that look rather strange: whether subject, predicate, or object, all are defined by URIs, such as:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lives_in would be represented as &lt;http<span class="punctuation">:</span><span class="comment">//my-company.com/namespace#lives_in&gt;</span></span><br></pre></td></tr></table></figure>
+<p>The prefix is just a namespace, making the definition unique and accessible on the network. Of course, a simplified approach is to declare a common prefix in the file header.</p>
+<h3 id="SPARQL-Query-Language">SPARQL Query Language</h3>
+<p>With the Semantic Web, there naturally needs to be a traversal and query language within it, leading to RDF’s query language: SPARQL Protocol and RDF Query Language, pronounced “sparkle.”</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">PREFIX <span class="punctuation">:</span> &lt;urn<span class="punctuation">:</span>example<span class="punctuation">:</span>&gt;</span><br><span class="line">SELECT ?personName WHERE <span class="punctuation">&#123;</span></span><br><span class="line">  ?person <span class="punctuation">:</span>name ?personName.</span><br><span class="line">  ?person <span class="punctuation">:</span>bornIn  / <span class="punctuation">:</span>within* / <span class="punctuation">:</span>name <span class="string">&quot;United States&quot;</span>.</span><br><span class="line">  ?person <span class="punctuation">:</span>livesIn / <span class="punctuation">:</span>within* / <span class="punctuation">:</span>name <span class="string">&quot;Europe&quot;</span>.</span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>It is the predecessor of Cypher, so the structure looks very similar:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(person) -<span class="punctuation">[</span><span class="punctuation">:</span>BORN_IN<span class="punctuation">]</span>-&gt; () -<span class="punctuation">[</span><span class="punctuation">:</span>WITHIN*<span class="number">0.</span>.<span class="punctuation">]</span>-&gt; (location)   # Cypher</span><br><span class="line">?person   <span class="punctuation">:</span>bornIn /        <span class="punctuation">:</span>within*        ?location.   # SPARQL</span><br></pre></td></tr></table></figure>
+<p>But <strong>SPARQL</strong> does not distinguish between edges and properties; both use Predicates.</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(usa <span class="punctuation">&#123;</span>name<span class="punctuation">:</span>&#x27;United States&#x27;<span class="punctuation">&#125;</span>)   # Cypher</span><br><span class="line">?usa <span class="punctuation">:</span>name <span class="string">&quot;United States&quot;</span>.    # SPARQL</span><br></pre></td></tr></table></figure>
+<p>Although the Semantic Web did not successfully land, its technology stack influenced later knowledge graphs and graph query languages.</p>
+<h3 id="Graph-Model-and-Network-Model">Graph Model and Network Model</h3>
+<p>Is the graph model just old wine in new bottles for the network model?</p>
+<p>No, they differ in many important ways.</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Graph Model</th>
+<th>Network Model</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Connection method</td>
+<td>Edges can exist between any two vertices.</td>
+<td>Specifies nesting constraints.</td>
+</tr>
+<tr>
+<td>Record lookup</td>
+<td>1. Use global ID. <br/>2. Use property indexes. <br/>3. Use graph traversal.</td>
+<td>Can only use path queries.</td>
+</tr>
+<tr>
+<td>Ordering</td>
+<td>Vertices and edges are unordered.</td>
+<td>Records’ children are ordered sets; insertion needs to consider the cost of maintaining order.</td>
+</tr>
+<tr>
+<td>Query language</td>
+<td>Can be both imperative and declarative.</td>
+<td>Imperative.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="Query-Language-Predecessor-Datalog">Query Language Predecessor: Datalog</h3>
+<p>A bit like triple-store, but with the order changed: (<em>subject</em>, <em>predicate</em>, <em>object</em>) → <em>predicate</em>(<em>subject</em>, <em>object</em>).<br>
+The previous data represented in Datalog:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">name(namerica<span class="punctuation">,</span> &#x27;North America&#x27;).</span><br><span class="line">type(namerica<span class="punctuation">,</span> continent).</span><br><span class="line"></span><br><span class="line">name(usa<span class="punctuation">,</span> &#x27;United States&#x27;).</span><br><span class="line">type(usa<span class="punctuation">,</span> country).</span><br><span class="line">within(usa<span class="punctuation">,</span> namerica).</span><br><span class="line"></span><br><span class="line">name(idaho<span class="punctuation">,</span> &#x27;Idaho&#x27;).</span><br><span class="line">type(idaho<span class="punctuation">,</span> state).</span><br><span class="line">within(idaho<span class="punctuation">,</span> usa).</span><br><span class="line"></span><br><span class="line">name(lucy<span class="punctuation">,</span> &#x27;Lucy&#x27;).</span><br><span class="line">born_in(lucy<span class="punctuation">,</span> idaho).</span><br></pre></td></tr></table></figure>
+<p>Querying for <em>people who migrated from the United States to Europe</em> can be expressed as:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">within_recursive(Location<span class="punctuation">,</span> Name) <span class="punctuation">:</span>- name(Location<span class="punctuation">,</span> Name). <span class="comment">/* Rule 1 */</span></span><br><span class="line">within_recursive(Location<span class="punctuation">,</span> Name) <span class="punctuation">:</span>- within(Location<span class="punctuation">,</span> Via)<span class="punctuation">,</span> <span class="comment">/* Rule 2 */</span> </span><br><span class="line">                                    within_recursive(Via<span class="punctuation">,</span> Name).</span><br><span class="line"></span><br><span class="line">migrated(Name<span class="punctuation">,</span> BornIn<span class="punctuation">,</span> LivingIn) <span class="punctuation">:</span>- name(Person<span class="punctuation">,</span> Name)<span class="punctuation">,</span> <span class="comment">/* Rule 3 */</span> </span><br><span class="line">                                    born_in(Person<span class="punctuation">,</span> BornLoc)<span class="punctuation">,</span></span><br><span class="line">                                    within_recursive(BornLoc<span class="punctuation">,</span> BornIn)<span class="punctuation">,</span></span><br><span class="line">                                    lives_in(Person<span class="punctuation">,</span> LivingLoc)<span class="punctuation">,</span></span><br><span class="line">                                    within_recursive(LivingLoc<span class="punctuation">,</span> LivingIn).</span><br><span class="line">?- migrated(Who<span class="punctuation">,</span> &#x27;United States&#x27;<span class="punctuation">,</span> &#x27;Europe&#x27;). <span class="comment">/* Who = &#x27;Lucy&#x27;. */</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>In the code, elements starting with an uppercase letter are <strong>variables</strong>; strings, numbers, or elements starting with a lowercase letter are <strong>constants</strong>. The underscore (_) is called an anonymous variable.</li>
+<li>Basic Predicates can be used to define custom Predicates, similar to using basic functions to define custom functions.</li>
+<li>Multiple predicate expressions connected by commas represent an AND relationship.</li>
+</ol>
+<p><img data-src="https://s2.loli.net/2022/04/16/NEP7kwqvdFp3zsK.png" alt="ddia2-triple-store-query.png"><span class="image-caption">ddia2-triple-store-query.png</span></p>
+<p>Set-based logical operations:</p>
+<ol>
+<li>Select qualifying sets from the basic data subset.</li>
+<li>Apply rules to expand the original set.</li>
+<li>If recursion is possible, recursively exhaust all possibilities.</li>
+</ol>
+<p>Prolog (short for Programming in Logic) is a logic programming language. It is built on the theoretical foundation of logic.</p>
+<h2 id="References">References</h2>
+<ol>
+<li>Declarative vs. Imperative language: <span class="exturl" data-url="aHR0cHM6Ly9sb3RhYm91dC5tZS8yMDIwL0RlY2xhcmF0aXZlLXZzLUltcGVyYXRpdmUtbGFuZ3VhZ2Uv">https://lotabout.me/2020/Declarative-vs-Imperative-language/<i class="fa fa-external-link-alt"></i></span></li>
+<li><strong><span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9zaW1tZXJjaGFu">SimmerChan<i class="fa fa-external-link-alt"></i></span></strong> Zhihu column, knowledge graph, semantic web, RDF: <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL2NvbHVtbi9rbm93bGVkZ2VncmFwaA==">https://www.zhihu.com/column/knowledgegraph<i class="fa fa-external-link-alt"></i></span></li>
+<li>Why is MySQL called the “relational” model: <span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82NDczMTIwNg==">https://zhuanlan.zhihu.com/p/64731206<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/02/19/ddia-reading-chapter1/" rel="bookmark">'DDIA Reading Notes (Chapter 1): Reliability, Scalability, Maintainability'</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter4/" rel="bookmark">'DDIA Reading Notes (Chapter 4): Encoding and Evolution'</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">'DDIA Reading Notes (Chapter 3): B-Trees and LSM-Trees'</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA Reading Notes (V): Replication</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter3-part2/" rel="bookmark">DDIA Reading Notes (3): TP, AP, and Column Storage</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DDIA/" rel="tag"># DDIA</a>
+              <a href="/tags/Reading-Notes/" rel="tag"># Reading Notes</a>
+              <a href="/tags/Designing-Data-Intensive-Applications/" rel="tag"># Designing Data-Intensive Applications</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/05/crdb-tidb-dist-sql/" rel="prev" title="CockroachDB 和 TiDB 中 SQL 的分布式执行">
+      <i class="fa fa-chevron-left"></i> CockroachDB 和 TiDB 中 SQL 的分布式执行
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/04/16/ddia-reading-chapter2/" rel="next" title="DDIA 读书笔记（二）：数据模型和查询语言">
+      DDIA 读书笔记（二）：数据模型和查询语言 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Model"><span class="nav-number">1.1.</span> <span class="nav-text">Data Model</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Relational-Model-vs-Document-Model"><span class="nav-number">2.</span> <span class="nav-text">Relational Model vs. Document Model</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Relational-Model"><span class="nav-number">2.1.</span> <span class="nav-text">Relational Model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#The-Birth-of-NoSQL"><span class="nav-number">2.2.</span> <span class="nav-text">The Birth of NoSQL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#The-Object-Relational-Mismatch"><span class="nav-number">2.3.</span> <span class="nav-text">The Object-Relational Mismatch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Many-to-One-and-Many-to-Many"><span class="nav-number">2.4.</span> <span class="nav-text">Many-to-One and Many-to-Many</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Is-the-Document-Model-Repeating-History"><span class="nav-number">2.5.</span> <span class="nav-text">Is the Document Model Repeating History?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hierarchical-Model"><span class="nav-number">2.6.</span> <span class="nav-text">Hierarchical Model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Network-Model"><span class="nav-number">2.7.</span> <span class="nav-text">Network Model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Relational-Model-2"><span class="nav-number">2.8.</span> <span class="nav-text">Relational Model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Document-vs-Relational"><span class="nav-number">2.9.</span> <span class="nav-text">Document vs. Relational</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Schema-Flexibility-in-Document-Models"><span class="nav-number">2.10.</span> <span class="nav-text">Schema Flexibility in Document Models</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Data-Locality-at-Query-Time"><span class="nav-number">2.11.</span> <span class="nav-text">Data Locality at Query Time</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Convergence-of-Relational-and-Document-Models"><span class="nav-number">2.12.</span> <span class="nav-text">Convergence of Relational and Document Models</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Data-Query-Languages"><span class="nav-number">3.</span> <span class="nav-text">Data Query Languages</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Beyond-Databases-Declarative-in-the-Web"><span class="nav-number">3.1.</span> <span class="nav-text">Beyond Databases: Declarative in the Web</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MapReduce-Queries"><span class="nav-number">3.2.</span> <span class="nav-text">MapReduce Queries</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Graph-Like-Data-Models"><span class="nav-number">4.</span> <span class="nav-text">Graph-Like Data Models</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Basic-Concepts"><span class="nav-number">4.1.</span> <span class="nav-text">Basic Concepts</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Property-Graph-PG-Property-Graphs"><span class="nav-number">4.2.</span> <span class="nav-text">Property Graph (PG, Property Graphs)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Cypher-Query-Language"><span class="nav-number">4.3.</span> <span class="nav-text">Cypher Query Language</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Using-SQL-for-Graph-Queries"><span class="nav-number">4.4.</span> <span class="nav-text">Using SQL for Graph Queries</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Triple-Stores-and-SPARQL"><span class="nav-number">4.5.</span> <span class="nav-text">Triple-Stores and SPARQL</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#The-Semantic-Web"><span class="nav-number">4.6.</span> <span class="nav-text">The Semantic Web</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RDF-Data-Model"><span class="nav-number">4.7.</span> <span class="nav-text">RDF Data Model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SPARQL-Query-Language"><span class="nav-number">4.8.</span> <span class="nav-text">SPARQL Query Language</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Graph-Model-and-Network-Model"><span class="nav-number">4.9.</span> <span class="nav-text">Graph Model and Network Model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Query-Language-Predecessor-Datalog"><span class="nav-number">4.10.</span> <span class="nav-text">Query Language Predecessor: Datalog</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">5.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">240</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">292</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter2/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '86f20f8a58630461f143a847284b75a9',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

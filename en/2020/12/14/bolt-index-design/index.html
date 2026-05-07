@@ -38,7 +38,7 @@
 <meta property="og:image" content="https://i.loli.net/2021/01/02/woJQh7ZSOr3yGWq.png">
 <meta property="og:image" content="https://i.loli.net/2021/01/02/m4WE7fgn8OazSND.png">
 <meta property="article:published_time" content="2020-12-14T15:23:28.000Z">
-<meta property="article:modified_time" content="2026-05-07T02:48:27.675Z">
+<meta property="article:modified_time" content="2026-05-07T15:44:06.370Z">
 <meta property="article:author" content="青藤木鸟 (qtmuniao)">
 <meta property="article:tag" content="source reading">
 <meta property="article:tag" content="storage">
@@ -102,7 +102,7 @@
     "description": "boltdb is one of the few pure-Go, single-node KV stores out there. It is based on Howard Chu’s LMDB project, with a refreshingly clean implementation: stripping away unit tests and adapter code, the core is only about four thousand lines. Simple APIs and a minimalist implementation are exactly what the author intended. Due to limited maintainer bandwidth, the original boltdb has been archived and is no longer updated. If you want to contribute improvements or open new PRs, the etcd-maintained fork bbolt is the recommended place. For convenience, this series of guided-reading articles still uses the original, now-frozen repo as its foundation. Though small, the project is fully featured: in just over four thousand lines of code it implements a single-node KV engine with a B±tree index and single-writer/multi-reader transactions. The code itself is plain and well-commented. If you are a Go enthusiast or interested in KV stores, boltdb is absolutely a repo you shouldn’t miss. This series is planned as three articles, analyzing the boltdb source code around data organization, index design, and transaction implementation. Because these three aspects are not fully orthogonal, the narrative will inevitably intertwine; when you don’t understand something, just skip it for now and come back to sort it out once you have the full picture. This is the first article: boltdb data organization. Overview There are two commonly used index designs in databases: the B±tree and the LSM-tree. The B±tree is a classic—for example, traditional single-node databases like MySQL use B±tree indexes, which are friendly to fast reads and range queries. The LSM-tree has become popular in recent years; Bigtable, LevelDB, and RocksDB all bear its imprint; as mentioned in a previous article, LSM-trees use WAL and multi-level data organization, trading off some read performance for powerful random write performance. Thus, this is also a classic trade-off. BoltDB logically organizes data into buckets. A bucket can be seen as a namespace—a collection of KV pairs, similar to the bucket concept in object storage. Each bucket corresponds to one B±tree, and namespaces can be nested, so BoltDB allows buckets to be nested as well. In terms of implementation, the child bucket’s root node page id is stored on the parent bucket’s leaf node to achieve nesting. Each db file is a set of B±trees organized in a tree shape. As we know, in a B±tree branch nodes are used for lookup and leaf nodes store data. The top-level B±tree is special and is called the root bucket; all its leaf nodes store the page ids of child bucket B±tree roots. Other B±trees may be called data buckets; their leaf nodes may contain normal user data, or the page ids of child bucket B±tree roots. Compared to ordinary B±trees, boltdb’s B±tree has several special characteristics: The number of branches in a node is not a fixed range; instead, it is limited by the total size of the elements it stores, with the upper bound being the page size. The key stored in a branch node for each branch is the minimum key of the branch it points to. All leaf nodes are not linked together in a chain. It does not guarantee that all leaf nodes are at the same level. In terms of code organization, the boltdb source files related to indexing are as follows: bucket.go: High-level encapsulation of bucket operations, including CRUD of KV pairs, CRUD of child buckets, and B±tree split and merge. node.go: Operations related to the elements stored in a node and relationships between nodes. Adding and deleting elements within a node, loading and persisting, accessing child/sibling elements, and the detailed logic of split and merge. cursor.go: Implements an iterator-like function that can walk freely over the leaf nodes of the B±tree. This article is divided into three parts, revealing BoltDB’s index design from the local to the global. First, we will dissect the basic unit of the tree; second, analyze the bucket traversal implementation; finally, analyze the tree’s growth and balancing process.",
     "url": "https://www.qtmuniao.com/en/2020/12/14/bolt-index-design/",
     "datePublished": "2020-12-14T23:23:28+08:00",
-    "dateModified": "2026-05-07T10:48:27+08:00",
+    "dateModified": "2026-05-07T23:44:06+08:00",
     "author": {
       "@type": "Person",
       "name": "青藤木鸟 (qtmuniao)",
@@ -340,7 +340,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -562,7 +562,7 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/en/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb Source Code Guide (1): Boltdb Data Organization</a></div>
+      <div class="popular-posts-title"><a href="/en/2020/11/29/bolt-data-organised/" rel="bookmark">'Boltdb Source Code Guide (1): Boltdb Data Organization'</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/en/2021/04/02/bolt-transaction/" rel="bookmark">Boltdb Source Code Guide (3): Transaction Implementation</a></div>
@@ -695,19 +695,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-count">240</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-count">113</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-count">292</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

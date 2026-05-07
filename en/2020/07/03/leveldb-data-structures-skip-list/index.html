@@ -36,7 +36,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/07/07/OeJRfVhHMEpxiNz.png">
 <meta property="og:image" content="https://i.loli.net/2020/07/07/N3iSsOqDBvdRCfg.png">
 <meta property="article:published_time" content="2020-07-03T15:21:23.000Z">
-<meta property="article:modified_time" content="2026-05-07T02:48:27.675Z">
+<meta property="article:modified_time" content="2026-05-07T15:44:06.338Z">
 <meta property="article:author" content="青藤木鸟 (qtmuniao)">
 <meta property="article:tag" content="storage">
 <meta property="article:tag" content="leveldb">
@@ -98,7 +98,7 @@
     "description": "I had heard of LevelDB long ago. This time, on a whim, I went through the code roughly with some reference materials, and it truly lives up to its reputation. If you are interested in storage, want to use C++ elegantly, or want to learn how to architect a project, I highly recommend studying it. Not to mention that the authors are Sanjay Ghemawat and Jeff Dean. If I don’t produce something after reading it, given my memory, I will surely forget it soon. So I wanted to write something about the beauty of LevelDB, but I didn’t want to take the usual route, starting with an architectural overview and ending with module analysis. While reading the code, I kept thinking about where to start. Just as I was finishing, what impressed me most was actually the various ingenious data structures in LevelDB: tailored to the scenario, built from scratch, appropriately trimmed, and precisely coded. Why not start the LevelDB series with these small corner components? This series mainly wants to share three classic data structures commonly used in engineering in LevelDB: the Skip List used for fast read/write of memtable, the Bloom Filter used for fast filtering of sstable, and the LRUCache used for partial caching of sstable. This is the first article, on the Skip List. Requirements LevelDB is a single-machine KV storage engine. A KV engine essentially only provides three interfaces for data entries (key, val): Put(key, val), Get(key) val, and Delete(key). In implementation, when LevelDB receives a delete request, it does not actually delete the data, but writes a special mark for that key, so that when reading, it finds that the key does not exist, thus converting Delete into Put, and reducing the three interfaces to two. After this simplification, what remains is a trade-off between Put and Get performance. LevelDB’s choice is: sacrifice some Get performance for powerful Put performance, and then optimize Get as much as possible. As we know, in the Memory hierarchy, memory access is much faster than disk, so LevelDB made the following design choices to achieve its goals: Write (Put): Make all writes happen in memory, and then flush to disk in batches when a certain size is reached. Read (Get): As data is continuously written, there will be a small portion of data in memory and the remaining majority on disk. When reading, if it’s not found in memory, it needs to be looked up on disk. To ensure write performance while optimizing read performance, the in-memory storage structure needs to support efficient insertion and lookup simultaneously. When I first heard of LevelDB, my most natural thought was that the in-memory structure (memtable) was a self-balancing binary search tree, such as a red-black tree or AVL tree, which could guarantee lg(n) time complexity for both insertion and lookup. Only after reading the source code did I learn that it uses a skip list. Compared to balanced trees, the advantage of skip lists is that they greatly simplify the implementation while guaranteeing read/write performance. In addition, to periodically dump data to disk, the data structure also needs to support efficient sequential traversal. To summarize, the requirements for LevelDB’s in-memory data structure (memtable) are: Efficient lookup Efficient insertion Efficient sequential traversal",
     "url": "https://www.qtmuniao.com/en/2020/07/03/leveldb-data-structures-skip-list/",
     "datePublished": "2020-07-03T23:21:23+08:00",
-    "dateModified": "2026-05-07T10:48:27+08:00",
+    "dateModified": "2026-05-07T23:44:06+08:00",
     "author": {
       "@type": "Person",
       "name": "青藤木鸟 (qtmuniao)",
@@ -336,7 +336,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -523,22 +523,22 @@
   <div class="popular-posts-header">不妨一读</div>
   <ul class="popular-posts">
     <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2020/11/18/leveldb-data-structures-bloom-filter/" rel="bookmark">A Casual Discussion of LevelDB Data Structures (II): Bloom Filter</a></div>
+    </li>
+    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2020/07/03/leveldb-data-structures-skip-list/" rel="bookmark">漫谈 LevelDB 数据结构（一）：跳表（Skip List）</a></div>
     </li>
     <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/2022/05/06/meta-object-store-delta/" rel="bookmark">Meta 链式复制的对象存储——Delta</a></div>
-    </li>
-    <li class="popular-posts-item">
       <div class="popular-posts-title"><a href="/2022/05/04/distributed-database-storage-components/" rel="bookmark">层层剥开数据库存储层</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/en/2019/05/26/gfs/" rel="bookmark">GFS — the Art of Trade-Offs</a></div>
+      <div class="popular-posts-title"><a href="/2022/05/06/meta-object-store-delta/" rel="bookmark">Meta 链式复制的对象存储——Delta</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/en/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb Source Code Guide (1): Boltdb Data Organization</a></div>
+      <div class="popular-posts-title"><a href="/en/2019/05/26/gfs/" rel="bookmark">GFS — the Art of Trade-Offs</a></div>
     </li>
   </ul>
 
@@ -654,19 +654,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-count">240</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-count">113</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-count">292</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

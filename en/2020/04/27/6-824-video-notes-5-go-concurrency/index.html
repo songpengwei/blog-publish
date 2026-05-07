@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="MIT finally released in-class video materials on YouTube this year. I had followed about half of this course before, and this year I plan to watch the videos and write some lecture notes. The course">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MIT 6.824 2020 Video Notes 5: Go Concurrency">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2020/04/27/6-824-video-notes-5-go-concurrency/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="MIT finally released in-class video materials on YouTube this year. I had followed about half of this course before, and this year I plan to watch the videos and write some lecture notes. The course">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png">
+<meta property="article:published_time" content="2020-04-27T12:52:29.000Z">
+<meta property="article:modified_time" content="2026-05-07T15:44:06.337Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="6.824">
+<meta property="article:tag" content="distributed systems">
+<meta property="article:tag" content="notes">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2020/04/27/6-824-video-notes-5-go-concurrency/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="6.824,distributed systems,notes">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "MIT 6.824 2020 Video Notes 5: Go Concurrency",
+    "description": "MIT finally released in-class video materials on YouTube this year. I had followed about half of this course before, and this year I plan to watch the videos and write some lecture notes. The course follows the thread of distributed systems fundamentals: fault tolerance, replication, and consistency, with carefully selected industrial-grade system papers as the main line, supplemented with detailed reading materials and sophisticated course labs, bridging academic theory and industrial practice. It is truly a rare gem of a distributed systems course. Course videos: Youtube, Bilibili. Course materials: 6.824 homepage. This is the fifth lecture note, including two parts: the first part is given by a TA about some Go primitives, design patterns, and practical techniques that will be used in lab 2, including memory models, goroutines and closures, time library, locks, condition variables, channels, signals, parallelism, and some common tools, etc. The second part is given by two other TAs sorting out some common bugs and debugging methods in Raft.",
+    "url": "https://www.qtmuniao.com/en/2020/04/27/6-824-video-notes-5-go-concurrency/",
+    "datePublished": "2020-04-27T20:52:29+08:00",
+    "dateModified": "2026-05-07T23:44:06+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2020/04/27/6-824-video-notes-5-go-concurrency/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>MIT 6.824 2020 Video Notes 5: Go Concurrency | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2020/04/27/6-824-video-notes-5-go-concurrency/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2020/04/27/6-824-video-notes-5-go-concurrency/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/04/27/6-824-video-notes-5-go-concurrency/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MIT 6.824 2020 Video Notes 5: Go Concurrency
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-04-27 20:52:29" itemprop="dateCreated datePublished" datetime="2020-04-27T20:52:29+08:00">2020-04-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/" itemprop="url" rel="index"><span itemprop="name">distributed systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/open-courses/" itemprop="url" rel="index"><span itemprop="name">open courses</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img data-src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"><span class="image-caption">6.824-schedule.png</span></p>
+<p>MIT finally released in-class video materials on YouTube this year. I had followed about half of this course before, and this year I plan to watch the videos and write some lecture notes. The course follows the thread of distributed systems fundamentals: fault tolerance, replication, and consistency, with carefully selected industrial-grade system papers as the main line, supplemented with detailed reading materials and sophisticated course labs, bridging academic theory and industrial practice. It is truly a rare gem of a distributed systems course. Course videos: <span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vY2hhbm5lbC9VQ183V3JiWlRDT0R1MW9fa2ZVTXE4OGcvdmlkZW9z">Youtube<i class="fa fa-external-link-alt"></i></span>, <span class="exturl" data-url="aHR0cHM6Ly93d3cuYmlsaWJpbGkuY29tL3ZpZGVvL2F2OTA5MTU1MjY=">Bilibili<i class="fa fa-external-link-alt"></i></span>. Course materials: <span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvc2NoZWR1bGUuaHRtbA==">6.824 homepage<i class="fa fa-external-link-alt"></i></span>. This is the fifth lecture note, including two parts: the first part is given by a TA about some Go primitives, design patterns, and practical techniques that will be used in lab 2, including memory models, goroutines and closures, time library, locks, condition variables, channels, signals, parallelism, and some common tools, etc. The second part is given by two other TAs sorting out some common bugs and debugging methods in Raft.</p>
+<span id="more"></span>
+<p><em>Author: Woodpecker Notes <a href="https://www.qtmuniao.com/2020/04/27/6-824-video-notes-5-go-concurrency/">https://www.qtmuniao.com/2020/04/27/6-824-video-notes-5-go-concurrency/</a>, please cite the source when reposting</em></p>
+<p><strong>Note</strong>: A goroutine is a lightweight thread. The terms goroutine and thread are used interchangeably below, both referring to threads in Go, although they are not completely equivalent.</p>
+<h2 id="Memory-Model">Memory Model</h2>
+<p>Using threads serves two purposes:</p>
+<ol>
+<li>Improve performance by utilizing multiple cores.</li>
+<li>Construct code more elegantly.</li>
+</ol>
+<p>In the labs for this course, we do not require using threads to maximize performance; we only require program correctness.</p>
+<p>The same applies to the use of locks: we do not require fine-grained locking to boost performance; you may use coarse-grained locking to simplify code.</p>
+<p>The <span class="exturl" data-url="aHR0cHM6Ly9nb2xhbmcub3JnL3JlZi9tZW0=">memory model<i class="fa fa-external-link-alt"></i></span> mainly discusses the ordering of code execution when multiple threads run. The main conclusion is that within a single thread, execution effects are guaranteed to be consistent with the sequential order of code statements. However, across threads, without explicit synchronization (via locks or channels), the order of statement execution cannot be guaranteed. That’s roughly what the memory model covers. The focus of this lecture is on exploring some typical <em>code patterns</em> that may be used in the labs.</p>
+<h2 id="Goroutine-and-Closure">Goroutine and Closure</h2>
+<p>Using <code>for</code> loops + goroutine can naturally express the process where a Leader sends messages to Followers in parallel. But note that when the loop variable (<code>i</code> in the example below) is referenced in a child goroutine, it’s best to make a copy beforehand (usually by passing it as a function parameter or copying it inside the loop body). In addition, <code>WaitGroup</code> is often used in the parent goroutine to blockingly wait for a group of child goroutines to finish. Example:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">var</span> wg sync.WaitGroup</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">5</span>; i++ &#123;</span><br><span class="line">    wg.Add(<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(x <span class="type">int</span>)</span></span> &#123;</span><br><span class="line">      sendRPC(x)</span><br><span class="line">      wg.Done()</span><br><span class="line">    &#125;(i)</span><br><span class="line">  &#125;</span><br><span class="line">  wg.Wait()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">sendRPC</span><span class="params">(i <span class="type">int</span>)</span></span> &#123;</span><br><span class="line">  <span class="built_in">println</span>(i)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Time-Library">Time Library</h2>
+<p>Using Go’s standard library <code>time</code>, you can conveniently implement doing something periodically, such as the heartbeat logic in Raft.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">periodic</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">for</span> &#123;</span><br><span class="line">    <span class="built_in">println</span>(<span class="string">&quot;heartbeat&quot;</span>)</span><br><span class="line">    time.Sleep(<span class="number">1</span> * time.Second)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>When Raft is killed, you may want to terminate all background threads. You can use a shared variable as the loop exit condition to achieve this.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> done <span class="type">bool</span></span><br><span class="line"><span class="keyword">var</span> mu sync.Mutex</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="built_in">println</span>(<span class="string">&quot;started&quot;</span>)</span><br><span class="line">  <span class="keyword">go</span> periodic()</span><br><span class="line">  time.Sleep(<span class="number">5</span> * time.Second) <span class="comment">// wait for a while so we can observe what ticker does</span></span><br><span class="line">  mu.Lock()</span><br><span class="line">  done = <span class="literal">true</span></span><br><span class="line">  mu.Unlock()</span><br><span class="line">  <span class="built_in">println</span>(<span class="string">&quot;cancelled&quot;</span>)</span><br><span class="line">  time.Sleep(<span class="number">3</span> * time.Second) <span class="comment">// observe no output</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">periodic</span><span class="params">()</span></span> &#123;</span><br><span class="line">  <span class="keyword">for</span> done&#123;</span><br><span class="line">    <span class="built_in">println</span>(<span class="string">&quot;tick&quot;</span>)</span><br><span class="line">    time.Sleep(<span class="number">1</span> * time.Second)</span><br><span class="line">    mu.Lock()</span><br><span class="line">    <span class="keyword">if</span> done &#123;</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">    mu.Unlock()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>It should be noted that when modifying and reading the shared variable <code>done</code>, both need to be wrapped with the lock <code>sync.Mutex</code>. This forces synchronization between multiple threads through <code>sync.Mutex</code> (one goroutine’s <code>mu.Unlock</code> will wake up another goroutine blocked on <code>mu.Lock</code>) to ensure that the main thread’s modification to <code>done</code> will definitely be seen by the child thread. Otherwise, without any synchronization measures, due to variable caching issues inside multiple threads, Go’s memory model does not strictly guarantee visibility of shared variables.</p>
+<h2 id="Mutex">Mutex</h2>
+<p>There are mainly two situations where locks need to be used:</p>
+<ol>
+<li>Ensure visibility of shared variables among multiple threads.</li>
+<li>Ensure atomicity of a code block (it won’t be interleaved with statements in other goroutines).</li>
+</ol>
+<p>Of course, these two situations are often one and the same.</p>
+<p>Due to the fanciness of Go’s memory model, it is best to protect all accesses to shared variables with locks; otherwise the multithreaded code you write is likely to exhibit some hard-to-find and debug issues. Below is an example of using multiple threads to increment a shared variable without locking:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  counter := <span class="number">0</span></span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">1000</span>; i++ &#123;</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">      counter = counter + <span class="number">1</span></span><br><span class="line">    &#125;()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  time.Sleep(<span class="number">1</span> * time.Second)</span><br><span class="line">  <span class="built_in">println</span>(counter) <span class="comment">// unlikely to output 1000</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The reason the final <code>counter</code> value is not 1000 is twofold:</p>
+<ol>
+<li><code>counter = counter + 1</code> is not atomic after being compiled into CPU instructions; parallel execution may produce interleaving.</li>
+<li>After <code>counter</code> is modified, it may not be seen by other threads in time, thus incrementing the old value.</li>
+</ol>
+<p>Modified version:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  counter := <span class="number">0</span></span><br><span class="line">  <span class="keyword">var</span> mu sync.Mutex</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">1000</span>; i++ &#123;</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">      mu.Lock()</span><br><span class="line">      <span class="keyword">defer</span> mu.Unlock()</span><br><span class="line">      counter = counter + <span class="number">1</span></span><br><span class="line">    &#125;()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  time.Sleep(<span class="number">1</span> * time.Second) <span class="comment">// using WaitGroup here is more reliable; waiting 1s only guarantees correctness with high probability.</span></span><br><span class="line">  mu.Lock()</span><br><span class="line">  <span class="built_in">println</span>(counter)</span><br><span class="line">  mu.Unlock()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Let’s look at an example where Alice and Bob borrow money from each other and try to keep the total amount unchanged. We use one thread each to represent Alice lending money to Bob and Bob lending money to Alice.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  alice, bob := <span class="number">10000</span>, <span class="number">10000</span></span><br><span class="line">  <span class="keyword">var</span> mu sync.Mutex</span><br><span class="line"></span><br><span class="line">  total := alice + bob</span><br><span class="line"></span><br><span class="line">  <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">1000</span>; i++ &#123;</span><br><span class="line">      mu.Lock()</span><br><span class="line">      alice -= <span class="number">1</span></span><br><span class="line">      mu.Unlock()</span><br><span class="line">      mu.Lock()</span><br><span class="line">      bob += <span class="number">1</span></span><br><span class="line">      mu.Unlock()</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;()</span><br><span class="line">  <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">1000</span>; i++ &#123;</span><br><span class="line">      mu.Lock()</span><br><span class="line">      bob -= <span class="number">1</span></span><br><span class="line">      mu.Unlock()</span><br><span class="line">      mu.Lock()</span><br><span class="line">      alice += <span class="number">1</span></span><br><span class="line">      mu.Unlock()</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;()</span><br><span class="line"></span><br><span class="line">  start := time.Now()</span><br><span class="line">  <span class="keyword">for</span> time.Since(start) &lt; <span class="number">1</span>*time.Second &#123;</span><br><span class="line">    mu.Lock()</span><br><span class="line">    <span class="keyword">if</span> alice+bob != total &#123;</span><br><span class="line">      fmt.Printf(<span class="string">&quot;observed violation, alice = %v, bob = %v, sum = %v\n&quot;</span>, alice, bob, alice+bob) <span class="comment">// # violation</span></span><br><span class="line">    &#125;</span><br><span class="line">    mu.Unlock()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Will the above code print a violation? The answer is yes. Because the observation thread may print a violation when someone has lent out money but the other person hasn’t received it yet. This problem can be understood from the following two angles:</p>
+<ol>
+<li><strong>Atomicity</strong>. Lending and borrowing should be an atomic operation, so the entire process needs to be wrapped with a lock. Otherwise, if observed at some intermediate moment, inconsistency will occur: the money has been lent out but not yet received, i.e., it’s “in flight”.</li>
+<li><strong>Invariant</strong>. Locks can guard invariants: after acquiring the lock and entering the critical section, you may break the invariant (lending money; at this point the money is “in the air”, and observation at this time will show one dollar missing), but restore it before releasing the lock (receiving the money, moving it from “in the air” into another person’s account, keeping the sum of both accounts unchanged).</li>
+</ol>
+<p>Therefore, the transaction process needs to be changed to:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">1000</span>; i++ &#123;</span><br><span class="line">      mu.Lock()</span><br><span class="line">      alice -= <span class="number">1</span></span><br><span class="line">      bob += <span class="number">1</span></span><br><span class="line">      mu.Unlock()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;()</span><br><span class="line"><span class="comment">// modify the other thread accordingly</span></span><br></pre></td></tr></table></figure>
+<h2 id="Condition">Condition</h2>
+<p>In Raft, there is a scenario where a <em>Candidate</em> asks all <em>Followers</em> for votes, then decides whether to become a <em>Leader</em> based on the collected votes.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  rand.Seed(time.Now().UnixNano())</span><br><span class="line"></span><br><span class="line">  count := <span class="number">0</span></span><br><span class="line">  finished := <span class="number">0</span></span><br><span class="line">  <span class="keyword">var</span> mu sync.Mutex</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ &#123;</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">      vote := requestVote()</span><br><span class="line">      mu.Lock()</span><br><span class="line">      <span class="keyword">defer</span> mu.Unlock()</span><br><span class="line">      <span class="keyword">if</span> vote &#123;</span><br><span class="line">        count++</span><br><span class="line">      &#125;</span><br><span class="line">      finished++</span><br><span class="line">    &#125;()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> &#123; <span class="comment">// busy wait</span></span><br><span class="line">    mu.Lock()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> count &gt;= <span class="number">5</span> || finished == <span class="number">10</span> &#123; </span><br><span class="line">      <span class="keyword">break</span></span><br><span class="line">    &#125;</span><br><span class="line">    mu.Unlock()</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  mu.Lock()</span><br><span class="line">  <span class="keyword">if</span> count &gt;= <span class="number">5</span> &#123;</span><br><span class="line">    <span class="built_in">println</span>(<span class="string">&quot;received 5+ votes!&quot;</span>)</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">println</span>(<span class="string">&quot;lost&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  mu.Unlock()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">requestVote</span><span class="params">()</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">  time.Sleep(time.Duration(rand.Intn(<span class="number">100</span>)) * time.Millisecond)</span><br><span class="line">  <span class="keyword">return</span> rand.Int() % <span class="number">2</span> == <span class="number">0</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>This approach has busy waiting, and the continuous locking and unlocking during the loop causes extremely high CPU usage.</p>
+<p>A very simple performance improvement is to add <code>time.Sleep(50 * time.Millisecond)</code> in the busy waiting loop, which can greatly reduce CPU usage.</p>
+<p>Another more efficient way is to use <code>condition</code>. A <code>condition</code> is bound to a lock. After acquiring the lock, it temporarily suspends the thread via <code>Wait</code> and releases the lock; then another thread can acquire the lock via <code>Lock</code>, and before leaving the critical section, call <code>Broadcast</code> to wake up all threads suspended on <code>Wait</code> for this lock. It similarly uses a signal mechanism to notify among multiple threads about the release and acquisition of locks.</p>
+<p>Modified code using <code>Condition</code>:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  rand.Seed(time.Now().UnixNano())</span><br><span class="line"></span><br><span class="line">  count := <span class="number">0</span></span><br><span class="line">  finished := <span class="number">0</span></span><br><span class="line">  <span class="keyword">var</span> mu sync.Mutex</span><br><span class="line">  cond := sync.NewCond(&amp;mu)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ &#123;</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">      vote := requestVote()</span><br><span class="line">      mu.Lock()</span><br><span class="line">      <span class="keyword">defer</span> mu.Unlock()</span><br><span class="line">      <span class="keyword">if</span> vote &#123;</span><br><span class="line">        count++</span><br><span class="line">      &#125;</span><br><span class="line">      finished++</span><br><span class="line">      cond.Broadcast()</span><br><span class="line">    &#125;()</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  mu.Lock()</span><br><span class="line">  <span class="keyword">for</span> count &lt; <span class="number">5</span> &amp;&amp; finished != <span class="number">10</span> &#123;</span><br><span class="line">    cond.Wait() <span class="comment">// 1. release the mu 2. wait Broadcast() 3. try to acquire the mu again</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> count &gt;= <span class="number">5</span> &#123;</span><br><span class="line">    <span class="built_in">println</span>(<span class="string">&quot;received 5+ votes!&quot;</span>)</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">println</span>(<span class="string">&quot;lost&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  mu.Unlock()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Note that the usage pattern of <code>Condition</code> requires that both <code>cond.Broadcast</code> and <code>cond.Wait</code> be inside the critical section guarded by the corresponding lock, and after calling <code>cond.Broadcast</code> the lock should be released promptly; otherwise it will cause contention from other threads for an unreleased lock.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">mu.Lock()</span><br><span class="line"><span class="comment">// do something that might affect the condition</span></span><br><span class="line">cond.Broadcast()</span><br><span class="line">mu.Unlock()</span><br><span class="line"></span><br><span class="line"><span class="comment">//----</span></span><br><span class="line"></span><br><span class="line">mu.Lock()</span><br><span class="line">while condition == <span class="literal">false</span> &#123;</span><br><span class="line">  cond.Wait()</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// now condition is true, and we have the lock</span></span><br><span class="line">mu.Unlock()</span><br></pre></td></tr></table></figure>
+<p>In addition, <code>cond.Signal</code> only wakes up one thread that called <code>cond.Wait</code> to enter waiting, while <code>cond.Broadcast</code> wakes up all threads waiting on the corresponding lock. Of course, the former is more efficient.</p>
+<h2 id="Channel">Channel</h2>
+<p>Unbuffered channels are usually used as a control mechanism for synchronization among multiple threads.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  c := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">bool</span>)</span><br><span class="line">  <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">    time.Sleep(<span class="number">1</span> * time.Second)</span><br><span class="line">    &lt;-c</span><br><span class="line">  &#125;()</span><br><span class="line">  start := time.Now()</span><br><span class="line">  c &lt;- <span class="literal">true</span> <span class="comment">// blocks until other goroutine receives</span></span><br><span class="line">  fmt.Printf(<span class="string">&quot;send took %v\n&quot;</span>, time.Since(start))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Using channels within the same thread is meaningless; they are generally used as a communication mechanism among multiple threads (for synchronization or passing messages).</p>
+<p>Buffered channels are similar to a synchronous queue, but they are basically not used in this Raft lab. It is recommended to use shared variables + locks for synchronization and mutual exclusion among multiple threads in the lab.</p>
+<p>Using channels for synchronization can serve a similar purpose to <code>WaitGroup</code>:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  done := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">bool</span>)</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">5</span>; i++ &#123;</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">(x <span class="type">int</span>)</span></span> &#123;</span><br><span class="line">      sendRPC(x)</span><br><span class="line">      done &lt;- <span class="literal">true</span></span><br><span class="line">    &#125;(i)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">5</span>; i++ &#123;</span><br><span class="line">    &lt;-done</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">sendRPC</span><span class="params">(i <span class="type">int</span>)</span></span> &#123;</span><br><span class="line">  <span class="built_in">println</span>(i)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Raft-Deadlock">Raft Deadlock</h2>
+<p>A very important condition for deadlock, loosely speaking, is hold and wait. That is, everyone is holding onto what they have while also wanting what the other has, which naturally forms a deadlock.</p>
+<p>A simple principle is to release locks promptly when performing time-consuming tasks (such as RPC, IO).</p>
+<h2 id="RPC-Reply-Staleness">RPC Reply Staleness</h2>
+<p>When a Candidate collects vote results, it needs to check whether it is still in the original term and whether it is still a Candidate. Otherwise two leaders may be elected.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> rf.state != Candidate || rf.currentTerm != term &#123;</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>However, in fact checking only <code>currentTerm</code> is sufficient, but checking only <code>state</code> is not enough.</p>
+<h2 id="Debugging">Debugging</h2>
+<p><code>DPrintf</code>: server number is a very important field; it is recommended to output it at the beginning; then add output statements before and after places of interest.</p>
+<p>Deadlock: you can send a SIGQUIT signal to a running Go program via <code>control+\</code>, then the program will exit and print the current stack traces of all threads.</p>
+<p>Race conditions: <code>go test -race -run 2A</code>, use <code>-race</code> to have Go print the stack trace when it detects a race. Generally this occurs when shared variables are accessed by multiple threads, and at least one of the access points is not locked.</p>
+<h2 id="Glossary">Glossary</h2>
+<p>Critical section (strict area): a code segment that multiple threads need to access mutually exclusively.</p>
+<p>Busy wait: continuously looping until the condition is satisfied.</p>
+<h2 id="References">References</h2>
+<ol>
+<li>Related English <span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbm90ZXMvbC1nby1jb25jdXJyZW5jeS50eHQ=">notes<i class="fa fa-external-link-alt"></i></span>.</li>
+<li>Related <span class="exturl" data-url="aHR0cHM6Ly9wZG9zLmNzYWlsLm1pdC5lZHUvNi44MjQvbm90ZXMvZ28tY29uY3VycmVuY3kudGFyLmd6">code<i class="fa fa-external-link-alt"></i></span> mentioned.</li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2018/07/11/raft-leader-election/" rel="bookmark">6.824 - Raft 实现（一）：Leader选举</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/02/29/6-824-video-notes-1/" rel="bookmark">MIT 6.824 2020 视频笔记一：绪论</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/03/06/6-824-video-notes-2/" rel="bookmark">MIT 6.824 2020 视频笔记二：RPC和线程</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/03/14/6-824-vidoe-notes-3-gfs/" rel="bookmark">MIT 6.824 2020 视频笔记三：GFS</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/04/01/6-824-video-notes-4-vm-ft/" rel="bookmark">MIT 6.824 2020 视频笔记四：VM-FT</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="bookmark">MIT 6.824 2020 视频笔记五：Go Concurrency</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/6-824/" rel="tag"># 6.824</a>
+              <a href="/tags/distributed-systems/" rel="tag"># distributed systems</a>
+              <a href="/tags/notes/" rel="tag"># notes</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/04/01/6-824-video-notes-4-vm-ft/" rel="prev" title="MIT 6.824 2020 视频笔记四：VM-FT">
+      <i class="fa fa-chevron-left"></i> MIT 6.824 2020 视频笔记四：VM-FT
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/04/27/6-824-video-notes-5-go-concurrency/" rel="next" title="MIT 6.824 2020 视频笔记五：Go Concurrency">
+      MIT 6.824 2020 视频笔记五：Go Concurrency <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Memory-Model"><span class="nav-number">1.</span> <span class="nav-text">Memory Model</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Goroutine-and-Closure"><span class="nav-number">2.</span> <span class="nav-text">Goroutine and Closure</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Time-Library"><span class="nav-number">3.</span> <span class="nav-text">Time Library</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Mutex"><span class="nav-number">4.</span> <span class="nav-text">Mutex</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Condition"><span class="nav-number">5.</span> <span class="nav-text">Condition</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Channel"><span class="nav-number">6.</span> <span class="nav-text">Channel</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Raft-Deadlock"><span class="nav-number">7.</span> <span class="nav-text">Raft Deadlock</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RPC-Reply-Staleness"><span class="nav-number">8.</span> <span class="nav-text">RPC Reply Staleness</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Debugging"><span class="nav-number">9.</span> <span class="nav-text">Debugging</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Glossary"><span class="nav-number">10.</span> <span class="nav-text">Glossary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">11.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">240</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">292</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2020/04/27/6-824-video-notes-5-go-concurrency/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '991b56602a0b786e6baf11c2a29cf5c4',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

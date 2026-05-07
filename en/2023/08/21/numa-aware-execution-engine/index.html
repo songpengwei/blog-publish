@@ -42,7 +42,7 @@
 <meta property="og:image" content="https://s2.loli.net/2023/08/21/HZQ4jx9B8CPGSMu.png">
 <meta property="og:image" content="https://s2.loli.net/2023/08/21/Skaes8YijWRpglT.png">
 <meta property="article:published_time" content="2023-08-21T07:01:39.000Z">
-<meta property="article:modified_time" content="2026-05-07T02:48:27.677Z">
+<meta property="article:modified_time" content="2026-05-07T15:44:06.375Z">
 <meta property="article:author" content="青藤木鸟 (qtmuniao)">
 <meta property="article:tag" content="database">
 <meta property="article:tag" content="NUMA">
@@ -102,7 +102,7 @@
     "description": "Recently, while going through DuckDB’s execution engine related slides (Push-Based-Execution), I came across this paper: Morsel-Driven Parallelism: A NUMA-Aware Query Evaluation Framework for the Many-Core Age. I had seen it referenced several times in articles about execution engines; moreover, NUMA architecture is very important for modern database architecture design, but my understanding of it was still shallow, so I decided to read it. As can be seen from the title, the paper has two main keywords: NUMA-Aware Morsel-Driven Based on this, here is a rough summary of the paper’s central idea: In the many-core era, due to the binding relationship between some CPUs and some memory, CPU memory access is non-uniform (NUMA). That is, for a given CPU core, some local memory has lower access latency, while other memory has higher latency. The traditional volcano model uses the Exchange operator for parallelism. Other operators are not aware of multithreading, and therefore cannot schedule computation close to memory (hardware affinity). That is, they are not NUMA-local. To solve this problem, the paper proposes, on the data dimension: horizontally partitioning the dataset, with one NUMA-node processing one data partition; vertically splitting each partition into segments (Morsel), and performing concurrent scheduling and preemptive execution at the Morsel granularity. On the computation dimension: pre-allocating one thread per CPU; during scheduling, each thread only accepts tasks whose data chunks (Morsel) are allocated to its local NUMA-node; when the execution progress of sub-tasks among threads is unbalanced, faster threads will “steal” tasks that were supposed to be scheduled to other threads, thereby ensuring that multiple sub-tasks of a Query finish approximately at the same time, without a “long tail” partition.",
     "url": "https://www.qtmuniao.com/en/2023/08/21/numa-aware-execution-engine/",
     "datePublished": "2023-08-21T15:01:39+08:00",
-    "dateModified": "2026-05-07T10:48:27+08:00",
+    "dateModified": "2026-05-07T23:44:06+08:00",
     "author": {
       "@type": "Person",
       "name": "青藤木鸟 (qtmuniao)",
@@ -340,7 +340,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -561,10 +561,10 @@
       <div class="popular-posts-title"><a href="/en/2022/05/04/distributed-database-storage-components/" rel="bookmark">Peeling Back the Layers of Database Storage</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/en/2022/12/11/how-to-build-a-database/" rel="bookmark">How to Approach Building a Database?</a></div>
+      <div class="popular-posts-title"><a href="/en/2023/08/21/database-interview-myth/" rel="bookmark">Common Misconceptions in Database Interviews</a></div>
     </li>
     <li class="popular-posts-item">
-      <div class="popular-posts-title"><a href="/en/2023/08/21/database-interview-myth/" rel="bookmark">Common Misconceptions in Database Interviews</a></div>
+      <div class="popular-posts-title"><a href="/en/2022/12/11/how-to-build-a-database/" rel="bookmark">How to Approach Building a Database?</a></div>
     </li>
   </ul>
 
@@ -678,19 +678,19 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-count">240</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-count">113</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-count">292</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

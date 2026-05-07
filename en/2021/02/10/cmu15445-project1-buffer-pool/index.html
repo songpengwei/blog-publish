@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="cmu15445 is a classic open course on the design and implementation of Database Management Systems (DBMS). The course uses Database System Concepts as the textbook, providing lecture slides, notes, an">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Cmu15445 Database Systems Project 1: Buffer Pool Manager">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2021/02/10/cmu15445-project1-buffer-pool/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="cmu15445 is a classic open course on the design and implementation of Database Management Systems (DBMS). The course uses Database System Concepts as the textbook, providing lecture slides, notes, an">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2021/02/19/7QSY5EtFwKxuiVN.png">
+<meta property="og:image" content="https://i.loli.net/2021/02/19/VOH78FybK96IcSq.png">
+<meta property="og:image" content="https://i.loli.net/2021/02/19/5rScRYv8xPtFq39.png">
+<meta property="og:image" content="https://i.loli.net/2021/02/19/FyefbnZIJUKYMjc.png">
+<meta property="article:published_time" content="2021-02-09T16:13:33.000Z">
+<meta property="article:modified_time" content="2026-05-07T15:44:06.370Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="storage">
+<meta property="article:tag" content="cmu">
+<meta property="article:tag" content="15445">
+<meta property="article:tag" content="database systems">
+<meta property="article:tag" content="buffer pool">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2021/02/19/7QSY5EtFwKxuiVN.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2021/02/10/cmu15445-project1-buffer-pool/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="storage,cmu,15445,database systems,buffer pool">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Cmu15445 Database Systems Project 1: Buffer Pool Manager",
+    "description": "cmu15445 is a classic open course on the design and implementation of Database Management Systems (DBMS). The course uses Database System Concepts as the textbook, providing lecture slides, notes, and videos, and carefully prepares several interconnected projects. The course places great emphasis on system design and programming implementation. In the words of the professor Andy Pavlo, this is a course that you can put on your resume and that can help you land a good offer. Having some free time this vacation, I dug out this course and was immediately impressed by its rich content and elegant organization. Unfortunately, time is limited, so I can only follow the projects as the main thread, supplemented by lecture slides and notes, and briefly go through them. If I have more time, I will skim the textbook and videos. Starting from project one, after each project’s autograder run, I will write a note for future reference. Professor Andy Pavlo suggests not making the project code repository public, so I will try to minimize code snippets and focus more on the thought process. This post is about project one: managing the cache of file system pages in memory — the buffer pool manager. Overview The target system of this project, BusTub, is a disk-oriented DBMS, but data on disk does not support byte-level access. Therefore, an intermediate layer for managing pages is needed. However, Professor Andy Pavlo insists on not using mmap to delegate page management to the operating system. Thus, the goal of Project 1 is to proactively manage the cache of pages from disk in memory, thereby minimizing the number of disk accesses (in time) and maximizing the contiguity of related data (in space). This project can be broken down into two relatively independent sub-tasks: Maintaining the replacement policy: LRU replacement policy Managing the buffer pool: buffer pool manager Both components are required to be thread-safe. This article first analyzes the project content from basic concepts and core data flows, then goes through the two sub-tasks respectively.",
+    "url": "https://www.qtmuniao.com/en/2021/02/10/cmu15445-project1-buffer-pool/",
+    "datePublished": "2021-02-10T00:13:33+08:00",
+    "dateModified": "2026-05-07T23:44:06+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2021/02/10/cmu15445-project1-buffer-pool/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Cmu15445 Database Systems Project 1: Buffer Pool Manager | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2021/02/10/cmu15445-project1-buffer-pool/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2021/02/10/cmu15445-project1-buffer-pool/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/02/10/cmu15445-project1-buffer-pool/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Cmu15445 Database Systems Project 1: Buffer Pool Manager
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-02-10 00:13:33" itemprop="dateCreated datePublished" datetime="2021-02-10T00:13:33+08:00">2021-02-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Database/" itemprop="url" rel="index"><span itemprop="name">Database</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Database/Open-Course/" itemprop="url" rel="index"><span itemprop="name">Open Course</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>cmu15445 is a classic open course on the design and implementation of Database Management Systems (DBMS). The course uses <span class="exturl" data-url="aHR0cHM6Ly93d3cuZGItYm9vay5jb20vZGI3L2luZGV4Lmh0bWw=">Database System Concepts<i class="fa fa-external-link-alt"></i></span> as the textbook, providing lecture slides, notes, and videos, and carefully prepares several interconnected projects. The course places great emphasis on system design and programming implementation. In the words of the professor <span class="exturl" data-url="aHR0cDovL3d3dy5jcy5jbXUuZWR1L35wYXZsby8=">Andy Pavlo<i class="fa fa-external-link-alt"></i></span>, this is a course that you can put on your resume and that can help you land a good offer.</p>
+<p>Having some free time this vacation, I dug out this course and was immediately impressed by its rich content and elegant organization. Unfortunately, time is limited, so I can only follow the <span class="exturl" data-url="aHR0cHM6Ly8xNTQ0NS5jb3Vyc2VzLmNzLmNtdS5lZHUvZmFsbDIwMjAvYXNzaWdubWVudHMuaHRtbA==">projects<i class="fa fa-external-link-alt"></i></span> as the main thread, supplemented by <span class="exturl" data-url="aHR0cHM6Ly8xNTQ0NS5jb3Vyc2VzLmNzLmNtdS5lZHUvZmFsbDIwMjAvc2xpZGVzLw==">lecture slides<i class="fa fa-external-link-alt"></i></span> and <span class="exturl" data-url="aHR0cHM6Ly8xNTQ0NS5jb3Vyc2VzLmNzLmNtdS5lZHUvZmFsbDIwMjAvbm90ZXMv">notes<i class="fa fa-external-link-alt"></i></span>, and briefly go through them. If I have more time, I will skim the <span class="exturl" data-url="aHR0cHM6Ly93d3cuZGItYm9vay5jb20vZGI3L2luZGV4Lmh0bWw=">textbook<i class="fa fa-external-link-alt"></i></span> and <span class="exturl" data-url="aHR0cHM6Ly93d3cueW91dHViZS5jb20vd2F0Y2g/dj1vZVlCZGdoYUlqYyZhbXA7bGlzdD1QTFNFOE9EaGpaWGpib2hrTkJXUXNfb3RUckJUcmp5b2hp">videos<i class="fa fa-external-link-alt"></i></span>. Starting from project one, after each project’s <span class="exturl" data-url="aHR0cHM6Ly93d3cuZ3JhZGVzY29wZS5jb20v">autograder<i class="fa fa-external-link-alt"></i></span> run, I will write a note for future reference. Professor <span class="exturl" data-url="aHR0cDovL3d3dy5jcy5jbXUuZWR1L35wYXZsby8=">Andy Pavlo<i class="fa fa-external-link-alt"></i></span> suggests not making the project code repository public, so I will try to minimize code snippets and focus more on the thought process.</p>
+<p>This post is about project one: managing the cache of file system pages in memory — the buffer pool manager.</p>
+</blockquote>
+<h2 id="Overview">Overview</h2>
+<p>The target system of this project, <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2NtdS1kYi9idXN0dWI=">BusTub<i class="fa fa-external-link-alt"></i></span>, is a disk-oriented DBMS, but data on disk does not support byte-level access. Therefore, an intermediate layer for managing pages is needed. However, Professor <span class="exturl" data-url="aHR0cDovL3d3dy5jcy5jbXUuZWR1L35wYXZsby8=">Andy Pavlo<i class="fa fa-external-link-alt"></i></span> insists on not using mmap to delegate page management to the operating system. Thus, the goal of <span class="exturl" data-url="aHR0cHM6Ly8xNTQ0NS5jb3Vyc2VzLmNzLmNtdS5lZHUvZmFsbDIwMjAvcHJvamVjdDEv">Project 1<i class="fa fa-external-link-alt"></i></span> is to proactively manage the cache of pages from disk in memory, thereby minimizing the number of disk accesses (in time) and maximizing the contiguity of related data (in space).</p>
+<p>This project can be broken down into two relatively independent sub-tasks:</p>
+<ol>
+<li>Maintaining the replacement policy: LRU replacement policy</li>
+<li>Managing the buffer pool: buffer pool manager</li>
+</ol>
+<p>Both components are required to be thread-safe.</p>
+<p>This article first analyzes the project content from basic concepts and core data flows, then goes through the two sub-tasks respectively.</p>
+<span id="more"></span>
+<p><em>作者：木鸟杂记 <a href="https://www.qtmuniao.com/2021/02/10/cmu15445-project1-buffer-pool/">https://www.qtmuniao.com/2021/02/10/cmu15445-project1-buffer-pool/</a>, 转载请注明出处</em></p>
+<h2 id="Project-Analysis">Project Analysis</h2>
+<p>When I first started writing the project code, I felt there were many details, and it was easy to miss something during implementation. But as I implemented and thought deeper, I gradually grasped the full picture and realized that as long as a few basic concepts and core data flows are clear, one can grasp the essentials.</p>
+<h3 id="Basic-Concepts">Basic Concepts</h3>
+<p>The basic unit of operation for the buffer pool is a logically contiguous byte array. On disk, it is represented as a <strong>page</strong>, with a unique identifier <strong>page_id</strong>; in memory, it is represented as a <strong>frame</strong>, with a unique identifier <strong>frame_id</strong>. To keep track of which frame stores which page, a <strong>page table</strong> is needed.</p>
+<p>In the following text, I may use page and frame interchangeably, because both concepts are the <strong>basic units</strong> of data managed by the buffer pool, generally 4k. The differences are as follows:</p>
+<ol>
+<li>The page id is the global identifier for this unit of data, while the frame id is just the index of a page in the memory pool (frame array).</li>
+<li>A page in the file system is a logically contiguous byte array; in memory, we attach some metadata to it: <code>pin_count_</code>, <code>is_dirty_</code></li>
+</ol>
+<p><img data-src="https://i.loli.net/2021/02/19/7QSY5EtFwKxuiVN.png" alt="基本概念"><span class="image-caption">基本概念</span></p>
+<p>Generally speaking, the memory pool for managing frames is much smaller than the disk. Therefore, after the memory pool is full, when loading a new page from disk into the memory pool, some <strong>replacement policy (replacer)</strong> is needed to evict some no-longer-used pages from the memory pool to make room.</p>
+<h3 id="Core-Data-Flow">Core Data Flow</h3>
+<p>To state the conclusion first, the <strong>implementation core</strong> of the buffer pool manager lies in managing the state of all frames in the memory pool. Therefore, if we can sort out the state machine of frames, we can grasp the core data flow.</p>
+<p>The buffer pool maintains a frame array. Each frame has three states:</p>
+<ol>
+<li><strong>free</strong>: initial state, not holding any page</li>
+<li><strong>pinned</strong>: holding a page that is being used by a thread</li>
+<li><strong>unpinned</strong>: holding a page, but the page is no longer being used by any thread</li>
+</ol>
+<p>And the functions to be implemented:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">FetchPageImpl</span>(page_id)</span><br><span class="line"><span class="built_in">NewPageImpl</span>(page_id)</span><br><span class="line"><span class="built_in">UnpinPageImpl</span>(page_id, is_dirty)</span><br><span class="line"><span class="built_in">DeletePageImpl</span>(page_id)</span><br></pre></td></tr></table></figure>
+<p>are the actions that drive the above state changes in the state machine. The state machine is as follows:</p>
+<p><img data-src="https://i.loli.net/2021/02/19/VOH78FybK96IcSq.png" alt="frame 状态机"><span class="image-caption">frame 状态机</span></p>
+<p>Corresponding to the data structures in the implementation:</p>
+<ol>
+<li>The frame array that stores page data is <code>pages_</code></li>
+<li>The indexes (frame_id) of all <strong>free</strong> frames are stored in <code>free_list_</code></li>
+<li>The indexes of all <strong>unpinned</strong> frames are stored in <code>replacer_</code></li>
+<li>The indexes of all <strong>pinned</strong> frames and <strong>unpinned</strong> frames are stored in <code>page_table_</code>, and the two states are distinguished by the <code>pin_count_</code> field in the page.</li>
+</ol>
+<p>In the figure above, NewPage1 and NewPage2 indicate that in the <code>NewPage</code> function, each time a free frame is obtained, it first tries to take a free frame from the free list (<code>freelist_</code>), and only if that fails will it evict an unpinned frame from the <code>replacer_</code> and then use it. This reflects one goal of the buffer pool manager implementation: minimizing disk accesses, the reason for which is analyzed later.</p>
+<h2 id="Project-Components">Project Components</h2>
+<p>Having grasped the basic concepts and core data flow of this project, let’s analyze the two sub-tasks.</p>
+<h3 id="TASK-1-LRU-REPLACEMENT-POLICY">TASK #1 - LRU REPLACEMENT POLICY</h3>
+<p>I had written a similar implementation on LeetCode before, so I naturally drew on that experience. But I soon found that these two interfaces are somewhat different.</p>
+<p>What LeetCode provides is a <strong>kv store interface</strong>, which maintains recency order during get/set, and automatically replaces the oldest KV when the memory pool is full.</p>
+<p>But what this project provides is a <strong>replacer interface</strong>, which maintains a list of unpinned frame_ids, adds the frame_id to the list and maintains recency order when <code>Unpin</code> is called, removes the frame_id from the list when <code>Pin</code> is called, and returns the oldest frame_id when <code>Victim</code> is called.</p>
+<p>Of course, the essence is the same, so for this project I also used unordered_map and doubly linked list as the data structure. Implementation details will not be elaborated on. One thing to note is that if <code>Unpin</code> finds that the frame_id is already in the replacer, it returns directly without changing the recency order of the list. Because logically, the same frame_id cannot be <code>Unpin</code>ned multiple times, so we only need to consider the first Unpin of a frame_id.</p>
+<p>In a broader context, essentially, the replacer is a <strong>recycle bin</strong> that maintains an eviction order; that is, we don’t directly delete pages with <code>pin_count_ = 0</code> from memory, but put them into the recycle bin. According to the temporal <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvTG9jYWxpdHlfb2ZfcmVmZXJlbmNl">locality of reference<i class="fa fa-external-link-alt"></i></span>, a page that was just accessed is likely to be accessed again. Therefore, when we have to truly delete (<code>Victim</code>) a frame from the recycle bin, we delete the oldest one. When later we want to access a piece of data that was just put into the recycle bin, we only need to fish the page out of the recycle bin, thus saving a disk access. This achieves the goal of minimizing disk accesses.</p>
+<h3 id="TASK-2-BUFFER-POOL-MANAGER">TASK #2 - BUFFER POOL MANAGER</h3>
+<p>The core logic was mostly covered in the project analysis section. Here, I simply list some issues I encountered during my implementation.</p>
+<p><strong>The scope of <code>page_table_</code></strong>. In the initial implementation, after drawing the frame state machine, I felt it was perfect to only put pinned frame ids in <code>page_table_</code>: it would allow frame ids to be distributed mutually exclusively according to state among <code>free_list_</code>, <code>replacer_</code>, and <code>page_table_</code>. But later I realized that if unpinned frame ids were not saved in <code>page_table_</code>, it would be impossible to reuse pages with <code>pin_count_</code> = 0, and the replacer would lose its meaning.</p>
+<p><strong>Dirty page flush timing</strong>. There are two strategies: one is to flush every time <code>Unpin</code> is called, which flushes more frequently but can ensure that content is not lost after an unexpected power failure and restart; the other is to lazily flush when the replacer victimizes a frame, which ensures the minimum number of flushes. This is a trade-off between performance and reliability. Considering only this project, either approach should pass.</p>
+<p><strong><code>NewPage</code> should not read from disk</strong>. This was a bug I wrote. After all, when <code>NewPage</code> is called, there is no corresponding page content on disk at all, so the following error is reported:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2021-02-18 16:53:47 [autograder/bustub/src/storage/disk/disk_manager.cpp:121:ReadPage] DEBUG - Read less than a page</span><br><span class="line">2021-02-18 16:53:47 [autograder/bustub/src/storage/disk/disk_manager.cpp:108:ReadPage] DEBUG - I/O error reading past end of file</span><br></pre></td></tr></table></figure>
+<p><strong>Clear metadata when reusing a frame</strong>. When reusing a frame evicted from the replacer, special care must be taken to clear fields like <code>pin_count_\is_dirty_</code> before use. Of course, when <code>DeletePage</code> is called, care must also be taken to set <code>page_id_</code> to <code>INVALID_PAGE_ID</code> and clear the above fields. Otherwise, when used again, if <code>pin_count_</code> is not 0 after <code>Unpin</code>, it will cause the page to fail to be deleted during <code>DeletePage</code>.</p>
+<p><strong>Lock granularity</strong>. The most brute-force approach is to add a lock at the function scope level. If optimization is needed later, the lock granularity can be refined.</p>
+<h2 id="Project-Code">Project Code</h2>
+<p>Taking <code>FetchPageImpl</code> as an example to emphasize some implementation details, note that the project has already provided an implementation framework through comments.</p>
+<p>I have added comments to mark some points I think need attention.</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Page *<span class="title">BufferPoolManager::FetchPageImpl</span><span class="params">(<span class="type">page_id_t</span> page_id)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// a. 使用自动获取和释放锁</span></span><br><span class="line">  <span class="function">std::scoped_lock&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(latch_)</span></span>;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 1.     Search the page table for the requested page (P).</span></span><br><span class="line">  <span class="comment">// 1.1    If P exists, pin it and return it immediately.</span></span><br><span class="line">  <span class="keyword">auto</span> target = page_table_.<span class="built_in">find</span>(page_id); <span class="comment">// b. 判断存在与访问数据只用一次查找</span></span><br><span class="line">  <span class="keyword">if</span> (target != page_table_.<span class="built_in">end</span>()) &#123;</span><br><span class="line">    <span class="type">frame_id_t</span> frame_id = target-&gt;second;</span><br><span class="line">    <span class="comment">// c. 通过指针运算获取 frame_id 处存放的 Page 结构体</span></span><br><span class="line">    Page *p = pages_ + frame_id; </span><br><span class="line">    p-&gt;pin_count_++;</span><br><span class="line">    replacer_-&gt;<span class="built_in">Pin</span>(frame_id); <span class="comment">// d. 将对应 page 从“回收站”中捞出</span></span><br><span class="line">    <span class="keyword">return</span> p;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 1.2    If P does not exist, find a replacement page (R) from either the free list or the replacer.</span></span><br><span class="line">  <span class="comment">//        Note that pages are always found from the free list first.</span></span><br><span class="line">  <span class="type">frame_id_t</span> frame_id = <span class="number">-1</span>; </span><br><span class="line">  Page *p = <span class="literal">nullptr</span>;</span><br><span class="line">  <span class="keyword">if</span> (!free_list_.<span class="built_in">empty</span>()) &#123;</span><br><span class="line">    frame_id = free_list_.<span class="built_in">back</span>(); <span class="comment">// e. 在结尾处操作效率高一点</span></span><br><span class="line">    free_list_.<span class="built_in">pop_back</span>();</span><br><span class="line">    <span class="built_in">assert</span>(frame_id &gt;= <span class="number">0</span> &amp;&amp; frame_id &lt; <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(pool_size_));</span><br><span class="line">    p = pages_ + frame_id;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// f. 从 freelist 中获取的 dirty page 已经在 delete 时写回了</span></span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="type">bool</span> victimized = replacer_-&gt;<span class="built_in">Victim</span>(&amp;frame_id);</span><br><span class="line">    <span class="keyword">if</span> (!victimized) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">nullptr</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">assert</span>(frame_id &gt;= <span class="number">0</span> &amp;&amp; frame_id &lt; <span class="built_in">static_cast</span>&lt;<span class="type">int</span>&gt;(pool_size_));</span><br><span class="line">    p = pages_ + frame_id;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2.     If R is dirty, write it back to the disk.</span></span><br><span class="line">    <span class="keyword">if</span> (p-&gt;<span class="built_in">IsDirty</span>()) &#123;</span><br><span class="line">      disk_manager_-&gt;<span class="built_in">WritePage</span>(p-&gt;<span class="built_in">GetPageId</span>(), p-&gt;<span class="built_in">GetData</span>());</span><br><span class="line">      p-&gt;is_dirty_ = <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    p-&gt;pin_count_ = <span class="number">0</span>; <span class="comment">// g. 将元信息 pin_count_ 清空</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 3.     Delete R from the page table and insert P.</span></span><br><span class="line">  page_table_.<span class="built_in">erase</span>(p-&gt;<span class="built_in">GetPageId</span>()); <span class="comment">// h. 时刻注意区分 p-&gt;GetPageId() 与 page_id 是否相等，别混用</span></span><br><span class="line">  page_table_[page_id] = frame_id;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 4.     Update P&#x27;s metadata, read in the page content from disk, and then return a pointer to P.</span></span><br><span class="line">  p-&gt;page_id_ = page_id;</span><br><span class="line">  p-&gt;<span class="built_in">ResetMemory</span>();</span><br><span class="line">  disk_manager_-&gt;<span class="built_in">ReadPage</span>(page_id, p-&gt;<span class="built_in">GetData</span>());</span><br><span class="line">  p-&gt;pin_count_++;</span><br><span class="line">  <span class="keyword">return</span> p;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The autograder related to the project can be found in <span class="exturl" data-url="aHR0cHM6Ly8xNTQ0NS5jb3Vyc2VzLmNzLmNtdS5lZHUvZmFsbDIwMjAvZmFxLmh0bWw=">FAQ<i class="fa fa-external-link-alt"></i></span> for the registration address and invitation code. When submitting code, it is best not to submit a GitHub repository address, as there will be many formatting issues. You can follow the instructions on the project page each time, and package the relevant files into a zip archive according to the directory structure for submission.</p>
+<p><img data-src="https://i.loli.net/2021/02/19/5rScRYv8xPtFq39.png" alt="提交事项"><span class="image-caption">提交事项</span></p>
+<p>Read the <span class="exturl" data-url="aHR0cHM6Ly8xNTQ0NS5jb3Vyc2VzLmNzLmNtdS5lZHUvZmFsbDIwMjAvcHJvamVjdDEv">project description<i class="fa fa-external-link-alt"></i></span> carefully. Things to note before submission:</p>
+<ol>
+<li>Run <code>make format</code> in the build directory for automatic formatting.</li>
+<li>Run <code>make check-lint</code> in the build directory to check for some syntax issues.</li>
+<li>Design some tests for each function locally, write them into the relevant file (for this project, <code>buffer_pool_manager_test.cpp</code>), turn on the test switch, compile <code>make buffer_pool_manager_test</code> in the build folder, and run <code>./test/buffer_pool_manager_test</code></li>
+</ol>
+<p>Here’s a project1 autograder result:</p>
+<p><img data-src="https://i.loli.net/2021/02/19/FyefbnZIJUKYMjc.png" alt="autograder-result"><span class="image-caption">autograder-result</span></p>
+<h2 id="Summary">Summary</h2>
+<p>This is the first project of cmu15445, implementing a buffer pool manager that moves pages between disk and memory on demand. The key to this project is to grasp the basic concepts, sort out the core data flow, and on this basis pay attention to some implementation details.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/02/10/cmu15445-project1-buffer-pool/" rel="bookmark">Cmu15445 数据库系统实验一：Buffer Pool Manager</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2021/02/15/cmu15445-introduction/" rel="bookmark">Cmu15445 Course Introduction</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/02/15/cmu15445-introduction/" rel="bookmark">Cmu15445 课程介绍</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/04/distributed-database-storage-components/" rel="bookmark">层层剥开数据库存储层</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/06/meta-object-store-delta/" rel="bookmark">Meta 链式复制的对象存储——Delta</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/storage/" rel="tag"># storage</a>
+              <a href="/tags/cmu/" rel="tag"># cmu</a>
+              <a href="/tags/15445/" rel="tag"># 15445</a>
+              <a href="/tags/database-systems/" rel="tag"># database systems</a>
+              <a href="/tags/buffer-pool/" rel="tag"># buffer pool</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/01/09/go-slice/" rel="prev" title="Golang 笔记（三）：一种理解 Slice 的模型">
+      <i class="fa fa-chevron-left"></i> Golang 笔记（三）：一种理解 Slice 的模型
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/02/10/cmu15445-project1-buffer-pool/" rel="next" title="Cmu15445 数据库系统实验一：Buffer Pool Manager">
+      Cmu15445 数据库系统实验一：Buffer Pool Manager <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Project-Analysis"><span class="nav-number">2.</span> <span class="nav-text">Project Analysis</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Basic-Concepts"><span class="nav-number">2.1.</span> <span class="nav-text">Basic Concepts</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Core-Data-Flow"><span class="nav-number">2.2.</span> <span class="nav-text">Core Data Flow</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Project-Components"><span class="nav-number">3.</span> <span class="nav-text">Project Components</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#TASK-1-LRU-REPLACEMENT-POLICY"><span class="nav-number">3.1.</span> <span class="nav-text">TASK #1 - LRU REPLACEMENT POLICY</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TASK-2-BUFFER-POOL-MANAGER"><span class="nav-number">3.2.</span> <span class="nav-text">TASK #2 - BUFFER POOL MANAGER</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Project-Code"><span class="nav-number">4.</span> <span class="nav-text">Project Code</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Summary"><span class="nav-number">5.</span> <span class="nav-text">Summary</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">240</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">292</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2021/02/10/cmu15445-project1-buffer-pool/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '9f63f608c5188b1ac44db2a9e1e7d69d',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

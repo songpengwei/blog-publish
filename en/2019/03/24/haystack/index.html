@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Overview The basic idea of Haystack is to keep index information in memory to avoid extra I&#x2F;O. To achieve this, two main design aspects are employed:  Aggregate small files into large files, reducing">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Finding a Needle in Haystack: Facebook&#39;s Photo Storage">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2019/03/24/haystack/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Overview The basic idea of Haystack is to keep index information in memory to avoid extra I&#x2F;O. To achieve this, two main design aspects are employed:  Aggregate small files into large files, reducing">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/f5ZAatgdiFNDWUI.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/JBYr8FL4O53Cz6Q.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/9AKPDpN7OwBgTVM.png">
+<meta property="article:published_time" content="2019-03-24T14:53:08.000Z">
+<meta property="article:modified_time" content="2026-05-07T15:44:06.335Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="haystack">
+<meta property="article:tag" content="distributed storage">
+<meta property="article:tag" content="storage">
+<meta property="article:tag" content="distributed systems">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2019/03/24/haystack/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="haystack,distributed storage,storage,distributed systems">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Finding a Needle in Haystack: Facebook's Photo Storage",
+    "description": "Overview The basic idea of Haystack is to keep index information in memory to avoid extra I/O. To achieve this, two main design aspects are employed: Aggregate small files into large files, reducing the number of files and thus the amount of metadata. Streamline file metadata, removing all POSIX metadata semantics that are unnecessary in Facebook’s scenario. This reduces the data metadata to a scale that fits in memory, so that basically each data access can be completed with a single I/O, rather than several as before.",
+    "url": "https://www.qtmuniao.com/en/2019/03/24/haystack/",
+    "datePublished": "2019-03-24T22:53:08+08:00",
+    "dateModified": "2026-05-07T23:44:06+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2019/03/24/haystack/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Finding a Needle in Haystack: Facebook's Photo Storage | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2019/03/24/haystack/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2019/03/24/haystack/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2019/03/24/haystack/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Finding a Needle in Haystack: Facebook's Photo Storage
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-03-24 22:53:08" itemprop="dateCreated datePublished" datetime="2019-03-24T22:53:08+08:00">2019-03-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/" itemprop="url" rel="index"><span itemprop="name">distributed systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-systems/paper-reading/" itemprop="url" rel="index"><span itemprop="name">paper reading</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img data-src="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png" alt="serving a photo"><span class="image-caption">serving a photo</span></p>
+<h2 id="Overview">Overview</h2>
+<p>The basic idea of Haystack is to keep index information in memory to avoid extra I/O. To achieve this, two main design aspects are employed:</p>
+<ol>
+<li>Aggregate small files into large files, reducing the number of files and thus the amount of metadata.</li>
+<li>Streamline file metadata, removing all POSIX metadata semantics that are unnecessary in Facebook’s scenario.</li>
+</ol>
+<p>This reduces the data metadata to a scale that fits in memory, so that basically each data access can be completed with a single I/O, rather than several as before.</p>
+<span id="more"></span>
+<p><em>Author: Muniao’s Notes <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, please indicate the source when reprinting</em></p>
+<h2 id="Facebook-Business-Scale">Facebook Business Scale</h2>
+<p>26 million, 20 PB</p>
+<p>Peak: 1 million images per second.</p>
+<h2 id="Key-Observation">Key Observation</h2>
+<p>Traditional file system design leads to excessive metadata lookups. By reducing the metadata per image, Haystack is able to perform all metadata lookup operations in memory.</p>
+<h2 id="Positioning">Positioning</h2>
+<p>Haystack is an object storage system for shared photos, targeting a dataset that is written once, read frequently, never modified, and rarely deleted. Building a custom solution was necessary because traditional storage systems performed poorly under such high concurrency.</p>
+<h2 id="Origin">Origin</h2>
+<p>POSIX: Directory organization, and each file stores too much metadata that we don’t need, such as user permissions. When reading a file, the metadata must be loaded into memory first. With billions of files, this is almost unbearable, especially for NAS (network attached storage).</p>
+<p>Reading a photo requires three disk accesses:</p>
+<ol>
+<li>Translate the filename to an inode</li>
+<li>Read the inode from disk</li>
+<li>Read the file itself according to the inode information</li>
+</ol>
+<h2 id="Characteristics">Characteristics</h2>
+<p><strong>High concurrency and low latency</strong>: CDN is too expensive, so the only option is to reduce the metadata per file, keep all metadata in memory, and try to achieve a single disk access.</p>
+<p><strong>Fault tolerance</strong>: Remote backups.</p>
+<p><strong>Cost</strong>: Cheaper than CDN.</p>
+<p><strong>Simplicity</strong>: Without long periods of refinement and testing, the only way to ensure availability is to keep things as simple as possible.</p>
+<h2 id="Old-Workflow">Old Workflow</h2>
+<p>First, access the web server to get the global URL of the image, which contains the image’s location information. Then use the CDN for caching: if it hits, return; otherwise, load it from photo storage into the CDN and then access it.</p>
+<p>When a folder stores thousands of images, the directory-to-block mapping grows too large to fit in memory at once, further increasing the number of accesses.</p>
+<p>In short, we realized that neither internal caching nor external caching (memcached) helps with long-tail access patterns.</p>
+<p>RAM-to-disk ratio: improving this ratio is one approach, but each image occupies at least one inode, bringing at least hundreds of bits of extra metadata overhead.</p>
+<h2 id="New-Design">New Design</h2>
+<p>Traditionally, if serving static web content becomes a bottleneck, a CDN is used. However, long-tail file access requires another approach. We admit that requests for unpopular images can hit the disk, but we can reduce the number of times this happens.</p>
+<p>Storing one image per file results in too much metadata; the intuitive idea is to store a bunch of images in a single file.</p>
+<p>Next, we distinguish two types of metadata:</p>
+<ol>
+<li>Application metadata, used to construct URLs that the browser can use to retrieve the image.</li>
+<li>File system metadata, used to let a host locate the image on its disk.</li>
+</ol>
+<h3 id="Overview-2">Overview</h3>
+<p>Three main components: Haystack Store, Haystack Directory, and Haystack Cache. For brevity, we will refer to them as Store, Directory, and Cache.</p>
+<ol>
+<li>Store encapsulates the persistent storage layer for images and is the only component that manages image file metadata. In implementation, we partition the storage of each host into physical Volumes. Several physical volumes on different hosts are grouped together into a logical volume. These physical volumes are then replicas of the logical volume for backup, fault tolerance, and load distribution.</li>
+<li>Directory maintains the mapping from logical to physical volumes, along with other application information, including the mapping from images to logical volumes and logical volumes with free space.</li>
+<li>Cache acts as an internal CDN. When requests for popular images arrive and the upper-level CDN is unavailable or misses, it shields direct access to the Store.</li>
+</ol>
+<p>A typical URL for an image request that needs to access the CDN looks like this: http://⟨CDN⟩/⟨Cache⟩/⟨Machine id⟩/⟨Logical volume, Photo⟩</p>
+<p>At the CDN, Cache, and Machine layers, if there is a hit, it returns; otherwise, the address of that layer is stripped, and the request is forwarded to the next layer.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/NIHbnLgEcsa7rSB.png" alt="serving a photo"><span class="image-caption">serving a photo</span></p>
+<p>When uploading an image, the request first hits the web server; then the server selects a writable logical volume from the Directory. Finally, the web server assigns an id to the image and uploads it to the several physical volumes corresponding to the selected logical volume.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/f5ZAatgdiFNDWUI.png" alt="up loading a photo"><span class="image-caption">up loading a photo</span></p>
+<p>Here I have two questions: 1. How is the logical volume selected? Is it related to the region of the image request? 2. There is clearly a possibility of inconsistency. That is, after selecting a logical volume from the Directory, what if during writing it turns out to be full or the write fails due to network issues? Let’s see what the paper says next.</p>
+<h3 id="Haystack-Directory">Haystack Directory</h3>
+<p>The Directory is responsible for four aspects:</p>
+<ol>
+<li>Maintaining the mapping from logical volumes to physical volumes.</li>
+</ol>
+<p>The web server uses this mapping for uploading images and constructing image request URLs.</p>
+<ol start="2">
+<li>
+<p>Responsible for write load balancing among logical volumes and read distribution across physical volumes.</p>
+</li>
+<li>
+<p>Deciding whether a request should be handled by the CDN or the Cache.</p>
+</li>
+<li>
+<p>Checking whether a logical volume has become read-only due to reaching capacity or operational reasons.</p>
+</li>
+</ol>
+<h3 id="Haystack-Cache">Haystack Cache</h3>
+<p>The Cache receives image HTTP requests from the CDN or directly from the user’s browser. The Cache is organized as a distributed hash table and uses the image id to locate the cache. If it misses, it pulls the image from the specified Store according to the URL.</p>
+<p>An image is cached only when the following conditions are met:</p>
+<ol>
+<li>The request comes directly from the browser rather than the CDN.</li>
+<li>The image is pulled from a writable server.</li>
+</ol>
+<p>The reason for the second condition is: a. Images are often read soon after being written. b. Separating reads and writes makes things faster.</p>
+<h3 id="Haystack-Store">Haystack Store</h3>
+<p>Haystack’s main design lies in the organization of the Store.</p>
+<p>Each physical volume is physically a large file. Each Store machine can quickly locate an image using a logical volume id + offset. A key design of Haystack is this: the filename, offset, and size of an image can be obtained without disk access. This is because each Store node always maintains the file descriptor for each physical volume’s corresponding file and the mapping from image id to its metadata in memory.</p>
+<p>Specifically, each physical volume consists of a superblock and a series of needles. Each needle stores image metadata and the image itself. The flag is used to mark whether the image has been deleted. The cookie is randomly generated when the image is uploaded to prevent URL guessing. The alternate key is added to store different resolution versions of the same image. The data checksum is used for data integrity verification, and padding may be for hard disk block alignment.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/JBYr8FL4O53Cz6Q.png" alt="layout of haystack store file"><span class="image-caption">layout of haystack store file</span></p>
+<p>To speed up image access, the physical machine maintains basic metadata for all images in memory, as shown below, leaving only the simplest pieces of information. To speed up the reconstruction of metadata in memory after a machine restart, the physical machine periodically takes snapshots of this metadata in memory, i.e., the index file; its order is consistent with the store file.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/9AKPDpN7OwBgTVM.png" alt="layout of haystack index file"><span class="image-caption">layout of haystack index file</span></p>
+<p>Based on the above physical structure, let’s go through the actual flow corresponding to each Haystack API:</p>
+<h4 id="Photo-Read">Photo Read</h4>
+<p>A read request from the Cache carries the volume id, key, alternate key, and cookie. The Store machine looks up the relevant metadata for the image in memory, finds (file descriptor, offset, and size), and thus reads the image file and its metadata. Then it performs cookie comparison and checksum verification, and returns the image data if passed.</p>
+<h4 id="Photo-Write">Photo Write</h4>
+<p>A write request from the web server carries the logical volume id, key, alternate key, cookie, and image data. Each physical machine synchronously appends this information to the corresponding Store file. For image update requests (such as image rotation), we also simply append. However, this can cause duplicate key + alternate key pairs; if they fall on different logical volumes, the Directory only needs to update the mapping from the image to the logical volume. If they fall on the same logical volume, then the newer version can be determined by offset (it seems that in addition to the sequentially organized index file, there is also a dict using id as an index, where new and old metadata fall into the same bucket, and the one with the larger offset is taken each time).</p>
+<h4 id="Photo-Delete">Photo Delete</h4>
+<p>Deleting a file is straightforward: synchronously and sequentially set the flag in the metadata corresponding to the image in memory and the store file. If a request arrives for a deleted photo, an exception is reported when its flag is found set in memory. For the time being, the space occupied by images marked as deleted is temporarily unavailable; it will be reclaimed during periodic compaction.</p>
+<h4 id="The-Index-File">The Index File</h4>
+<p>Now back to the index file. Since the index file is obtained by periodic snapshots, there is a crash consistency issue. This includes: a new file being written to the volume and memory but not yet to the index file before a crash; and setting the deletion flag for an image in the Store file and memory but not yet syncing it to the index file before a crash. Dealing with these two issues is also simple. For the former, when restarting and reading the index file, you can compare the volume id at the corresponding offset to see if it is the latest; if not, supplement the latest into the index and memory. For the latter, every time an image is read, in addition to checking in memory, additionally check whether the deletion flag in the Store file is set, and sync it to memory and the index file.</p>
+<h4 id="Filesystem">Filesystem</h4>
+<p>In addition, to reduce unnecessary disk reads, instead of a traditional POSIX file system, XFS, which is friendly to large files, is used.</p>
+<h3 id="Fault-Recovery">Fault Recovery</h3>
+<p>Systems running on large-scale commodity hardware cannot avoid some errors, such as hardware driver errors, RAID controller issues, motherboard failures, etc. Our approach is also simple: do two small things, one is periodic detection, and the other is timely recovery.</p>
+<p>We use a background task called Pitchfork to periodically check the health of each storage node (Store machine). For example, checking connectivity with each node, the availability of each volume, and trying to read some data from physical nodes for testing. Once the health check fails, the Pitchfork program marks all volume ids on that physical machine as read-only.</p>
+<p>Once the problem is diagnosed, it is fixed immediately. Occasionally, if it cannot be fixed, the node data can only be reset first, and then data is synchronized from the backup node using a relatively heavy bulk sync operation.</p>
+<h3 id="Optimizations">Optimizations</h3>
+<p>Some common optimizations include:</p>
+<p><strong>Periodic Compaction</strong>: This is an online operation aimed at reclaiming space occupied by deleted files and duplicate files (with the same key and alternate key). The specific approach is to generate a new file, copy valid files one by one, and skip deleted and duplicate files. Once completed, all modification requests to that volume are temporarily blocked, and then the Store file and memory mapping are swapped.</p>
+<p><strong>Memory reduction</strong>: Since the flag currently only indicates whether a file is deleted, it is too wasteful. It can be changed to set the offset of the metadata corresponding to all deleted files in memory to 0. And instead of keeping the image’s cookie in memory, read it from disk. This saves about 20% of memory.</p>
+<p><strong>Batch uploads</strong>: Hard disks perform relatively better on average with large sequential writes than with random writes, so we pursue batch uploads as much as possible. Fortunately, users tend to upload a batch of images at once rather than a single image.</p>
+<p>There are still some paragraphs on performance evaluation below, which I will skip for now.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2021/04/17/storage-interview/" rel="bookmark">Distributed Storage Interview Experience</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/24/haystack/" rel="bookmark">Finding a Needle in Haystack：Facebook's Photo Storage</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/04/distributed-database-storage-components/" rel="bookmark">层层剥开数据库存储层</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/05/06/meta-object-store-delta/" rel="bookmark">Meta 链式复制的对象存储——Delta</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/05/26/gfs/" rel="bookmark">GFS — the Art of Trade-Offs</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/haystack/" rel="tag"># haystack</a>
+              <a href="/tags/distributed-storage/" rel="tag"># distributed storage</a>
+              <a href="/tags/storage/" rel="tag"># storage</a>
+              <a href="/tags/distributed-systems/" rel="tag"># distributed systems</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/03/16/python-logger/" rel="prev" title="Python Logging 库分析">
+      <i class="fa fa-chevron-left"></i> Python Logging 库分析
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/03/24/haystack/" rel="next" title="Finding a Needle in Haystack：Facebook's Photo Storage">
+      Finding a Needle in Haystack：Facebook's Photo Storage <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Facebook-Business-Scale"><span class="nav-number">2.</span> <span class="nav-text">Facebook Business Scale</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Key-Observation"><span class="nav-number">3.</span> <span class="nav-text">Key Observation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Positioning"><span class="nav-number">4.</span> <span class="nav-text">Positioning</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Origin"><span class="nav-number">5.</span> <span class="nav-text">Origin</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Characteristics"><span class="nav-number">6.</span> <span class="nav-text">Characteristics</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Old-Workflow"><span class="nav-number">7.</span> <span class="nav-text">Old Workflow</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#New-Design"><span class="nav-number">8.</span> <span class="nav-text">New Design</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Overview-2"><span class="nav-number">8.1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Haystack-Directory"><span class="nav-number">8.2.</span> <span class="nav-text">Haystack Directory</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Haystack-Cache"><span class="nav-number">8.3.</span> <span class="nav-text">Haystack Cache</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Haystack-Store"><span class="nav-number">8.4.</span> <span class="nav-text">Haystack Store</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Photo-Read"><span class="nav-number">8.4.1.</span> <span class="nav-text">Photo Read</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Photo-Write"><span class="nav-number">8.4.2.</span> <span class="nav-text">Photo Write</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Photo-Delete"><span class="nav-number">8.4.3.</span> <span class="nav-text">Photo Delete</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#The-Index-File"><span class="nav-number">8.4.4.</span> <span class="nav-text">The Index File</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Filesystem"><span class="nav-number">8.4.5.</span> <span class="nav-text">Filesystem</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Fault-Recovery"><span class="nav-number">8.5.</span> <span class="nav-text">Fault Recovery</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Optimizations"><span class="nav-number">8.6.</span> <span class="nav-text">Optimizations</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">240</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">292</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2019/03/24/haystack/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'd8fd5257ab638d0a51c67235ccc7d3f3',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

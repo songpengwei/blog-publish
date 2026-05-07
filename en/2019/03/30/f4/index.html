@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Overview First, let me explain what BLOB means. Its full English name is Binary Large OBjects, which can be understood as large objects in arbitrary binary format; in Facebook’s context, these are im">
+<meta property="og:type" content="article">
+<meta property="og:title" content="F4: Facebook&#39;s Warm BLOB Storage System">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2019/03/30/f4/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Overview First, let me explain what BLOB means. Its full English name is Binary Large OBjects, which can be understood as large objects in arbitrary binary format; in Facebook’s context, these are im">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/laNjLhZgwp5e8Yz.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png">
+<meta property="og:image" content="https://i.loli.net/2020/02/09/yUSnKop1hGH6QEj.png">
+<meta property="article:published_time" content="2019-03-30T01:07:16.000Z">
+<meta property="article:modified_time" content="2026-05-07T15:44:06.335Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="distributed system">
+<meta property="article:tag" content="storage">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2019/03/30/f4/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="distributed system,storage">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "F4: Facebook's Warm BLOB Storage System",
+    "description": "Overview First, let me explain what BLOB means. Its full English name is Binary Large OBjects, which can be understood as large objects in arbitrary binary format; in Facebook’s context, these are images, videos, and documents uploaded by users. This data has the characteristics of created once, read many times, never modified, and occasionally deleted. Previously, I briefly translated Facebook’s predecessor work — Haystack. As the business grew and data volume increased further, the old approach no longer worked. If all BLOBs were stored using Haystack, due to its triple-replication implementation, the cost-effectiveness at this scale would be very low. However, completely using network mounts + traditional disks + Unix-like (POSIX) file systems for cold storage couldn’t keep up with reads. Thus, the divide and conquer approach, most commonly used in computer science, came into play. They first counted the relationship between BLOB access frequency and creation time, then proposed the concept of hot and cold distribution in BLOB access over time (similar to the long-tail effect). Based on this, they proposed a hot/warm separation strategy: using Haystack as hot storage to handle frequently accessed traffic, and using F4 to handle the remaining less frequently accessed BLOB traffic. Under this assumption (F4 only stores data that basically doesn’t change much and has relatively low access volume), F4’s design can be greatly simplified. Of course, there is a dedicated routing layer above both to shield the underlying details, make decisions, and route requests. For Haystack, seven years had passed since its paper was published (07~14). Relative to that time, a few minor updates were made, such as removing the Flag bit, and adding a journal file in addition to the data file and index file, specifically to record deleted BLOB entries. For F4, the main design goal is to minimize the effective replication factor (effective-replication-factor) as much as possible while ensuring fault tolerance, to address the growing demand for warm data storage. Furthermore, it is more modular and has better scalability, meaning it can smoothly scale by adding machines to cope with continuous data growth. To summarize, the main highlights of this paper are hot/warm separation, erasure coding, and geo-replication.",
+    "url": "https://www.qtmuniao.com/en/2019/03/30/f4/",
+    "datePublished": "2019-03-30T09:07:16+08:00",
+    "dateModified": "2026-05-07T23:44:06+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2019/03/30/f4/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>F4: Facebook's Warm BLOB Storage System | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2019/03/30/f4/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2019/03/30/f4/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2019/03/30/f4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          F4: Facebook's Warm BLOB Storage System
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019-03-30 09:07:16" itemprop="dateCreated datePublished" datetime="2019-03-30T09:07:16+08:00">2019-03-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-system/" itemprop="url" rel="index"><span itemprop="name">distributed system</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/distributed-system/paper-reading/" itemprop="url" rel="index"><span itemprop="name">paper reading</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img data-src="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png" alt="over BLOB Storage Architecture"><span class="image-caption">over BLOB Storage Architecture</span></p>
+<h2 id="Overview">Overview</h2>
+<p>First, let me explain what BLOB means. Its full English name is <em>Binary Large OBjects</em>, which can be understood as large objects in arbitrary binary format; in Facebook’s context, these are images, videos, and documents uploaded by users. This data has the characteristics of <em>created once, read many times, never modified, and occasionally deleted</em>.</p>
+<p>Previously, I briefly translated Facebook’s predecessor work — Haystack. As the business grew and data volume increased further, the old approach no longer worked. If all BLOBs were stored using Haystack, due to its triple-replication implementation, the cost-effectiveness at this scale would be very low. However, completely using network mounts + traditional disks + Unix-like (POSIX) file systems for cold storage couldn’t keep up with reads. Thus, the <strong>divide and conquer</strong> approach, most commonly used in computer science, came into play.</p>
+<p>They first counted the relationship between BLOB access frequency and creation time, then proposed the concept of hot and cold distribution in BLOB access over time (similar to the long-tail effect). Based on this, they proposed a hot/warm separation strategy: using Haystack as hot storage to handle frequently accessed traffic, and using F4 to handle the remaining less frequently accessed BLOB traffic. Under this assumption (F4 only stores data that basically doesn’t change much and has relatively low access volume), F4’s design can be greatly simplified. Of course, there is a dedicated <strong>routing layer</strong> above both to shield the underlying details, make decisions, and route requests.</p>
+<p>For Haystack, seven years had passed since its paper was published (07~14). Relative to that time, a few minor updates were made, such as removing the Flag bit, and adding a <em>journal file</em> in addition to the <em>data file</em> and <em>index file</em>, specifically to record deleted BLOB entries.</p>
+<p>For F4, the main design goal is to minimize the <em><strong>effective replication factor</strong></em> (<em>effective-replication-factor</em>) as much as possible while ensuring fault tolerance, to address the growing demand for <em><strong>warm data</strong></em> storage. Furthermore, it is more modular and has better scalability, meaning it can smoothly scale by adding machines to cope with continuous data growth.</p>
+<p>To summarize, the main highlights of this paper are <strong>hot/warm separation, erasure coding, and geo-replication</strong>.</p>
+<span id="more"></span>
+<p><em>Author: Muniao’s Notes <a href="https://www.qtmuniao.com">https://www.qtmuniao.com</a>, please indicate source when reprinting</em></p>
+<h2 id="Data-Scale">Data Scale</h2>
+<p>By 2014, Facebook had over 400 billion images.</p>
+<h2 id="Access-Frequency-Heatmap">Access Frequency Heatmap</h2>
+<p>The paper concludes that <em>an access frequency heatmap exists, creation time is a key factor affecting its changes, and <strong>warm data</strong> keeps growing</em>.</p>
+<p>The paper’s measurement method is also simple: tracking the access frequency curves of different types of BLOB data on their website as creation time changes. The access frequency of data less than one day old is about 100 times that of data one year old. I won’t list the specific data here; you can check it in the paper.</p>
+<p>Then the paper explores a boundary for distinguishing <strong>hot data</strong> and <strong>warm data</strong>. Through analysis of how access frequency and deletion frequency change with creation time, for most BLOBs, an approximate value is obtained: one month. But there are two exceptions: one is user avatars, which are always hot data; the other is ordinary images, for which a three-month threshold is used.</p>
+<p>Hot data is always the head data, growing relatively slowly. But historical data, that is, <strong>warm data</strong>, has an increasingly longer tail over time, which inevitably requires corresponding adjustments to the storage architecture.</p>
+<h2 id="Overall-Storage-System-Architecture">Overall Storage System Architecture</h2>
+<p>The design principle is to make each component as simple, cohesive, and highly aligned with the work it undertakes as possible. This is a principle emphasized since UNIX. The figure below shows the overall architecture, including creation (C1-C2, handled by Haystack), deletion (D1-D2, mostly handled by Haystack, with a small portion handled by f4), and reading (R1-R4, jointly handled by Haystack and f4).</p>
+<p><img data-src="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png" alt="over BLOB Storage Architecture"><span class="image-caption">over BLOB Storage Architecture</span></p>
+<p>As described in the Haystack paper, we batch a group of BLOBs into a <strong>logical volume</strong>, minimizing meta information as much as possible to reduce the number of IO operations. Each logical volume is designed with a capacity of around 100GB. Before it is full, it is in an <em>unlocked</em> state; once capacity is reached, it becomes <em>locked</em>, only allowing reads and deletes.</p>
+<p>Each volume contains three files: a data file, an index file, and a journal file. As mentioned in the Haystack paper, the data file records the BLOB itself and its metadata, and the index file is a snapshot of the in-memory lookup structure. The journal file is new; it performs deletion operations by recording all deleted BLOBs. In the original Haystack paper, deletion was implemented by directly modifying the index file and data file. In the <strong>unlocked</strong> phase, all three files can be read and written; in the <strong>locked</strong> phase, only the journal file can be read and written, while the other two files become read-only.</p>
+<h3 id="Controller">Controller</h3>
+<p>Oversees the entire system, such as provisioning new storage machines; maintaining a pool of unlocked volumes; ensuring all logical volumes have sufficient physical volume backups; creating physical volumes on demand; performing periodic maintenance tasks, such as compaction and garbage collection.</p>
+<h3 id="Routing-Tier">Routing Tier</h3>
+<p>The routing tier is responsible for providing the external interface for the BLOB storage system. It shields the underlying implementation of the system, making it easy to add subsystems like f4. All machines in the routing tier have the same role, because this layer stores all state (e.g., logical volume to physical volume mappings) in a separate database (<em><strong>collecting all related state for external storage makes the remaining parts stateless and smoothly scalable, which is also a commonly used principle in system design</strong></em>). This allows the routing tier to scale smoothly without depending on other modules.</p>
+<p>For read requests, the routing module parses the logical volume id from the BLOB id, then finds all corresponding physical volume information based on the mapping read from the database. Generally, data is fetched from the nearest host; if that fails, a timeout event is generated, and the next physical volume’s host is tried.</p>
+<p>For create requests, the routing module selects a logical volume with free space, then sends the BLOB to all corresponding physical volumes for writing (parallel, chained, or serial?). If any problem is encountered, the write is aborted, the already written data is discarded, and another available logical volume is selected to repeat the above process. (Looks like parallel writes, and the fault tolerance strategy is also super crude.)</p>
+<p>For delete requests, the routing module sends them to all corresponding physical volumes (and then quickly returns), and the corresponding physical host programs <strong>asynchronously</strong> perform the deletion, retrying on errors until all corresponding BLOBs on all physical volumes are successfully deleted. (Simple, but I don’t know whether the implementation writes to the journal file before returning, or just marks it in memory. The corresponding BLOB in the data file is definitely only deleted during compaction.)</p>
+<p>By hiding implementation details, the routing tier enables the transparent construction of warm storage. When a volume is moved from hot storage to warm storage, it exists on both for a period of time. After the effective (logical volume to physical volume) mapping is updated, client requests will be transparently directed to warm storage.</p>
+<h3 id="Transformer-Tier">Transformer Tier</h3>
+<p>The transformer tier is responsible for handling transformation operations on retrieved BLOB data, such as image scaling and cropping. In Facebook’s older system versions, these compute-intensive operations were completed on the storage nodes.</p>
+<p>Adding a transformer tier can free storage nodes to focus on providing storage services. Separating compute tasks also benefits independently scaling the storage tier and transformer tier. Furthermore, it allows us to precisely control storage node capacity to exactly meet demand. Going further, it enables us to make better hardware selections for different task types. For example, we can design storage nodes with large numbers of hard drives but only one CPU and a small amount of memory.</p>
+<h3 id="Caching-Stack">Caching Stack</h3>
+<p>Initially designed to handle hotspot BLOB data requests, relieving pressure on the backend storage system. For warm storage, it can also reduce request pressure. Here, it refers to CDNs and caches provided by content delivery providers like Akamai.</p>
+<h3 id="Haystack-Hot-Storage">Haystack Hot Storage</h3>
+<p>Haystack was originally designed to maximize IOPS as much as possible. By taking on all create requests, most delete requests, and high-frequency read requests, the design of warm storage can be greatly simplified.</p>
+<p>As mentioned in the related paper, Haystack greatly improves IOPS by merging BLOBs and simplifying metadata. Specifically, this includes designing logical volumes as single files that collect a batch of BLOBs, using three physical volumes for redundant backup of the same logical volume, and so on.</p>
+<p>After a read request arrives, the requested BLOB’s metadata is obtained in memory, and it is checked whether it has been deleted. Then, through physical file location + offset + size, the corresponding BLOB data is obtained with only one IO.</p>
+<p>When a host receives a create request, it synchronously appends BLOB data to the data file, then updates in-memory metadata and writes changes to the index file and journal file (doesn’t the journal file only record delete operations?).</p>
+<p>When a host receives a delete request, it updates the index file and journal file. But the corresponding data still exists in the data file; periodically we perform compaction to truly delete the data and reclaim the corresponding space.</p>
+<h3 id="Fault-Tolerance">Fault Tolerance</h3>
+<p>Haystack achieves fault tolerance for disks, hosts, racks, and even datacenters through a triple-replica strategy: placing one replica on different racks in the same datacenter, and another replica in a different datacenter. Then RAID-6 (1.2x redundant data encoding, capable of correcting small-range errors, you can read articles on error correction codes) provides additional disk fault tolerance, adding another layer of insurance. But the cost is an effective replication factor of 3 * 1.2 = 3.6, which is Haystack’s limitation. Although it maximizes IOPS, it is not efficient in storage usage, causing a lot of BLOB data redundancy.</p>
+<h3 id="Expiry-Driven-Content">Expiry-Driven Content</h3>
+<p>Some types of BLOBs have a certain expiration time. For example, user-uploaded videos are converted from their original format to our storage format. After this, the original video needs to be deleted. We avoid moving such expiry-driven data to F4, letting Haystack handle these frequent delete requests and reclaim space through frequent compaction.</p>
+<h2 id="f4-Design">f4 Design</h2>
+<p>The design goal is to be as efficient as possible on the basis of fault tolerance. That is, under the premise of tolerating disk errors, host failures, rack issues, and datacenter disasters, reduce the effective replication factor.</p>
+<h3 id="f4-Overview">f4 Overview</h3>
+<p>f4 is a subsystem of the warm data storage architecture. It contains a series of data cells, each cell located in the same datacenter. Currently (2014), a cell contains 14 racks, each rack has 15 hosts, and each host has thirty 4TB hard drives. The cell is responsible for storing logical volumes. When each logical volume is actually stored, its data is redundantly encoded using <span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU5JTg3JThDJUU1JUJFJUI3LSVFNiU4OSU4MCVFNyVCRCU5NyVFOSU5NyVBOCVFNyVBMCU4MQ==">Reed-Solomon code<i class="fa fa-external-link-alt"></i></span> (RS coding, abbreviated as RS, an important member of the RAID-6 standard mentioned earlier). For example, RS(n, k) means for every n bits stored, k additional bits are encoded, tolerating up to k bit errors. This encoding method can solve disk, host, and rack errors.</p>
+<p>Furthermore, XOR coding is used to solve cross-datacenter or geographic errors. We select an equal number of volumes/stripes/blocks from two different datacenters to pair, then store the XOR of each pair in a third datacenter.</p>
+<h3 id="Individual-f4-Cell">Individual f4 Cell</h3>
+<p>Each f4 data cell only handles locked volumes, meaning it only supports read and delete operations. Data files and index files are read-only; the journal file in Haystack does not exist in f4. We use another method to achieve the effect of “deletion”: each BLOB is encrypted before storage, and the encryption key is stored in an external database. When responding to a delete request, <strong>only the key corresponding to the BLOB needs to be deleted</strong> (a bit clever, providing privacy guarantees for users and reducing delete operation latency to very low).</p>
+<p>Because the index file is relatively small, it directly uses triple-replica storage to ensure reliability, saving the extra complexity brought by encoding and decoding. Data files are encoded using Reed-Solomon with n=10, k=4. Specifically, each data file is split into n consecutive data blocks, each with a fixed size b (if the last block is not full and cannot fit a new BLOB, pad with zeros at the end; <em><strong>similar padding is also a commonly used technique for data alignment</strong></em>); for every n such blocks, k parity blocks of the same size are generated, so n+k blocks form a logical <em>stripe</em>. Any two blocks on the same stripe are called <strong>companion blocks</strong>. During normal reads, data can be directly read from the data blocks (I guess those n blocks, without extra computation to restore, to be verified by Reed-Solomon principles and specific implementation). If some blocks are unavailable, any n blocks from the same stripe are taken, decoded, and restored; furthermore, there is a property that reading n corresponding segments from n blocks (e.g., a certain BLOB) can also be decoded (both properties are determined by the encoding, similar to a system of n-variable linear equations with k redundant equations).</p>
+<p><img data-src="https://i.loli.net/2020/02/09/laNjLhZgwp5e8Yz.png" alt="BLOBs in Block in Stripes in Volumes"><span class="image-caption">BLOBs in Block in Stripes in Volumes</span></p>
+<p>Usually b is 1GB, meaning each data block is 1GB (there’s a question here: it looks like each Block is still inside the Volume, not separately extracted, so locating a physical block requires the volume file handle + offset + length). Choosing this size has two considerations: one is to minimize the probability of BLOBs spanning blocks, reducing the frequency of multiple IOs needed to read a BLOB; the other is to reduce the total amount of metadata that blocks need to maintain. The reason for not choosing a larger size is that reconstruction would be more costly (but why exactly 1GB?).</p>
+<p>Below is the architecture diagram, next we introduce each module one by one.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/67YwWZRbthK3qFX.png" alt="overall architecture"><span class="image-caption">overall architecture</span></p>
+<h3 id="Name-Node">Name Node</h3>
+<p>The name node maintains the mapping of <em>data blocks</em> and <em>parity blocks</em> to the storage nodes that actually store these blocks (i.e., the storage nodes in the next section); these mappings (using standard techniques? or referencing GFS, didn’t quite understand, leaving a pit to fill after reading GFS) are assigned to storage nodes. The name node uses primary-backup strategy for fault tolerance.</p>
+<h3 id="Storage-Nodes">Storage Nodes</h3>
+<p>Storage nodes are the main component of a cell, handling all regular read and delete requests. They expose two APIs: the Index API is responsible for providing volume existence checks and location information; the File API provides actual data access. (<em>The difference between File API and Data API probably lies in that the former provides an upper-level abstract BLOB operation interface, while the latter exposes underlying data block access interface.</em>)</p>
+<p>Storage nodes store the index file (including BLOB to volume mapping, offset, and length) on disk and load it into a custom in-memory storage structure. They also maintain the mapping from volume offset to physical data block (since a volume is cleanly cut into many blocks, locating the logical position of a data block requires recording its volume + offset). Both pieces of information are stored in memory to avoid disk IO (it seems there were also changes later, as SSDs became cheaper, storing on SSD is also possible).</p>
+<p>Because each BLOB is encrypted, its key is stored in external storage, usually a database. Deleting its key achieves de facto BLOB deletion, thus avoiding data compaction (why not reclaim that deleted space? After all, for warm storage, deletions are only a small part, and the previous warm storage assumption is used here); it also saves using a journal file to track deletion information.</p>
+<p>Below describes the read flow. First, use the Index API to check whether the file exists (R1 process), then forward the request to the storage node where the BLOB’s data block resides. The Data API provides access to data blocks and parity blocks. Under normal circumstances, read requests are directed to the appropriate storage node (R2 process), and then the BLOB is directly read from its block (R3). In failure cases, all intact n blocks from the n+k companion blocks are read through the Data API and sent to the backoff node for reconstruction.</p>
+<p>During actual data read (whether the normal R1-R3 flow or the error fallback R1, R4, R5 flow), the routing tier reads the BLOB’s corresponding key from the external database in parallel, then performs decryption at the routing tier. This is a compute-intensive task; placing it here lets the data layer focus on storage, and both layers can be independently scaled.</p>
+<h3 id="Backoff-Nodes">Backoff Nodes</h3>
+<p>Responsible for providing a fallback solution when the normal read flow encounters errors.</p>
+<p>When failures occur in a cell, some blocks become unavailable and need to be recovered online from companion blocks and parity blocks. Backoff modules are IO-sparse and compute-intensive nodes, handling these compute-intensive online recovery operations.</p>
+<p>Backoff modules expose the File API to handle fallback retries when normal reads fail (R4). At this point, the read request has already been parsed by a primary volume-server into a tuple of data file, offset, and length. The backoff node reads the corresponding offset and length information from the n-1 companion blocks and k parity blocks, excluding the damaged data block. Once n responses are received (<em>probably sent in parallel? Then to save time, start working upon receiving any n responses for error correction?</em>).</p>
+<p>Of course, to care for read latency, each online fallback read correction only recovers the data of the corresponding BLOB rather than the information of the entire data block. Recovery of the entire data block is left to the rebuilder nodes to do offline.</p>
+<h3 id="Rebuilder-Nodes">Rebuilder Nodes</h3>
+<p>With a certain scale of civilian physical machines, disk and node failures are inevitable. Data blocks stored on damaged modules need to be rebuilt. Rebuilder nodes are storage-sparse and compute-intensive, responsible for silently performing rebuild work in the background. Each rebuilder node detects data block errors through probes (periodically scanning the range it is responsible for? or installing probes on each data node?) and reports them to coordinator nodes. Then, by taking n intact blocks from the companion blocks and parity blocks on the same stripe, it rebuilds the damaged node (if n+k has other broken modules, they are probably rebuilt together). This is a very heavy processing procedure and brings enormous network and IO load to storage nodes. Therefore, rebuilder nodes throttle their throughput to prevent adverse effects on normal user requests. Coordinating and scheduling rebuild work to minimize data loss risk is the job of coordinator nodes.</p>
+<h3 id="Coordinator-Nodes">Coordinator Nodes</h3>
+<p>A data cell needs many daily ops tasks, such as scheduling (roughly determining a rebuild order and distributing among different rebuilder nodes) damaged data block rebuilds, adjusting current data distribution to minimize data unavailability probability. Coordinator nodes are also storage-sparse and compute-intensive, used to execute cell-scoped tasks.</p>
+<p>As mentioned earlier, different blocks on a data stripe need to be dispersed in different data fault tolerance zones to maximize reliability. However, after failures, rebuilds, and replacements, there will inevitably be some non-compliant situations, such as two blocks from the same stripe being placed in the same data fault tolerance zone. Coordinator nodes run a balancing placement process to check data block distribution in a cell. Like rebuild operations, this also brings considerable extra disk and network load to storage nodes, so coordinator nodes also self-throttle to reduce impact on normal requests.</p>
+<h2 id="Geo-Replication">Geo-Replication</h2>
+<p>A single f4 data cell exists in one datacenter, making it difficult to withstand datacenter failures. Therefore, initially, we placed two identical data cells in different datacenters, so that if one fails, the other can still respond to requests. This reduces the effective replication factor from Haystack’s 3.6 to 2.8.</p>
+<p><img data-src="https://i.loli.net/2020/02/09/yUSnKop1hGH6QEj.png" alt="geo replicated xor coding"><span class="image-caption">geo replicated xor coding</span></p>
+<p>Considering that datacenter-level failures are still rare, we found a way to further reduce the effective replication factor — of course, it also reduces throughput. However, the current XOR scheme can further achieve an effective replication factor of 2.1.</p>
+<p>The geo-replicated XOR coding scheme provides datacenter-level fault tolerance by XORing two different volumes (same size) and storing the result in a third datacenter. As shown in Figure 9, each data volume’s data blocks and parity blocks are XORed with an equal quantity of other data blocks or parity blocks (called <em>buddy blocks</em>) to obtain XOR blocks. The indices of these XOR blocks are also simply stored in triple replicas.</p>
+<p>Once a datacenter problem causes an entire volume to be unavailable, read requests are routed to a geo-bakoff node, then corresponding BLOB data is fetched from the two buddy nodes and XOR node datacenters to reconstruct the damaged BLOB. XOR coding was chosen because it is simple and meets the needs.</p>
+<p>Load factor calculation: (1.4 * 3) / 2 = 2.1</p>
+<h2 id="Summary">Summary</h2>
+<p>The basic ideas are roughly these; I won’t translate the rest. But the paper is a bit verbose, repeating the same point in different places several times, while one module is sometimes scattered across different sections, making it hard to form a whole picture. Here, I briefly summarize.</p>
+<p>One data cell exists in one datacenter, containing 14 racks. One logical Volume, about 100GB, is divided into 100 1GB blocks; then every 10 blocks as a group (Companion Block) undergo data redundancy encoding (RS coding), producing 4 new parity blocks. These 14 data + parity blocks are called a stripe, placed on different racks for fault tolerance. The mapping of which blocks belong to which group is maintained in the Name Node.</p>
+<p>On storage nodes, memory needs to maintain two mappings as index information: one is the mapping from BLOB id to volume, offset, and size; the other is the mapping from volume offset to the actual physical position of the Block. When a read request fails, the read request along with some metadata (such as the data block id and its offset on it) is directed to the Backoff Node. The backoff node gets the stripe’s other block position information from the Name Node based on the BLOB id’s Block id, and the offset, and only decodes all companion data for that BLOB, restores the BLOB, and returns it.</p>
+<p>Furthermore, Coordinator Nodes obtain global data distribution and status information from probe heartbeats. Based on this, the coordinator assigns damaged modules to Rebuilder Nodes for data reconstruction; and balances and maintains all blocks on the stripe to be placed in different data fault tolerance zones.</p>
+<p>Finally, after pairing all data blocks in two different datacenters, perform an XOR operation to obtain an XOR result, stored in a third datacenter. Thus, if any datacenter’s data stripe is damaged beyond what RS codes can save (for example, more than four racks fail), the other two datacenters’ data can be used for XOR operations to recover it.</p>
+<h2 id="Translation-Glossary">Translation Glossary</h2>
+<p><strong>data file</strong>: A file storing a bunch of BLOBs and their metadata</p>
+<p><strong>index file</strong>: A file recording BLOB offsets, lengths, and simple information in the data file, used to quickly seek and retrieve BLOBs.</p>
+<p><strong>journal file</strong>: In Haystack, used to record all delete requests.</p>
+<p><strong>effective-replica-factor</strong>: The ratio between actual occupied physical space and the logical data size to be stored.</p>
+<p><strong>companion block</strong>: The name for those n blocks among the n+k data blocks used for encoding.</p>
+<p><strong>parity block</strong>: The name for those k blocks among the n+k data blocks used for encoding.</p>
+<p><strong>warm storage</strong>: Relative to hot storage, refers to storage specifically built for data with not very high access frequency.</p>
+<p><strong>storage nodes, storage machines</strong>: Both refer to physical machines responsible for storing final data.</p>
+<p><strong>compact</strong>: In Haystack, the data file is periodically checked, copied once, but skipping all duplicate and already marked-deleted data, thereby reclaiming the corresponding space.</p>
+<p><strong>replica</strong>: A redundancy strategy. Errors are inevitable on cheap general-purpose machines; to have a fallback for recovery, the most common strategy is to store several extra copies. These identical data copies are called multiple replicas or multiple backups.</p>
+<p><strong>encryption key</strong>: The key used to encrypt BLOBs.</p>
+<p><strong>backoff node</strong>: Actually, I think translating it as a “fallback module” is also quite good, haha — it handles errors by taking n companion blocks to recover.</p>
+<p><strong>cell</strong>: A unit of data deployment and rollback consisting of 14 racks, with 15 machines on each rack.</p>
+<p><strong>volume</strong>: Divided into logical volumes and physical volumes, containing multiple data stripes.</p>
+<p><strong>stripe</strong>: A collection of original n data blocks and generated k parity blocks.</p>
+<p><strong>block</strong>: Generally about 1GB, dispersed in different fault tolerance units.</p>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/03/30/f4/" rel="bookmark">f4：Facebook’s Warm BLOB Storage System</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2019/05/26/gfs/" rel="bookmark">GFS — the Art of Trade-Offs</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/06/29/hadoop-0.1.0-code-debug/" rel="bookmark">Hadoop-0.1.0代码调试运行</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/02/hadoop-source-DFS/" rel="bookmark">Hadoop 源码阅读之DFS（一）：一些基本的类</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/11/hadoop-source-DataNode/" rel="bookmark">Hadoop 源码阅读之DFS（二）：DataNode</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2017/07/23/hadoop-0.1.0-file-system/" rel="bookmark">Hadoop 源码阅读之DFS（三）：FileSystem</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/distributed-system/" rel="tag"># distributed system</a>
+              <a href="/tags/storage/" rel="tag"># storage</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/03/24/haystack/" rel="prev" title="Finding a Needle in Haystack：Facebook's Photo Storage">
+      <i class="fa fa-chevron-left"></i> Finding a Needle in Haystack：Facebook's Photo Storage
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2019/03/30/f4/" rel="next" title="f4：Facebook’s Warm BLOB Storage System">
+      f4：Facebook’s Warm BLOB Storage System <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Data-Scale"><span class="nav-number">2.</span> <span class="nav-text">Data Scale</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Access-Frequency-Heatmap"><span class="nav-number">3.</span> <span class="nav-text">Access Frequency Heatmap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Overall-Storage-System-Architecture"><span class="nav-number">4.</span> <span class="nav-text">Overall Storage System Architecture</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Controller"><span class="nav-number">4.1.</span> <span class="nav-text">Controller</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Routing-Tier"><span class="nav-number">4.2.</span> <span class="nav-text">Routing Tier</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Transformer-Tier"><span class="nav-number">4.3.</span> <span class="nav-text">Transformer Tier</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Caching-Stack"><span class="nav-number">4.4.</span> <span class="nav-text">Caching Stack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Haystack-Hot-Storage"><span class="nav-number">4.5.</span> <span class="nav-text">Haystack Hot Storage</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Fault-Tolerance"><span class="nav-number">4.6.</span> <span class="nav-text">Fault Tolerance</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Expiry-Driven-Content"><span class="nav-number">4.7.</span> <span class="nav-text">Expiry-Driven Content</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#f4-Design"><span class="nav-number">5.</span> <span class="nav-text">f4 Design</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#f4-Overview"><span class="nav-number">5.1.</span> <span class="nav-text">f4 Overview</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Individual-f4-Cell"><span class="nav-number">5.2.</span> <span class="nav-text">Individual f4 Cell</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Name-Node"><span class="nav-number">5.3.</span> <span class="nav-text">Name Node</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Storage-Nodes"><span class="nav-number">5.4.</span> <span class="nav-text">Storage Nodes</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Backoff-Nodes"><span class="nav-number">5.5.</span> <span class="nav-text">Backoff Nodes</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Rebuilder-Nodes"><span class="nav-number">5.6.</span> <span class="nav-text">Rebuilder Nodes</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Coordinator-Nodes"><span class="nav-number">5.7.</span> <span class="nav-text">Coordinator Nodes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Geo-Replication"><span class="nav-number">6.</span> <span class="nav-text">Geo-Replication</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Summary"><span class="nav-number">7.</span> <span class="nav-text">Summary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Translation-Glossary"><span class="nav-number">8.</span> <span class="nav-text">Translation Glossary</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">240</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">292</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2019/03/30/f4/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '38f7b3a4f0abdc83fcf7a5587a06852c',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

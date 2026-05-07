@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="DDIA reading group. We will go through the book chapter by chapter, supplementing details based on my experience with distributed storage and databases in industry. Sharing every two weeks or so. Wel">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DDIA Reading Notes (3): TP, AP, and Column Storage">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part2/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="DDIA reading group. We will go through the book chapter by chapter, supplementing details based on my experience with distributed storage and databases in industry. Sharing every two weeks or so. Wel">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/HAq8ekcmz65xGlO.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/VbBLmqt9grZYiPl.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/P7OJ9fHMVXvW8uD.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/WaqlOFXnHUI9RGw.png">
+<meta property="og:image" content="https://s2.loli.net/2022/04/16/e2m8uLaoDnMrfSC.png">
+<meta property="article:published_time" content="2022-04-16T01:52:32.000Z">
+<meta property="article:modified_time" content="2026-05-07T15:44:06.372Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="DDIA">
+<meta property="article:tag" content="Reading Notes">
+<meta property="article:tag" content="Designing Data-Intensive Applications">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://s2.loli.net/2022/04/16/HAq8ekcmz65xGlO.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="DDIA,Reading Notes,Designing Data-Intensive Applications">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "DDIA Reading Notes (3): TP, AP, and Column Storage",
+    "description": "DDIA reading group. We will go through the book chapter by chapter, supplementing details based on my experience with distributed storage and databases in industry. Sharing every two weeks or so. Welcome to join us. The schedule and all transcripts are here. We have a corresponding distributed systems &amp; database discussion group, and notifications will be sent in the group before each sharing session. If you would like to join, you can add me on WeChat: qtmuniao. Please briefly introduce yourself and mention: Distributed Systems Group. Transactional or Analytical The term OL (Online) mainly refers to interactive queries. The term transaction has some historical origins. Early database users were mostly involved in commercial trades, such as buying, selling, paying salaries, and so on. But as database applications continued to expand, “transaction” remained as a noun. Transactions don’t necessarily have ACID properties. Transactional processing is mostly random reads and writes with low latency. In contrast, analytical processing is mostly periodic batch processing with higher latency.",
+    "url": "https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part2/",
+    "datePublished": "2022-04-16T09:52:32+08:00",
+    "dateModified": "2026-05-07T23:44:06+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part2/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>DDIA Reading Notes (3): TP, AP, and Column Storage | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2022/04/16/ddia-reading-chapter3-part2/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2022/04/16/ddia-reading-chapter3-part2/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          DDIA Reading Notes (3): TP, AP, and Column Storage
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2022-04-16 09:52:32" itemprop="dateCreated datePublished" datetime="2022-04-16T09:52:32+08:00">2022-04-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/DDIA/" itemprop="url" rel="index"><span itemprop="name">DDIA</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>DDIA reading group. We will go through the book chapter by chapter, supplementing details based on my experience with distributed storage and databases in industry. Sharing every two weeks or so. Welcome to join us. The schedule and all transcripts are <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8=">here<i class="fa fa-external-link-alt"></i></span>. We have a corresponding distributed systems &amp; database discussion group, and notifications will be sent in the group before each sharing session. If you would like to join, you can add me on WeChat: qtmuniao. Please briefly introduce yourself and mention: Distributed Systems Group.</p>
+</blockquote>
+<h1>Transactional or Analytical</h1>
+<p>The term <strong>OL</strong> (Online) mainly refers to interactive queries.</p>
+<p>The term <strong>transaction</strong> has some historical origins. Early database users were mostly involved in commercial trades, such as buying, selling, paying salaries, and so on. But as database applications continued to expand, “transaction” remained as a noun.</p>
+<blockquote>
+<p>Transactions don’t necessarily have ACID properties. Transactional processing is mostly random reads and writes with low latency. In contrast, analytical processing is mostly periodic batch processing with higher latency.</p>
+</blockquote>
+<span id="more"></span>
+<p><em>Author: Muniao’s Notes <a href="https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2">https://www.qtmuniao.com/2022/04/16/ddia-reading-chapter3-part2</a> Please indicate the source when reposting</em></p>
+<p>The table below is a comparison:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>OLTP</th>
+<th>OLAP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Main read pattern</td>
+<td>Random reads of small data volumes, queried by key</td>
+<td>Large data volume aggregation (max, min, sum, avg) queries</td>
+</tr>
+<tr>
+<td>Main write pattern</td>
+<td>Random access, low-latency writes</td>
+<td>Bulk import (ETL) or streaming writes</td>
+</tr>
+<tr>
+<td>Main application scenario</td>
+<td>End users accessing via web</td>
+<td>Internet analytics, to aid decision-making</td>
+</tr>
+<tr>
+<td>How data is viewed</td>
+<td>Latest state at the current point in time</td>
+<td>Evolving over time</td>
+</tr>
+<tr>
+<td>Data size</td>
+<td>Usually GB to TB</td>
+<td>Usually TB to PB</td>
+</tr>
+</tbody>
+</table>
+<p>Initially, traditional databases were still used for AP scenarios. At the model level, SQL is flexible enough to basically meet AP query needs. But at the implementation level, the performance of traditional databases under AP workloads (low throughput for large data volumes) was unsatisfactory. Therefore, people began to turn to specially designed databases for AP queries, which we call <strong>Data Warehouses</strong> (Data Warehouse).</p>
+<h2 id="Data-Warehouse">Data Warehouse</h2>
+<p>For an enterprise, there are generally many transaction-oriented systems, such as user websites, cashier systems, warehouse management, supply chain management, employee management, and so on. These usually require <strong>high availability</strong> and <strong>low latency</strong>, so performing business analysis directly on the original database would greatly impact normal workloads. Therefore, a means is needed to import data from the original database into a dedicated <strong>data warehouse</strong>.</p>
+<p>We call this <strong>ETL: extract-transform-load</strong>.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/HAq8ekcmz65xGlO.png" alt="ddia-3-8-etl.png"><span class="image-caption">ddia-3-8-etl.png</span></p>
+<p>Generally, only when an enterprise’s data volume reaches a certain scale does it need AP analysis. After all, at a small data scale, using Excel for aggregation queries is sufficient. Of course, a current trend is that with the proliferation of mobile internet and IoT, the types and numbers of connected terminals are increasing, and the resulting data growth is also getting larger. Even relatively new startups may accumulate large amounts of data and consequently need AP support.</p>
+<p><strong>Aggregation queries</strong> in AP scenarios differ from traditional TP workloads. Therefore, the ways indexes need to be built also differ.</p>
+<h3 id="Differences-Behind-the-Same-Interface">Differences Behind the Same Interface</h3>
+<p>Both TP and AP can use the SQL model for querying and analysis. However, because their workload types are completely different, the design decisions made when implementing query engines and optimizing storage formats also differ greatly. Therefore, beneath the surface of the same SQL interface, the underlying database implementation structures of the two are quite different.</p>
+<p>Although some database systems claim to support both, such as earlier Microsoft SQL Server and SAP HANA, they are also increasingly evolving into two independent query engines. HTAP systems, which have been mentioned more frequently in recent years, are similar. To serve different types of workloads, they actually have two different storage engines at the bottom layer. It is just that the system internally automatically handles data redundancy and reorganization, transparent to the user.</p>
+<h2 id="AP-Modeling-Star-and-Snowflake-Schemas">AP Modeling: Star and Snowflake Schemas</h2>
+<p>There are relatively few processing models in AP. A commonly used one is the <strong>star schema</strong>, also known as the <strong>dimensional model</strong>.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/VbBLmqt9grZYiPl.png" alt="ddia3-9-star-schema.png"><span class="image-caption">ddia3-9-star-schema.png</span></p>
+<p>As shown in the figure above, the star schema usually contains one <strong>fact table</strong> and multiple <strong>dimension tables</strong>. The fact table organizes data in the form of an event stream, and then points to different dimensions through foreign keys.</p>
+<p>A variant of the star schema is the snowflake schema, which can be analogized to a snowflake (❄️) pattern. Its characteristic is that dimension tables are further subdivided, breaking a dimension into several sub-dimensions. For example, brand and product category may have separate tables. The star schema is simpler, while the snowflake schema is more refined; different trade-offs are made in specific applications.</p>
+<p>In a typical data warehouse, the fact table may be very wide, that is, having many columns: from one hundred to several hundred.</p>
+<h1>Column Storage</h1>
+<p>The <strong>dimension tables</strong> and <strong>fact tables</strong> mentioned in the previous section—for the latter, they may reach billions of rows and several PB in size. Although fact tables may typically have dozens or hundreds of columns, a single query usually only focuses on a few dimensions (columns).</p>
+<p>For example, querying <strong>whether people are more inclined to buy fresh fruit or candy on a particular day of the week</strong>:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">  dim_date.weekday,</span><br><span class="line">  dim_product.category,</span><br><span class="line">  <span class="built_in">SUM</span>(fact_sales.quantity) <span class="keyword">AS</span> quantity_sold</span><br><span class="line"><span class="keyword">FROM</span> fact_sales</span><br><span class="line">  <span class="keyword">JOIN</span> dim_date <span class="keyword">ON</span> fact_sales.date_key <span class="operator">=</span> dim_date.date_key</span><br><span class="line">  <span class="keyword">JOIN</span> dim_product <span class="keyword">ON</span> fact_sales.product_sk <span class="operator">=</span> dim_product.product_sk</span><br><span class="line"><span class="keyword">WHERE</span></span><br><span class="line">  dim_date.year <span class="operator">=</span> <span class="number">2013</span> <span class="keyword">AND</span></span><br><span class="line">  dim_product.category <span class="keyword">IN</span> (<span class="string">&#x27;Fresh fruit&#x27;</span>, <span class="string">&#x27;Candy&#x27;</span>)</span><br><span class="line"><span class="keyword">GROUP</span> <span class="keyword">BY</span></span><br><span class="line">  dim_date.weekday, dim_product.category;</span><br></pre></td></tr></table></figure>
+<p>Since traditional databases usually store data by row, this means that for tables with many attributes (columns), even if only one attribute is queried, many attributes must be fetched from disk, undoubtedly wasting IO bandwidth and increasing read amplification.</p>
+<p>Thus, a very natural idea emerges: how about storing each column separately?</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/P7OJ9fHMVXvW8uD.png" alt="ddia-3-10-store-by-column.png"><span class="image-caption">ddia-3-10-store-by-column.png</span></p>
+<p>Fields in the same row across different columns can be matched by index. Of course, an embedded primary key could also be used for matching, but that would make storage costs too high.</p>
+<h2 id="Column-Compression">Column Compression</h2>
+<p>Storing all data in separate columns brings an unexpected benefit: because data of the same attribute has high similarity, it is easier to compress.</p>
+<p>If the number of distinct values in each column is much smaller than the number of rows, <strong><span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQml0bWFwX2luZGV4">bitmap encoding<i class="fa fa-external-link-alt"></i></span></strong> can be used. For example, a retailer may have billions of sales transactions, but only 100,000 distinct products.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/WaqlOFXnHUI9RGw.png" alt="ddia-3-11-compress.png"><span class="image-caption">ddia-3-11-compress.png</span></p>
+<p>In the figure above, the data in a column fragment shows only six distinct values: {29, 30, 31, 68, 69, 74}. For each value’s occurrence positions, we use a bit array to represent them:</p>
+<ol>
+<li>The bit map index corresponds to the column index.</li>
+<li>A value of 0 means the value does not appear at that index.</li>
+<li>A value of 1 means the value appears at that index.</li>
+</ol>
+<p>If the bit array is sparse, that is, mostly 0s with only a few 1s, <strong><span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3poLyVFNiVCOCVCOCVFNyVBOCU4QiVFNyVCQyU5NiVFNyVBMCU4MQ==">Run-length encoding<i class="fa fa-external-link-alt"></i></span> (RLE, Run-length encoding)</strong> can also be used for further compression:</p>
+<ol>
+<li>Rewrite consecutive 0s and 1s as <code>count+value</code>. For example, <code>product_sk = 29</code> is <code>9 zeros, 1 one, 8 zeros</code>.</li>
+<li>Using a small trick to further compress the information. For example, after merging same values, they must appear in an alternating pattern of 0 and 1. If the first value is fixed as 0, then the alternating 0s and 1s don’t need to be written either. Thus, <code>product_sk = 29</code> is encoded as <code>9, 1, 8</code>.</li>
+<li>Since we know the bit array length, the last number can also be omitted, because it can be obtained by <code>array len - sum(other lengths)</code>. Thus, the final encoding for <code>product_sk = 29</code> becomes: <code>9, 1</code>.</li>
+</ol>
+<p>Bitmap indexes are well suited for logical operation conditions in queries, such as:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">WHERE</span> product_sk <span class="keyword">IN</span> (<span class="number">30</span>, <span class="number">68</span>, <span class="number">69</span>)</span><br></pre></td></tr></table></figure>
+<p>Can be converted to a bitwise OR of the three bit arrays for <code>product_sk = 30</code>, <code>product_sk = 68</code>, and <code>product_sk = 69</code>.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">WHERE</span> product_sk <span class="operator">=</span> <span class="number">31</span> <span class="keyword">AND</span> store_sk <span class="operator">=</span> <span class="number">3</span></span><br></pre></td></tr></table></figure>
+<p>Can be converted to a bitwise AND of the bit arrays for <code>product_sk = 31</code> and <code>store_sk = 3</code>, to get all the required positions.</p>
+<h3 id="Column-Families">Column Families</h3>
+<p>The book specifically mentions <strong>column families</strong>. It is a concept in Cassandra and HBase, both of which originated from Google’s <span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvQmlndGFibGU=">BigTable<i class="fa fa-external-link-alt"></i></span>. Note that they have similarities with <strong>column-oriented</strong> storage, but are definitely not the same:</p>
+<ol>
+<li>Multiple columns in the same column family are stored together, with the row key embedded.</li>
+<li>And columns are not compressed (questionable?)</li>
+</ol>
+<p>Therefore, BigTable is still mainly row-oriented when in use. It can be understood that each column family is a sub-table.</p>
+<h3 id="Memory-Bandwidth-and-Vectorized-Processing">Memory Bandwidth and Vectorized Processing</h3>
+<p>The ultra-large scale data volume of data warehouses brings the following bottlenecks:</p>
+<ol>
+<li>Memory processing bandwidth</li>
+<li>CPU branch prediction misses and <span class="exturl" data-url="aHR0cHM6Ly96aC53aWtpcGVkaWEub3JnL3dpa2kvJUU2JUI1JTgxJUU2JUIwJUI0JUU3JUJBJUJGJUU1JTgxJTlDJUU5JUExJUJG">pipeline stalls<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+<p>Memory bottlenecks can be alleviated through the data compression mentioned earlier. For CPU bottlenecks, we can use:</p>
+<ol>
+<li>Columnar storage and compression allow as much data as possible to be cached in L1, combined with bitmap storage for fast processing.</li>
+<li>Use SIMD to process more data with fewer clock cycles.</li>
+</ol>
+<h2 id="Sorting-in-Columnar-Storage">Sorting in Columnar Storage</h2>
+<p>Since data warehouse queries mostly focus on aggregation operators (such as sum, avg, min, max), the storage order in columnar storage is relatively unimportant. But it is also unavoidable to filter certain columns using conditions. For this, we can, like LSM-Tree, sort all rows by a certain column and then store them.</p>
+<blockquote>
+<p>Note, it is impossible to sort on multiple columns simultaneously. Because we need to maintain the index correspondence between multiple columns in order to fetch data by row.</p>
+</blockquote>
+<p>At the same time, the sorted column will have better compression effects.</p>
+<h3 id="Different-Replicas-Different-Sort-Orders">Different Replicas, Different Sort Orders</h3>
+<p>In distributed databases (data warehouses are so large that they are usually distributed), we store multiple copies of the same data. For each copy, we can store it sorted by different columns. Thus, for different query needs, we can route to different replicas for processing. Of course, this way we can at most build column indexes equal to the number of replicas (usually around 3).</p>
+<p>This idea was introduced by C-Store and adopted by the commercial data warehouse Vertica.</p>
+<h2 id="Writes-to-Columnar-Storage">Writes to Columnar Storage</h2>
+<p>The above optimizations for data warehouses (columnar storage, data compression, and sorting by column) are all aimed at solving the common read-write workloads in data warehouses: read-heavy, write-light, and reads are all ultra-large scale data.</p>
+<blockquote>
+<p>We optimized for reads, which makes writes relatively difficult.</p>
+</blockquote>
+<p>For example, B-tree’s <strong>in-place update flow</strong> doesn’t work well. For instance, to insert data in the middle of a row, <strong>vertically</strong> speaking, it would affect all column files (if not segmented); to ensure index correspondence between multiple columns, <strong>horizontally</strong> speaking, all column files for the different columns of that row would also need to be updated.</p>
+<p>Fortunately, we have LSM-Tree’s append-only flow.</p>
+<ol>
+<li>Batch newly written data in <strong>memory</strong>, by row or by column—what data structure to choose depends on requirements.</li>
+<li>Then, after reaching a certain threshold, flush it in batches to <strong>external storage</strong> and merge it with old data.</li>
+</ol>
+<p>The data warehouse Vertica does exactly this.</p>
+<h2 id="Aggregation-Data-Cubes-and-Materialized-Views">Aggregation: Data Cubes and Materialized Views</h2>
+<p>Not all data warehouses are columnar stores, but the many benefits of columnar storage have made it popular.</p>
+<p>One of them worth mentioning is <strong>materialized aggregates</strong> (or materialized summaries).</p>
+<blockquote>
+<p>Materialized can be simply understood as persisted. Essentially, it is a space-for-time tradeoff.</p>
+</blockquote>
+<p>Data warehouse queries usually involve aggregation functions, such as COUNT, SUM, AVG, MIN, or MAX in SQL. If these functions are used multiple times, computing them on the fly every time is obviously a huge waste. Therefore, an idea is: can we cache them?</p>
+<p>The difference from <strong>views</strong> in relational databases is that views are <strong>virtual, logical existences</strong>, just an abstraction provided to users, an intermediate result of a query, and are not persisted (whether there is caching is another matter).</p>
+<p>Materialized views are essentially a summary storage of data. If the original data changes, the view needs to be regenerated. Therefore, if <strong>writes are heavy and reads are light</strong>, the cost of maintaining materialized views is high. But in data warehouses it is often the opposite, which is why materialized views can work well.</p>
+<p>A specialized example of materialized views is the <strong>data cube</strong> (or OLAP cube): aggregating quantitative data by different dimensions.</p>
+<p><img data-src="https://s2.loli.net/2022/04/16/e2m8uLaoDnMrfSC.png" alt="ddia-3-12-data-cube.png"><span class="image-caption">ddia-3-12-data-cube.png</span></p>
+<p>The figure above is a data cube summed by two dimensions: <strong>date and product category</strong>. When performing summary queries by date and product, due to the existence of this table, it becomes very fast.</p>
+<p>Of course, in reality, a table often has multiple dimensions. For example, in Figure 3-9 there are five dimensions: date, product, store, promotion, and customer. But the meaning and method of building data cubes are similar.</p>
+<p>But such constructed views can only optimize for fixed queries. If some queries are not among them, these optimizations no longer work.</p>
+<blockquote>
+<p>In practice, it is necessary to specifically identify (or estimate) the query distribution for each scenario, and build materialized views accordingly.</p>
+</blockquote>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/02/19/ddia-reading-chapter1/" rel="bookmark">'DDIA Reading Notes (Chapter 1): Reliability, Scalability, Maintainability'</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter4/" rel="bookmark">'DDIA Reading Notes (Chapter 4): Encoding and Evolution'</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter3-part1/" rel="bookmark">'DDIA Reading Notes (Chapter 3): B-Trees and LSM-Trees'</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/10/17/ddia-reading-chapter5/" rel="bookmark">DDIA Reading Notes (V): Replication</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/en/2022/04/16/ddia-reading-chapter2/" rel="bookmark">DDIA Reading Notes (Chapter 2): Data Models and Query Languages</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2022/02/19/ddia-reading-chapter1/" rel="bookmark">DDIA 读书笔记（一）：可靠、可扩展、可维护</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/DDIA/" rel="tag"># DDIA</a>
+              <a href="/tags/Reading-Notes/" rel="tag"># Reading Notes</a>
+              <a href="/tags/Designing-Data-Intensive-Applications/" rel="tag"># Designing Data-Intensive Applications</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/16/ddia-reading-chapter3-part1/" rel="prev" title="DDIA 读书笔记（三）：B-Tree 和 LSM-Tree">
+      <i class="fa fa-chevron-left"></i> DDIA 读书笔记（三）：B-Tree 和 LSM-Tree
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/04/16/ddia-reading-chapter3-part2/" rel="next" title="DDIA 读书笔记（三）： TP AP 和列存">
+      DDIA 读书笔记（三）： TP AP 和列存 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">1.</span> <span class="nav-text">Transactional or Analytical</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Data-Warehouse"><span class="nav-number">1.1.</span> <span class="nav-text">Data Warehouse</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Differences-Behind-the-Same-Interface"><span class="nav-number">1.1.1.</span> <span class="nav-text">Differences Behind the Same Interface</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AP-Modeling-Star-and-Snowflake-Schemas"><span class="nav-number">1.2.</span> <span class="nav-text">AP Modeling: Star and Snowflake Schemas</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link"><span class="nav-number">2.</span> <span class="nav-text">Column Storage</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Column-Compression"><span class="nav-number">2.1.</span> <span class="nav-text">Column Compression</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Column-Families"><span class="nav-number">2.1.1.</span> <span class="nav-text">Column Families</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Memory-Bandwidth-and-Vectorized-Processing"><span class="nav-number">2.1.2.</span> <span class="nav-text">Memory Bandwidth and Vectorized Processing</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Sorting-in-Columnar-Storage"><span class="nav-number">2.2.</span> <span class="nav-text">Sorting in Columnar Storage</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Different-Replicas-Different-Sort-Orders"><span class="nav-number">2.2.1.</span> <span class="nav-text">Different Replicas, Different Sort Orders</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Writes-to-Columnar-Storage"><span class="nav-number">2.3.</span> <span class="nav-text">Writes to Columnar Storage</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Aggregation-Data-Cubes-and-Materialized-Views"><span class="nav-number">2.4.</span> <span class="nav-text">Aggregation: Data Cubes and Materialized Views</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">240</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">292</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2022/04/16/ddia-reading-chapter3-part2/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : '45ab6de5658d2fb4258421d032518309',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

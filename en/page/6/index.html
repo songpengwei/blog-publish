@@ -249,6 +249,675 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/04/17/storage-interview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/04/17/storage-interview/" class="post-title-link" itemprop="url">Distributed Storage Interview Experience</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-04-17 15:53:25" itemprop="dateCreated datePublished" datetime="2021-04-17T15:53:25+08:00">2021-04-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>I changed jobs a while ago for some reasons and interviewed for several distributed storage-related positions. I noticed there are relatively few experience-sharing posts on this topic, so I decided to share mine. Due to company privacy policies, I won’t list questions by company; instead, I’ll briefly summarize the general directions and contents of the interviews. Given my limited experience and expertise, please feel free to point out any mistakes in the comments.</p>
+<h2 id="Related-Positions">Related Positions</h2>
+<p>Distributed storage positions cover a wide range, and can generally be categorized by direction as follows:</p>
+<ol>
+<li>Distributed File Storage</li>
+<li>Object Storage</li>
+<li>Distributed KV or Cache</li>
+<li>Distributed Database (NewSQL)</li>
+<li>Table Storage</li>
+<li>Block Storage</li>
+</ol>
+<p>Their positioning and directions also differ slightly:</p>
+<p><strong>Distributed File Storage</strong>. Supports POSIX semantics or trimmed POSIX. It can serve as a storage base for disaggregated storage and compute, or be used directly by applications, such as deep learning training and intermediate storage for big data processing. Common products include Pangu File System, Polarfs, JuiceFS, etc.</p>
+<p><strong>Object Storage</strong>. Generally stores unstructured data such as images and videos, usually compatible with Amazon’s S3 API. Common products include Amazon S3, Alibaba Cloud OSS, and Tencent Cloud COS.</p>
+<p><strong>Distributed KV or Cache</strong>. Usually compatible with the Redis interface, or a more simplified KV interface. Generally seeks speed, based on memory or SSD, or even new hardware like persistent memory. Used for low-latency business caching or as the base for disaggregated storage and compute systems. Products include ByteDance’s ABase, Alibaba Cloud’s Tair, and PingCAP’s TiKV.</p>
+<p><strong>Distributed Database (or NewSQL)</strong>. Usually provides a SQL interface and unlimited horizontal scalability. Common products include PingCAP’s TiDB, Alibaba Cloud’s PolarDB, and Tencent Cloud’s TDSQL.</p>
+<p><strong>Table Storage</strong>. The classic interface can refer to column-oriented HBase, which is widely used in the big data field. Products include HBase and ByteDance’s ByteTable.</p>
+<p><strong>Block Storage</strong>. Provides a block device interface, generally used for the system disk of cloud hosts. Products include SmartX’s hyper-converged solution.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/04/17/storage-interview/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/04/02/bolt-transaction/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/04/02/bolt-transaction/" class="post-title-link" itemprop="url">Boltdb Source Code Guide (3): Transaction Implementation</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-04-02 21:46:55" itemprop="dateCreated datePublished" datetime="2021-04-02T21:46:55+08:00">2021-04-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/source-reading/" itemprop="url" rel="index"><span itemprop="name">source reading</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/source-reading/boltdb/" itemprop="url" rel="index"><span itemprop="name">boltdb</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>boltdb is one of the few pure-Go, single-node KV libraries on the market. boltdb is based on Howard Chu’s LMDB project, with a clean implementation; excluding unit tests and adapter code, the core code is just a little over four thousand lines. A simple API and minimalist implementation—that is precisely the author’s intent. Due to the author’s limited bandwidth, the original boltdb has been archived and is no longer updated. If you want to improve it and submit new PRs, the etcd-maintained fork, bbolt, is recommended.</p>
+<p>For convenience, this series of guide articles is still based on the original, unchanging repo. The project is small but complete: with just over four thousand lines of code, it implements a single-node KV engine based on B+ tree indexing and supporting single-writer, multiple-reader transactions. The code itself is simple and unadorned, with adequate comments. If you are a Go enthusiast or interested in KV stores, boltdb is absolutely a repo not to be missed.</p>
+<p>This series is planned as three articles, sequentially focusing on <a href="https://www.qtmuniao.com/2020/11/29/bolt-data-organised/"><strong>data organization</strong></a>, <a href="https://www.qtmuniao.com/2020/12/14/bolt-index-design/"><strong>index design</strong></a>, and <strong>transaction implementation</strong>—the three main aspects of boltdb source code analysis. Since these three aspects are not fully orthogonal and decoupled, the narrative will inevitably interweave them. If something is unclear, just skip it for now and come back to sort it out once you have the full picture. This article is the third: boltdb transaction implementation.</p>
+</blockquote>
+<h2 id="Introduction">Introduction</h2>
+<p>Before analyzing boltdb’s transactions, it is necessary to define the concept of a transaction to clarify the scope of our discussion. A <strong>database transaction</strong> (abbreviated: <strong>transaction</strong>) is a logical unit of work in the execution process of a database management system, consisting of a finite <a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%BA%93">database</a> operation sequence[^1]. The Wikipedia definition is a bit convoluted; you only need to grasp a few key points when understanding it:</p>
+<ol>
+<li>Execution: at the computation level</li>
+<li>Logical unit: implies indivisibility</li>
+<li>Finite operation sequence: generally not too large in granularity</li>
+</ol>
+<p>Why do we need transactions? Transactions emerged in the 1970s to free database users from cognitive burden: transactions help users organize a set of operations and automatically clean up when something goes wrong. Later, NoSQL and some distributed storage systems sacrificed full transaction support for higher performance. However, history spirals upward—the convenience of transactions led NewSQL and other next-generation distributed databases to bring them back.</p>
+<p>Speaking of transactions, the most famous concept is the four ACID properties. In fact, ACID is more like an easy-to-remember slogan than a strict description, because the properties are not very symmetric conceptually and depend on contextual interpretation. This article will still analyze boltdb’s transaction support from these four aspects, but at the beginning of each section, I will first draw on Martin Kleppmann’s talk[^2] to try to explain their meaning from different angles; then I will analyze how boltdb implements them.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/04/02/bolt-transaction/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/03/30/beijing-hiking-big-crack/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/03/30/beijing-hiking-big-crack/" class="post-title-link" itemprop="url">Hiking Around Beijing — Peach Blossoms in the Haze</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-03-30 23:17:19" itemprop="dateCreated datePublished" datetime="2021-03-30T23:17:19+08:00">2021-03-30</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/life/" itemprop="url" rel="index"><span itemprop="name">life</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/life/hiking/" itemprop="url" rel="index"><span itemprop="name">hiking</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>There are an awful lot of wild peach trees on the mountains around Beijing, scattered densely across the slopes and huddled in the valleys like an invasive species. During other seasons, I didn’t have any particular feelings about them while hiking, but in spring alone, I was greatly delighted. From afar, they looked like wisps of pink smoke, ethereal and faint. However, in the early spring of the capital, just as the pandemic was settling down, the smog returned. I watched the mountains covered in peach blossoms with my own eyes, yet could only imagine the beautiful scenery under a clear sky.</p>
+<p><img src="http://photo.tuchong.com/15470921/f/1147079771.jpg" alt="Although the peach blossoms are gorgeous, they cannot compete with the old smog"></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/03/30/beijing-hiking-big-crack/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/03/14/facebook-delos/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/03/14/facebook-delos/" class="post-title-link" itemprop="url">Virtual Consensus in Facebook Delos</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-03-14 23:12:27" itemprop="dateCreated datePublished" datetime="2021-03-14T23:12:27+08:00">2021-03-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>This article is based on the OSDI 2020 “Virtual Consensus in Delos” paper presentation. It explores the control-plane storage system in distributed systems and proposes a distributed architecture based on layered abstraction. The core idea is to introduce a logical protocol layer, allowing the physical layer to be implemented and migrated on demand—somewhat analogous to how virtual memory relates to physical memory in a single-machine system.</p>
+</blockquote>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/03/14/facebook-delos/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/02/15/cmu15445-introduction/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/02/15/cmu15445-introduction/" class="post-title-link" itemprop="url">Cmu15445 Course Introduction</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-02-15 22:13:33" itemprop="dateCreated datePublished" datetime="2021-02-15T22:13:33+08:00">2021-02-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Databases/" itemprop="url" rel="index"><span itemprop="name">Databases</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Databases/Open-Courses/" itemprop="url" rel="index"><span itemprop="name">Open Courses</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="Introduction">Introduction</h2>
+<p>In college, I didn’t study databases very deeply. What I still remember are only a few conceptual ideas on the <strong>usage</strong> side, such as SQL, ER diagrams, normal forms, and transactions. I never had a systematic understanding of their <strong>implementation</strong>. But since I’ve embarked on the storage path, I definitely need to fill in my database knowledge. Previously, I saw many people on Zhihu recommending this cmu15445 course, and I had already bookmarked the course homepage, but never found the time to look at it. “Constant thinking leads to a response” — during this holiday, coinciding with a job change, I finally have some large blocks of time to make a start.</p>
+<h2 id="Syllabus">Syllabus</h2>
+<p>A brief introduction to the <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/syllabus.html">syllabus</a> of <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/">cmu15445</a>. This course uses <a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">Database System Concepts</a> as a supplementary textbook, and covers all aspects of the design and implementation of Database Management Systems (DBMS), including:</p>
+<ol>
+<li>Data models (relational, document, key-value)</li>
+<li>Storage models (n-ary, decomposition, i.e., row-oriented and column-oriented)</li>
+<li>Query languages (SQL, stored procedures)</li>
+<li>Storage structures (heaps, log-structured)</li>
+<li>Index design (sorted trees, hash tables)</li>
+<li>Transaction processing (ACID, concurrency control)</li>
+<li>Data recovery (logging, snapshots)</li>
+<li>Execution engines (joins, sorting, aggregation, optimization)</li>
+<li>Concurrency architectures (multi-core, distributed)</li>
+</ol>
+<p>As you can see, the content is very comprehensive. The course uses an open-source educational database as a case study to deeply explore the trade-offs made in database design across all these aspects. This course places great emphasis on programming practice, with a series of interconnected yet concise <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/assignments.html">programming assignments</a>.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/02/15/cmu15445-introduction/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/02/10/cmu15445-project1-buffer-pool/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/02/10/cmu15445-project1-buffer-pool/" class="post-title-link" itemprop="url">Cmu15445 Database Systems Project 1: Buffer Pool Manager</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-02-10 00:13:33" itemprop="dateCreated datePublished" datetime="2021-02-10T00:13:33+08:00">2021-02-10</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Database/" itemprop="url" rel="index"><span itemprop="name">Database</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Database/Open-Course/" itemprop="url" rel="index"><span itemprop="name">Open Course</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>cmu15445 is a classic open course on the design and implementation of Database Management Systems (DBMS). The course uses <a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">Database System Concepts</a> as the textbook, providing lecture slides, notes, and videos, and carefully prepares several interconnected projects. The course places great emphasis on system design and programming implementation. In the words of the professor <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a>, this is a course that you can put on your resume and that can help you land a good offer.</p>
+<p>Having some free time this vacation, I dug out this course and was immediately impressed by its rich content and elegant organization. Unfortunately, time is limited, so I can only follow the <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/assignments.html">projects</a> as the main thread, supplemented by <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/slides/">lecture slides</a> and <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/notes/">notes</a>, and briefly go through them. If I have more time, I will skim the <a target="_blank" rel="noopener" href="https://www.db-book.com/db7/index.html">textbook</a> and <a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=oeYBdghaIjc&amp;list=PLSE8ODhjZXjbohkNBWQs_otTrBTrjyohi">videos</a>. Starting from project one, after each project’s <a target="_blank" rel="noopener" href="https://www.gradescope.com/">autograder</a> run, I will write a note for future reference. Professor <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a> suggests not making the project code repository public, so I will try to minimize code snippets and focus more on the thought process.</p>
+<p>This post is about project one: managing the cache of file system pages in memory — the buffer pool manager.</p>
+</blockquote>
+<h2 id="Overview">Overview</h2>
+<p>The target system of this project, <a target="_blank" rel="noopener" href="https://github.com/cmu-db/bustub">BusTub</a>, is a disk-oriented DBMS, but data on disk does not support byte-level access. Therefore, an intermediate layer for managing pages is needed. However, Professor <a target="_blank" rel="noopener" href="http://www.cs.cmu.edu/~pavlo/">Andy Pavlo</a> insists on not using mmap to delegate page management to the operating system. Thus, the goal of <a target="_blank" rel="noopener" href="https://15445.courses.cs.cmu.edu/fall2020/project1/">Project 1</a> is to proactively manage the cache of pages from disk in memory, thereby minimizing the number of disk accesses (in time) and maximizing the contiguity of related data (in space).</p>
+<p>This project can be broken down into two relatively independent sub-tasks:</p>
+<ol>
+<li>Maintaining the replacement policy: LRU replacement policy</li>
+<li>Managing the buffer pool: buffer pool manager</li>
+</ol>
+<p>Both components are required to be thread-safe.</p>
+<p>This article first analyzes the project content from basic concepts and core data flows, then goes through the two sub-tasks respectively.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/02/10/cmu15445-project1-buffer-pool/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2021/01/09/go-slice/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2021/01/09/go-slice/" class="post-title-link" itemprop="url">'Golang Notes (III): A Model for Understanding Slice'</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-01-09 14:51:46" itemprop="dateCreated datePublished" datetime="2021-01-09T14:51:46+08:00">2021-01-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/" itemprop="url" rel="index"><span itemprop="name">Programming Languages</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/Go/" itemprop="url" rel="index"><span itemprop="name">Go</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="Overview">Overview</h2>
+<p>In Golang, a slice is very similar to arrays in other languages, yet differs in many ways. As a result, beginners often develop misunderstandings and unwittingly fall into various pitfalls when using slices. This short article first starts from the official Go blog, laying out the slice-related syntax provided by the official documentation. Next, it presents a model for understanding slices using diagrams. Finally, it summarizes and analyzes some special usage scenarios, aiming to provide a clearer profile of slices from multiple perspectives.</p>
+<p>If you do not wish to read the lengthy narrative, you can jump directly to the summary at the end.</p>
+<p><img src="https://i.loli.net/2021/01/20/7fhMm3SpwtyoJ6F.png" alt="go-slice-view-derive.png"></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2021/01/09/go-slice/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/12/14/bolt-index-design/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -280,7 +949,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -377,7 +1046,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/en/2020/11/29/bolt-data-organised/" class="post-title-link" itemprop="url">Boltdb Source Code Guide (1): Boltdb Data Organization</a>
+            <a href="/en/2020/11/29/bolt-data-organised/" class="post-title-link" itemprop="url">'Boltdb Source Code Guide (1): Boltdb Data Organization'</a>
         </h2>
 
         <div class="post-meta">
@@ -394,7 +1063,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -458,6 +1127,214 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/11/18/leveldb-data-structures-bloom-filter/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2020/11/18/leveldb-data-structures-bloom-filter/" class="post-title-link" itemprop="url">A Casual Discussion of LevelDB Data Structures (II): Bloom Filter</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-11-18 21:32:23" itemprop="dateCreated datePublished" datetime="2020-11-18T21:32:23+08:00">2020-11-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Source-Code-Reading/" itemprop="url" rel="index"><span itemprop="name">Source Code Reading</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Source-Code-Reading/leveldb/" itemprop="url" rel="index"><span itemprop="name">leveldb</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <blockquote>
+<p>I had heard about <a target="_blank" rel="noopener" href="https://github.com/google/leveldb">LevelDB</a> long ago. This time, on a whim, I skimmed through the code together with some reference materials, and it truly lives up to its reputation. If you are interested in storage, if you want to use C++ elegantly, or if you want to learn how to architect a project, I recommend taking a look. Not to mention that the authors are Sanjay Ghemawat and Jeff Dean.</p>
+<p>If I don’t produce something after reading it, given my memory, I will surely forget it soon. So I wanted to write something about the wonders of LevelDB, but I didn’t want to take the usual path: starting with an architectural overview and ending with module analysis. These days of reading code, I kept thinking about where to start. Just as I finished reading, what impressed me most was actually the various exquisite data structures in LevelDB: fitting the scenario, built from scratch, appropriately tailored, and concise in code. Why not start the LevelDB series with these small corner components?</p>
+<p>This series mainly wants to share three classic data structures commonly used in engineering in LevelDB: the <a href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/"><strong>Skip List</strong></a> used for fast read/write of memtable, the <strong>Bloom Filter</strong> used for fast filtering of sstable, and the <strong>LRUCache</strong> used for partially caching sstable. This is the second post, Bloom Filter.</p>
+</blockquote>
+<h2 id="Introduction">Introduction</h2>
+<p>LevelDB is a single-machine KV storage engine, but it does not use a traditional balanced search tree to balance read/write performance. Instead, it uses the <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Log-structured_merge-tree">LSM-tree</a> structure to organize data, sacrificing some read performance in exchange for higher write throughput. Let’s use a diagram to introduce how LSM-tree is organized across different storage media.</p>
+<p><img src="https://i.loli.net/2020/11/22/pgCWKL8ni7sAF2G.png" alt="leveldb.png"></p>
+<p>LevelDB divides data into two main parts, stored in memory and the file system respectively. The main data modules include WAL log, memtable, immutable memtable, and sstable. In order of data flow:</p>
+<ol>
+<li>When LevelDB receives a write request <code>put(k, v)</code>, it first appends the operation log to the log file (WAL) for recovery in case of unexpected node crashes.</li>
+<li>After writing the <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Write-ahead_logging">WAL</a>, LevelDB inserts this kv pair into the <a href="https://www.qtmuniao.com/2020/07/03/leveldb-data-structures-skip-list/">lookup structure</a> in memory: memtable.</li>
+<li>After memtable accumulates to a certain degree, it rotates into a read-only memtable, i.e., immutable memtable; at the same time, a new memtable is generated for writing.</li>
+<li>When memory is under pressure, the immutable memtable is sequentially written to the file system, generating a level0 sstable (sorted strings table) file. This process is called a minor compaction.</li>
+<li>Since query operations need to traverse memtable, immutable, and sstables layer by layer. As more and more sstable files are generated, query performance will inevitably degrade, so different sstables need to be merged, which is called major compaction.</li>
+</ol>
+<h3 id="LevelDB-Hierarchical-Organization">LevelDB Hierarchical Organization</h3>
+<p>All sstable files in the file system are logically organized by LevelDB into multiple levels (usually 7 levels), satisfying the following properties:</p>
+<ol>
+<li>The larger the level, the earlier its data was written. That is, data is first “placed” in the upper level (minor compaction), and when the upper level is “full” (reaches capacity limit), it “overflows” to the lower level for merging (major compaction).</li>
+<li>Each level has a limit on total file size, growing exponentially. For example, the total size limit of level0 is 10MB, level1 is 100MB, and so on. The highest level (level6) has no limit.</li>
+<li>Since each sstable file in level0 is directly flushed from memtable, the key ranges of multiple sstable files may overlap. For other levels, multiple sstable files are guaranteed not to overlap through certain rules.</li>
+</ol>
+<p>For a read operation in LevelDB, it needs to first search memtable and immutable memtable, and then search each level in the file system in turn. It can be seen that compared to write operations, read operations are rather inefficient. We call the phenomenon where a single read request from the client is turned into multiple read requests inside the system <strong>read amplification</strong>.</p>
+<p>To reduce read amplification, LevelDB takes several measures:</p>
+<ol>
+<li>Minimize sstable files through major compaction</li>
+<li>Use fast filtering methods to quickly determine whether a key is in a certain sstable file</li>
+</ol>
+<p>And to quickly determine whether a key is in a key set, LevelDB uses exactly the Bloom filter. Of course, the Bloom filter can only quickly determine that a key is definitely not in a certain sstable, thereby skipping certain sstables during layer-by-layer lookups. The reason will be detailed later; we will leave it here for now.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2020/11/18/leveldb-data-structures-bloom-filter/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/07/12/go-context/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/en/2020/07/12/go-context/" class="post-title-link" itemprop="url">Golang Notes (II): Context Source Code Analysis</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-07-12 17:25:16" itemprop="dateCreated datePublished" datetime="2020-07-12T17:25:16+08:00">2020-07-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/" itemprop="url" rel="index"><span itemprop="name">Programming Languages</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/Go/" itemprop="url" rel="index"><span itemprop="name">Go</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p><img src="https://i.loli.net/2020/07/25/Yjbq6ZSkEHQ3X1u.png" alt="go-context-tree-construction.png"></p>
+<h2 id="Overview">Overview</h2>
+<p>Context is a somewhat unique yet commonly used concept in Go. When used well, it often yields twice the result with half the effort. But when abused without understanding its internals, it becomes “writing new words for forced sorrow”—at best affecting code structure, at worst burying numerous bugs.</p>
+<p>Golang constructs Contexts using a tree-like derivation approach, passing deadline and cancel signals across different goroutines <em>[1]</em> to manage the lifecycle of a group of goroutines involved in processing a task, preventing goroutine leaks. It also allows passing/sharing data across an entire request via Values attached to the Context.</p>
+<p>Context is most often used to track the lifecycle of long-running, cross-process IO requests such as RPC/HTTP, allowing the outer caller to actively or automatically cancel the request, thereby instructing child goroutines to reclaim all used goroutines and related resources.</p>
+<p>Context is essentially a mechanism for propagating signals during tree-like nested API calls. This article will analyze Context from several aspects: interface, derivation, source code analysis, and usage.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/en/2020/07/12/go-context/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      
+
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
     <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/07/03/leveldb-data-structures-skip-list/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -489,7 +1366,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -560,840 +1437,10 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/06/13/dynamo/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2020/06/13/dynamo/" class="post-title-link" itemprop="url">Amazon's Distributed Key-Value Store for Small Objects — Dynamo</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2020-06-13 15:30:18" itemprop="dateCreated datePublished" datetime="2020-06-13T15:30:18+08:00">2020-06-13</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="Overview">Overview</h2>
-<p>Dynamo is a highly available KV storage system. To ensure high availability and high performance, Dynamo adopts an eventual consistency model, providing developers with a novel API that uses versioning and resolves conflicts with client-side assistance. Dynamo aims to provide uninterrupted service while guaranteeing performance and scalability. Since Amazon widely adopts a decentralized, highly decoupled microservices architecture, the availability requirements for the storage system underlying these microservices are particularly high.</p>
-<p>S3 (Simple Storage Service) is another well-known storage service from Amazon. Although it can also be understood as a KV store, its target scenario differs from that of Dynamo. S3 is an object storage service for large files, mainly storing binary files and not providing cross-object transactions. Dynamo, on the other hand, is a document storage service for small files, mainly storing structured data (such as JSON). It allows indexing data and supports transactions across data items.</p>
-<p>Compared to traditional relational databases, Dynamo can be seen as providing only a primary key index, thereby achieving higher performance and better scalability.</p>
-<p>To achieve scalability and high availability while ensuring eventual consistency, Dynamo combines the following techniques:</p>
-<ol>
-<li>Consistent hashing for data partitioning and replication.</li>
-<li>Versioning mechanism (Vector Clock) to handle data consistency issues.</li>
-<li>Quorum and decentralized synchronization protocols to maintain consistency among replicas (Merkle Tree).</li>
-<li>Gossip Protocol for failure detection and replica maintenance.</li>
-</ol>
-<p>In terms of implementation, Dynamo has the following characteristics:</p>
-<ol>
-<li>Fully decentralized, with no central node; all nodes are peers.</li>
-<li>Adopts eventual consistency, using version numbers to resolve conflicts, even requiring users to participate in conflict resolution.</li>
-<li>Uses hash values for data partitioning, organizing data distribution, and balancing data load.</li>
-</ol>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2020/06/13/dynamo/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/06/07/an-old-song/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2020/06/07/an-old-song/" class="post-title-link" itemprop="url">Let's Swing the Oars</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2020-06-07 22:01:06" itemprop="dateCreated datePublished" datetime="2020-06-07T22:01:06+08:00">2020-06-07</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/life/" itemprop="url" rel="index"><span itemprop="name">life</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><img src="https://i.loli.net/2020/06/11/egfPnaXUzvFQ5Nt.jpg" alt="1591539058644.jpg"></p>
-<p>When I first learned “Let’s Swing the Oars” as a child, I only found the melody catchy; as I grew older, humming it occasionally, a few simple lines revealed boundless imagery; later, while studying in the imperial capital, visiting Beihai Park, I saw precisely “the beautiful White Pagoda reflected on the lake, surrounded by green trees and red walls”—time flies, yet what remains unchanged is the vitality of the written word.</p>
-<p>The lyrics were written by Mr. Qiao Yu, whose hand also produced many other well-known masterpieces: “My Motherland,” “Unforgettable Tonight,” and “Love My China.” The lyrics are divided into three stanzas, progressing layer by layer. The first stanza describes the scene of rowing; in just a few lines, beginning and end are connected, moving from near to far, sketching out a fourfold panorama. The second stanza expresses joyful emotions—childlike exuberance, a light heart, depicting full-bodied childish delight. The third stanza then elevates further, asking how such beautiful scenery, such a life, such an era came to be? Then it stops abruptly—words exhausted, yet meaning infinite.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2020/06/07/an-old-song/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/04/01/6-824-video-notes-4-vm-ft/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2020/04/01/6-824-video-notes-4-vm-ft/" class="post-title-link" itemprop="url">MIT 6.824 2020 Video Notes 4：VM-FT</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2020-04-01 23:20:25" itemprop="dateCreated datePublished" datetime="2020-04-01T23:20:25+08:00">2020-04-01</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/Open-Courses/" itemprop="url" rel="index"><span itemprop="name">Open Courses</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><img src="https://i.loli.net/2020/03/06/IewXsYmP4T7UrzJ.png" alt="6.824-schedule.png"></p>
-<p>MIT has finally released the lecture videos on YouTube this year. I followed about half of this course before, and this year I plan to watch the videos and write some lecture notes. The course follows the thread of distributed systems fundamentals: fault tolerance, replication, and consistency, using carefully selected industry-grade system papers as the main line, supplemented with detailed reading materials and well-crafted labs, bridging academic theory and industrial practice. It is truly an excellent distributed systems course. Course videos: <a target="_blank" rel="noopener" href="https://www.youtube.com/channel/UC_7WrbZTCODu1o_kfUMq88g/videos">YouTube</a>, <a target="_blank" rel="noopener" href="https://www.bilibili.com/video/av90915526">Bilibili</a>. Course materials: <a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/schedule.html">6.824 homepage</a>. This post is the notes for the fourth lecture, VM-FT.</p>
-<h2 id="Replication-—-Fault-Tolerance">Replication — Fault Tolerance</h2>
-<h3 id="Failure">Failure</h3>
-<p>How to define it? From the perspective of other computers, it stops providing services externally.<br>
-Through backup / replication (Replication)<br>
-Can solve: fail-stop, such as CPU overheating shutdown, host or network power failure, disk space exhaustion, etc.<br>
-Cannot solve: some correlated issues (where the primary and replica machines fail simultaneously), such as software bugs, human configuration errors.</p>
-<h3 id="Prerequisite">Prerequisite</h3>
-<p>One assumption for primary-backup replication to work is that the failure probabilities of the primary and backup machines need to be independent.<br>
-For example: machines from the same batch, or machines on the same rack, have strongly positively correlated failure probabilities.</p>
-<h3 id="Is-It-Worth-It">Is It Worth It</h3>
-<p>It is necessary to consider the business scenario and the required cost to determine whether replication is truly needed. For example, bank data needs multiple backups, while a course website may not.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2020/04/01/6-824-video-notes-4-vm-ft/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/03/19/wisckey/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2020/03/19/wisckey/" class="post-title-link" itemprop="url">WiscKey: LSM-Tree Optimizations for SSD Storage</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2020-03-19 22:05:22" itemprop="dateCreated datePublished" datetime="2020-03-19T22:05:22+08:00">2020-03-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/Paper-Reading/" itemprop="url" rel="index"><span itemprop="name">Paper Reading</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="Objective">Objective</h2>
-<p>To fully leverage the performance of modern SSD storage, and under the same API, significantly reduce the read/write amplification of LSM-trees to improve their performance.</p>
-<h2 id="Background">Background</h2>
-<p>On traditional disks, sequential I/O performance is roughly 100x that of random I/O. LSM-trees build on this by implementing massive KV random reads/writes as in-memory random access + sequential flushing to disk + periodic merging (compaction), thereby improving read/write performance. This is especially suitable for scenarios with <strong>more writes than reads</strong> and strong <strong>temporal locality</strong> (recent data is accessed most frequently).</p>
-<p><img src="https://i.loli.net/2020/03/21/IetKyMmGNQVrBsS.png" alt="wisckey-lsm-tree.png"></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2020/03/19/wisckey/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/03/15/hexo-to-zeit-co/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2020/03/15/hexo-to-zeit-co/" class="post-title-link" itemprop="url">Hosting a Hexo Static Blog With Vercel</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2020-03-15 15:23:42" itemprop="dateCreated datePublished" datetime="2020-03-15T15:23:42+08:00">2020-03-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/blog-setup/" itemprop="url" rel="index"><span itemprop="name">blog-setup</span></a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/blog-setup/Hexo/" itemprop="url" rel="index"><span itemprop="name">Hexo</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>My blog was originally hosted on GitHub Pages, but it seems Baidu’s crawler was too aggressive and got banned by GitHub. According to <a target="_blank" rel="noopener" href="https://www.marketmechina.com/baidu-search-engine-market-share-in-china-dec-2019/">marketmechian</a> data, in mainland China’s search engine market, Baidu still holds half the market share:</p>
-<ul>
-<li>Baidu: 67.09%</li>
-<li>Sogou: 18.75%</li>
-<li>Shenma: 6.84%</li>
-<li>Google: 2.64%</li>
-<li>bing: 2.6%</li>
-<li>Other: 2.08%</li>
-</ul>
-<p>As a Chinese blog, I still hope to be seen by more domestic users, so I’ve been looking for a way to let Baidu’s crawler automatically index my blog. While browsing blogs, I came across someone recommending <a target="_blank" rel="noopener" href="http://zeit.co">zeit.co</a> as a hosting platform. After trying it out, I found it to be an excellent static site hosting + CI Serverless Function platform, and I’m recommending it here.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2020/03/15/hexo-to-zeit-co/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/02/16/not-cp-or-ap/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2020/02/16/not-cp-or-ap/" class="post-title-link" itemprop="url">Please Stop Calling Databases CP or AP</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2020-02-16 15:00:18" itemprop="dateCreated datePublished" datetime="2020-02-16T15:00:18+08:00">2020-02-16</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/Fundamentals/" itemprop="url" rel="index"><span itemprop="name">Fundamentals</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>This article originated from Lu Pan’s personal blog post: <a target="_blank" rel="noopener" href="https://blog.the-pans.com/cap/">https://blog.the-pans.com/cap/</a>, a Chinese translation of Martin Kleppmann’s article “Please stop calling databases CP or AP” authorized by Martin himself. However, many sentences in that translation read rather oddly. I compared it with the <a target="_blank" rel="noopener" href="https://martin.kleppmann.com/2015/05/11/please-stop-calling-databases-cp-or-ap.html">English original</a>, and re-translated it sentence by sentence according to my own understanding. This article discusses why we should not abuse the concept of the <strong>CAP theorem</strong>; it is well-documented and penetrating, well worth reading. Even more commendable is that Martin cites sources for all key viewpoints in the text, and recommends some learning materials at the end—all excellent reading. Below is the main text.</p>
-</blockquote>
-<p>In Jeff Hodges’s excellent blog post <a target="_blank" rel="noopener" href="https://www.somethingsimilar.com/2013/01/14/notes-on-distributed-systems-for-young-bloods/">Notes on Distributed Systems for Young Bloods</a>, he suggests we use the <a target="_blank" rel="noopener" href="http://www.the-paper-trail.org/page/cap-faq/">CAP theorem</a> to evaluate systems. Many people have followed this advice, calling their systems “CP” (providing consistency but unavailable during network partitions), “AP” (highly available but inconsistent during network partitions), or simply “CA” (indicating they haven’t read Coda’s <a target="_blank" rel="noopener" href="https://codahale.com/you-cant-sacrifice-partition-tolerance/">article from five years ago</a>).</p>
-<p>I agree with all of Jeff’s other points, but I cannot endorse his advice on using the CAP theorem. The CAP theorem itself is too simplistic and widely misunderstood to serve effectively when characterizing systems. Therefore, I ask that everyone stop citing the CAP theorem, stop discussing the CAP theorem. Instead, we should use more precise terms to express our trade-offs in system design.</p>
-<p>(Of course, it’s ironic that while I don’t want others to discuss this topic anymore, I am myself writing an article about it. But at least from now on, when someone asks me why I don’t like discussing the CAP theorem, I can send them the link to this article. Also, sorry if this article comes across as a bit of a rant, but at least these rants come with citations.)</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2020/02/16/not-cp-or-ap/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/02/08/CAP/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2020/02/08/CAP/" class="post-title-link" itemprop="url">Distributed Systems Fundamentals (Part 1): Understanding CAP</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2020-02-08 14:01:05" itemprop="dateCreated datePublished" datetime="2020-02-08T14:01:05+08:00">2020-02-08</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/" itemprop="url" rel="index"><span itemprop="name">Distributed Systems</span></a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Distributed-Systems/Fundamentals/" itemprop="url" rel="index"><span itemprop="name">Fundamentals</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><img src="https://i.loli.net/2020/02/09/1dBXt5lG7FVvNqa.png" alt="cap-consistency-example.png"></p>
-<h2 id="Introduction">Introduction</h2>
-<p>I was once asked in an interview to explain my understanding of CAP. At the time, relying on second-hand information I had googled while preparing for the interview, I stammered out a few words like a schoolchild reciting a textbook. The interviewer smiled wryly and concisely summarized the key points he was looking for, leaving me feeling deeply embarrassed. Naturally, I didn’t get the job. Later, while working, I occasionally came across this term. At first I couldn’t grasp its essence, but after understanding and verifying it from different sources and perspectives, I gradually pieced together a clearer picture. Here, I’d like to organize my thoughts and put this shadow onto paper for future reference.</p>
-<p>The interviewer roughly summarized it this way: <em>In a distributed system, failures are inevitable, and partition tolerance (P) is absolutely necessary; therefore, when designing a system, you need to make a trade-off between availability (A) and consistency ©.</em> At the time, the lesson left a deep impression on me. Looking back now, this summary merely points out the tip of the iceberg.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2020/02/08/CAP/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/01/31/shichahai-sunset/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2020/01/31/shichahai-sunset/" class="post-title-link" itemprop="url">Shichahai at Dusk in Early Winter</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2020-01-31 14:28:59" itemprop="dateCreated datePublished" datetime="2020-01-31T14:28:59+08:00">2020-01-31</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/life/" itemprop="url" rel="index"><span itemprop="name">life</span></a>
-                </span>
-                  , 
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/life/photography/" itemprop="url" rel="index"><span itemprop="name">photography</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p><img src="https://photo.tuchong.com/15470921/f/488359358.jpg" alt=""></p>
-<p>On a clear afternoon in early winter, I set out from Ditan Park, passed through Jiaodaokou Santiao, crossed Yuanensi Hutong, and walked all the way to Shichahai. The weather that day was exceptionally good. Under the penetrating sunlight, the entire hutong district was basking lazily, and my heart felt light and carefree.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2020/01/31/shichahai-sunset/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/01/21/mac-fix-keyboard/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/img/logo.jpg">
-      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
-      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="木鸟杂记">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/en/2020/01/21/mac-fix-keyboard/" class="post-title-link" itemprop="url">So Good — Notes on Replacing My MacBook Pro 2016 Keyboard at the Genius Bar</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2020-01-21 11:42:07" itemprop="dateCreated datePublished" datetime="2020-01-21T11:42:07+08:00">2020-01-21</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2026-05-07 10:48:27" itemprop="dateModified" datetime="2026-05-07T10:48:27+08:00">2026-05-07</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/life/" itemprop="url" rel="index"><span itemprop="name">life</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>When I graduated from grad school, I did an internship at NetEase Games and saved up some money. I decided to finally buy the programmer’s productivity tool I had been drooling over for so long — the MacBook Pro. The new version had just been released, so in late 2016, as soon as it hit the market, I ordered an entry-level Pro from the official website: 13-inch, two ports, no Touch Bar. But even the entry-level model cost over 10,000 RMB, and it only had two ports and no Touch Bar.</p>
-<p><img src="https://i.loli.net/2020/02/09/AYgbZJ7Du1TWn4q.png" alt="mac-buy-info.png"></p>
-<p>No Touch Bar was acceptable — after all, as a vim user, I still preferred a physical Esc key I could actually press. But only two ports — so I quietly went on <a target="_blank" rel="noopener" href="http://JD.com">JD.com</a> and ordered a few dongles. At the time, USB-C wasn’t popular yet, so there weren’t many choices.</p>
-<p>When it arrived, I opened it with joy and was completely amazed — the intoxicating new Space Gray color, the unprecedented thin and light design, the Unix-like system with a beautiful UI. All my previous little complaints were thrown to the back of my mind. Ah, so good.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/en/2020/01/21/mac-fix-keyboard/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      
-
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/en/page/5/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/en/">1</a><span class="space">&hellip;</span><a class="page-number" href="/en/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/en/page/7/">7</a><a class="page-number" href="/en/page/8/">8</a><a class="extend next" rel="next" href="/en/page/7/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+    <a class="extend prev" rel="prev" href="/en/page/5/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/en/">1</a><span class="space">&hellip;</span><a class="page-number" href="/en/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/en/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/en/page/10/">10</a><a class="extend next" rel="next" href="/en/page/7/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
   </nav>
 
 
@@ -1461,19 +1508,19 @@ For example: machines from the same batch, or machines on the same rack, have st
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">216</span>
+          <span class="site-state-item-count">240</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">105</span>
+        <span class="site-state-item-count">113</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
-        <span class="site-state-item-count">283</span>
+        <span class="site-state-item-count">292</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

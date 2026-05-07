@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="360-site-verification" content="25801ebe32430d2890004839ea377da2" />
+  <script data-ad-client="ca-pub-4303078477555566" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-muniao.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-muniao.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-muniao.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+  <meta name="google-site-verification" content="epFgX0s_0RM3CdjwFcsewfXzPov2g8s9ZBOLyaIUH-o">
+  <meta name="baidu-site-verification" content="btK4cBsWUficCOsR">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto Serif SC:300,300italic,400,400italic,700,700italic|Noto Sans SC:300,300italic,400,400italic,700,700italic|Fira Code:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"www.qtmuniao.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false,"Muse | Mist":300,"Pisces | Gemini":300,"width":300},"copycode":{"enable":true,"show_result":false,"style":"default"},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}},"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="Overview Context is a somewhat unique yet commonly used concept in Go. When used well, it often yields twice the result with half the effort. But when abused without understanding its internals, it b">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Golang Notes (II): Context Source Code Analysis">
+<meta property="og:url" content="https://www.qtmuniao.com/en/2020/07/12/go-context/index.html">
+<meta property="og:site_name" content="木鸟杂记">
+<meta property="og:description" content="Overview Context is a somewhat unique yet commonly used concept in Go. When used well, it often yields twice the result with half the effort. But when abused without understanding its internals, it b">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://i.loli.net/2020/07/25/Yjbq6ZSkEHQ3X1u.png">
+<meta property="og:image" content="https://i.loli.net/2020/07/25/d5Slcasj1FAzItu.png">
+<meta property="og:image" content="https://i.loli.net/2020/07/25/9s6qG8RUkCQWLlc.png">
+<meta property="og:image" content="https://i.loli.net/2020/07/25/Yjbq6ZSkEHQ3X1u.png">
+<meta property="article:published_time" content="2020-07-12T09:25:16.000Z">
+<meta property="article:modified_time" content="2026-05-07T15:44:06.370Z">
+<meta property="article:author" content="青藤木鸟 (qtmuniao)">
+<meta property="article:tag" content="golang">
+<meta property="article:tag" content="go">
+<meta property="article:tag" content="context">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2020/07/25/Yjbq6ZSkEHQ3X1u.png">
+
+<link rel="canonical" href="https://www.qtmuniao.com/en/2020/07/12/go-context/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+
+
+
+  <meta name="keywords" content="golang,go,context">
+
+
+
+  <meta name="author" content="青藤木鸟 (qtmuniao)">
+
+
+
+
+  <link rel="alternate" type="application/atom+xml" title="木鸟杂记 Feed" href="/atom.xml">
+
+
+
+
+
+
+
+
+
+
+  
+  
+  
+
+  
+  
+    
+  
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Golang Notes (II): Context Source Code Analysis",
+    "description": "Overview Context is a somewhat unique yet commonly used concept in Go. When used well, it often yields twice the result with half the effort. But when abused without understanding its internals, it becomes “writing new words for forced sorrow”—at best affecting code structure, at worst burying numerous bugs. Golang constructs Contexts using a tree-like derivation approach, passing deadline and cancel signals across different goroutines [1] to manage the lifecycle of a group of goroutines involved in processing a task, preventing goroutine leaks. It also allows passing/sharing data across an entire request via Values attached to the Context. Context is most often used to track the lifecycle of long-running, cross-process IO requests such as RPC/HTTP, allowing the outer caller to actively or automatically cancel the request, thereby instructing child goroutines to reclaim all used goroutines and related resources. Context is essentially a mechanism for propagating signals during tree-like nested API calls. This article will analyze Context from several aspects: interface, derivation, source code analysis, and usage.",
+    "url": "https://www.qtmuniao.com/en/2020/07/12/go-context/",
+    "datePublished": "2020-07-12T17:25:16+08:00",
+    "dateModified": "2026-05-07T23:44:06+08:00",
+    "author": {
+      "@type": "Person",
+      "name": "青藤木鸟 (qtmuniao)",
+      "url": "https://www.qtmuniao.com/about/",
+      "sameAs": [
+        "https://github.com/songpengwei",
+        "https://www.zhihu.com/people/qtmuniao",
+        "https://space.bilibili.com/30933812",
+        "https://twitter.com/qtmuniao",
+        "https://www.linkedin.com/in/qtmuniao/"
+      ],
+      "jobTitle": "分布式系统工程师",
+      "alumniOf": "北京邮电大学"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "木鸟杂记",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://www.qtmuniao.com/images/apple-touch-icon-muniao.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://www.qtmuniao.com/en/2020/07/12/go-context/"
+    },
+    "image": "https://www.qtmuniao.com/images/default_cover.jpg"
+  }
+  </script>
+
+
+  <title>Golang Notes (II): Context Source Code Analysis | 木鸟杂记</title>
+  
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101943025-1"></script>
+    <script>
+      if (CONFIG.hostname === location.hostname) {
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-101943025-1');
+      }
+    </script>
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?1fb8def00cacde7d41798806b1150188";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">木鸟杂记</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">大规模数据系统</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-photos">
+
+    <a href="/photos/" rel="section"><i class="fa fa-image fa-fw"></i>相册</a>
+
+  </li>
+        <li class="menu-item menu-item-sparks">
+
+    <a href="/sparks/" rel="section"><i class="fa fa-spinner fa-fw"></i>短想法</a>
+
+  </li>
+        <li class="menu-item menu-item-ddia">
+
+    <span class="exturl" data-url="aHR0cHM6Ly9kZGlhLnF0bXVuaWFvLmNvbS8="><i class="fa fa-book fa-fw"></i>DDIA</span>
+
+  </li>
+        <li class="menu-item menu-item-podcast">
+
+    <a href="/podcast/" rel="section"><i class="fa fa-heart fa-fw"></i>播客和书</a>
+
+  </li>
+        <li class="menu-item menu-item-service">
+
+    <a href="/service/" rel="section"><i class="fa fa-dollar-sign fa-fw"></i>付费服务</a>
+
+  </li>
+      <li class="menu-item menu-item-lang">
+        <div class="languages">
+          <label class="lang-select-label">
+            <i class="fa fa-language"></i>
+            <span>English</span>
+            <i class="fa fa-angle-up" aria-hidden="true"></i>
+          </label>
+          <select class="lang-select" data-canonical="">
+            
+              <option value="zh-CN" data-href="/2020/07/12/go-context/" selected="">
+                简体中文
+              </option>
+            
+              <option value="en" data-href="/en/2020/07/12/go-context/" selected="">
+                English
+              </option>
+            
+          </select>
+        </div>
+      </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://www.qtmuniao.com/en/2020/07/12/go-context/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/img/logo.jpg">
+      <meta itemprop="name" content="青藤木鸟 (qtmuniao)">
+      <meta itemprop="description" content="一个喜欢摄影的大规模数据系统工程师">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="木鸟杂记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Golang Notes (II): Context Source Code Analysis
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-07-12 17:25:16" itemprop="dateCreated datePublished" datetime="2020-07-12T17:25:16+08:00">2020-07-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2026-05-07 23:44:06" itemprop="dateModified" datetime="2026-05-07T23:44:06+08:00">2026-05-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/" itemprop="url" rel="index"><span itemprop="name">Programming Languages</span></a>
+                </span>
+                  , 
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Programming-Languages/Go/" itemprop="url" rel="index"><span itemprop="name">Go</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="eye"></i>
+              </span>
+              <span class="post-meta-item-text">Views: </span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img data-src="https://i.loli.net/2020/07/25/Yjbq6ZSkEHQ3X1u.png" alt="go-context-tree-construction.png"><span class="image-caption">go-context-tree-construction.png</span></p>
+<h2 id="Overview">Overview</h2>
+<p>Context is a somewhat unique yet commonly used concept in Go. When used well, it often yields twice the result with half the effort. But when abused without understanding its internals, it becomes “writing new words for forced sorrow”—at best affecting code structure, at worst burying numerous bugs.</p>
+<p>Golang constructs Contexts using a tree-like derivation approach, passing deadline and cancel signals across different goroutines <em>[1]</em> to manage the lifecycle of a group of goroutines involved in processing a task, preventing goroutine leaks. It also allows passing/sharing data across an entire request via Values attached to the Context.</p>
+<p>Context is most often used to track the lifecycle of long-running, cross-process IO requests such as RPC/HTTP, allowing the outer caller to actively or automatically cancel the request, thereby instructing child goroutines to reclaim all used goroutines and related resources.</p>
+<p>Context is essentially a mechanism for propagating signals during tree-like nested API calls. This article will analyze Context from several aspects: interface, derivation, source code analysis, and usage.</p>
+<span id="more"></span>
+<p><em>Author: Muniao’s Miscellany <a href="https://www.qtmuniao.com/2020/07/12/go-context/">https://www.qtmuniao.com/2020/07/12/go-context/</a>, please cite the source when reposting</em></p>
+<h2 id="The-Context-Interface">The Context Interface</h2>
+<p>The Context interface is defined as follows:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Context is used to pass deadlines, cancellation signals, and request-scoped key-value pairs across API boundaries.</span></span><br><span class="line"><span class="comment">// The methods of Context are safe for concurrent use by multiple goroutines.</span></span><br><span class="line"><span class="keyword">type</span> Context <span class="keyword">interface</span> &#123;</span><br><span class="line">    <span class="comment">// Done returns a read-only channel that is closed when the Context is canceled or times out.</span></span><br><span class="line">    Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Err returns the error indicating why the Context ended.</span></span><br><span class="line">    Err() <span class="type">error</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// If a deadline is set on the Context, Deadline returns the deadline time.</span></span><br><span class="line">    Deadline() (deadline time.Time, ok <span class="type">bool</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Value returns the value associated with the given key, or nil.</span></span><br><span class="line">    Value(key <span class="keyword">interface</span>&#123;&#125;) <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The above are abbreviated comments; for detailed interface information, see the Context <span class="exturl" data-url="aHR0cHM6Ly9nb2xhbmcub3JnL3BrZy9jb250ZXh0Lw==">godoc<i class="fa fa-external-link-alt"></i></span>.</p>
+<ul>
+<li>
+<p>The <code>Done()</code> method returns a read-only channel. When a Context is actively canceled or times out, the done channel of this Context and all its derived Contexts are closed. After receiving the close signal via this field, all child goroutines should immediately interrupt execution, release resources, and return.</p>
+</li>
+<li>
+<p><code>Err()</code> returns nil before the above channel is closed, and after the channel is closed, it returns information about why the Context was closed. The error type has only two values, <em>canceled</em> or <em>deadline exceeded</em>:</p>
+</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> Canceled = errors.New(<span class="string">&quot;context canceled&quot;</span>)</span><br><span class="line"><span class="keyword">var</span> DeadlineExceeded <span class="type">error</span> = deadlineExceededError&#123;&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>
+<p><code>Deadline()</code> If this Context has a deadline set, the function returns <code>ok=true</code> and the corresponding expiration time. Otherwise, it returns <code>ok=false</code> and nil.</p>
+</li>
+<li>
+<p><code>Value()</code> returns the value bound to the given Key on the Context chain (I call it the lookup chain, explained below). If not found, it returns nil. Note: do not use it to pass parameters between functions; its original intent is to share values that span the entire Context lifecycle. The Key can be any comparable type. To prevent key collisions, it’s best to define the Key type as an unexported type and define accessors for it. Here’s an example of sharing user information via Context:</p>
+</li>
+</ul>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> user</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;context&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// User is the type of value stored in Contexts.</span></span><br><span class="line"><span class="keyword">type</span> User <span class="keyword">struct</span>&#123;...&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// key is defined as an unexported type to avoid conflicts with keys defined in other packages.</span></span><br><span class="line"><span class="keyword">type</span> key <span class="type">int</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// userKey is the key for user.User values in Contexts. It is unexported;</span></span><br><span class="line"><span class="comment">// clients use user.NewContext and user.FromContext instead of using this key directly.</span></span><br><span class="line"><span class="keyword">var</span> userKey key</span><br><span class="line"></span><br><span class="line"><span class="comment">// NewContext returns a new Context that carries value u.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewContext</span><span class="params">(ctx context.Context, u *User)</span></span> context.Context &#123;</span><br><span class="line">  <span class="keyword">return</span> context.WithValue(ctx, userKey, u)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// FromContext returns the User value stored in ctx, if any.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">FromContext</span><span class="params">(ctx context.Context)</span></span> (*User, <span class="type">bool</span>) &#123;</span><br><span class="line">  u, ok := ctx.Value(userKey).(*User)</span><br><span class="line">  <span class="keyword">return</span> u, ok</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Deriving-Contexts">Deriving Contexts</h2>
+<p>The beauty of Context design lies in its ability to derive tree-like structures from an existing Context to manage the lifecycle of a group of goroutines. As mentioned above, a single Context instance is immutable, but can be derived and augmented with additional properties (cancelable, deadline, key-value) using three methods provided by the context package: <code>WithCancel</code>, <code>WithTimeout</code>, and <code>WithValue</code>, to construct a tree-organized set of Contexts.</p>
+<p><img data-src="https://i.loli.net/2020/07/25/d5Slcasj1FAzItu.png" alt="go-context-tree.png"><span class="image-caption">go-context-tree.png</span></p>
+<p>When the root Context ends, all Contexts derived from it are also canceled. That is, the parent Context’s lifecycle encompasses all child Contexts’ lifecycles.</p>
+<p><code>context.Background()</code> is typically used as the root node; it never times out and cannot be canceled.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Background returns an empty Context. It is never canceled, has no deadline, and has no values.</span></span><br><span class="line"><span class="comment">// Background is typically used in main, init, and tests as the root Context of a long-running process.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Background</span><span class="params">()</span></span> Context</span><br></pre></td></tr></table></figure>
+<p><code>WithCancel</code> and <code>WithTimeout</code> can derive new Contexts from a parent Context, returning new Contexts constrained by the parent Context’s lifecycle.</p>
+<p>A Context derived from <code>context.Background()</code> via <code>WithCancel</code> should be canceled promptly after the corresponding process completes, otherwise it will cause a Context leak.</p>
+<p>Using <code>WithTimeout</code> can control the processing deadline of a process. Specifically, when the deadline is reached, the Context sends a signal to the Done Channel, and the child goroutine, upon detecting the signal in the Context Done Channel <em>[2]</em>, will exit immediately.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// WithCancel returns a copy of parent with a new Done channel and a cancel function.</span></span><br><span class="line"><span class="comment">// The parent&#x27;s Done channel is closed when the parent is canceled or when the returned cancel function is called.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithCancel</span><span class="params">(parent Context)</span></span> (ctx Context, cancel CancelFunc)</span><br><span class="line"></span><br><span class="line"><span class="comment">// A CancelFunc tells an operation to abandon its work.</span></span><br><span class="line"><span class="keyword">type</span> CancelFunc <span class="function"><span class="keyword">func</span><span class="params">()</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// WithTimeout returns a copy of parent with a new Done channel and a cancel function.</span></span><br><span class="line"><span class="comment">// The parent&#x27;s Done channel is closed when the parent is canceled, the returned cancel function is called,</span></span><br><span class="line"><span class="comment">// or the timeout expires. If the internal timer is still running when cancel is called, it will be stopped.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithTimeout</span><span class="params">(parent Context, timeout time.Duration)</span></span> (Context, CancelFunc)</span><br></pre></td></tr></table></figure>
+<p><code>WithValue</code> can attach key-value pairs to the Context for the entire processing lifecycle.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// WithValue returns a copy of parent in which the value associated with key is val.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithValue</span><span class="params">(parent Context, key <span class="keyword">interface</span>&#123;&#125;, val <span class="keyword">interface</span>&#123;&#125;)</span></span> Context</span><br></pre></td></tr></table></figure>
+<h2 id="Context-Source-Code-Analysis">Context Source Code Analysis</h2>
+<p>The Go context package uses embedding, similar to inheritance, to organize several Context classes: <code>emptyCtx</code>, <code>valueCtx</code>, <code>cancelCtx</code>, and <code>timerCtx</code>.</p>
+<p><img data-src="https://i.loli.net/2020/07/25/9s6qG8RUkCQWLlc.png" alt="go-context-implementation.png"><span class="image-caption">go-context-implementation.png</span></p>
+<p>Put figuratively, through embedding, Go constructs a “pointer” from each Context node in the tree-organized Context system to its parent instance. From another perspective, this is a classic code organization pattern—the <span class="exturl" data-url="aHR0cHM6Ly9zb3VyY2VtYWtpbmcuY29tL2Rlc2lnbl9wYXR0ZXJucy9jb21wb3NpdGU=">Composite Pattern<i class="fa fa-external-link-alt"></i></span>: each layer incrementally or overridingly implements only the functionality it cares about, then reuses existing implementations via routing calls.</p>
+<h3 id="emptyCtx">emptyCtx</h3>
+<p><code>emptyCtx</code> implements an empty <code>Context</code>; all interface methods are no-ops.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> emptyCtx <span class="type">int</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(*emptyCtx)</span></span> Deadline() (deadline time.Time, ok <span class="type">bool</span>) &#123;</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(*emptyCtx)</span></span> Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125; &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span> <span class="comment">// Returning nil is syntactically a no-op, semantically meaning this Context will never be closed.</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//... Others omitted, similar empty function bodies that satisfy the syntax requirements.</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e *emptyCtx)</span></span> String() <span class="type">string</span> &#123;</span><br><span class="line">  <span class="keyword">switch</span> e &#123;</span><br><span class="line">  <span class="keyword">case</span> background:</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;context.Background&quot;</span></span><br><span class="line">  <span class="keyword">case</span> todo:</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;context.TODO&quot;</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="string">&quot;unknown empty Context&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Both <code>context.Background()</code> and <code>context.TODO()</code> return instances of <code>emptyCtx</code>, though their semantics differ slightly. The former serves as the root node of the Context tree, while the latter is typically used when unsure what to use.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> (</span><br><span class="line">  background = <span class="built_in">new</span>(emptyCtx)</span><br><span class="line">  todo       = <span class="built_in">new</span>(emptyCtx)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Background</span><span class="params">()</span></span> Context &#123;</span><br><span class="line">  <span class="keyword">return</span> background</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">TODO</span><span class="params">()</span></span> Context &#123;</span><br><span class="line">  <span class="keyword">return</span> todo</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="valueCtx">valueCtx</h3>
+<p><code>valueCtx</code> embeds a <code>Context</code> interface for Context derivation and attaches a single key-value pair. As can be seen from the <code>context.WithValue</code> function, each attached key-value pair wraps a new <code>valueCtx</code>. When accessing a Key via the <code>Value(key interface&#123;&#125;)</code> interface, it traverses upward along the Context tree lookup chain through all Contexts until reaching <code>emptyCtx</code>:</p>
+<ol>
+<li>If it encounters a <code>valueCtx</code> instance, it compares its key with the given key for equality.</li>
+<li>If it encounters another Context instance, it delegates upward directly. But there is a special case: to obtain the nearest <code>cancelCtx</code> among all ancestor nodes of a given Context, Go uses a special key: <code>cancelCtxKey</code>; when encountering this key, cancelCtx returns itself. This will be mentioned in the <code>cancelCtx</code> implementation.</li>
+</ol>
+<p>For other interface calls (<code>Done</code>, <code>Err</code>, <code>Deadline</code>), they are routed to the embedded <code>Context</code>.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> valueCtx <span class="keyword">struct</span> &#123;</span><br><span class="line">  Context <span class="comment">// embedding, pointing to the parent Context</span></span><br><span class="line">  key, val <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *valueCtx)</span></span> Value(key <span class="keyword">interface</span>&#123;&#125;) <span class="keyword">interface</span>&#123;&#125; &#123;</span><br><span class="line">  <span class="keyword">if</span> c.key == key &#123;</span><br><span class="line">    <span class="keyword">return</span> c.val</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> c.Context.Value(key)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithValue</span><span class="params">(parent Context, key, val <span class="keyword">interface</span>&#123;&#125;)</span></span> Context &#123;</span><br><span class="line">  <span class="keyword">if</span> key == <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;nil key&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> !reflectlite.TypeOf(key).Comparable() &#123;</span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;key is not comparable&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> &amp;valueCtx&#123;parent, key, val&#125; <span class="comment">// attach kv and reference parent Context</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="cancelCtx">cancelCtx</h3>
+<p>The core implementation of the context package lies in <code>cancelCtx</code>, including constructing the tree structure and performing cascading cancellation.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> cancelCtx <span class="keyword">struct</span> &#123;</span><br><span class="line">  Context</span><br><span class="line"></span><br><span class="line">  mu       sync.Mutex            <span class="comment">// protects the following three fields</span></span><br><span class="line">  done     <span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;         <span class="comment">// lazily initialized, closed by the first cancel() call</span></span><br><span class="line">  children <span class="keyword">map</span>[canceler]<span class="keyword">struct</span>&#123;&#125; <span class="comment">// set to nil by the first cancel() call</span></span><br><span class="line">  err      <span class="type">error</span>                 <span class="comment">// set to non-nil by the first cancel() call</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *cancelCtx)</span></span> Value(key <span class="keyword">interface</span>&#123;&#125;) <span class="keyword">interface</span>&#123;&#125; &#123;</span><br><span class="line">  <span class="keyword">if</span> key == &amp;cancelCtxKey &#123; </span><br><span class="line">    <span class="keyword">return</span> c</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> c.Context.Value(key)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *cancelCtx)</span></span> Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125; &#123;</span><br><span class="line">  c.mu.Lock()</span><br><span class="line">  <span class="keyword">if</span> c.done == <span class="literal">nil</span> &#123;</span><br><span class="line">    c.done = <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;)</span><br><span class="line">  &#125;</span><br><span class="line">  d := c.done</span><br><span class="line">  c.mu.Unlock()</span><br><span class="line">  <span class="keyword">return</span> d</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The <code>Value()</code> function implementation is interesting: when encountering the special key <code>cancelCtxKey</code>, it returns itself. This actually reuses the lookup logic of the Value function, so that when traversing the Context tree lookup chain, the first ancestor <code>cancelCtx</code> instance of the given Context can be found.</p>
+<p><code>children</code> stores all cancelable Contexts (implementing the <code>canceler</code> interface, such as <code>cancelCtx</code> or <code>timerCtx</code> nodes) that are the first reachable ones when walking down all paths in the subtree. Refer to the figure below for an intuitive understanding.</p>
+<p>The following will explain each in detail.</p>
+<h4 id="Lookup-Chain">Lookup Chain</h4>
+<p>The lookup chain is constructed by the context package using Go’s embedding (<em>embedding</em>) feature, and is mainly used for:</p>
+<ol>
+<li>Looking up matching key-value pairs upward along the chain when <code>Value()</code> is called.</li>
+<li>Reusing the <code>Value()</code> logic to find the nearest <code>cancelCtx</code> ancestor, in order to construct the Context tree.</li>
+</ol>
+<p>Among <code>valueCtx</code>, <code>cancelCtx</code>, and <code>timerCtx</code>, only <code>cancelCtx</code> <strong>directly</strong> implements a non-empty <code>Done()</code> method (<code>valueCtx</code> and <code>timerCtx</code> both delegate via embedding, and calling this method will directly forward to <code>cancelCtx</code> or <code>emptyCtx</code>). Therefore, <code>done := parent.Done()</code> will return the done channel from the first ancestor <code>cancelCtx</code>. However, if there is a third-party implementation of the Context interface in the Context tree, <code>parent.Done()</code> might return another channel.</p>
+<p>Thus, if <code>p.done != done</code>, it indicates that the first Context implementing a non-empty <code>Done()</code> encountered in the lookup chain is a third-party Context, not <code>cancelCtx</code>.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// parentCancelCtx returns the first ancestor cancelCtx node of parent.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">parentCancelCtx</span><span class="params">(parent Context)</span></span> (*cancelCtx, <span class="type">bool</span>) &#123;</span><br><span class="line">    done := parent.Done() <span class="comment">// Call the first instance implementing Done() in the lookup chain (third-party Context class / cancelCtx)</span></span><br><span class="line">  <span class="keyword">if</span> done == closedchan || done == <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, <span class="literal">false</span></span><br><span class="line">  &#125;</span><br><span class="line">  p, ok := parent.Value(&amp;cancelCtxKey).(*cancelCtx) <span class="comment">// First cancelCtx instance in the lookup chain</span></span><br><span class="line">  <span class="keyword">if</span> !ok &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, <span class="literal">false</span></span><br><span class="line">  &#125;</span><br><span class="line">  p.mu.Lock()</span><br><span class="line">  ok = p.done == done</span><br><span class="line">  p.mu.Unlock()</span><br><span class="line">  <span class="keyword">if</span> !ok &#123; <span class="comment">// Indicates the first instance implementing Done() in the lookup chain is not a cancelCtx instance</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, <span class="literal">false</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> p, <span class="literal">true</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Tree-Construction">Tree Construction</h4>
+<p>Context tree construction is performed via <code>propagateCancel</code> when <code>context.WithCancel()</code> is called.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithCancel</span><span class="params">(parent Context)</span></span> (ctx Context, cancel CancelFunc) &#123;</span><br><span class="line">  c := newCancelCtx(parent)</span><br><span class="line">  propagateCancel(parent, &amp;c)</span><br><span class="line">  <span class="keyword">return</span> &amp;c, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; c.cancel(<span class="literal">true</span>, Canceled) &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The Context tree can essentially be refined into a <code>canceler</code> (<code>*cancelCtx</code> and <code>*timerCtx</code>) tree, because during cascading cancellation we only need to find all <code>canceler</code>s in the subtree. Therefore, the implementation only needs to save all <code>canceler</code> relationships in the tree (skipping <code>valueCtx</code>), which is simple and efficient.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// A canceler is a context type that can be canceled directly. The</span></span><br><span class="line"><span class="comment">// implementations are *cancelCtx and *timerCtx.</span></span><br><span class="line"><span class="keyword">type</span> canceler <span class="keyword">interface</span> &#123;</span><br><span class="line">  cancel(removeFromParent <span class="type">bool</span>, err <span class="type">error</span>)</span><br><span class="line">  Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The specific implementation is: along the lookup chain, find the first instance that implements the <code>Done()</code> method,</p>
+<ol>
+<li>If it is a <code>canceler</code> instance, it must have a children field and implement the cancel method (canceler); just put this context into the children map. After that, when the parent cancelCtx cancels, it will recursively traverse all children and cancel them one by one.</li>
+<li>If it is a non-<code>canceler</code> third-party Context instance, since we don’t know its internal implementation, we can only start a guardian goroutine for each newly added child Context; when the parent Context is canceled, cancel this Context.</li>
+</ol>
+<p>It should be noted that since Context may be accessed concurrently by multiple goroutines, when modifying class fields, we need to double-check whether the parent node has already been canceled. If the parent Context is canceled, immediately cancel the child Context and exit.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">propagateCancel</span><span class="params">(parent Context, child canceler)</span></span> &#123;</span><br><span class="line">  done := parent.Done()</span><br><span class="line">  <span class="keyword">if</span> done == <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="comment">// Parent is not cancelable</span></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">select</span> &#123;</span><br><span class="line">  <span class="keyword">case</span> &lt;-done:</span><br><span class="line">    <span class="comment">// Parent already canceled</span></span><br><span class="line">    child.cancel(<span class="literal">false</span>, parent.Err())</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">  <span class="keyword">default</span>:</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> p, ok := parentCancelCtx(parent); ok &#123; <span class="comment">// Found a cancelCtx instance</span></span><br><span class="line">    p.mu.Lock()</span><br><span class="line">    <span class="keyword">if</span> p.err != <span class="literal">nil</span> &#123;</span><br><span class="line">      <span class="comment">// Parent already canceled</span></span><br><span class="line">      child.cancel(<span class="literal">false</span>, p.err)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> p.children == <span class="literal">nil</span> &#123;</span><br><span class="line">        p.children = <span class="built_in">make</span>(<span class="keyword">map</span>[canceler]<span class="keyword">struct</span>&#123;&#125;) <span class="comment">// Lazily created</span></span><br><span class="line">      &#125;</span><br><span class="line">      p.children[child] = <span class="keyword">struct</span>&#123;&#125;&#123;&#125;</span><br><span class="line">    &#125;</span><br><span class="line">    p.mu.Unlock()</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;                                <span class="comment">// Found a non-cancelCtx instance</span></span><br><span class="line">    atomic.AddInt32(&amp;goroutines, +<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">      <span class="keyword">select</span> &#123;</span><br><span class="line">      <span class="keyword">case</span> &lt;-parent.Done():</span><br><span class="line">        child.cancel(<span class="literal">false</span>, parent.Err())</span><br><span class="line">      <span class="keyword">case</span> &lt;-child.Done(): </span><br><span class="line">      &#125;</span><br><span class="line">    &#125;()</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The figure below explains the lookup chain and tree organization: <em>C0</em> is <code>emptyCtx</code>, usually obtained from <code>context.Background()</code>, serving as the root node of the Context tree. <em>C1</em>~<em>C4</em> are successively derived from their respective parent nodes via embedding. The dashed lines are the lookup chain formed by embedding (<em>embedded</em>), and the solid lines are the parent-child relationships saved by the <code>cancelCtx</code> children map.</p>
+<p><code>parentCancelCtx(C2)</code> and <code>parentCancelCtx(C4)</code> both return <em>C1</em>, so <em>C1</em>’s children map stores <em>C2</em> and <em>C4</em>. After building these two relationships, we can query Value upward along the lookup chain, including finding the first ancestor <code>cancelCtx</code>; we can also cancel downward along the children relationships.</p>
+<p><img data-src="https://i.loli.net/2020/07/25/Yjbq6ZSkEHQ3X1u.png" alt="go-context-tree-construction.png"><span class="image-caption">go-context-tree-construction.png</span></p>
+<p>Of course, all Contexts in the figure are system Contexts from the Go package, without depicting third-party Contexts. The actual code is slightly harder to understand because it adds handling logic for third-party Contexts. The key to distinguishing system Context implementations from user-defined Contexts is whether they implement the <code>canceler</code> interface.</p>
+<p>If a third-party Context implements this interface, it can be organized into the tree, and when the upstream <code>cancelCtx</code> is canceled, it recursively calls the children’s cancel for cascading cancellation. Otherwise, it can only start a goroutine for each third-party Context to listen for upstream cancellation events, in order to cancel the third-party Context.</p>
+<h4 id="Cascading-Cancellation">Cascading Cancellation</h4>
+<p>Below is the implementation of the key function <code>cancelCtx.cancel</code> in cascading cancellation. When this <code>cancelCtx</code> is canceled, it needs to cascade-cancel all Contexts in the Context tree rooted at this <code>cancelCtx</code>, and remove the root <code>cancelCtx</code> from its parent node, so that the GC can reclaim resources of all nodes in the <code>cancelCtx</code> subtree.</p>
+<p><code>cancelCtx.cancel</code> is an unexported function and cannot be called outside the context package, so inner goroutines holding the Context cannot cancel themselves; cancellation must be done via the returned <code>CancelFunc</code> (a simple wrapper around <code>cancelCtx.cancel</code>), whose handle is generally held by the outer goroutine.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *cancelCtx)</span></span> cancel(removeFromParent <span class="type">bool</span>, err <span class="type">error</span>) &#123;</span><br><span class="line">  <span class="keyword">if</span> err == <span class="literal">nil</span> &#123; <span class="comment">// A cancellation reason must be provided: Canceled or DeadlineExceeded</span></span><br><span class="line">    <span class="built_in">panic</span>(<span class="string">&quot;context: internal error: missing cancel error&quot;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  c.mu.Lock()</span><br><span class="line">  <span class="keyword">if</span> c.err != <span class="literal">nil</span> &#123;</span><br><span class="line">    c.mu.Unlock()</span><br><span class="line">    <span class="keyword">return</span> <span class="comment">// Already canceled by another goroutine</span></span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// Record the error and close done</span></span><br><span class="line">  c.err = err</span><br><span class="line">  <span class="keyword">if</span> c.done == <span class="literal">nil</span> &#123;</span><br><span class="line">    c.done = closedchan</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="built_in">close</span>(c.done)</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// Cascading cancellation</span></span><br><span class="line">  <span class="keyword">for</span> child := <span class="keyword">range</span> c.children &#123;</span><br><span class="line">    <span class="comment">// <span class="doctag">NOTE:</span> holding the parent Context&#x27;s lock while acquiring the child Context&#x27;s lock</span></span><br><span class="line">    child.cancel(<span class="literal">false</span>, err)</span><br><span class="line">  &#125;</span><br><span class="line">  c.children = <span class="literal">nil</span></span><br><span class="line">  c.mu.Unlock()</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Only the subtree root needs to be removed; other nodes in the subtree do not</span></span><br><span class="line">  <span class="keyword">if</span> removeFromParent &#123;</span><br><span class="line">    removeChild(c.Context, c)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="timerCtx">timerCtx</h3>
+<p><code>timerCtx</code> adds a timer on top of the embedded <code>cancelCtx</code>, canceling automatically when the user-set deadline is reached.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> timerCtx <span class="keyword">struct</span> &#123;</span><br><span class="line">  cancelCtx</span><br><span class="line">  timer *time.Timer <span class="comment">// Under cancelCtx.mu</span></span><br><span class="line"></span><br><span class="line">  deadline time.Time</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *timerCtx)</span></span> Deadline() (deadline time.Time, ok <span class="type">bool</span>) &#123;</span><br><span class="line">  <span class="keyword">return</span> c.deadline, <span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *timerCtx)</span></span> cancel(removeFromParent <span class="type">bool</span>, err <span class="type">error</span>) &#123;</span><br><span class="line">  <span class="comment">// Cascade-cancel all Contexts in the subtree</span></span><br><span class="line">  c.cancelCtx.cancel(<span class="literal">false</span>, err)</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">if</span> removeFromParent &#123;</span><br><span class="line">    <span class="comment">// Call separately to remove this node, because we are removing c, not c.cancelCtx</span></span><br><span class="line">    removeChild(c.cancelCtx.Context, c)</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// Stop the timer</span></span><br><span class="line">  c.mu.Lock()</span><br><span class="line">  <span class="keyword">if</span> c.timer != <span class="literal">nil</span> &#123;</span><br><span class="line">    c.timer.Stop()</span><br><span class="line">    c.timer = <span class="literal">nil</span></span><br><span class="line">  &#125;</span><br><span class="line">  c.mu.Unlock()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Setting timeout cancellation is done in <code>context.WithDeadline()</code>. If an ancestor node’s deadline is earlier than this node’s, a <code>cancelCtx</code> is sufficient, because the ancestor will cascade-cancel it when its deadline is reached.</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithDeadline</span><span class="params">(parent Context, d time.Time)</span></span> (Context, CancelFunc) &#123;</span><br><span class="line">  <span class="keyword">if</span> cur, ok := parent.Deadline(); ok &amp;&amp; cur.Before(d) &#123;</span><br><span class="line">    <span class="comment">// Ancestor node&#x27;s deadline is earlier</span></span><br><span class="line">    <span class="keyword">return</span> WithCancel(parent)</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  c := &amp;timerCtx&#123;             </span><br><span class="line">    cancelCtx: newCancelCtx(parent), <span class="comment">// Use a new cancelCtx to implement partial cancel functionality</span></span><br><span class="line">    deadline:  d,</span><br><span class="line">  &#125;</span><br><span class="line">  propagateCancel(parent, c) <span class="comment">// Build the Context cancellation tree, note c is passed, not c.cancelCtx</span></span><br><span class="line">  dur := time.Until(d)       <span class="comment">// Check if the deadline is so close that it has already passed</span></span><br><span class="line">  <span class="keyword">if</span> dur &lt;= <span class="number">0</span> &#123;</span><br><span class="line">    c.cancel(<span class="literal">true</span>, DeadlineExceeded)</span><br><span class="line">    <span class="keyword">return</span> c, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; c.cancel(<span class="literal">false</span>, Canceled) &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// Set timeout cancellation</span></span><br><span class="line">  c.mu.Lock()</span><br><span class="line">  <span class="keyword">defer</span> c.mu.Unlock()</span><br><span class="line">  <span class="keyword">if</span> c.err == <span class="literal">nil</span> &#123;</span><br><span class="line">    c.timer = time.AfterFunc(dur, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">      c.cancel(<span class="literal">true</span>, DeadlineExceeded)</span><br><span class="line">    &#125;)</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> c, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; c.cancel(<span class="literal">true</span>, Canceled) &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Using-Context">Using Context</h2>
+<p>Child goroutines using Context <strong>must ensure</strong> that they exit promptly and release resources when the Context is closed. That is, using Context requires following this principle to guarantee the effect of resource release during cascading cancellation. Therefore, Context is essentially a tree-like signal distribution mechanism; the Context tree can be used to track the process call tree, and when the outer process is canceled, Context cascades to notify all called processes.</p>
+<p>The following is a typical code snippet for a child goroutine checking the Context to determine whether it needs to exit:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> ; ; time.Sleep(time.Second) &#123;</span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> &lt;-context.Done():</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="comment">// Some long-running operations</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>As can be seen, the Context interface itself does not have a Cancel method, which is consistent with the fact that the channel returned by <code>Done()</code> is read-only: the sender and receiver of the Context close signal are usually not in the same function. For example, when the parent goroutine starts some child goroutines to do work, only the parent goroutine can close the done channel, and the child goroutines detect the channel close signal. That is, the child goroutine cannot cancel the Context passed from the parent goroutine.</p>
+<h2 id="Context-Best-Practices">Context Best Practices</h2>
+<p>There are some usage practices to follow when using Context:</p>
+<ol>
+<li>Context is usually the first parameter in a function.</li>
+<li>Do not store Context in a struct; pass Context explicitly in each function. However, in practice, you can flexibly combine based on the struct’s lifecycle.</li>
+<li>Do not use a nil Context, even though it is syntactically allowed. When unsure what value to use, you can use <code>context.TODO()</code>.</li>
+<li>Context values are meant for sharing data across the request lifecycle, not as a way to pass extra parameters in functions. Because this is an implicit semantics that can easily cause bugs; if you want to pass extra parameters, you should still explicitly declare them in the function.</li>
+<li>Context is immutable, therefore thread-safe, and can be passed and used by the same Context across multiple goroutines.</li>
+</ol>
+<h2 id="Notes">Notes</h2>
+<p>[1] In this article, “process” refers to compute-intensive or IO-intensive long-running functions, or goroutines.</p>
+<p>[2] A Context’s Done Channel refers to the channel returned by <code>context.Done()</code>. It is the key data structure within the Context, serving as the channel for communication between different processes. When termination is needed, the parent process sends a signal to this channel, and the child process reads the signal from this channel, performs cleanup, and exits.</p>
+<h2 id="References">References</h2>
+<ol>
+<li>go doc context: <span class="exturl" data-url="aHR0cHM6Ly9nb2xhbmcub3JnL3BrZy9jb250ZXh0Lw==">https://golang.org/pkg/context/<i class="fa fa-external-link-alt"></i></span></li>
+<li>code review comments: <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2dvbGFuZy9nby93aWtpL0NvZGVSZXZpZXdDb21tZW50cyNjb250ZXh0cw==">https://github.com/golang/go/wiki/CodeReviewComments#contexts<i class="fa fa-external-link-alt"></i></span></li>
+<li>go blog context: <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmdvbGFuZy5vcmcvY29udGV4dA==">https://blog.golang.org/context<i class="fa fa-external-link-alt"></i></span></li>
+<li>go context source code: <span class="exturl" data-url="aHR0cHM6Ly9nb2xhbmcub3JnL3NyYy9jb250ZXh0L2NvbnRleHQuZ28/cz04NDE5Ojg0ODMjTDIyMg==">https://golang.org/src/context/context.go?s=8419:8483#L222<i class="fa fa-external-link-alt"></i></span></li>
+<li>Go Language Design and Implementation: <span class="exturl" data-url="aHR0cHM6Ly9kcmF2ZW5lc3MubWUvZ29sYW5nL2RvY3MvcGFydDMtcnVudGltZS9jaDA2LWNvbmN1cnJlbmN5L2dvbGFuZy1jb250ZXh0Lw==">https://draveness.me/golang/docs/part3-runtime/ch06-concurrency/golang-context/<i class="fa fa-external-link-alt"></i></span></li>
+</ol>
+
+         <HR style="border:3 double #607d8b" color=#607d8b SIZE=3>
+<div>
+<p>我是青藤木鸟，一个喜欢摄影、专注大规模数据系统的程序员，欢迎关注我的公众号：“<strong>木鸟杂记</strong>”，有更多的分布式系统、存储和数据库相关的文章，欢迎关注。
+关注公众号后，回复“<strong>资料</strong>”可以获取我总结一份分布式数据库学习资料。
+回复“<strong>优惠券</strong>”可以获取我的大规模数据系统付费专栏《<a href="https://xiaobot.net/p/system-thinking" target="_blank" rel="noopener">系统日知录</a>》的八折优惠券。</p>
+<p>我们还有相关的分布式系统和数据库的群，可以添加我的微信号：qtmuniao，我拉你入群。加我时记得备注：“分布式系统群”。
+另外，如果你不想加群，还有一个分布式系统和数据库的论坛（点<a target="_blank" rel="noopener" href="https://distsys.cn/">这里</a>），欢迎来玩耍。</p>
+<p><img src="https://s2.loli.net/2021/12/08/Gus9ditcmZo3Ukw.jpg" alt="wx-distributed-system-s.jpg" class="medium-zoom-image"></p>
+</div>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4303078477555566"
+     crossorigin="anonymous"></script>
+<ins class="adsbygoogle"
+     style="display:block; text-align:center;"
+     data-ad-layout="in-article"
+     data-ad-format="fluid"
+     data-ad-client="ca-pub-4303078477555566"
+     data-ad-slot="1270196241"></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+    </div>
+
+    
+    
+    
+      
+  <div class="popular-posts-header">不妨一读</div>
+  <ul class="popular-posts">
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/07/12/go-context/" rel="bookmark">Golang 笔记（二）：Context 源码剖析</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2019/12/07/bazel-build-golang/" rel="bookmark">Bazel 构建 Golang 项目</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/01/06/go-value-pointer-method/" rel="bookmark">Golang 笔记（一）：值方法和指针方法（Value Methods vs Pointer Methods）</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/11/29/bolt-data-organised/" rel="bookmark">Boltdb 源码导读（一）：Boltdb 数据组织</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2021/01/09/go-slice/" rel="bookmark">Golang 笔记（三）：一种理解 Slice 的模型</a></div>
+    </li>
+    <li class="popular-posts-item">
+      <div class="popular-posts-title"><a href="/2020/12/14/bolt-index-design/" rel="bookmark">Boltdb 源码导读（二）：Boltdb 索引设计</a></div>
+    </li>
+  </ul>
+
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    Donate
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="https://i.postimg.cc/5yGJWLQW/image.png" alt="青藤木鸟 (qtmuniao) WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+
+  </div>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/golang/" rel="tag"># golang</a>
+              <a href="/tags/go/" rel="tag"># go</a>
+              <a href="/tags/context/" rel="tag"># context</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/07/03/leveldb-data-structures-skip-list/" rel="prev" title="漫谈 LevelDB 数据结构（一）：跳表（Skip List）">
+      <i class="fa fa-chevron-left"></i> 漫谈 LevelDB 数据结构（一）：跳表（Skip List）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/07/12/go-context/" rel="next" title="Golang 笔记（二）：Context 源码剖析">
+      Golang 笔记（二）：Context 源码剖析 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Overview"><span class="nav-number">1.</span> <span class="nav-text">Overview</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#The-Context-Interface"><span class="nav-number">2.</span> <span class="nav-text">The Context Interface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Deriving-Contexts"><span class="nav-number">3.</span> <span class="nav-text">Deriving Contexts</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Context-Source-Code-Analysis"><span class="nav-number">4.</span> <span class="nav-text">Context Source Code Analysis</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#emptyCtx"><span class="nav-number">4.1.</span> <span class="nav-text">emptyCtx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#valueCtx"><span class="nav-number">4.2.</span> <span class="nav-text">valueCtx</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cancelCtx"><span class="nav-number">4.3.</span> <span class="nav-text">cancelCtx</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Lookup-Chain"><span class="nav-number">4.3.1.</span> <span class="nav-text">Lookup Chain</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Tree-Construction"><span class="nav-number">4.3.2.</span> <span class="nav-text">Tree Construction</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Cascading-Cancellation"><span class="nav-number">4.3.3.</span> <span class="nav-text">Cascading Cancellation</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#timerCtx"><span class="nav-number">4.4.</span> <span class="nav-text">timerCtx</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Using-Context"><span class="nav-number">5.</span> <span class="nav-text">Using Context</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Context-Best-Practices"><span class="nav-number">6.</span> <span class="nav-text">Context Best Practices</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Notes"><span class="nav-number">7.</span> <span class="nav-text">Notes</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#References"><span class="nav-number">8.</span> <span class="nav-text">References</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="青藤木鸟 (qtmuniao)"
+      src="/img/logo.jpg">
+  <p class="site-author-name" itemprop="name">青藤木鸟 (qtmuniao)</p>
+  <div class="site-description" itemprop="description">一个喜欢摄影的大规模数据系统工程师</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">240</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">113</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">292</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9xdG11bmlhbw==" title="知乎 → https:&#x2F;&#x2F;www.zhihu.com&#x2F;people&#x2F;qtmuniao"><i class="zhihu fa-fw"></i>知乎</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9zcGFjZS5iaWxpYmlsaS5jb20vMzA5MzM4MTI=" title="B站 → https:&#x2F;&#x2F;space.bilibili.com&#x2F;30933812"><i class="bzhan fa-fw"></i>B站</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9xdG11bmlhby50dWNob25nLmNvbS8=" title="图虫 → https:&#x2F;&#x2F;qtmuniao.tuchong.com&#x2F;"><i class="tuchong fa-fw"></i>图虫</span>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="link fa-fw"></i>
+      friends
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9sYWlrZTltLmNvbQ==" title="https:&#x2F;&#x2F;laike9m.com">laike9m</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNoYW5na3VuLmRlLw==" title="https:&#x2F;&#x2F;blog.changkun.de&#x2F;">Changkun Ou</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cua2F3YWJhbmdnYS5jb20=" title="https:&#x2F;&#x2F;www.kawabangga.com">卡瓦邦噶！</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cDovL2dhb2NlZ2VnZS5jb20vQmxvZw==" title="http:&#x2F;&#x2F;gaocegege.com&#x2F;Blog">高策</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9yMTJmLmNvbQ==" title="https:&#x2F;&#x2F;r12f.com">Soul Orbit</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly90YW54aW55dS53b3Jr" title="https:&#x2F;&#x2F;tanxinyu.work">谭新宇</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9penVhbHpoeS5jbi8=" title="https:&#x2F;&#x2F;izualzhy.cn&#x2F;">Ying's Blog</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9zdGRyYy5jYy8=" title="https:&#x2F;&#x2F;stdrc.cc&#x2F;">project rc</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly9taWFuYmFvZHVvLmNvbS9vL2F1dGhvci1hV3lVbTIwPQ==" title="https:&#x2F;&#x2F;mianbaoduo.com&#x2F;o&#x2F;author-aWyUm20&#x3D;">我的面包多</span>
+        </li>
+        <li class="links-of-blogroll-item">
+          <span class="exturl" data-url="aHR0cHM6Ly93d3cudnVsdHIuY29tLz9yZWY9ODMyOTc0OC00Rg==" title="https:&#x2F;&#x2F;www.vultr.com&#x2F;?ref&#x3D;8329748-4F">vultr vps 注册送 $50</span>
+        </li>
+    </ul>
+  </div>
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 2017 – 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">青藤木鸟 (qtmuniao)</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly90aGVtZS1uZXh0Lm9yZw==">NexT.Gemini</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+  <script src="//cdn.jsdelivr.net/npm/quicklink@1/dist/quicklink.umd.js"></script>
+  <script>
+      window.addEventListener('load', () => {
+      quicklink({
+        timeout : 3000,
+        priority: true,
+        ignores : [uri => uri.includes('#'),uri => uri === 'https://www.qtmuniao.com/en/2020/07/12/go-context/',]
+      });
+      });
+  </script>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : '96b4b5363c4817dc1f62',
+      clientSecret: '9e46a83f9fda0c5d3aabaaa64b60c027763cb677',
+      repo        : 'blog-comment',
+      owner       : 'songpengwei',
+      admin       : ['songpengwei'],
+      id          : 'b0da6303645a241c1be3e093ab1098db',
+        language: '',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
